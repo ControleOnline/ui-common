@@ -31,7 +31,7 @@
 
 <script>
 /* eslint-disable */
-import FormCompany from "@controleonline/quasar-legacy-ui/quasar-login-ui/src/components/user/signup/Company";
+import FormCompany from "@controleonline/ui-legacy/ui-login/src/components/user/signup/Company";
 import { mapActions, mapGetters } from "vuex";
 import { LocalStorage } from "quasar";
 
