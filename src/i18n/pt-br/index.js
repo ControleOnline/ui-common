@@ -155,8 +155,8 @@ export const translate = {
   // Login
 
   login: {
-    or:"Ou",
-    with_google:'Logar com o Google',
+    or: "Ou",
+    with_google: 'Logar com o Google',
     continue: 'Continuar',
     confirm: 'Confirmação',
     confirmYourPass: 'Confirme sua senha',
@@ -190,7 +190,7 @@ export const translate = {
     passNoMatch: 'As senhas não coincidem',
     registerLabel: "Nunca esteve aqui?",
     signinLabel: "Já tem cadastro?",
-    signin: 'Faça o login',    
+    signin: 'Faça o login',
   },
 
 
@@ -374,35 +374,35 @@ export const translate = {
       'Provider not found': 'Provedor não encontrado',
     }
   },
-  
+
   // ui-carrier
 
   'Carrier': 'Transportadora',
   import: {
-      statuses: {
-          'waiting': 'Aguardando',
-          'imported': 'importado',
-          'invalid_table': 'Tabela Inválida',
-          'importing': 'importando',
-          'failed': 'falhou',
-          'invalid_format': 'Formato Inválido'
-      },
-      feedback: {
-          'waiting to import': 'Aguardando para importar',
-          'import has started': 'A importação foi iniciada',
-          'import has been completed': 'A importação foi concluída',
-          'group tax not found': 'Tabela de taxas não encontrada',
-          'it is not possible to import data into the given table':
-              'Não é possível importar dados para a tabela informada',
-          'it was not possible to identify the tax group':
-              'Não foi possível identificar a tabela de taxas',
-          'finalized but nothing was imported':
-              'Finalizado mas nada foi importado',
-          'this file format does not exist':
-              'Esse formato de arquivo não existe'
-      }
+    statuses: {
+      'waiting': 'Aguardando',
+      'imported': 'importado',
+      'invalid_table': 'Tabela Inválida',
+      'importing': 'importando',
+      'failed': 'falhou',
+      'invalid_format': 'Formato Inválido'
+    },
+    feedback: {
+      'waiting to import': 'Aguardando para importar',
+      'import has started': 'A importação foi iniciada',
+      'import has been completed': 'A importação foi concluída',
+      'group tax not found': 'Tabela de taxas não encontrada',
+      'it is not possible to import data into the given table':
+        'Não é possível importar dados para a tabela informada',
+      'it was not possible to identify the tax group':
+        'Não foi possível identificar a tabela de taxas',
+      'finalized but nothing was imported':
+        'Finalizado mas nada foi importado',
+      'this file format does not exist':
+        'Esse formato de arquivo não existe'
+    }
   },
-  
+
   // ui-logistic
 
   logistic: {
@@ -458,5 +458,358 @@ export const translate = {
       invoice: "Fatura",
     },
   },
-    
+
+  // ui-coupon
+
+  'Coupon': 'Cupon de Desconto',
+
+  // ui-accounting
+
+  failed: 'Action failed',
+  success: 'Action was successful',
+
+  // ui-import
+
+  import: {
+    statuses: {
+      'waiting': 'Aguardando',
+      'imported': 'importado',
+      'invalid_table': 'Tabela Inválida',
+      'importing': 'importando',
+      'failed': 'Falhou',
+      'error': 'Erro',
+      'invalid_format': 'Formato Inválido'
+    },
+    importStatuses: {
+      'table': 'Tabela',
+      'DACTE': 'DACTE',
+      'leads': 'Leads'
+    },
+    feedback: {
+      'waiting to import': 'Aguardando para importar',
+      'import has started': 'A importação foi iniciada',
+      'importhas been completed': 'A importação foi concluída',
+      'group tax not found': 'Tabela de taxas não encontrada',
+      'it is not possible to  import data into the given table':
+        'Não é possível importar dados para a tabela informada',
+      'it was not possible to identify the tax group':
+        'Não foi possível identificar a tabela de taxas',
+      'finalized but nothing was imported':
+        'Finalizado mas nada foi importado',
+      'this file format does not exist':
+        'Esse formato de arquivo não existe'
+    }
+  },
+
+
+  // ui-crm
+
+  crm: {
+    input: {
+      taskStatus: "Status",
+      client: "Cliente",
+      criticality: "Criticidade",
+      reason: "Motivo",
+      registeredBy: "Registrado por",
+      taskFor: "Tarefa para",
+      createdAt: "Criado em",
+      dueDate: "Data de vencimento",
+      alterDate: "Data de alteração",
+    },
+  },
+
+  // ui-people
+
+  people: {
+    input: {
+      alias: 'Apelido',
+      peopleType: 'Tipo de cliente'
+    },
+
+
+
+    button: {
+      save: "Salvar",
+      cancel: "Cancelar",
+      delete: "Excluir",
+      edit: "Editar",
+      add: "Adicionar",
+      search: "Buscar",
+      receive: "Receber",
+      expense: "Pagar"
+    },
+
+    form: {
+      name: "Nome",
+      email: "E-mail",
+      phone: "Telefone",
+      address: "Endereço",
+      alias: "Apelido",
+      type: "Tipo",
+      document: "Documento",
+      company: "Empresa",
+      user: "Usuário",
+      contract: "Contrato",
+      peopleType: "Tipo de Pessoa"
+    },
+    messages: {
+      success: "Operação realizada com sucesso",
+      error: "Ocorreu um erro, tente novamente"
+    },
+
+    emails: {
+      title: "E-mails",
+      add: "Adicionar E-mail",
+
+    },
+    addresses: {
+      title: "Endereços",
+      add: "Adicionar Endereço"
+    },
+    companies: {
+      title: "Empresas",
+      add: "Adicionar Empresa"
+    },
+    documents: {
+      title: "Documentos",
+      add: "Adicionar Documento"
+    },
+    users: {
+      title: "Usuários",
+      add: "Adicionar Usuário"
+    },
+    contracts: {
+      title: "Contratos",
+      add: "Adicionar Contrato"
+    },
+    phones: {
+      title: "Telefones",
+      add: "Adicionar Telefone"
+    }
+
+  },
+
+  // ui-docs
+
+  docs: {
+    status: {
+      open: 'Aberto',
+      pending: 'Pendente',
+      closed: 'Fechado'
+    },
+    status_name: 'Status',
+    tittle: 'Documentos',
+    new: 'Novo',
+
+  },
+
+  // ui-config
+
+  config: {
+    status: {
+      open: 'Aberto',
+      pending: 'Pendente',
+      closed: 'Fechado'
+    },
+  },
+
+  // ui-products
+
+  products: {
+    input: {
+      productCondition: "Condição",
+      type: "Tipo",
+      product: "Produto",
+      id: "ID",
+      price: "Preço",
+      sku: "SKU",
+      description: "Descrição",
+      productUnit: "Unidade",
+    },
+  },
+  product: {
+    used: "Usado",
+    new: "Novo",
+    recondicioned: "Recondicionado",
+    product: "Produto",
+    service: "Serviço",
+    component: "Componente",
+  },
+  product_group_product: {
+    input: {
+      sku: "SKU",
+      productChild: "Produto",
+    },
+  },
+  product_group_feedstock: {
+    tooltip: {
+      feedstock: "Matéria-prima",
+    },
+    input: {
+      sku: "SKU",
+      productChild: "Produto",
+      quantity: "Quantidade",
+    },
+  },
+
+  // ui-queues
+
+  display: {
+    id: "ID",
+    displayType: "Tipo",
+    edit: "Editar",
+    company: "Empresa",
+    display: "Dispostivo",
+    add: "Adicionar Display",
+    msg_delete: "Deseja remover o Display?",
+    delete: "Remover",
+    cancel: "Cancelar",
+    confirm: "Confirmar",
+    save: "Salvar",
+    queue: "Fila",
+    queuePeople: "Fila pessoa",
+    status: {
+      open: "Aberto",
+      waiting: "Aguardando",
+      attendance: "Em atendimento",
+      attended: "Atendido",
+    },
+    priority: {
+      Default: "Padrão",
+      Priority: "Prioridade",
+      Emergency: "Emergência",
+    },
+
+    messages: {
+      display: "Para acompanhamento do cliente",
+      production: "Para a produção dos itens do pedido",
+      delivery: "Para entrega de pedidos",
+    },
+  },
+  displayType: {
+    delivery: "Delivery",
+    production: "Produção",
+    display: "Display",
+  },
+
+  // ui-default
+
+  default: {
+    btn: {
+      clear: "Limpar",
+      apply: "Aplicar",
+      filter: "Filtrar",
+      save: "Salvar",
+      cancel: "Cancelar",
+      confirm: "Confirmar",
+    },
+    input: {
+      field_name: "Nome do Campo",
+      field_type: "Tipo do Campo",
+      required: "Obrigatório",
+      field_configs: "Configurações do Campo",
+      name: "Nome",
+      price: "Valor",
+      dateFrom: "De: ",
+      dateTo: "Até: ",
+      search: "Pesquisar",
+      id: "ID",
+      color: "Cor",
+      icon: "Ícone",
+      category: "Categoria",
+      parent: "Categoria Pai",
+    },
+    tooltip: {
+      table: "Exibir em Tabela",
+      cards: "Exibir em Cards",
+      applyed: "Filtro(s) Aplicado(s)",
+      maximize: "Maximizar",
+      minimize: "Minimizar",
+      config_columns: "Colunas",
+      add: "Adicionar",
+      filters: "Filtros",
+      clear: "Limpar Filtros",
+      edit: "Editar",
+      delete: "Deletar",
+    },
+    title: {
+      clear: "Limpar Filtros",
+      filters: "Filtros",
+      edit: "Editar",
+      add: "Adicionar",
+      msg_delete: "Deseja realmente deletar?",
+    },
+  },
+
+  // ui-logistic_old
+
+  Payment: {
+    Options: {
+      Before: "100% Antes da Retirada",
+      Slice: "60% Entrada + 40% Retirada",
+      Card: "Cartão de Crédito",
+      Half: "50% NA CONTRATAÇÃO E 50% NA RETIRADA",
+      Today: "À Vista",
+    },
+  },
+  form: {
+    title: "Cotação de frete",
+    subtitle: "Preencha os campos abaixo para sua cotação",
+    section01: "Dados dos produtos",
+    section02: "CEP de Origem",
+    section03: "CEP de Destino",
+    cubTotal: "Peso cubado",
+    weigTotal: "Peso real",
+    labels: {
+      name: "Nome",
+      email: "Email",
+      phone: "Fone",
+      submit: "Fazer cotação de frete",
+      type: "Tipo de produto",
+      price: "Valor da nota fiscal",
+      qtty: "Quantidade",
+      depth: "Profundidade",
+      width: "Largura",
+      height: "Altura",
+      weight: "Peso",
+      addPro: "Adicionar produto",
+      postal: "CEP",
+      street: "Rua",
+      number: "Número",
+      comple: "Complemento",
+      distri: "Bairro",
+      city: "Cidade",
+      state: "Estado",
+      country: "País",
+      minimumQuotation: "Calcular Frete",
+      product_price: "Valor da mercadoria transportada",
+      list: {
+        search: "Digite o endereço, CEP ou cidade",
+      },
+      cubage: "Cubagem",
+    },
+  },
+
+
+  // ui-orders
+
+  orders: {
+    input: {
+      id: "ID",
+      app: "Origem",
+      status: "Status",
+      client: "Cliente",
+      orderDate: "Data do Pedido",
+      alterDate: "Última Alteração",
+      orderType: "Tipo de Pedido",
+    },
+  },
+  product_orders: {
+    input: {
+      product: "Nome",
+      quantity: "Quantidade",
+      total: "Total",
+    },
+  },
+
 };
