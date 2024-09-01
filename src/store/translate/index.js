@@ -5,7 +5,7 @@ import mutations from "@controleonline/ui-default/src/store/default/mutations";
 export default {
   namespaced: true,
   state: {
-    resourceEndpoint: "translate",
+    resourceEndpoint: "translates",
     isLoading: false,
     error: "",
     violations: null,

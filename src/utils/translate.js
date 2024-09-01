@@ -1,45 +1,53 @@
 import { i18n } from "boot/i18n";
+import locales from "src/i18n";
 import { computed, reactive } from "vue";
+import Config from "@controleonline/ui-common/src/utils/config";
 
 const locale = computed(() => i18n.global.locale).value;
 
 export default class Translate {
   persistMessages = reactive({});
-  stores = reactive({[locale]:[]});
+  stores = reactive(locales);
+  config = new Config();
 
   translate(store, type, key) {
-   if (!this.stores[locale].includes(store)) this.stores[locale].push(store);
+    if (!this.stores[this.getLanguage()].includes(store))
+      this.stores[this.getLanguage()].push(store);
     return this.getMessage(store, type, key);
   }
-
+  getLanguage() {
+    let lang = this.config.getConfig("language");
+    return lang == undefined ? locale : lang;
+  }
   setMessage(store, type, key, message) {
-    let messages = i18n.global.getLocaleMessage(locale);
+    let messages = i18n.global.getLocaleMessage(this.getLanguage());
 
     if (!messages[store]) messages[store] = {};
     if (!messages[store][type]) messages[store][type] = {};
     if (messages[store][type][key]) return;
 
     messages[store][type][key] = message;
-    i18n.global.setLocaleMessage(locale, messages);
+    i18n.global.setLocaleMessage(this.getLanguage(), messages);
 
     return this.setPersistMessage(store, type, key, message);
   }
-  
+
   setPersistMessage(store, type, key, message) {
-    if (!this.persistMessages[locale]) this.persistMessages[locale] = {};
-    if (!this.persistMessages[locale][store])
-      this.persistMessages[locale][store] = {};
-    if (!this.persistMessages[locale][store][type])
-      this.persistMessages[locale][store][type] = {};
-    this.persistMessages[locale][store][type][key] = message;
+    if (!this.persistMessages[this.getLanguage()])
+      this.persistMessages[this.getLanguage()] = {};
+    if (!this.persistMessages[this.getLanguage()][store])
+      this.persistMessages[this.getLanguage()][store] = {};
+    if (!this.persistMessages[this.getLanguage()][store][type])
+      this.persistMessages[this.getLanguage()][store][type] = {};
+    this.persistMessages[this.getLanguage()][store][type][key] = message;
 
     return message;
   }
 
   getMessage(store, type, key) {
-    if (i18n.global.te(store + "." + type + "." + key, locale))
+    if (i18n.global.te(store + "." + type + "." + key, this.getLanguage()))
       return i18n.global.t(store + "." + type + "." + key);
-    else if (i18n.global.te("default." + type + "." + key, locale))
+    else if (i18n.global.te("default." + type + "." + key, this.getLanguage()))
       return i18n.global.t("default." + type + "." + key);
 
     this.setMessage(store, type, key, this.formatMessage(key));
