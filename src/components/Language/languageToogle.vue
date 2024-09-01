@@ -14,6 +14,7 @@
 <script>
 import Config from "@controleonline/ui-common/src/utils/config";
 import Language from "@controleonline/ui-common/src/utils/language";
+import { mapActions, mapGetters } from "vuex";
 
 export default {
   components: {
@@ -26,13 +27,20 @@ export default {
       config: new Config(),
       language: new Language(this.$i18n),
       lang: null,
-      langOptions: [
-        { value: "en-us", label: "English" },
-        { value: "pt-br", label: "Português" },
-      ],
+      langOptions: [],
     };
   },
   methods: {
+    getLanguages() {
+      let languages = [];
+      this.languages.forEach((language) => {
+        languages.push({
+          value: language.language,
+          label: this.$tt("language", "input", language.language),
+        });
+      });
+      return languages;
+    },
     getLanguage() {
       let lang = this.config.getConfig("language");
       return lang == undefined ? this.$i18n.locale : lang;
@@ -41,8 +49,13 @@ export default {
 
   created() {
     this.lang = this.getLanguage();
+    this.langOptions = this.getLanguages();
   },
-
+  computed: {
+    ...mapGetters({
+      languages: "language/items",
+    }),
+  },
   watch: {
     lang(lang) {
       this.config.setConfig("language", lang);
