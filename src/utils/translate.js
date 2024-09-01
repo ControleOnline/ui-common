@@ -6,13 +6,16 @@ import Config from "@controleonline/ui-common/src/utils/config";
 const locale = computed(() => i18n.global.locale).value;
 
 export default class Translate {
-  persistMessages = reactive({});
-  stores = reactive(locales);
+  persistMessages = {};
+  stores = reactive({});
   config = new Config();
 
   translate(store, type, key) {
+    if (!this.stores[this.getLanguage()]) this.stores[this.getLanguage()] = [];
+
     if (!this.stores[this.getLanguage()].includes(store))
       this.stores[this.getLanguage()].push(store);
+
     return this.getMessage(store, type, key);
   }
   getLanguage() {
@@ -27,7 +30,7 @@ export default class Translate {
     if (messages[store][type][key]) return;
 
     messages[store][type][key] = message;
-    i18n.global.setLocaleMessage(this.getLanguage(), messages);
+    //i18n.global.setLocaleMessage(this.getLanguage(), messages);
 
     return this.setPersistMessage(store, type, key, message);
   }

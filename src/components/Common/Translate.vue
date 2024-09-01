@@ -11,27 +11,21 @@ export default {
     messages() {
       return this.$i18n.getLocaleMessage(this.getLanguage());
     },
-    persistMessages() {
-      return this.$translate.persistMessages;
-    },
     stores() {
       return this.$translate.stores;
-    },
-    localMessages() {
-      return this.$copyObject(this.messages) || {};
     },
   },
   data() {
     return {
+      localMessages: {},
       languages: [],
       loaded: { [this.getLanguage()]: {} },
-      persisted: { [this.getLanguage()]: {} },
+      persisted: {},
     };
   },
   methods: {
     ...mapActions({
       getLanguages: "language/getItems",
-
       getItems: "translate/getItems",
       save: "translate/save",
     }),
@@ -46,19 +40,18 @@ export default {
       return lang == undefined ? this.$i18n.locale : lang;
     },
     persist() {
+      let persisted = this.$copyObject(this.persisted);
       for (const lang in this.$translate.persistMessages) {
         for (const store in this.$translate.persistMessages[lang]) {
           for (const type in this.$translate.persistMessages[lang][store]) {
             for (const key in this.$translate.persistMessages[lang][store][
               type
             ]) {
-              if (!this.persisted[lang]) this.persisted[lang] = {};
-              if (!this.persisted[lang][store])
-                this.persisted[lang][store] = {};
-              if (!this.persisted[lang][store][type])
-                this.persisted[lang][store][type] = {};
-
-              if (!this.persisted[lang][store][type][key])
+              if (!persisted[lang]) persisted[lang] = {};
+              if (!persisted[lang][store]) persisted[lang][store] = {};
+              if (!persisted[lang][store][type])
+                persisted[lang][store][type] = {};
+              if (!persisted[lang][store][type][key])
                 this.save({
                   key: key,
                   language: "/languages/" + this.getLanguageId(lang),
@@ -69,7 +62,8 @@ export default {
                   type: type,
                 });
 
-              this.persisted[lang][store][type][key] = true;
+              persisted[lang][store][type][key] = true;
+              this.persisted = persisted;
             }
           }
         }
@@ -120,6 +114,7 @@ export default {
                 this.persisted[locale][translate.store] = {};
               if (!this.persisted[locale][translate.store][translate.type])
                 this.persisted[locale][translate.store][translate.type] = {};
+
               this.persisted[locale][translate.store][translate.type][
                 translate.key
               ] = true;
@@ -144,15 +139,11 @@ export default {
       handler: function (stores) {
         if (!this.loaded[this.getLanguage()])
           this.loaded[this.getLanguage()] = [];
-        Object.values(stores[this.getLanguage()] || []).forEach((store) => {
+        Object.values(stores[this.getLanguage()]).forEach((store) => {
           if (!this.loaded[this.getLanguage()][store])
             this.getTranslate(this.getLanguage(), store);
         });
       },
-      deep: true,
-    },
-    persistMessages: {
-      handler: function (persistMessages) {},
       deep: true,
     },
   },
