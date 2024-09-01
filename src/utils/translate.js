@@ -1,5 +1,4 @@
 import { i18n } from "boot/i18n";
-import locales from "src/i18n";
 import { computed, reactive } from "vue";
 import Config from "@controleonline/ui-common/src/utils/config";
 
