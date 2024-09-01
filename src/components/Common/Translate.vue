@@ -12,7 +12,7 @@ export default {
       return this.$i18n.getLocaleMessage(this.getLanguage());
     },
     persistMessages() {
-      return this.$translate.persistMessages || {};
+      return this.$translate.persistMessages;
     },
     stores() {
       return this.$translate.stores;
@@ -23,61 +23,122 @@ export default {
   },
   data() {
     return {
+      languages: [],
       loaded: { [this.getLanguage()]: {} },
+      persisted: { [this.getLanguage()]: {} },
     };
   },
   methods: {
     ...mapActions({
+      getLanguages: "language/getItems",
+
       getItems: "translate/getItems",
+      save: "translate/save",
     }),
+    getLanguageId(languageCode) {
+      const language = this.languages.find(
+        (lang) => lang.language === languageCode
+      );
+      return language?.id;
+    },
     getLanguage() {
       let lang = config.getConfig("language");
       return lang == undefined ? this.$i18n.locale : lang;
     },
+    persist() {
+      for (const lang in this.$translate.persistMessages) {
+        for (const store in this.$translate.persistMessages[lang]) {
+          for (const type in this.$translate.persistMessages[lang][store]) {
+            for (const key in this.$translate.persistMessages[lang][store][
+              type
+            ]) {
+              if (!this.persisted[lang]) this.persisted[lang] = {};
+              if (!this.persisted[lang][store])
+                this.persisted[lang][store] = {};
+              if (!this.persisted[lang][store][type])
+                this.persisted[lang][store][type] = {};
+
+              if (!this.persisted[lang][store][type][key])
+                this.save({
+                  key: key,
+                  language: "/languages/" + this.getLanguageId(lang),
+                  people: "/people/" + this.defaultCompany.id,
+                  store: store,
+                  translate:
+                    this.$translate.persistMessages[lang][store][type][key],
+                  type: type,
+                });
+
+              this.persisted[lang][store][type][key] = true;
+            }
+          }
+        }
+      }
+    },
     getTranslate(locale, store) {
       this.loaded[locale][store] = true;
+      this.getItems({ "language.language": locale, store })
+        .then((data) => {
+          if (
+            typeof data === "object" &&
+            data !== null &&
+            Object.keys(data).length > 0
+          ) {
+            data.forEach((translate, i) => {
+              if (!this.localMessages[translate.store])
+                this.localMessages[translate.store] = {};
+              if (!this.localMessages[translate.store][translate.type])
+                this.localMessages[translate.store][translate.type] = {};
 
-      this.getItems({ "language.language": locale, store }).then((data) => {
-        if (
-          typeof data === "object" &&
-          data !== null &&
-          Object.keys(data).length > 0
-        ) {
-          data.forEach((translate, i) => {
-            if (!this.localMessages[translate.store])
-              this.localMessages[translate.store] = {};
-            if (!this.localMessages[translate.store][translate.type])
-              this.localMessages[translate.store][translate.type] = {};
-
-            this.localMessages[translate.store][translate.type][translate.key] =
-              translate.translate;
-
-            if (!this.persistMessages[locale])
-              this.persistMessages[locale] = {};
-            if (!this.persistMessages[locale][translate.store])
-              this.persistMessages[locale][translate.store] = {};
-            if (!this.persistMessages[locale][translate.store][translate.type])
-              this.persistMessages[locale][translate.store][translate.type] =
-                {};
-            if (
-              !this.persistMessages[locale][translate.store][translate.type][
+              this.localMessages[translate.store][translate.type][
                 translate.key
-              ]
-            )
-              this.persistMessages[locale][translate.store][translate.type][
-                translate.key
-              ] = {};
+              ] = translate.translate;
 
-            delete this.persistMessages[locale][translate.store][
-              translate.type
-            ][translate.key];
-          });
-          this.$i18n.setLocaleMessage(locale, this.localMessages);
-        }
-      });
+              if (!this.$translate.persistMessages[locale])
+                this.$translate.persistMessages[locale] = {};
+              if (!this.$translate.persistMessages[locale][translate.store])
+                this.$translate.persistMessages[locale][translate.store] = {};
+              if (
+                !this.$translate.persistMessages[locale][translate.store][
+                  translate.type
+                ]
+              )
+                this.$translate.persistMessages[locale][translate.store][
+                  translate.type
+                ] = {};
+              if (
+                !this.$translate.persistMessages[locale][translate.store][
+                  translate.type
+                ][translate.key]
+              )
+                this.$translate.persistMessages[locale][translate.store][
+                  translate.type
+                ][translate.key] = {};
+
+              if (!this.persisted[locale]) this.persisted[locale] = {};
+              if (!this.persisted[locale][translate.store])
+                this.persisted[locale][translate.store] = {};
+              if (!this.persisted[locale][translate.store][translate.type])
+                this.persisted[locale][translate.store][translate.type] = {};
+              this.persisted[locale][translate.store][translate.type][
+                translate.key
+              ] = true;
+            });
+            this.$i18n.setLocaleMessage(locale, this.localMessages);
+          }
+        })
+        .finally(() => {
+          setTimeout(() => {
+            this.persist();
+          }, 5000);
+        });
     },
   },
-  created() {},
+  created() {
+    this.getLanguages().then((data) => {
+      this.languages = data;
+    });
+  },
   watch: {
     stores: {
       handler: function (stores) {
@@ -91,9 +152,7 @@ export default {
       deep: true,
     },
     persistMessages: {
-      handler: function (persistMessages) {
-        console.log(this.$copyObject(persistMessages));
-      },
+      handler: function (persistMessages) {},
       deep: true,
     },
   },
