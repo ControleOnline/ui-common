@@ -31,6 +31,10 @@ export default {
     };
   },
   methods: {
+    init() {
+      this.getLanguage();
+      this.getLanguages();
+    },
     getLanguages() {
       let languages = [];
       this.languages.forEach((language) => {
@@ -39,17 +43,16 @@ export default {
           label: this.$tt("language", "input", language.language),
         });
       });
-      return languages;
+      this.langOptions = languages;
     },
     getLanguage() {
       let lang = this.config.getConfig("language");
-      return lang == undefined ? this.$i18n.locale : lang;
+      this.lang = lang == undefined ? this.$i18n.locale : lang;
     },
   },
 
   created() {
-    this.lang = this.getLanguage();
-    this.langOptions = this.getLanguages();
+    this.init();
   },
   computed: {
     ...mapGetters({
