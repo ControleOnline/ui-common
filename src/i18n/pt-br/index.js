@@ -156,43 +156,44 @@ export const translate = {
 
   login: {
     or: "Ou",
-    with_google: 'Logar com o Google',
-    continue: 'Continuar',
-    confirm: 'Confirmação',
-    confirmYourPass: 'Confirme sua senha',
-    duplicateEmail: 'O email utilizado já existe',
-    duplicateUser: 'O usuário já existe',
-    name: 'Nome',
-    enterYourName: 'Digite seu nome',
-    email: 'E-mail',
+    with_google: "Logar com o Google",
+    continue: "Continuar",
+    confirm: "Confirmação",
+    confirmYourPass: "Confirme sua senha",
+    duplicateEmail: "O email utilizado já existe",
+    duplicateUser: "O usuário já existe",
+    name: "Nome",
+    enterYourName: "Digite seu nome",
+    email: "E-mail",
     confirmEmail: "Confirme seu E-mail",
-    enterYourEmail: 'Digite seu e-mail',
-    send: 'Entrar',
-    phone: 'Telefone',
-    enterYourPhone: 'Digite seu telefone',
-    title: 'Login',
-    register: 'Cadastrar',
-    lostPass: 'Perdeu a senha?',
-    dontRemember: 'Não lembro minha senha',
-    rememberDesc: 'Informe seu nome de usuário e email. Em breve enviaremos no email informado um link de recuperação de acesso.',
-    yourUser: 'Usuário',
-    enterYourUsername: 'Digite seu usuário',
-    yourUsername: 'Seu nome de usuário',
-    yourEmail: 'Seu e-mail',
-    yourPass: 'Senha',
-    password: 'Senha',
-    enterYourPass: 'Digite sua senha',
-    passMessage: 'Use seis ou mais caracteres com uma combinação de letras, números e símbolos',
-    invalidUserMessage: 'Usuário ou senha não são válidos',
-    usernameMessage: 'Use apenas letras e números sem espaços',
-    username: 'Usuário',
-    weakPass: 'Esta senha não é segura. Crie uma senha mais forte',
-    passNoMatch: 'As senhas não coincidem',
+    enterYourEmail: "Digite seu e-mail",
+    send: "Entrar",
+    phone: "Telefone",
+    enterYourPhone: "Digite seu telefone",
+    title: "Login",
+    register: "Cadastrar",
+    lostPass: "Perdeu a senha?",
+    dontRemember: "Não lembro minha senha",
+    rememberDesc:
+      "Informe seu nome de usuário e email. Em breve enviaremos no email informado um link de recuperação de acesso.",
+    yourUser: "Usuário",
+    enterYourUsername: "Digite seu usuário",
+    yourUsername: "Seu nome de usuário",
+    yourEmail: "Seu e-mail",
+    yourPass: "Senha",
+    password: "Senha",
+    enterYourPass: "Digite sua senha",
+    passMessage:
+      "Use seis ou mais caracteres com uma combinação de letras, números e símbolos",
+    invalidUserMessage: "Usuário ou senha não são válidos",
+    usernameMessage: "Use apenas letras e números sem espaços",
+    username: "Usuário",
+    weakPass: "Esta senha não é segura. Crie uma senha mais forte",
+    passNoMatch: "As senhas não coincidem",
     registerLabel: "Nunca esteve aqui?",
     signinLabel: "Já tem cadastro?",
-    signin: 'Faça o login',
+    signin: "Faça o login",
   },
-
 
   // Financial
 
@@ -250,79 +251,79 @@ export const translate = {
   // Contracts
 
   contracts: {
-    title: 'Contratos',
-    new_contract: 'Novo contrato',
-    search_by: 'Buscar por',
-    search_phold: 'Data inicio ou nome participante',
-    status: 'Status',
-    name: 'Nome',
-    alias: 'Sobrenome',
-    participation: 'Participação',
-    percent: 'Porcentagem',
-    all: 'Todos',
-    model: 'Template',
-    payment_day: 'Dia de pagamento',
-    start_date: 'Data de inicio',
-    edit: 'Editar Contrato',
-    save: 'Salvar Contrato',
-    go_original: 'Ver contrato original',
-    go_amended: 'Ver contrato adendo',
-    cancel_contract: 'Cancelar contrato',
-    select_data: 'Selecione uma data',
-    create_amended: 'Criar adendo',
-    add_participant: 'Adicionar participante',
-    search_customer: 'Busca de cliente',
-    how_search: 'Digite o documento ou email',
-    add_product: 'Adicionar produto / serviço',
-    product: 'Produto / Serviço',
-    price: 'Preço',
-    parcels: 'Parcelas',
-    payer: 'Pagador',
-    quantity: 'Quantidade',
-    request_signatures: 'Solicitar assinaturas',
-    signers: 'Assinantes',
+    title: "Contratos",
+    new_contract: "Novo contrato",
+    search_by: "Buscar por",
+    search_phold: "Data inicio ou nome participante",
+    status: "Status",
+    name: "Nome",
+    alias: "Sobrenome",
+    participation: "Participação",
+    percent: "Porcentagem",
+    all: "Todos",
+    model: "Template",
+    payment_day: "Dia de pagamento",
+    start_date: "Data de inicio",
+    edit: "Editar Contrato",
+    save: "Salvar Contrato",
+    go_original: "Ver contrato original",
+    go_amended: "Ver contrato adendo",
+    cancel_contract: "Cancelar contrato",
+    select_data: "Selecione uma data",
+    create_amended: "Criar adendo",
+    add_participant: "Adicionar participante",
+    search_customer: "Busca de cliente",
+    how_search: "Digite o documento ou email",
+    add_product: "Adicionar produto / serviço",
+    product: "Produto / Serviço",
+    price: "Preço",
+    parcels: "Parcelas",
+    payer: "Pagador",
+    quantity: "Quantidade",
+    request_signatures: "Solicitar assinaturas",
+    signers: "Assinantes",
 
     statuses: {
-      'Draft': 'Proposta',
-      'Waiting approval': 'Aguardando aprovação',
-      'Active': 'Ativo',
-      'Canceled': 'Cancelado',
-      'Amended': 'Alterado',
-      'Waiting signatures': 'Aguardando assinaturas',
-      'Analysis': 'Inconsistência nos dados',
+      Draft: "Proposta",
+      "Waiting approval": "Aguardando aprovação",
+      Active: "Ativo",
+      Canceled: "Cancelado",
+      Amended: "Alterado",
+      "Waiting signatures": "Aguardando assinaturas",
+      Analysis: "Inconsistência nos dados",
     },
 
     columns: {
-      'id': 'ID',
-      'contratante': 'Contratante',
-      'data_inicio': 'Data inicio',
-      'data_fim': 'Data fim',
-      'status': 'Status',
-      'participant': 'Participante',
-      'participation': 'Participação',
-      'percent': 'Porcentagem',
-      'payment_day': 'Dia de pagamento',
-      'product_name': 'Nome produto / serviço',
-      'quantity': 'Quantidade',
-      'price': 'Preço',
-      'payer': 'Pagador',
-      'parceled': 'Parcelamento',
+      id: "ID",
+      contratante: "Contratante",
+      data_inicio: "Data inicio",
+      data_fim: "Data fim",
+      status: "Status",
+      participant: "Participante",
+      participation: "Participação",
+      percent: "Porcentagem",
+      payment_day: "Dia de pagamento",
+      product_name: "Nome produto / serviço",
+      quantity: "Quantidade",
+      price: "Preço",
+      payer: "Pagador",
+      parceled: "Parcelamento",
     },
     panels: {
-      'contract': 'Contrato',
-      'participants': 'Participantes',
-      'products': 'Produtos / Serviços',
-      'document': 'Documento',
+      contract: "Contrato",
+      participants: "Participantes",
+      products: "Produtos / Serviços",
+      document: "Documento",
     },
     errors: {
-      'no_company': 'Faltou selecionar a empresa',
+      no_company: "Faltou selecionar a empresa",
     },
     roles: {
-      'Beneficiary': 'Contratante',
-      'Witness': 'Testemunha',
-      'Payer': 'Pagador',
-      'Provider': 'Contratado',
-      'Contractor': 'Prestador de serviço',
+      Beneficiary: "Contratante",
+      Witness: "Testemunha",
+      Payer: "Pagador",
+      Provider: "Contratado",
+      Contractor: "Prestador de serviço",
     },
   },
 
@@ -346,61 +347,59 @@ export const translate = {
 
   professionals: {
     form: {
-      birthday: 'Data de nascimento',
-      companyName: 'Razão Social',
-      document: 'CPF ou CNPJ',
-      email: 'E-mail',
-      name: 'Nome',
-      tradeName: 'Nome Comercial',
-      lastname: 'Sobrenome',
+      birthday: "Data de nascimento",
+      companyName: "Razão Social",
+      document: "CPF ou CNPJ",
+      email: "E-mail",
+      name: "Nome",
+      tradeName: "Nome Comercial",
+      lastname: "Sobrenome",
       placeholder: {
-        birthday: 'Digite a Data de nascimento',
-        companyName: 'Digite a Razão Social',
-        document: 'Digite um CPF ou CNPJ',
-        name: 'Digite o Nome',
-        tradeName: 'Digite o Nome Comercial',
-        lastname: 'Digite o Sobrenome',
-      }
+        birthday: "Digite a Data de nascimento",
+        companyName: "Digite a Razão Social",
+        document: "Digite um CPF ou CNPJ",
+        name: "Digite o Nome",
+        tradeName: "Digite o Nome Comercial",
+        lastname: "Digite o Sobrenome",
+      },
     },
-    information: 'Detalhes do Ponto de Encontro',
-    title: 'Pontos de Encontro',
-    new: 'Novo Ponto de Encontro',
+    information: "Detalhes do Ponto de Encontro",
+    title: "Pontos de Encontro",
+    new: "Novo Ponto de Encontro",
     messages: {
-      'document is not defined': 'documento não está definido',
-      'document is not valid': 'documento não é válido',
-      'name is not valid': 'nome não é válido',
-      'alias is not valid': 'alias não é válido',
-      'Provider Id is not defined': 'Id do provedor não está definido',
-      'Provider not found': 'Provedor não encontrado',
-    }
+      "document is not defined": "documento não está definido",
+      "document is not valid": "documento não é válido",
+      "name is not valid": "nome não é válido",
+      "alias is not valid": "alias não é válido",
+      "Provider Id is not defined": "Id do provedor não está definido",
+      "Provider not found": "Provedor não encontrado",
+    },
   },
 
   // ui-carrier
 
-  'Carrier': 'Transportadora',
+  Carrier: "Transportadora",
   import: {
     statuses: {
-      'waiting': 'Aguardando',
-      'imported': 'importado',
-      'invalid_table': 'Tabela Inválida',
-      'importing': 'importando',
-      'failed': 'falhou',
-      'invalid_format': 'Formato Inválido'
+      waiting: "Aguardando",
+      imported: "importado",
+      invalid_table: "Tabela Inválida",
+      importing: "importando",
+      failed: "falhou",
+      invalid_format: "Formato Inválido",
     },
     feedback: {
-      'waiting to import': 'Aguardando para importar',
-      'import has started': 'A importação foi iniciada',
-      'import has been completed': 'A importação foi concluída',
-      'group tax not found': 'Tabela de taxas não encontrada',
-      'it is not possible to import data into the given table':
-        'Não é possível importar dados para a tabela informada',
-      'it was not possible to identify the tax group':
-        'Não foi possível identificar a tabela de taxas',
-      'finalized but nothing was imported':
-        'Finalizado mas nada foi importado',
-      'this file format does not exist':
-        'Esse formato de arquivo não existe'
-    }
+      "waiting to import": "Aguardando para importar",
+      "import has started": "A importação foi iniciada",
+      "import has been completed": "A importação foi concluída",
+      "group tax not found": "Tabela de taxas não encontrada",
+      "it is not possible to import data into the given table":
+        "Não é possível importar dados para a tabela informada",
+      "it was not possible to identify the tax group":
+        "Não foi possível identificar a tabela de taxas",
+      "finalized but nothing was imported": "Finalizado mas nada foi importado",
+      "this file format does not exist": "Esse formato de arquivo não existe",
+    },
   },
 
   // ui-logistic
@@ -461,46 +460,43 @@ export const translate = {
 
   // ui-coupon
 
-  'Coupon': 'Cupon de Desconto',
+  Coupon: "Cupon de Desconto",
 
   // ui-accounting
 
-  failed: 'Action failed',
-  success: 'Action was successful',
+  failed: "Action failed",
+  success: "Action was successful",
 
   // ui-import
 
   import: {
     statuses: {
-      'waiting': 'Aguardando',
-      'imported': 'importado',
-      'invalid_table': 'Tabela Inválida',
-      'importing': 'importando',
-      'failed': 'Falhou',
-      'error': 'Erro',
-      'invalid_format': 'Formato Inválido'
+      waiting: "Aguardando",
+      imported: "importado",
+      invalid_table: "Tabela Inválida",
+      importing: "importando",
+      failed: "Falhou",
+      error: "Erro",
+      invalid_format: "Formato Inválido",
     },
     importStatuses: {
-      'table': 'Tabela',
-      'DACTE': 'DACTE',
-      'leads': 'Leads'
+      table: "Tabela",
+      DACTE: "DACTE",
+      leads: "Leads",
     },
     feedback: {
-      'waiting to import': 'Aguardando para importar',
-      'import has started': 'A importação foi iniciada',
-      'importhas been completed': 'A importação foi concluída',
-      'group tax not found': 'Tabela de taxas não encontrada',
-      'it is not possible to  import data into the given table':
-        'Não é possível importar dados para a tabela informada',
-      'it was not possible to identify the tax group':
-        'Não foi possível identificar a tabela de taxas',
-      'finalized but nothing was imported':
-        'Finalizado mas nada foi importado',
-      'this file format does not exist':
-        'Esse formato de arquivo não existe'
-    }
+      "waiting to import": "Aguardando para importar",
+      "import has started": "A importação foi iniciada",
+      "importhas been completed": "A importação foi concluída",
+      "group tax not found": "Tabela de taxas não encontrada",
+      "it is not possible to  import data into the given table":
+        "Não é possível importar dados para a tabela informada",
+      "it was not possible to identify the tax group":
+        "Não foi possível identificar a tabela de taxas",
+      "finalized but nothing was imported": "Finalizado mas nada foi importado",
+      "this file format does not exist": "Esse formato de arquivo não existe",
+    },
   },
-
 
   // ui-crm
 
@@ -522,11 +518,9 @@ export const translate = {
 
   people: {
     input: {
-      alias: 'Apelido',
-      peopleType: 'Tipo de cliente'
+      alias: "Apelido",
+      peopleType: "Tipo de cliente",
     },
-
-
 
     button: {
       save: "Salvar",
@@ -536,7 +530,7 @@ export const translate = {
       add: "Adicionar",
       search: "Buscar",
       receive: "Receber",
-      expense: "Pagar"
+      expense: "Pagar",
     },
 
     form: {
@@ -550,66 +544,63 @@ export const translate = {
       company: "Empresa",
       user: "Usuário",
       contract: "Contrato",
-      peopleType: "Tipo de Pessoa"
+      peopleType: "Tipo de Pessoa",
     },
     messages: {
       success: "Operação realizada com sucesso",
-      error: "Ocorreu um erro, tente novamente"
+      error: "Ocorreu um erro, tente novamente",
     },
 
     emails: {
       title: "E-mails",
       add: "Adicionar E-mail",
-
     },
     addresses: {
       title: "Endereços",
-      add: "Adicionar Endereço"
+      add: "Adicionar Endereço",
     },
     companies: {
       title: "Empresas",
-      add: "Adicionar Empresa"
+      add: "Adicionar Empresa",
     },
     documents: {
       title: "Documentos",
-      add: "Adicionar Documento"
+      add: "Adicionar Documento",
     },
     users: {
       title: "Usuários",
-      add: "Adicionar Usuário"
+      add: "Adicionar Usuário",
     },
     contracts: {
       title: "Contratos",
-      add: "Adicionar Contrato"
+      add: "Adicionar Contrato",
     },
     phones: {
       title: "Telefones",
-      add: "Adicionar Telefone"
-    }
-
+      add: "Adicionar Telefone",
+    },
   },
 
   // ui-docs
 
   docs: {
     status: {
-      open: 'Aberto',
-      pending: 'Pendente',
-      closed: 'Fechado'
+      open: "Aberto",
+      pending: "Pendente",
+      closed: "Fechado",
     },
-    status_name: 'Status',
-    tittle: 'Documentos',
-    new: 'Novo',
-
+    status_name: "Status",
+    tittle: "Documentos",
+    new: "Novo",
   },
 
   // ui-config
 
   config: {
     status: {
-      open: 'Aberto',
-      pending: 'Pendente',
-      closed: 'Fechado'
+      open: "Aberto",
+      pending: "Pendente",
+      closed: "Fechado",
     },
   },
 
@@ -790,7 +781,6 @@ export const translate = {
     },
   },
 
-
   // ui-orders
 
   orders: {
@@ -811,5 +801,4 @@ export const translate = {
       total: "Total",
     },
   },
-
 };
