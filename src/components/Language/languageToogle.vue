@@ -2,7 +2,7 @@
   <q-select
     v-model="lang"
     :options="langOptions"
-    label="Language"
+    :label="$tt('menu', 'configs', 'Language')"
     dense
     borderless
     emit-value
