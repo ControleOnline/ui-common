@@ -3,6 +3,7 @@
     v-model="lang"
     :options="langOptions"
     :label="$tt('menu', 'configs', 'Language')"
+    class="language-toogle"
     dense
     borderless
     emit-value
@@ -70,3 +71,8 @@ export default {
   },
 };
 </script>
+<style>
+.language-toogle {
+  min-width: 100px;
+}
+</style>
