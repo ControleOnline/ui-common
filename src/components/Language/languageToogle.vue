@@ -37,14 +37,16 @@ export default {
       this.getLanguages();
     },
     getLanguages() {
-      let languages = [];
-      this.languages.forEach((language) => {
-        languages.push({
-          value: language.language,
-          label: this.$tt("language", "input", language.language),
+      setTimeout(() => {
+        let languages = [];
+        this.languages.forEach((language) => {
+          languages.push({
+            value: language.language,
+            label: this.$tt("language", "input", language.language),
+          });
         });
-      });
-      this.langOptions = languages;
+        this.langOptions = languages;
+      }, 1000);
     },
     getLanguage() {
       let lang = this.config.getConfig("language");
@@ -66,6 +68,7 @@ export default {
       if (lang) {
         this.$i18n.locale = lang;
         this.$i18n.messages[lang] = this.language.getMessages(lang);
+        this.getLanguages();
       }
     },
   },
