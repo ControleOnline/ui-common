@@ -27,9 +27,9 @@ export default {
       {
         externalFilter: true,
         sortable: true,
-        name: "field_name",
+        name: "name",
         align: "left",
-        label: "field_name",
+        label: "name",
         sum: false,
         format: function (value) {
           return value;
@@ -38,9 +38,9 @@ export default {
       {
         externalFilter: true,
         sortable: true,
-        name: "field_type",
+        name: "type",
         align: "left",
-        label: "field_type",
+        label: "type",
         sum: false,
         list: [
           { value: "text", label: "text" },
@@ -68,9 +68,9 @@ export default {
       {
         externalFilter: true,
         sortable: true,
-        name: "field_configs",
+        name: "configs",
         align: "left",
-        label: "field_configs",
+        label: "configs",
         sum: false,
         format: function (value) {
           return value;
