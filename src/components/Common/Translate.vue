@@ -124,7 +124,7 @@ export default {
         })
         .finally(() => {
           setTimeout(() => {
-            this.persist();
+            //this.persist();
           }, 5000);
         });
     },
