@@ -12,6 +12,7 @@ export default function (id, options = {}) {
             code: response.status,
             status: response.status,
           };
+          return response;
       });
     })
     .catch((error) => {
