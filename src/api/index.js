@@ -28,6 +28,7 @@ export const api = {
         //localStorage.set("session", null);
         //location.reload();
       }
+      throw e;
     });
   },
   async getToken() {
