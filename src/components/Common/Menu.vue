@@ -5,7 +5,7 @@
         <q-icon name="settings" />
       </q-item-section>
       <q-item-section side>
-        <q-item-label>{{ $tt("menu", "configs", "menus") }}</q-item-label>
+        <q-item-label>{{ $tt("configs", "configs", "menus") }}</q-item-label>
       </q-item-section>
     </q-item>
     <q-expansion-item
@@ -26,7 +26,7 @@
           <q-icon :name="item.icon" />
         </q-item-section>
         <q-item-section no-wrap>
-          {{ $t(item.label) }}
+          {{ $tt("menu", "menu", item.label) }}
         </q-item-section>
       </q-item>
     </q-expansion-item>
@@ -49,7 +49,7 @@ export default {
 
   data() {
     return {
-      isSuperAdmin:false,
+      isSuperAdmin: false,
       menu: [],
     };
   },
