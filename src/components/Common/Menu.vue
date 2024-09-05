@@ -11,7 +11,7 @@
     <q-expansion-item
       :content-inset-level="0.3"
       :icon="mItem.icon"
-      :label="mItem.label"
+      :label="$tt('menu', 'menu', mItem.label)"
       v-for="mItem in menu"
       :key="mItem.id"
     >
