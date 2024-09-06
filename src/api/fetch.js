@@ -12,11 +12,13 @@ export default function (id, options = {}) {
             code: response.status,
             status: response.status,
           };
-          return response;
+        return response;
       });
     })
     .catch((error) => {
       throw error;
     })
-    .then((response) => response.json());
+    .then((response) => {
+      if (options.method != "DELETE") return response?.json();
+    });
 }
