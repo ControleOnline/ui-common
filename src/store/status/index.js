@@ -41,6 +41,7 @@ export default {
         name: "color",
         align: "left",
         label: "color",
+        inputType: "color",
         format: function (value) {
           return value;
         },

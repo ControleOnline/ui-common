@@ -40,6 +40,7 @@ export default {
         name: "color",
         align: "left",
         label: "color",
+        inputType: "color",
         format: function (value) {
           return value;
         },
@@ -49,6 +50,7 @@ export default {
         name: "icon",
         align: "left",
         label: "icon",
+        inputType: "icon",
         format: function (value) {
           return value;
         },
