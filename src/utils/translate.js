@@ -61,6 +61,7 @@ export default class Translate {
     return key
       .replace(/([a-z])([A-Z])/g, "$1_$2")
       .replace(/_/g, " ")
+      .replace(/-/g, " ")
       .replace(/^\w/, (c) => c.toUpperCase());
   }
 
