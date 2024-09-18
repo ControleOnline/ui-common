@@ -26,10 +26,11 @@ export default {
   methods: {
     ...mapActions({
       getLanguages: "language/getItems",
-      getItems: "translate/getItems",
-      save: "translate/save",
+      getItems: "tt/getItems",
+      save: "tt/save",
     }),
     getLanguageId(languageCode) {
+      console.log(this.languages);
       const language = this.languages.find(
         (lang) => lang.language === languageCode
       );
@@ -37,36 +38,39 @@ export default {
     },
     getLanguage() {
       let lang = config.getConfig("language");
+      console.log(this.$i18n.locale, lang);
       return lang == undefined ? this.$i18n.locale : lang;
     },
     persist() {
       let persisted = this.$copyObject(this.persisted);
       for (const lang in this.$translate.persistMessages) {
-        for (const store in this.$translate.persistMessages[lang]) {
-          for (const type in this.$translate.persistMessages[lang][store]) {
-            for (const key in this.$translate.persistMessages[lang][store][
-              type
-            ]) {
-              if (!persisted[lang]) persisted[lang] = {};
-              if (!persisted[lang][store]) persisted[lang][store] = {};
-              if (!persisted[lang][store][type])
-                persisted[lang][store][type] = {};
-              if (!persisted[lang][store][type][key])
-                this.save({
-                  key: key,
-                  language: "/languages/" + this.getLanguageId(lang),
-                  people: "/people/" + this.defaultCompany.id,
-                  store: store,
-                  translate:
-                    this.$translate.persistMessages[lang][store][type][key],
-                  type: type,
-                });
+        let languageId = this.getLanguageId(lang);
+        if (languageId)
+          for (const store in this.$translate.persistMessages[lang]) {
+            for (const type in this.$translate.persistMessages[lang][store]) {
+              for (const key in this.$translate.persistMessages[lang][store][
+                type
+              ]) {
+                if (!persisted[lang]) persisted[lang] = {};
+                if (!persisted[lang][store]) persisted[lang][store] = {};
+                if (!persisted[lang][store][type])
+                  persisted[lang][store][type] = {};
+                if (!persisted[lang][store][type][key])
+                  this.save({
+                    key: key,
+                    language: "/languages/" + languageId,
+                    people: "/people/" + this.defaultCompany.id,
+                    store: store,
+                    translate:
+                      this.$translate.persistMessages[lang][store][type][key],
+                    type: type,
+                  });
 
-              persisted[lang][store][type][key] = true;
-              this.persisted = persisted;
+                persisted[lang][store][type][key] = true;
+                this.persisted = persisted;
+              }
             }
           }
-        }
       }
     },
     getTranslate(locale, store) {
@@ -124,7 +128,7 @@ export default {
         })
         .finally(() => {
           setTimeout(() => {
-            //this.persist();
+            this.persist();
           }, 5000);
         });
     },
