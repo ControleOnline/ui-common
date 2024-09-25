@@ -21,7 +21,7 @@
       <div
         :class="[
           'col-12 col-sm-4 col-md-2 image-wrapper q-pa-xs',
-          { selected: selectedFile['@id'] === props.row['@id'] },
+          { selected: selectedFile && selectedFile['@id'] === props.row['@id'] },
         ]"
         @click="selectFile(props.row)"
       >
