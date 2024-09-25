@@ -30,7 +30,6 @@ export default {
       save: "tt/save",
     }),
     getLanguageId(languageCode) {
-      console.log(this.languages);
       const language = this.languages.find(
         (lang) => lang.language === languageCode
       );
@@ -38,7 +37,6 @@ export default {
     },
     getLanguage() {
       let lang = config.getConfig("language");
-      console.log(this.$i18n.locale, lang);
       return lang == undefined ? this.$i18n.locale : lang;
     },
     persist() {
