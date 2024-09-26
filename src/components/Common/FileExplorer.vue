@@ -1,4 +1,30 @@
 <template>
+  <div>
+    <q-btn-dropdown
+      split
+      outline
+      :label="currentCompany !== null ? currentCompany.alias : 'Loading...'"
+      class="ellipsis full-width"
+    >
+      <q-list>
+        <q-item
+          clickable
+          v-close-popup
+          dense
+          v-for="(company, index) in companies"
+          :disable="
+            company.enabled && company.user.employee_enabled ? false : true
+          "
+          :key="index"
+          @click="onCompanySelection(company)"
+        >
+          <q-item-section>
+            <q-item-label lines="1"> {{ company.alias }}</q-item-label>
+          </q-item-section>
+        </q-item>
+      </q-list>
+    </q-btn-dropdown>
+  </div>
   <q-table
     grid
     :rows="files"
@@ -43,6 +69,7 @@
   </div>
 </template>
 <script>
+import MyCompanies from "@controleonline/ui-common/src/components/Common/MyCompanies";
 import UploadForm from "@controleonline/ui-default/src/components/Default/Common/Inputs/UploadInput.vue";
 import { ENTRYPOINT } from "app/config/entrypoint";
 import { mapGetters, mapActions } from "vuex";
@@ -50,6 +77,7 @@ import { mapGetters, mapActions } from "vuex";
 export default {
   components: {
     UploadForm,
+    MyCompanies,
   },
   props: {
     data: {
@@ -62,6 +90,7 @@ export default {
   },
   data() {
     return {
+      currentCompany: {},
       files: [], // Lista de arquivos
       selectedFile: {}, // Arquivo selecionado
       pagination: { page: 1, rowsPerPage: 50 }, // Controle de paginação
@@ -73,19 +102,29 @@ export default {
   computed: {
     ...mapGetters({
       myCompany: "people/currentCompany",
+      companies: "people/companies",
     }),
     isLoading() {
       return this.$store.getters["file/isLoading"];
     },
   },
   created() {
+    this.currentCompany = this.myCompany;
     this.selectFile(this.$copyObject(this.data));
-    this.getFiles();
+    //this.getFiles();
+  },
+  watch: {
+    currentCompany() {
+      this.getFiles();
+    },
   },
   methods: {
     ...mapActions({
       getItems: "file/getItems",
     }),
+    onCompanySelection(company) {
+      this.currentCompany = company;
+    },
     selectFile(file) {
       this.selectedFile = file;
     },
@@ -96,7 +135,7 @@ export default {
       this.$emit("save", this.selectedFile);
     },
     getFiles() {
-      this.getItems({ people: "/people/" + this.myCompany?.id }).then(
+      this.getItems({ people: "/people/" + this.currentCompany?.id }).then(
         (data) => {
           this.files = data;
         }
@@ -113,8 +152,7 @@ export default {
 </script>
 
 <style>
-
-.file-explorer-table{
+.file-explorer-table {
   padding-bottom: 200px;
 }
 
