@@ -1,15 +1,9 @@
 <template>
-  <UploadForm
-    :open="open"
-    :multiple="multiple"
-    :accept="accept"
-    @fileUploaded="fileUploaded"
-  />
   <q-table
     grid
     :rows="files"
     :rows-per-page-options="[50, 100, 150]"
-    class="row q-col-gutter-xs full-height full-width default-table full"
+    class="row q-col-gutter-xs full-height full-width default-table full file-explorer-table"
     dense
     :loading="isLoading"
     :row-key="columns[0].name"
@@ -36,7 +30,15 @@
     </template>
   </q-table>
 
-  <div class="q-table-pagination row items-center q-pa-sm">
+  <div class="upload-bars">
+    <UploadForm
+      :open="open"
+      :multiple="multiple"
+      :accept="accept"
+      @fileUploaded="fileUploaded"
+    />
+  </div>
+  <div class="action-bar row justify-end q-pa-sm">
     <q-btn label="Salvar" color="primary" @click="chooseFile" />
   </div>
 </template>
@@ -110,7 +112,12 @@ export default {
 };
 </script>
 
-<style scoped>
+<style>
+
+.file-explorer-table{
+  padding-bottom: 200px;
+}
+
 .image-wrapper.selected {
   border: 2px solid #42b983;
   padding: 2px;
@@ -128,5 +135,20 @@ export default {
   max-width: 100%;
   max-height: 100%;
   object-fit: contain;
+}
+.upload-bars {
+  position: fixed;
+  width: 400px;
+  bottom: 90px;
+  z-index: 999;
+}
+.action-bar {
+  background-color: #fff;
+  position: fixed;
+  width: 100%;
+  height: 60px;
+  bottom: 30px;
+  z-index: 998;
+  left: 0;
 }
 </style>
