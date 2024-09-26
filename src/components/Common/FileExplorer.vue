@@ -3,7 +3,7 @@
     :open="open"
     :multiple="multiple"
     :accept="accept"
-    :style="{ display: 'none' }"
+    @fileUploaded="fileUploaded"
   />
   <q-table
     grid
@@ -21,7 +21,9 @@
       <div
         :class="[
           'col-12 col-sm-4 col-md-2 image-wrapper q-pa-xs',
-          { selected: selectedFile && selectedFile['@id'] === props.row['@id'] },
+          {
+            selected: selectedFile && selectedFile['@id'] === props.row['@id'],
+          },
         ]"
         @click="selectFile(props.row)"
       >
@@ -67,7 +69,9 @@ export default {
     };
   },
   computed: {
-    ...mapGetters({}),
+    ...mapGetters({
+      myCompany: "people/currentCompany",
+    }),
     isLoading() {
       return this.$store.getters["file/isLoading"];
     },
@@ -83,13 +87,18 @@ export default {
     selectFile(file) {
       this.selectedFile = file;
     },
+    fileUploaded(file) {
+      this.files = [...this.files, file];
+    },
     chooseFile() {
       this.$emit("save", this.selectedFile);
     },
     getFiles() {
-      this.getItems().then((data) => {
-        this.files = data;
-      });
+      this.getItems({ people: "/people/" + this.myCompany?.id }).then(
+        (data) => {
+          this.files = data;
+        }
+      );
     },
     getImage(file) {
       return ENTRYPOINT + "/files/download/" + file["@id"].replace(/\D/g, "");
