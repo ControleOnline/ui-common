@@ -255,7 +255,7 @@ export default {
 .upload-bars {
   position: fixed;
   width: 400px;
-  bottom: 24px;
+  bottom: 0px;
   z-index: 999;
 }
 .action-bar {
