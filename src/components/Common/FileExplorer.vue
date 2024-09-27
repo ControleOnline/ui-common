@@ -32,14 +32,13 @@
         </q-item>
       </q-list>
     </q-btn-dropdown>
-      <UploadForm
-        :item="selectedChangedFile"
-        :open="open"
-        :multiple="multiple"
-        :accept="getAccept()"
-        @fileUploaded="fileUploaded"
-      />
-    
+    <UploadForm
+      :item="selectedChangedFile"
+      :open="open"
+      :multiple="multiple"
+      :accept="getAccept()"
+      @fileUploaded="fileUploaded"
+    />
   </div>
   <q-table
     grid
@@ -80,12 +79,10 @@
             flat
             size="sm"
           />
-          <q-btn
-            icon="delete"
-            color="white"
-            @click.stop="deleteFile(props.row)"
-            flat
-            size="sm"
+          <DefaultDelete
+            @deleted="deleted"
+            :configs="{ store: 'file', size: 'sm', flat: 'flat',color:'white' }"
+            :item="props.row"
           />
           <q-btn
             icon="check"
@@ -111,11 +108,13 @@ import MyCompanies from "@controleonline/ui-common/src/components/Common/MyCompa
 import UploadForm from "@controleonline/ui-default/src/components/Default/Common/Inputs/UploadInput.vue";
 import { ENTRYPOINT } from "app/config/entrypoint";
 import { mapGetters, mapActions } from "vuex";
+import DefaultDelete from "@controleonline/ui-default/src/components/Default/DefaultDelete";
 
 export default {
   components: {
     UploadForm,
     MyCompanies,
+    DefaultDelete,
   },
   props: {
     data: {
@@ -198,6 +197,9 @@ export default {
     },
     selectFile(file) {
       this.selectedFile = file;
+    },
+    deleted() {
+      this.getFiles();
     },
     fileUploaded(file) {
       this.selectedChangedFile = {};
