@@ -53,12 +53,12 @@
           class="responsive-image"
         />
         <div class="file-name">
-          {{ props.row.name }}teste tsetetste teste tsetetste teste tsetetste
+          {{ getLabel(props.row) }}
         </div>
         <!-- Nome do arquivo -->
         <div class="button-bar text-center">
           <q-btn
-            icon="edit"
+            icon="attachment"
             color="white"
             @click.stop="editFile(props.row)"
             flat
@@ -74,7 +74,10 @@
           <q-btn
             icon="check"
             color="white"
-            @click.stop="selectFile(props.row)"
+            @click.stop="
+              selectFile(props.row);
+              chooseFile();
+            "
             flat
             size="sm"
           />
@@ -85,6 +88,7 @@
 
   <div class="upload-bars">
     <UploadForm
+      :item="selectedFile"
       :open="open"
       :multiple="multiple"
       :accept="getAccept()"
@@ -117,12 +121,13 @@ export default {
   },
   data() {
     return {
+      open: false,
       currentCompany: {},
-      files: [], 
-      selectedFile: {}, 
-      pagination: { page: 1, rowsPerPage: 50 }, 
+      files: [],
+      selectedFile: {},
+      pagination: { page: 1, rowsPerPage: 50 },
       columns: [
-        { name: "image", label: "Imagem", field: "image", align: "center" }, 
+        { name: "image", label: "Imagem", field: "image", align: "center" },
       ],
     };
   },
@@ -149,6 +154,15 @@ export default {
     ...mapActions({
       getItems: "file/getItems",
     }),
+    editFile(file) {
+      this.selectFile(file);
+      setTimeout(() => {
+        this.open = true;
+        setTimeout(() => {
+          this.open = false;
+        }, 300);
+      }, 300);
+    },
     getAccept() {
       let accept = [];
       this.fileType.forEach((fileType) => {
@@ -175,10 +189,21 @@ export default {
       this.selectedFile = file;
     },
     fileUploaded(file) {
-      this.files = [...this.files, file];
+      this.files = [...this.files];
+      let indx = this.files.findIndex(
+        (file) => file["@id"] === this.selectedFile["@id"]
+      );
+
+      if (indx > -1 && this.selectedFile["@id"] == file["@id"]) {
+        this.files[indx] = file;
+      } else {
+        this.files.push(file);
+      }
     },
     chooseFile() {
-      this.$emit("save", this.selectedFile);
+      setTimeout(() => {
+        this.$emit("save", this.selectedFile);
+      }, 300);
     },
     getFiles() {
       this.getItems({
@@ -189,10 +214,12 @@ export default {
       });
     },
     getImage(file) {
-      return ENTRYPOINT + "/files/download/" + file["@id"].replace(/\D/g, "");
+      return ENTRYPOINT + "/files/download/" + file["@id"].replace(/\D/g, "")+
+        "?_=" +
+        btoa(file.file_name)
     },
     getLabel(file) {
-      return "image";
+      return file.file_name;
     },
   },
 };
@@ -232,6 +259,7 @@ export default {
   z-index: 999;
 }
 .action-bar {
+  display: none;
   background-color: var(--secondary);
   position: fixed;
   width: 100%;
@@ -257,5 +285,8 @@ export default {
   width: 100%;
   z-index: 100;
   height: 25px;
+}
+.button-bar button {
+  width: 33.333%;
 }
 </style>
