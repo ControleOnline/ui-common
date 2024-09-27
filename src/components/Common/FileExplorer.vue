@@ -137,6 +137,9 @@ export default {
       myCompany: "people/currentCompany",
       companies: "people/companies",
     }),
+    totalItems() {
+      return this.$store.getters["file/totalItems"];
+    },
     isLoading() {
       return this.$store.getters["file/isLoading"];
     },
@@ -156,7 +159,7 @@ export default {
       getItems: "file/getItems",
     }),
     editFile(file) {
-      this.selectedChangedFile(file);
+      this.selectedChangedFile = file;
       setTimeout(() => {
         this.open = true;
         setTimeout(() => {
@@ -213,6 +216,7 @@ export default {
         people: "/people/" + this.currentCompany?.id,
         file_type: this.fileType,
       }).then((data) => {
+        this.pagination.rowsNumber = this.totalItems;
         this.files = data;
       });
     },
