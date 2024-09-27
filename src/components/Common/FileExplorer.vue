@@ -32,6 +32,14 @@
         </q-item>
       </q-list>
     </q-btn-dropdown>
+      <UploadForm
+        :item="selectedChangedFile"
+        :open="open"
+        :multiple="multiple"
+        :accept="getAccept()"
+        @fileUploaded="fileUploaded"
+      />
+    
   </div>
   <q-table
     grid
@@ -94,15 +102,6 @@
     </template>
   </q-table>
 
-  <div class="upload-bars">
-    <UploadForm
-      :item="selectedChangedFile"
-      :open="open"
-      :multiple="multiple"
-      :accept="getAccept()"
-      @fileUploaded="fileUploaded"
-    />
-  </div>
   <div class="action-bar row justify-end q-pa-sm">
     <q-btn label="Salvar" color="primary" @click="chooseFile" />
   </div>
@@ -271,12 +270,7 @@ export default {
   max-height: 100%;
   object-fit: contain;
 }
-.upload-bars {
-  position: fixed;
-  width: 400px;
-  bottom: 0px;
-  z-index: 999;
-}
+
 .action-bar {
   display: none;
   background-color: var(--secondary);
