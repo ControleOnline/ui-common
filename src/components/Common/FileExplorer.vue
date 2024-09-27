@@ -88,7 +88,7 @@
 
   <div class="upload-bars">
     <UploadForm
-      :item="selectedFile"
+      :item="selectedChangedFile"
       :open="open"
       :multiple="multiple"
       :accept="getAccept()"
@@ -121,6 +121,7 @@ export default {
   },
   data() {
     return {
+      selectedChangedFile: {},
       open: false,
       currentCompany: {},
       files: [],
@@ -155,7 +156,7 @@ export default {
       getItems: "file/getItems",
     }),
     editFile(file) {
-      this.selectFile(file);
+      this.selectedChangedFile(file);
       setTimeout(() => {
         this.open = true;
         setTimeout(() => {
@@ -189,6 +190,7 @@ export default {
       this.selectedFile = file;
     },
     fileUploaded(file) {
+      this.selectedChangedFile = {};
       this.files = [...this.files];
       let indx = this.files.findIndex(
         (file) => file["@id"] === this.selectedFile["@id"]
@@ -202,6 +204,7 @@ export default {
     },
     chooseFile() {
       setTimeout(() => {
+        this.selectedChangedFile = {};
         this.$emit("save", this.selectedFile);
       }, 300);
     },
@@ -214,9 +217,13 @@ export default {
       });
     },
     getImage(file) {
-      return ENTRYPOINT + "/files/download/" + file["@id"].replace(/\D/g, "")+
+      return (
+        ENTRYPOINT +
+        "/files/download/" +
+        file["@id"].replace(/\D/g, "") +
         "?_=" +
         btoa(file.file_name)
+      );
     },
     getLabel(file) {
       return file.file_name;
