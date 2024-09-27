@@ -1,10 +1,18 @@
 <template>
-  <div>
+  <div
+    class="full-width bg"
+    :style="{
+      position: 'sticky',
+      left: '0px',
+      top: '65px',
+      'z-index': '999',
+    }"
+  >
     <q-btn-dropdown
       split
       outline
       :label="currentCompany !== null ? currentCompany.alias : 'Loading...'"
-      class="ellipsis full-width"
+      class="ellipsis"
     >
       <q-list>
         <q-item
@@ -29,7 +37,7 @@
     grid
     :rows="files"
     :rows-per-page-options="[50, 100, 150]"
-    class="row q-col-gutter-xs full-height full-width default-table full file-explorer-table"
+    class="row q-col-gutter-xs full-height full-width default-table full file-explorer-table q-pt-xl"
     dense
     :loading="isLoading"
     :row-key="columns[0].name"
