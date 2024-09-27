@@ -52,6 +52,33 @@
           :alt="getLabel(props.row)"
           class="responsive-image"
         />
+        <div class="file-name">
+          {{ props.row.name }}teste tsetetste teste tsetetste teste tsetetste
+        </div>
+        <!-- Nome do arquivo -->
+        <div class="button-bar text-center">
+          <q-btn
+            icon="edit"
+            color="white"
+            @click.stop="editFile(props.row)"
+            flat
+            size="sm"
+          />
+          <q-btn
+            icon="delete"
+            color="white"
+            @click.stop="deleteFile(props.row)"
+            flat
+            size="sm"
+          />
+          <q-btn
+            icon="check"
+            color="white"
+            @click.stop="selectFile(props.row)"
+            flat
+            size="sm"
+          />
+        </div>
       </div>
     </template>
   </q-table>
@@ -60,7 +87,7 @@
     <UploadForm
       :open="open"
       :multiple="multiple"
-      :accept="accept"
+      :accept="getAccept()"
       @fileUploaded="fileUploaded"
     />
   </div>
@@ -83,19 +110,19 @@ export default {
     data: {
       required: true,
     },
-    accept: {
+    fileType: {
       required: true,
-      default: () => ".jpg, .pdf, image/*",
+      default: () => ["image"],
     },
   },
   data() {
     return {
       currentCompany: {},
-      files: [], // Lista de arquivos
-      selectedFile: {}, // Arquivo selecionado
-      pagination: { page: 1, rowsPerPage: 50 }, // Controle de paginação
+      files: [], 
+      selectedFile: {}, 
+      pagination: { page: 1, rowsPerPage: 50 }, 
       columns: [
-        { name: "image", label: "Imagem", field: "image", align: "center" }, // Coluna
+        { name: "image", label: "Imagem", field: "image", align: "center" }, 
       ],
     };
   },
@@ -122,6 +149,25 @@ export default {
     ...mapActions({
       getItems: "file/getItems",
     }),
+    getAccept() {
+      let accept = [];
+      this.fileType.forEach((fileType) => {
+        switch (fileType) {
+          case "image":
+            accept.push("image/*");
+            break;
+          case "application":
+            accept.push(".pdf");
+            accept.push(".doc");
+            accept.push(".html");
+            break;
+          default:
+            break;
+        }
+      });
+      return accept.join(", ");
+    },
+
     onCompanySelection(company) {
       this.currentCompany = company;
     },
@@ -135,11 +181,12 @@ export default {
       this.$emit("save", this.selectedFile);
     },
     getFiles() {
-      this.getItems({ people: "/people/" + this.currentCompany?.id }).then(
-        (data) => {
-          this.files = data;
-        }
-      );
+      this.getItems({
+        people: "/people/" + this.currentCompany?.id,
+        file_type: this.fileType,
+      }).then((data) => {
+        this.files = data;
+      });
     },
     getImage(file) {
       return ENTRYPOINT + "/files/download/" + file["@id"].replace(/\D/g, "");
@@ -157,8 +204,9 @@ export default {
 }
 
 .image-wrapper.selected {
-  border: 2px solid #42b983;
+  border: 4px solid var(--primary);
   padding: 2px;
+  padding-bottom: 52px;
 }
 
 .image-wrapper {
@@ -166,7 +214,10 @@ export default {
   justify-content: center;
   align-items: center;
   height: 200px;
-  /* border: 1px solid #ccc;*/
+  padding-bottom: 50px;
+  border: 1px solid #ccc;
+  position: relative;
+  margin-bottom: 20px;
 }
 
 .responsive-image {
@@ -177,16 +228,34 @@ export default {
 .upload-bars {
   position: fixed;
   width: 400px;
-  bottom: 90px;
+  bottom: 24px;
   z-index: 999;
 }
 .action-bar {
-  background-color: #fff;
+  background-color: var(--secondary);
   position: fixed;
   width: 100%;
   height: 60px;
-  bottom: 30px;
+  bottom: 25px;
   z-index: 998;
   left: 0;
+}
+.file-name {
+  text-align: center;
+  position: absolute;
+  bottom: 25px;
+  width: 100%;
+  z-index: 100;
+  height: 25px;
+  overflow: hidden;
+}
+
+.button-bar {
+  background-color: var(--secondary);
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  z-index: 100;
+  height: 25px;
 }
 </style>
