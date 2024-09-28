@@ -62,7 +62,6 @@
         ]"
         @click="selectFile(props.row)"
       >
-        <!--      <Html  v-if="props.row.file_type == 'text'" :data="data" @changed="changed" />-->
         <q-icon
           name="description"
           v-if="props.row.file_type == 'text'"
@@ -80,10 +79,13 @@
         <div class="button-bar text-center">
           <DefaultButtonDialog
             v-if="props.row.file_type == 'text'"
-            @changed="changed"
             :configs="configsHtml"
-            :row="data"
-            @save="save"
+            :row="props.row"
+            @saved="
+            console.log(props.row);
+              selectFile(props.row);
+              chooseFile();
+            "
           />
           <q-btn
             v-if="props.row.file_type == 'image'"
@@ -198,7 +200,6 @@ export default {
     ...mapActions({
       getItems: "file/getItems",
     }),
-    editFile(file) {},
     uploadFile(file) {
       this.selectedChangedFile = file;
       setTimeout(() => {
