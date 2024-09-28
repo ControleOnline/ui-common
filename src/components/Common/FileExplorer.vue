@@ -62,7 +62,14 @@
         ]"
         @click="selectFile(props.row)"
       >
+        <!--      <Html  v-if="props.row.file_type == 'text'" :data="data" @changed="changed" />-->
+        <q-icon
+          name="description"
+          v-if="props.row.file_type == 'text'"
+          size="280px"
+        />
         <img
+          v-if="props.row.file_type == 'image'"
           :src="getImage(props.row)"
           :alt="getLabel(props.row)"
           class="responsive-image"
@@ -70,18 +77,30 @@
         <div class="file-name">
           {{ getLabel(props.row) }}
         </div>
-        <!-- Nome do arquivo -->
         <div class="button-bar text-center">
+          <DefaultButtonDialog
+            v-if="props.row.file_type == 'text'"
+            @changed="changed"
+            :configs="configsHtml"
+            :row="data"
+            @save="save"
+          />
           <q-btn
+            v-if="props.row.file_type == 'image'"
             icon="attachment"
             color="white"
-            @click.stop="editFile(props.row)"
+            @click.stop="uploadFile(props.row)"
             flat
             size="sm"
           />
           <DefaultDelete
             @deleted="deleted"
-            :configs="{ store: 'file', size: 'sm', flat: 'flat',color:'white' }"
+            :configs="{
+              store: 'file',
+              size: 'sm',
+              flat: 'flat',
+              color: 'white',
+            }"
             :item="props.row"
           />
           <q-btn
@@ -99,7 +118,7 @@
     </template>
   </q-table>
 
-  <div class="action-bar row justify-end q-pa-sm">
+  <div class="action-bar row justify-end q-pa-sm bg sticky-bottom full-width">
     <q-btn label="Salvar" color="primary" @click="chooseFile" />
   </div>
 </template>
@@ -109,20 +128,23 @@ import UploadForm from "@controleonline/ui-default/src/components/Default/Common
 import { ENTRYPOINT } from "app/config/entrypoint";
 import { mapGetters, mapActions } from "vuex";
 import DefaultDelete from "@controleonline/ui-default/src/components/Default/DefaultDelete";
+import Html from "@controleonline/ui-default/src/components/Default/Common/Inputs/Html.vue";
+import DefaultButtonDialog from "@controleonline/ui-default/src/components/Default/DefaultButtonDialog";
 
 export default {
   components: {
     UploadForm,
     MyCompanies,
     DefaultDelete,
+    Html,
+    DefaultButtonDialog,
   },
   props: {
     data: {
       required: true,
     },
-    fileType: {
+    configs: {
       required: true,
-      default: () => ["image"],
     },
   },
   data() {
@@ -149,6 +171,18 @@ export default {
     isLoading() {
       return this.$store.getters["file/isLoading"];
     },
+    configsHtml() {
+      return {
+        component: Html,
+        "full-height": true,
+        "full-width": true,
+        store: "file",
+        size: "sm",
+        flat: "flat",
+        color: "white",
+        icon: "edit",
+      };
+    },
   },
   created() {
     this.currentCompany = this.myCompany;
@@ -164,7 +198,8 @@ export default {
     ...mapActions({
       getItems: "file/getItems",
     }),
-    editFile(file) {
+    editFile(file) {},
+    uploadFile(file) {
       this.selectedChangedFile = file;
       setTimeout(() => {
         this.open = true;
@@ -175,7 +210,7 @@ export default {
     },
     getAccept() {
       let accept = [];
-      this.fileType.forEach((fileType) => {
+      this.configs.fileType.forEach((fileType) => {
         switch (fileType) {
           case "image":
             accept.push("image/*");
@@ -223,7 +258,7 @@ export default {
     getFiles() {
       this.getItems({
         people: "/people/" + this.currentCompany?.id,
-        file_type: this.fileType,
+        file_type: this.configs.fileType,
       }).then((data) => {
         this.pagination.rowsNumber = this.totalItems;
         this.files = data;
@@ -275,13 +310,6 @@ export default {
 
 .action-bar {
   display: none;
-  background-color: var(--secondary);
-  position: fixed;
-  width: 100%;
-  height: 60px;
-  bottom: 25px;
-  z-index: 998;
-  left: 0;
 }
 .file-name {
   text-align: center;
