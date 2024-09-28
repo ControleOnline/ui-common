@@ -82,7 +82,6 @@
             :configs="configsHtml"
             :row="props.row"
             @saved="
-            console.log(props.row);
               selectFile(props.row);
               chooseFile();
             "
