@@ -211,6 +211,7 @@ export default {
     getAccept() {
       let accept = [];
       this.configs.fileType.forEach((fileType) => {
+        console.log(fileType);
         switch (fileType) {
           case "image":
             accept.push("image/*");
@@ -220,7 +221,14 @@ export default {
             accept.push(".doc");
             accept.push(".html");
             break;
+          case "text":
+            accept.push(".html");
+            break;
+          case "html":
+            accept.push(".html");
+            break;
           default:
+            accept.push("image/*");
             break;
         }
       });
@@ -239,11 +247,17 @@ export default {
     fileUploaded(file) {
       this.selectedChangedFile = {};
       this.files = [...this.files];
-      let indx = this.files.findIndex(
-        (file) => file["@id"] === this.selectedFile["@id"]
-      );
+      let indx = -1;
+      if (this.selectedFile)
+        indx = this.files.findIndex(
+          (file) => file["@id"] === this.selectedFile["@id"]
+        );
 
-      if (indx > -1 && this.selectedFile["@id"] == file["@id"]) {
+      if (
+        this.selectedFile &&
+        indx > -1 &&
+        this.selectedFile["@id"] == file["@id"]
+      ) {
         this.files[indx] = file;
       } else {
         this.files.push(file);
