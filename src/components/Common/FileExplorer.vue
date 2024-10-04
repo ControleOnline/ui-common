@@ -69,7 +69,7 @@
         />
         <img
           v-if="props.row.fileType == 'image'"
-          :src="getImage(props.row)"
+          :src="$image(props.row)"
           :alt="getLabel(props.row)"
           class="responsive-image"
         />
@@ -126,7 +126,6 @@
 <script>
 import MyCompanies from "@controleonline/ui-common/src/components/Common/MyCompanies";
 import UploadForm from "@controleonline/ui-default/src/components/Default/Common/Inputs/UploadInput.vue";
-import { ENTRYPOINT } from "app/config/entrypoint";
 import { mapGetters, mapActions } from "vuex";
 import DefaultDelete from "@controleonline/ui-default/src/components/Default/DefaultDelete";
 import Html from "@controleonline/ui-default/src/components/Default/Common/Inputs/Html.vue";
@@ -276,16 +275,6 @@ export default {
         this.pagination.rowsNumber = this.totalItems;
         this.files = data;
       });
-    },
-    getImage(file) {
-      return (
-        ENTRYPOINT +
-        "/files/" +
-        file["@id"].replace(/\D/g, "") +
-        "/download" +
-        "?_=" +
-        btoa(file.fileName)
-      );
     },
     getLabel(file) {
       return file.fileName;
