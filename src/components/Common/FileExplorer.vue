@@ -64,11 +64,11 @@
       >
         <q-icon
           name="description"
-          v-if="props.row.file_type == 'text'"
+          v-if="props.row.fileType == 'text'"
           size="280px"
         />
         <img
-          v-if="props.row.file_type == 'image'"
+          v-if="props.row.fileType == 'image'"
           :src="getImage(props.row)"
           :alt="getLabel(props.row)"
           class="responsive-image"
@@ -78,7 +78,7 @@
         </div>
         <div class="button-bar text-center">
           <DefaultButtonDialog
-            v-if="props.row.file_type == 'text'"
+            v-if="props.row.fileType == 'text'"
             :configs="configsHtml"
             :row="props.row"
             @saved="
@@ -87,7 +87,7 @@
             "
           />
           <q-btn
-            v-if="props.row.file_type == 'image'"
+            v-if="props.row.fileType == 'image'"
             icon="attachment"
             color="white"
             @click.stop="uploadFile(props.row)"
@@ -271,7 +271,7 @@ export default {
     getFiles() {
       this.getItems({
         people: "/people/" + this.currentCompany?.id,
-        file_type: this.configs.fileType,
+        fileType: this.configs.fileType,
       }).then((data) => {
         this.pagination.rowsNumber = this.totalItems;
         this.files = data;
@@ -283,11 +283,11 @@ export default {
         "/files/download/" +
         file["@id"].replace(/\D/g, "") +
         "?_=" +
-        btoa(file.file_name)
+        btoa(file.fileName)
       );
     },
     getLabel(file) {
-      return file.file_name;
+      return file.fileName;
     },
   },
 };
