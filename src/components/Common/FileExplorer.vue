@@ -211,7 +211,6 @@ export default {
     getAccept() {
       let accept = [];
       this.configs.fileType.forEach((fileType) => {
-        console.log(fileType);
         switch (fileType) {
           case "image":
             accept.push("image/*");
