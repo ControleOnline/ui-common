@@ -6,13 +6,13 @@ export const convert = ({ commit, getters }, params) => {
   delete params.id;
 
   let options = {
-    method: "PUT",
+    method: "POST",
     body: params,
   };
   commit(types.SET_ISSAVING, true);
 
   return api
-    .fetch("/files/convert/" + id, options)
+    .fetch("/files/" + id + "/convert", options)
     .then((data) => {
       return data;
     })
