@@ -209,26 +209,34 @@ export default {
     },
     getAccept() {
       let accept = [];
+
+      this.configs.extension.forEach((extension) => {
+        accept.push("." + extension);
+      });
+
       this.configs.fileType.forEach((fileType) => {
-        switch (fileType) {
-          case "image":
-            accept.push("image/*");
-            break;
-          case "application":
-            accept.push(".pdf");
-            accept.push(".doc");
-            accept.push(".html");
-            break;
-          case "text":
-            accept.push(".html");
-            break;
-          case "html":
-            accept.push(".html");
-            break;
-          default:
-            accept.push("image/*");
-            break;
-        }
+          switch (fileType) {
+            case "image":
+              accept.push("image/*");
+              break;
+            case "application":
+              accept.push(".pdf");
+              accept.push(".doc");
+              accept.push(".html");
+              break;
+            case "text":
+              accept.push(".html");
+              break;
+            case "html":
+              accept.push(".html");
+              break;
+            case "pdf":
+              accept.push(".pdf");
+              break;
+            default:
+              accept.push("image/*");
+              break;
+          }
       });
       return accept.join(", ");
     },
@@ -268,10 +276,10 @@ export default {
       }, 300);
     },
     getFiles() {
-      this.getItems({
-        people: "/people/" + this.currentCompany?.id,
-        fileType: this.configs.fileType,
-      }).then((data) => {
+      let params = { people: "/people/" + this.currentCompany?.id };
+      if (this.configs.fileType) params.fileType = this.configs.fileType;
+      if (this.configs.extension) params.extension = this.configs.extension;
+      this.getItems(params).then((data) => {
         this.pagination.rowsNumber = this.totalItems;
         this.files = data;
       });
