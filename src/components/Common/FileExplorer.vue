@@ -210,33 +210,33 @@ export default {
     getAccept() {
       let accept = [];
 
-      this.configs.extension.forEach((extension) => {
+      (this.configs?.extension || []).forEach((extension) => {
         accept.push("." + extension);
       });
 
       this.configs.fileType.forEach((fileType) => {
-          switch (fileType) {
-            case "image":
-              accept.push("image/*");
-              break;
-            case "application":
-              accept.push(".pdf");
-              accept.push(".doc");
-              accept.push(".html");
-              break;
-            case "text":
-              accept.push(".html");
-              break;
-            case "html":
-              accept.push(".html");
-              break;
-            case "pdf":
-              accept.push(".pdf");
-              break;
-            default:
-              accept.push("image/*");
-              break;
-          }
+        switch (fileType) {
+          case "image":
+            accept.push("image/*");
+            break;
+          case "application":
+            accept.push(".pdf");
+            accept.push(".doc");
+            accept.push(".html");
+            break;
+          case "text":
+            accept.push(".html");
+            break;
+          case "html":
+            accept.push(".html");
+            break;
+          case "pdf":
+            accept.push(".pdf");
+            break;
+          default:
+            accept.push("image/*");
+            break;
+        }
       });
       return accept.join(", ");
     },
