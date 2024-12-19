@@ -1,7 +1,7 @@
-import { ENTRYPOINT } from "../../../../../config/entrypoint.js";
+import { APP_ENV } from "../../../../../config/env.js";
 
 export default function (id, options = {}) {
-  const entryPoint = ENTRYPOINT + (ENTRYPOINT.endsWith("/") ? "" : "/");
+  const entryPoint = APP_ENV.API_ENTRYPOINT + (APP_ENV.API_ENTRYPOINT.endsWith("/") ? "" : "/");
   return fetch(new URL(id, entryPoint), options)
     .then((response) => {
       if (response.ok) return response;

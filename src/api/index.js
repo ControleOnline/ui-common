@@ -1,6 +1,6 @@
 import myFetch from "@controleonline/ui-common/src/api/fetch";
 import axios from "axios";
-import { DOMAIN } from "../../../../../config/domain";
+import { APP_ENV } from "../../../../../config/env";
 
 const MIME_TYPE = "application/ld+json";
 export const api = {
@@ -13,7 +13,7 @@ export const api = {
 
     options.headers.set("Content-Type", MIME_TYPE);
     options.headers.set("Accept", MIME_TYPE);
-    options.headers.set("App-Domain", DOMAIN);
+    options.headers.set("App-Domain", APP_ENV.DOMAIN || location.host);
 
     if (options.body && typeof options.body != "string") {
       options.body = JSON.stringify(options.body);
