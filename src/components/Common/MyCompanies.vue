@@ -51,7 +51,7 @@
 
 <script>
 /* eslint-disable */
-import FormCompany from "@controleonline/ui-login/src/components/user/signup/Company";
+import FormCompany from "./Company.vue";
 import { mapActions, mapGetters } from "vuex";
 import { LocalStorage } from "quasar";
 
