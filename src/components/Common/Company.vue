@@ -1,27 +1,15 @@
 <template>
   <q-form @submit="save" ref="myForm">
-    <div class="row justify-center q-pb-md" v-if="person === true">
-      <q-btn-toggle
-        v-model="personType"
-        toggle-color="primary"
-        :options="[
-          { label: 'Pessoa Jurídica', value: 'PJ' },
-          { label: 'Pessoa Física', value: 'PF' },
-        ]"
-      />
-    </div>
-
-    <label v-if="hasCompanyField('document')" class="q-input-label">
+    <label class="q-input-label">
       {{ personType == "PJ" ? $t("CNPJ") : $t("CPF") }}
     </label>
     <q-input
       dense
       outlined
-      v-if="hasCompanyField('document')"
       stack-label
       lazy-rules
       unmasked-value
-      v-model="item.document"
+      v-model="item.people_document"
       type="text"
       :mask="personType == 'PJ' ? '##.###.###/####-##' : '###.###.###-##'"
       :placeholder="personType == 'PJ' ? 'Digite o CNPJ' : 'Digite o CPF'"
@@ -30,7 +18,7 @@
     />
 
     <div class="row q-col-gutter-xs q-pb-xs">
-      <div v-if="hasCompanyField('name')" class="col-xs-12 col-sm-6 q-mb-sm">
+      <div class="col-xs-12 col-sm-6 q-mb-sm">
         <label class="q-input-label">
           {{ personType == "PJ" ? $t("Razão social") : $t("Nome") }}
         </label>
@@ -47,7 +35,7 @@
           :rules="[isInvalid('name')]"
         />
       </div>
-      <div v-if="hasCompanyField('alias')" class="col-xs-12 col-sm-6 q-mb-sm">
+      <div class="col-xs-12 col-sm-6 q-mb-sm">
         <label class="q-input-label">
           {{ personType == "PJ" ? $t("Nome Fantasia") : $t("Sobrenome") }}
         </label>
@@ -64,154 +52,6 @@
               : 'Digite seu sobrenome'
           "
           :rules="[isInvalid('alias')]"
-        />
-      </div>
-    </div>
-
-    <div
-      v-if="hasCompanyField('address') && address == 'gmaps'"
-      class="row q-col-gutter-xs q-pb-xs"
-    >
-      <div class="col-xs-12 text-subtitle1 text-left">
-        Procure o endereço na caixa de busca
-      </div>
-      <div class="col-xs-12 q-mb-sm">
-        <label class="q-input-label">Busca de endereço</label>
-        <ListAutocomplete
-          :label="'Address'"
-          :source="getGeoPlaces"
-          :isLoading="isSearching"
-          @selected="onSelect"
-          placeholder="Digite o endereço completo (rua, número, bairro, CEP)"
-        />
-      </div>
-      <div class="col-xs-12 text-subtitle1 text-left">
-        Ou digite os dados diretamente
-      </div>
-    </div>
-
-    <div v-if="hasCompanyField('address')" class="row q-col-gutter-sm q-pb-xs">
-      <div class="col-xs-12 col-sm-grow q-mb-sm" v-if="address == 'bycep'">
-        <label class="q-input-label">{{ $t("CEP") }}</label>
-        <q-input
-          dense
-          outlined
-          stack-label
-          lazy-rules
-          unmasked-value
-          hide-bottom-space
-          v-model="item.address.postal_code"
-          type="text"
-          mask="#####-###"
-          :rules="[isInvalid('postal_code')]"
-          :loading="loading"
-          @update:model-value="searchByCEP"
-        />
-      </div>
-      <div class="col-xs-12 col-sm-grow q-mb-sm" v-else>
-        <label class="q-input-label">{{ $t("CEP") }}</label>
-        <q-input
-          dense
-          outlined
-          stack-label
-          lazy-rules
-          unmasked-value
-          hide-bottom-space
-          v-model="item.address.postal_code"
-          type="text"
-          mask="#####-###"
-          :rules="[isInvalid('postal_code')]"
-        />
-      </div>
-
-      <div class="col-xs-12 col-sm-grow q-mb-sm">
-        <label class="q-input-label">{{ $t("Rua") }}</label>
-        <q-input
-          dense
-          outlined
-          stack-label
-          lazy-rules
-          hide-bottom-space
-          v-model="item.address.street"
-          type="text"
-          :rules="[isInvalid('street')]"
-        />
-      </div>
-      <div class="col-xs-12 col-sm-grow q-mb-sm">
-        <label class="q-input-label">{{ $t("Número") }}</label>
-        <q-input
-          dense
-          outlined
-          stack-label
-          lazy-rules
-          hide-bottom-space
-          v-model="item.address.number"
-          type="text"
-          :rules="[isInvalid('number')]"
-        />
-      </div>
-      <div class="col-xs-12 col-sm-grow q-mb-sm">
-        <label class="q-input-label">{{ $t("Complemento") }}</label>
-        <q-input
-          dense
-          outlined
-          stack-label
-          hide-bottom-space
-          v-model="item.address.complement"
-          type="text"
-        />
-      </div>
-      <div class="col-xs-12 col-sm-grow q-mb-sm">
-        <label class="q-input-label">{{ $t("Bairro") }}</label>
-        <q-input
-          dense
-          outlined
-          stack-label
-          lazy-rules
-          hide-bottom-space
-          v-model="item.address.district"
-          type="text"
-          :rules="[isInvalid('district')]"
-        />
-      </div>
-      <div class="col-xs-12 col-sm-grow q-mb-sm">
-        <label class="q-input-label">{{ $t("Cidade") }}</label>
-        <q-input
-          dense
-          outlined
-          stack-label
-          lazy-rules
-          hide-bottom-space
-          v-model="item.address.city"
-          type="text"
-          :rules="[isInvalid('city')]"
-        />
-      </div>
-      <div class="col-xs-12 col-sm-grow q-mb-sm">
-        <label class="q-input-label">{{ $t("UF") }}</label>
-        <q-input
-          dense
-          outlined
-          stack-label
-          lazy-rules
-          hide-bottom-space
-          v-model="item.address.state"
-          type="text"
-          mask="AA"
-          :rules="[isInvalid('state')]"
-        />
-      </div>
-      <div class="col-xs-12 col-sm-grow q-mb-sm">
-        <label class="q-input-label">{{ $t("País") }}</label>
-        <q-input
-          dense
-          outlined
-          stack-label
-          lazy-rules
-          hide-bottom-space
-          v-model="item.address.country"
-          type="text"
-          :rules="[isInvalid('country')]"
         />
       </div>
     </div>
@@ -268,22 +108,10 @@ export default {
       item: {
         name: null,
         alias: null,
-        document: null,
-        address: {
-          country: null,
-          state: null,
-          city: null,
-          district: null,
-          postal_code: null,
-          street: null,
-          number: null,
-          complement: null,
-        },
-        origin: {
-          country: this.origin !== null ? this.origin.country : null,
-          state: this.origin !== null ? this.origin.state : null,
-          city: this.origin !== null ? this.origin.city : null,
-        },
+        people_document: null,
+        link: "/people/" + this.$store.getters["auth/user"].id,
+        link_type: "employee",
+        peopleType: "J",
       },
     };
   },
@@ -303,11 +131,6 @@ export default {
       geoplace: "gmaps/geoplace",
       getAddress: "gmaps/getAddressByCEP",
     }),
-
-    hasCompanyField(field) {
-      var fields = this.companyFields || [];
-      return fields.indexOf(field) > -1;
-    },
 
     searchByCEP(cep) {
       if (cep.length == 8) {
@@ -365,7 +188,7 @@ export default {
     getGeoPlaces(input) {
       this.isSearching = true;
 
-      return this.geoplace({input})
+      return this.geoplace({ input })
         .then((result) => {
           if (result.success) {
             let items = [];
