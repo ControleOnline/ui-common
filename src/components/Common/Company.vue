@@ -157,19 +157,9 @@ export default {
     save() {
       this.company(this.item)
         .then((response) => {
-          let formHasErrors = !(response && response.success === true);
-
-          this.$emit("saved", formHasErrors);
-
-          if (formHasErrors) {
-            this.notifyError(response.error);
-          }
+          this.$emit("saved", response);
         })
         .catch((error) => {
-          let formHasErrors = true;
-
-          this.$emit("saved", formHasErrors);
-
           this.notifyError(error.message);
         });
     },
