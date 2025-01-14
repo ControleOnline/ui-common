@@ -26,7 +26,7 @@ export default {
         },
       },
       {
-        externalFilter: true,
+        externalFilter: false,
         sortable: true,
         name: "status",
         align: "left",

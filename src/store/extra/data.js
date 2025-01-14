@@ -25,7 +25,7 @@ export default {
         },
       },
       {
-        externalFilter: true,
+        externalFilter: false,
         sortable: true,
         name: "typeValue",
         align: "left",
@@ -36,7 +36,7 @@ export default {
         },
       },
       {
-        externalFilter: true,
+        externalFilter: false,
         sortable: true,
         name: "fieldType",
         align: "left",
@@ -52,7 +52,7 @@ export default {
         },
       },
       {
-        externalFilter: true,
+        externalFilter: false,
         sortable: true,
         name: "required",
         align: "left",
@@ -63,7 +63,7 @@ export default {
         },
       },
       {
-        externalFilter: true,
+        externalFilter: false,
         sortable: true,
         name: "fieldConfigs",
         align: "left",
