@@ -5,7 +5,7 @@
         <q-icon name="settings" />
       </q-item-section>
       <q-item-section side>
-        <q-item-label>{{ $tt("configs", "configs", "menus") }}</q-item-label>
+        <q-item-label>{{ $tt("configs", "configs", "menus") }} </q-item-label>
       </q-item-section>
     </q-item>
     <q-expansion-item
