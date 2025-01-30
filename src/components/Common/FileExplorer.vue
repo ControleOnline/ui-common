@@ -129,7 +129,6 @@ import UploadForm from "@controleonline/ui-default/src/components/Default/Common
 import { mapGetters, mapActions } from "vuex";
 import DefaultDelete from "@controleonline/ui-default/src/components/Default/DefaultDelete";
 import Html from "@controleonline/ui-default/src/components/Default/Common/Inputs/Html.vue";
-import DefaultButtonDialog from "@controleonline/ui-default/src/components/Default/DefaultButtonDialog";
 
 export default {
   components: {
@@ -137,7 +136,6 @@ export default {
     MyCompanies,
     DefaultDelete,
     Html,
-    DefaultButtonDialog,
   },
   props: {
     data: {
