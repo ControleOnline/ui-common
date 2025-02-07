@@ -39,7 +39,7 @@ export default {
     getLanguages() {
       setTimeout(() => {
         let languages = [];
-        this.languages.forEach((language) => {
+        this.languages?.forEach((language) => {
           languages.push({
             value: language.language,
             label: this.$tt("language", "input", language.language),
