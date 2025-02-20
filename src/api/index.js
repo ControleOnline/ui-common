@@ -24,9 +24,7 @@ export const api = {
     }
     return myFetch(uri, options).catch((e) => {
       if (e.message == "Unauthorized" || e.message == "Invalid credentials.") {
-        //myStore.dispatch("auth/logOut");
-        //localStorage.set("session", null);
-        //location.reload();
+        this.$auth.logout();
       }
       throw e;
     });

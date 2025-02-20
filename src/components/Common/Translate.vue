@@ -15,12 +15,6 @@ export default {
       return this.$translate.stores;
     },
 
-    isLogged() {
-      return (
-        this.$store.getters["auth/user"] !== null &&
-        this.$store.getters["auth/user"].api_key
-      );
-    },
   },
   data() {
     return {
@@ -47,7 +41,7 @@ export default {
       return lang == undefined ? this.$i18n.locale : lang;
     },
     persist() {
-      if (!this.isLogged) return;
+      if (!this.$auth.isLogged) return;
       let persisted = this.$copyObject(this.persisted);
       for (const lang in this.$translate.persistMessages) {
         let languageId = this.getLanguageId(lang);

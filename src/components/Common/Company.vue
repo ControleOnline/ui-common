@@ -109,7 +109,7 @@ export default {
         name: null,
         alias: null,
         people_document: null,
-        link: "/people/" + this.$store.getters["auth/user"].id,
+        link: "/people/" + this.$auth.user.id,
         link_type: "employee",
         peopleType: "J",
       },
