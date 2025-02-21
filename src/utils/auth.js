@@ -2,6 +2,7 @@ export default class Auth {
   constructor(store, router) {
     this.store = store;
     this.router = router;
+    this.user = this.store.getters["auth/user"];
   }
 
   logout(noReload = false) {
@@ -15,8 +16,5 @@ export default class Auth {
   }
   isLogged() {
     return this.user !== null && this.user.api_key;
-  }
-  user() {
-    return this.store.getters["auth/user"];
   }
 }
