@@ -41,6 +41,33 @@ export default class Formatter {
     return value;
   }
 
+  static formatDateToBR(dateISO) {
+    if (!dateISO) return "";
+    const [year, month, day] = dateISO.split("/");
+    return `${day}/${month}/${year}`;
+  }
+  static validateBRDate(value) {
+    if (!value) return true;
+
+    value = formatDateToBR(value);
+    const regex = /^\d{2}\/\d{2}\/\d{4}$/;
+    if (!regex.test(value))
+      return "Data inválida. Formato esperado: DD/MM/YYYY";
+
+    const [day, month, year] = value.split("/").map(Number);
+    const date = new Date(year, month - 1, day);
+
+    if (
+      date.getFullYear() !== year ||
+      date.getMonth() + 1 !== month ||
+      date.getDate() !== day
+    ) {
+      return "Data inválida";
+    }
+
+    return true; // a data é válida
+  }
+
   static formatPhone(value) {
     if (/^([0-9]{10})$/.test(value))
       return value.replace(/(\d{2})(\d{4})(\d{4})/g, "($1) $2-$3");
@@ -66,7 +93,7 @@ export default class Formatter {
     return parseFloat(formatedValue);
   }
 
-  static  formatMoney(value, currency, locale) {
+  static formatMoney(value, currency, locale) {
     let formatter = new Intl.NumberFormat(locale || "pt-br", {
       style: "decimal",
       minimumFractionDigits: 2,
