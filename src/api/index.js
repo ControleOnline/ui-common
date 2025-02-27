@@ -48,26 +48,41 @@ export const api = {
 
     return session?.token || session?.api_key;
   },
-  serialize(obj, prefix) {
+  serialize(obj, prefix = "") {
     const pairs = [];
+    
     for (const key in obj) {
-      const value = obj[key];
-      let fullKey = prefix ? `${prefix}[${key}]` : key;
-      if (typeof value === "object" && value !== null) {
-        Object.keys(value).forEach((k) => {
-          pairs.push(`${key}[${k}]=${value[k]}`);
-        });
-      } else if (Array.isArray(value)) {
-        fullKey = `${fullKey}[]`;
-        value.forEach((val) => {
-          pairs.push(`${fullKey}=${val}`);
-        });
-      } else {
-        pairs.push(`${fullKey}=${value}`);
+      if (obj.hasOwnProperty(key)) {
+        const value = obj[key];
+        let fullKey = prefix ? `${prefix}.${key}` : key; // Usa ponto para objetos
+  
+        if (value === null || value === undefined) {
+          pairs.push(`${fullKey}=`);
+        } else if (typeof value === "object" && !Array.isArray(value)) {
+          // Objeto aninhado: chama serialize recursivamente com ponto
+          pairs.push(...this.serialize(value, fullKey));
+        } else if (Array.isArray(value)) {
+          // Array: adiciona [] e itera sobre os valores
+          if (value.length === 0) {
+            pairs.push(`${fullKey}[]=`);
+          } else {
+            value.forEach((val) => {
+              if (typeof val === "object" && val !== null) {
+                pairs.push(...this.serialize(val, `${fullKey}[]`));
+              } else {
+                pairs.push(`${fullKey}[]=${encodeURIComponent(val)}`);
+              }
+            });
+          }
+        } else {
+          // Valor simples
+          pairs.push(`${fullKey}=${encodeURIComponent(value)}`);
+        }
       }
     }
     return pairs;
   },
+  
 
   buildQueryString(uri, options) {
     if (options.params) {
