@@ -16,7 +16,7 @@ export default ({ app, store }) => {
 
   app.config.globalProperties.$auth = new Auth(store, router);
   app.config.globalProperties.$acl = new Acl(store, router,app.config.globalProperties.$auth);
-
+  app.config.globalProperties.$appType = APP_ENV.APP_TYPE;
   app.config.globalProperties.$copyObject = (obj) => methods.copyObject(obj);
   app.config.globalProperties.$formatter = Formatter;
   app.config.globalProperties.$domain = APP_ENV.DOMAIN || location.host;

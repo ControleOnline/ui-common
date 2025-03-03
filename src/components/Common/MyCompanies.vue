@@ -7,7 +7,7 @@
       v-if="
         isMultipleCompanies() == true && !dialog /*&& !this.$q.screen.gt.sm*/
       "
-      :label="myCompany !== null ? myCompany.alias : 'Loading...'"
+      :label="myCompany  ? myCompany?.alias : 'Loading...'"
       :class="(expanded ? '' : 'company-swich') + ' ellipsis full-width'"
     >
       <q-list>
@@ -23,7 +23,7 @@
           @click="onCompanySelection(company)"
         >
           <q-item-section>
-            <q-item-label lines="1"> {{ company.alias }}</q-item-label>
+            <q-item-label lines="1"> {{ company?.alias }}</q-item-label>
           </q-item-section>
         </q-item>
       </q-list>
