@@ -2,9 +2,15 @@ import { api } from "@controleonline/ui-common/src/api";
 
 import { LocalStorage } from "quasar";
 
-export default class acl {
-  constructor(router) {
+export default class Acl {
+  constructor(store, router, $auth) {
+    this.$auth = $auth;
+    this.store = store;
     this.router = router;
+    this.permissions = [];
+    this.myCompany = store.state.people.myCompany;
+
+    this.initialPermissions();
   }
 
   getPermissions() {
@@ -36,5 +42,47 @@ export default class acl {
       return true;
     }
     return false;
+  }
+
+  initialPermissions() {
+    this.store
+      .dispatch("people/myCompanies")
+      .then((companies) => {
+        companies?.data.forEach((company) => {
+          company?.permission?.forEach((item) => {
+            if (this.permissions.indexOf(item) === -1) {
+              this.permissions.push(item);
+              if (
+                item.indexOf("franchisee") !== -1 ||
+                item.indexOf("salesman") !== -1 ||
+                item.indexOf("super") !== -1 ||
+                item.indexOf("admin") !== -1
+              ) {
+                this.store.commit("acl/SET_ISADMIN", true);
+              }
+              if (item.indexOf("super") !== -1) {
+                this.store.commit("acl/SET_ISSUPERADMIN", true);
+              }
+            }
+          });
+
+          this.discoveryIfEnabled(company);
+        });
+      })
+      .finally(() => {
+        this.store.commit("acl/SET_ISLOADING", false);
+        this.store.commit("acl/SET_PERMISSIONS", this.permissions);
+      });
+  }
+  discoveryIfEnabled(company) {
+    let disabled = true;
+    let user_disabled = true;
+
+    user_disabled = !company.user.enabled;
+    if (company.enabled && company.user.employee_enabled && !user_disabled) {
+      if (!this.myCompany)
+        this.store.dispatch("people/currentCompany", company);
+      this.store.commit("acl/SET_DISABLED", false);
+    }
   }
 }

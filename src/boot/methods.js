@@ -2,6 +2,8 @@ import { createApp } from "vue";
 import Formatter from "@controleonline/ui-common/src/utils/formatter.js";
 import * as methods from "@controleonline/ui-common/src/utils/methods.js";
 import Auth from "@controleonline/ui-common/src/utils/auth.js";
+import Acl from "@controleonline/ui-common/src/utils/acl.js";
+
 import Translate from "@controleonline/ui-common/src/utils/translate.js";
 import { APP_ENV } from "@controleonline/../../config/env.js";
 import { useRouter } from "vue-router";
@@ -13,6 +15,8 @@ export default ({ app, store }) => {
   const router = useRouter();
 
   app.config.globalProperties.$auth = new Auth(store, router);
+  app.config.globalProperties.$acl = new Acl(store, router,app.config.globalProperties.$auth);
+
   app.config.globalProperties.$copyObject = (obj) => methods.copyObject(obj);
   app.config.globalProperties.$formatter = Formatter;
   app.config.globalProperties.$domain = APP_ENV.DOMAIN || location.host;
