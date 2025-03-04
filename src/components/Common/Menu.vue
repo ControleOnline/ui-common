@@ -63,7 +63,6 @@ export default {
       defaultCompany: "people/defaultCompany",
       myCompany: "people/currentCompany",
     }),
-
   },
 
   watch: {
@@ -73,7 +72,9 @@ export default {
   },
 
   methods: {
-    ...mapActions({}),
+    ...mapActions({
+      setTheme: "theme/SET_MENUS",
+    }),
 
     routeExists(routeName) {
       return this.$router.options.routes.some((route) => {
@@ -109,7 +110,7 @@ export default {
             });
 
             this.menu = modules;
-            this.$store.commit("theme/SET_MENUS", this.menu);
+            this.setTheme(this.menu);
           });
     },
 
