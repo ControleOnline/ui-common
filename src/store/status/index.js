@@ -8,6 +8,7 @@ export default {
   state: {
  item:{},
 items:[],
+filters:{},
     resourceEndpoint: "statuses",
     isLoading: false,
     error: "",

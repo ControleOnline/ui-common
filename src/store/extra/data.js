@@ -7,6 +7,7 @@ export default {
   state: {
  item:{},
 items:[],
+filters:{},
     resourceEndpoint: "extra_data",
     isLoading: false,
     error: "",

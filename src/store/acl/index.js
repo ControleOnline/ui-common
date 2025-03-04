@@ -6,6 +6,7 @@ export default {
   state: {
  item:{},
 items:[],
+filters:{},
     isLoading: false,
     permissions: [],
     disabled: true,

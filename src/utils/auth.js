@@ -22,6 +22,8 @@ export default class Auth {
     });
   }
   isLogged() {
-    return this.user !== null && this.user.api_key;
+    let isLoggedIn = this.user?.api_key ? true : false;
+    this.store.commit("auth/LOGIN_SET_IS_LOGGED_IN", isLoggedIn);
+    return isLoggedIn;
   }
 }

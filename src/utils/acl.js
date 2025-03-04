@@ -3,8 +3,7 @@ import { api } from "@controleonline/ui-common/src/api";
 import { LocalStorage } from "quasar";
 
 export default class Acl {
-  constructor(store, router, $auth) {
-    this.$auth = $auth;
+  constructor(store, router) {
     this.store = store;
     this.router = router;
     this.permissions = [];
@@ -45,6 +44,7 @@ export default class Acl {
   }
 
   initialPermissions() {
+    if (!this.store.state.auth.isLoggedIn) return;
     this.store
       .dispatch("people/myCompanies")
       .then((companies) => {
