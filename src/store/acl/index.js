@@ -4,6 +4,8 @@ import mutations from "./mutations";
 export default {
   namespaced: true,
   state: {
+ item:{},
+items:[],
     isLoading: false,
     permissions: [],
     disabled: true,

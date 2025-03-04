@@ -6,6 +6,8 @@ import * as customActions from "./actions";
 export default {
   namespaced: true,
   state: {
+ item:{},
+items:[],
     resourceEndpoint: "files",
     isLoading: false,
     error: "",
