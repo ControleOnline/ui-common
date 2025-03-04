@@ -73,7 +73,7 @@ export default {
 
   methods: {
     ...mapActions({
-      setTheme: "theme/SET_MENUS",
+      setTheme: "theme/setMenus",
     }),
 
     routeExists(routeName) {
