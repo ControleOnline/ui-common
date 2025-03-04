@@ -20,9 +20,7 @@
           v-close-popup
           dense
           v-for="(company, index) in companies"
-          :disable="
-            company.enabled && company.user.employee_enabled ? false : true
-          "
+          :disable="company.enabled && company.user.employee_enabled ? false : true"
           :key="index"
           @click="onCompanySelection(company)"
         >
@@ -54,12 +52,7 @@
   >
     <template v-slot:item="props">
       <div
-        :class="[
-          'col-12 col-sm-4 col-md-2 image-wrapper q-pa-xs',
-          {
-            selected: selectedFile && selectedFile['@id'] === props.row['@id'],
-          },
-        ]"
+        :class="[ 'col-12 col-sm-4 col-md-2 image-wrapper q-pa-xs', { selected: selectedFile && selectedFile['@id'] === props.row['@id'] } ]"
         @click="selectFile(props.row)"
       >
         <q-icon
@@ -81,10 +74,7 @@
             v-if="props.row.fileType == 'text'"
             :configs="configsHtml"
             :row="props.row"
-            @saved="
-              selectFile(props.row);
-              chooseFile();
-            "
+            @saved="selectFile(props.row); chooseFile();"
           />
           <q-btn
             v-if="props.row.fileType == 'image'"
@@ -96,21 +86,13 @@
           />
           <DefaultDelete
             @deleted="deleted"
-            :configs="{
-              store: 'file',
-              size: 'sm',
-              flat: 'flat',
-              color: 'white',
-            }"
+            :configs="{ store: 'file', size: 'sm', flat: 'flat', color: 'white' }"
             :item="props.row"
           />
           <q-btn
             icon="check"
             color="white"
-            @click.stop="
-              selectFile(props.row);
-              chooseFile();
-            "
+            @click.stop="selectFile(props.row); chooseFile();"
             flat
             size="sm"
           />
@@ -123,6 +105,7 @@
     <q-btn label="Salvar" color="primary" @click="chooseFile" />
   </div>
 </template>
+
 <script>
 import MyCompanies from "@controleonline/ui-common/src/components/Common/MyCompanies";
 import UploadForm from "@controleonline/ui-default/src/components/Default/Common/Inputs/UploadInput.vue";
@@ -162,13 +145,9 @@ export default {
     ...mapGetters({
       myCompany: "people/currentCompany",
       companies: "people/companies",
+      totalItems: "file/totalItems",
+      isLoading: "file/isLoading",
     }),
-    totalItems() {
-      return this.$store.getters["file/totalItems"];
-    },
-    isLoading() {
-      return this.$store.getters["file/isLoading"];
-    },
     configsHtml() {
       return {
         component: Html,
@@ -185,7 +164,6 @@ export default {
   created() {
     this.currentCompany = this.myCompany;
     this.selectFile(this.$copyObject(this.data));
-    //this.getFiles();
   },
   watch: {
     currentCompany() {
