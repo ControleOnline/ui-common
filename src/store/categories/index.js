@@ -5,9 +5,9 @@ import mutations from "@controleonline/ui-default/src/store/default/mutations";
 export default {
   namespaced: true,
   state: {
- item:{},
-items:[],
-filters:{},
+    item: {},
+    items: [],
+    filters: {},
     resourceEndpoint: "categories",
     isLoading: false,
     error: "",
@@ -54,6 +54,15 @@ filters:{},
         align: "left",
         label: "icon",
         inputType: "icon",
+        format: function (value) {
+          return value;
+        },
+      },
+      {
+        sortable: true,
+        name: "categoryFiles",
+        align: "left",
+        label: "categoryFiles",
         format: function (value) {
           return value;
         },

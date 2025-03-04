@@ -20,7 +20,9 @@
           v-close-popup
           dense
           v-for="(company, index) in companies"
-          :disable="company.enabled && company.user.employee_enabled ? false : true"
+          :disable="
+            company.enabled && company.user.employee_enabled ? false : true
+          "
           :key="index"
           @click="onCompanySelection(company)"
         >
@@ -32,6 +34,7 @@
     </q-btn-dropdown>
     <UploadForm
       :item="selectedChangedFile"
+      :context="configs.context"
       :open="open"
       :multiple="multiple"
       :accept="getAccept()"
@@ -52,7 +55,12 @@
   >
     <template v-slot:item="props">
       <div
-        :class="[ 'col-12 col-sm-4 col-md-2 image-wrapper q-pa-xs', { selected: selectedFile && selectedFile['@id'] === props.row['@id'] } ]"
+        :class="[
+          'col-12 col-sm-4 col-md-2 image-wrapper q-pa-xs',
+          {
+            selected: selectedFile && selectedFile['@id'] === props.row['@id'],
+          },
+        ]"
         @click="selectFile(props.row)"
       >
         <q-icon
@@ -74,7 +82,10 @@
             v-if="props.row.fileType == 'text'"
             :configs="configsHtml"
             :row="props.row"
-            @saved="selectFile(props.row); chooseFile();"
+            @saved="
+              selectFile(props.row);
+              chooseFile();
+            "
           />
           <q-btn
             v-if="props.row.fileType == 'image'"
@@ -86,13 +97,21 @@
           />
           <DefaultDelete
             @deleted="deleted"
-            :configs="{ store: 'file', size: 'sm', flat: 'flat', color: 'white' }"
+            :configs="{
+              store: 'file',
+              size: 'sm',
+              flat: 'flat',
+              color: 'white',
+            }"
             :item="props.row"
           />
           <q-btn
             icon="check"
             color="white"
-            @click.stop="selectFile(props.row); chooseFile();"
+            @click.stop="
+              selectFile(props.row);
+              chooseFile();
+            "
             flat
             size="sm"
           />
@@ -255,6 +274,8 @@ export default {
       let params = { people: "/people/" + this.currentCompany?.id };
       if (this.configs.fileType) params.fileType = this.configs.fileType;
       if (this.configs.extension) params.extension = this.configs.extension;
+      if (this.configs.context) params.context = this.configs.context;
+
       this.getItems(params).then((data) => {
         this.pagination.rowsNumber = this.totalItems;
         this.files = data;
