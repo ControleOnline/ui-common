@@ -1,7 +1,7 @@
 import { boot } from "quasar/wrappers";
 import DefaultTable from "@controleonline/ui-default/src/components/Default/DefaultTable";
 import DefaultForm from "@controleonline/ui-default/src/components/Default/Common/DefaultForm";
-import File from "@controleonline/ui-default/src/components/Default/Inputs/Components/File.vue";
+import File from "@controleonline/ui-default/src/components/Default/Common/DefaultFile.vue";
 import FileExplorer from "@controleonline/ui-common/src/components/Common/FileExplorer";
 import DefaultButtonDialog from "@controleonline/ui-default/src/components/Default/DefaultButtonDialog";
 import DefaultComponent from "@controleonline/ui-default/src/components/Default/DefaultComponent.vue";
