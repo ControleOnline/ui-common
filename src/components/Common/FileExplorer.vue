@@ -127,10 +127,10 @@
 
 <script>
 import MyCompanies from "@controleonline/ui-common/src/components/Common/MyCompanies";
-import UploadForm from "@controleonline/ui-default/src/components/Default/Common/Inputs/UploadInput.vue";
+import UploadForm from "@controleonline/ui-default/src/components/Default/Inputs/Components/UploadInput.vue";
 import { mapGetters, mapActions } from "vuex";
 import DefaultDelete from "@controleonline/ui-default/src/components/Default/DefaultDelete";
-import Html from "@controleonline/ui-default/src/components/Default/Common/Inputs/Html.vue";
+import Html from "@controleonline/ui-default/src/components/Default/Inputs/Components/Html.vue";
 
 export default {
   components: {
