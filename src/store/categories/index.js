@@ -81,14 +81,7 @@ export default {
         saveFormat: function (value) {
           return value ? "/categories/" + (value.value || value) : null;
         },
-        formatList: function (value) {
-          return value
-            ? {
-                label: value?.name,
-                value: value?.id,
-              }
-            : null;
-        },
+
       },
     ],
   },
