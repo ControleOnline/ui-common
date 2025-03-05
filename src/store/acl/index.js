@@ -4,9 +4,9 @@ import mutations from "./mutations";
 export default {
   namespaced: true,
   state: {
- item:{},
-items:[],
-    isLoading: false,
+    item: {},
+    items: [],
+    isLoading: true,
     permissions: [],
     disabled: true,
     isAdmin: false,
