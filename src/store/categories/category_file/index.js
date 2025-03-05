@@ -8,7 +8,6 @@ export default {
   state: {
  item:{},
 items:[],
-filters:{},
     resourceEndpoint: "category_files",
     isLoading: false,
     error: "",

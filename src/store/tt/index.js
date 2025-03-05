@@ -8,7 +8,6 @@ export default {
   state: {
  item:{},
 items:[],
-filters:{},
     resourceEndpoint: "translates",
     isLoading: false,
     error: "",
