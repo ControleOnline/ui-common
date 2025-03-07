@@ -1,6 +1,7 @@
 import { LocalStorage } from "quasar";
 
 export default class Auth {
+
   constructor(store, router) {
     this.store = store;
     this.router = router;
@@ -16,9 +17,10 @@ export default class Auth {
     this.store.commit("auth/LOGIN_SET_USER", user);
     this.user = user;
   }
-  toLogin() {
-    this.$router.push({
+  toLogin = () => {
+    this.router.push({
       name: "LoginIndex",
+      query: { redirect: this.router.currentRoute.value.fullPath },
     });
   }
   isLogged() {

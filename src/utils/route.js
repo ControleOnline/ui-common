@@ -8,7 +8,6 @@ import {
 } from "vue-router";
 import routes from "src/router/routes";
 
-
 export default route(function ({ store, ssrContext }) {
   const createHistory = process.env.SERVER
     ? createMemoryHistory
@@ -31,8 +30,7 @@ export default route(function ({ store, ssrContext }) {
   const autoLogin = () => {
     if (
       store.getters["auth/user"] !== null &&
-      store.getters["auth/user"].api_key !== null &&
-      store.getters["auth/user"].api_key !== undefined
+      store.getters["auth/user"].api_key
     ) {
       store.commit("auth/LOGIN_SET_IS_LOGGED_IN", true);
       return true;
@@ -59,17 +57,21 @@ export default route(function ({ store, ssrContext }) {
   };
 
   Router.beforeEach((to, from, next) => {
-    const isLoginPage = to.name == "LoginIndex";
-
+    const isLoginPage = from.name == "LoginIndex";
     const isLogged = autoLogin();
-    if ((isLoginPage && isLogged) || to.name == undefined) {
-      if (to.query.redirect) next(to.query.redirect);
-      else return next({ name: "HomeIndex" });
-    }
 
-    if (!to.meta?.isPublic && isLogged === false) {
+    //If dont have route, go to home
+    if (to.name == undefined) return next({ name: "HomeIndex" });
+
+    //If is login page, and is logged and have a redirect on URL
+    if (isLoginPage && isLogged && to.query.redirect) next(to.query.redirect);
+
+    //If is not a public page and is not logged in
+    if (!to.meta?.isPublic && !isLogged && !isLoginPage)
       return next({ name: "LoginIndex", query: { redirect: to.fullPath } });
-    }
+
+    //If is a login page and is not logged in
+    if (!isLogged && isLoginPage) return next(false);
 
     return next();
   });
