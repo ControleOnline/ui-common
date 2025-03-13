@@ -11,12 +11,12 @@ export default class Acl {
   }
 
   getPermissions() {
-    let storedUser = JSON.parse(localStorage.getItem("session")) || {};
+    let storedUser = localStorage.getItem("session") || {};
     return storedUser.actions ? storedUser.actions[this.router.name] : {};
   }
 
   fetchPermission() {
-    let storedUser = JSON.parse(localStorage.getItem("session"));
+    let storedUser = localStorage.getItem("session");
     let route = storedUser.route;
     if (!storedUser.actions) storedUser.actions = {};
 

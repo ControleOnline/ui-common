@@ -109,7 +109,7 @@ export default {
     },
     setCompanies(companies) {
       let session = localStorage.getItem("session")
-        ? JSON.parse(localStorage.getItem("session"))
+        ? localStorage.getItem("session")
         : {};
       let selected = session.mycompany;
       let currentCompany;
@@ -135,7 +135,7 @@ export default {
     onCompanySelection(company) {
       this.setCompany(company);
       let session = localStorage.getItem("session")
-        ? JSON.parse(localStorage.getItem("session"))
+        ? localStorage.getItem("session")
         : {};
       session.mycompany = company.id;
       localStorage.setItem("session", JSON.stringify(session));

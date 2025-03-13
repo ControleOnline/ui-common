@@ -37,7 +37,7 @@ export default route(function ({ store, ssrContext }) {
     }
 
     if (localStorage.getItem("session")) {
-      let session = JSON.parse(localStorage.getItem("session"));
+      let session = localStorage.getItem("session");
 
       if (session.user != undefined) {
         store.dispatch("auth/logIn", session);
