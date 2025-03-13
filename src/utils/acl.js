@@ -11,12 +11,12 @@ export default class Acl {
   }
 
   getPermissions() {
-    let storedUser = LocalStorage.getItem("session") || {};
+    let storedUser = localStorage.getItem("session") || {};
     return storedUser.actions ? storedUser.actions[this.router.name] : {};
   }
 
   fetchPermission() {
-    let storedUser = LocalStorage.getItem("session");
+    let storedUser = localStorage.getItem("session");
     let route = storedUser.route;
     if (!storedUser.actions) storedUser.actions = {};
 
@@ -29,7 +29,7 @@ export default class Acl {
           storedUser.actions[route] = result.response
             ? result.response.data
             : {};
-          LocalStorage.setItem("session", JSON.stringify(storedUser));
+          localStorage.setItem("session", JSON.stringify(storedUser));
         });
   }
 

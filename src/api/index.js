@@ -30,7 +30,7 @@ export const api = {
   },
   async getToken() {
     // Obtém o valor da sessão e converte de volta para um objeto
-    const sessionString = await LocalStorage.getItem('session');
+    const sessionString = await localStorage.getItem('session');
     let session = null;
     if (sessionString) {
       try {
@@ -41,7 +41,7 @@ export const api = {
             : sessionString;
         session = JSON.parse(cleanString); // Transforma a string em objeto
       } catch (e) {
-        console.error('Failed to parse session from LocalStorage', e);
+        console.error('Failed to parse session from localStorage', e);
       }
     }
 

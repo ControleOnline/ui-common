@@ -31,13 +31,13 @@ export default route(function ({ store, ssrContext }) {
       return true;
     }
 
-    let keys = Object.keys(LocalStorage);
+    let keys = Object.keys(localStorage);
     for (let index = 0; index < keys.length; index++) {
-      if (keys[index] != "session") LocalStorage.removeItem(keys[index]);
+      if (keys[index] != "session") localStorage.removeItem(keys[index]);
     }
 
-    if (LocalStorage.getItem("session")) {
-      let session = LocalStorage.getItem("session");
+    if (localStorage.getItem("session")) {
+      let session = localStorage.getItem("session");
 
       if (session.user != undefined) {
         store.dispatch("auth/logIn", session);

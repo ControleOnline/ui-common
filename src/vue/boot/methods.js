@@ -5,10 +5,8 @@ import Auth from "@controleonline/ui-common/src/utils/auth.js";
 import Acl from "@controleonline/ui-common/src/utils/acl.js";
 import Translate from "@controleonline/ui-common/src/utils/translate.js";
 import { APP_ENV } from "@controleonline/../../config/env.js";
-import { LocalStorage } from 'quasar';
 const app = createApp({});
 const t = new Translate();
-window.LocalStorage = LocalStorage;
 
 export default ({ app, router, store }) => {
   app.config.globalProperties.$auth = new Auth(store, router);
