@@ -10,7 +10,7 @@ export default class Auth {
     if (!noReload) location.reload();
   }
   persist(user) {
-    localStorage.setItem("session", JSON.stringify(user));
+    LocalStorage.setItem("session", JSON.stringify(user));
     this.store.commit("auth/LOGIN_SET_USER", user);
     this.user = user;
   }

@@ -108,8 +108,8 @@ export default {
       return this.companies.length > 1 ? true : false;
     },
     setCompanies(companies) {
-      let session = localStorage.getItem("session")
-        ? localStorage.getItem("session")
+      let session = LocalStorage.getItem("session")
+        ? LocalStorage.getItem("session")
         : {};
       let selected = session.mycompany;
       let currentCompany;
@@ -134,11 +134,11 @@ export default {
 
     onCompanySelection(company) {
       this.setCompany(company);
-      let session = localStorage.getItem("session")
-        ? localStorage.getItem("session")
+      let session = LocalStorage.getItem("session")
+        ? LocalStorage.getItem("session")
         : {};
       session.mycompany = company.id;
-      localStorage.setItem("session", JSON.stringify(session));
+      LocalStorage.setItem("session", JSON.stringify(session));
     },
   },
 };

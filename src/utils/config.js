@@ -4,11 +4,11 @@ export default class Config {
     return storedUser ? storedUser[key] : {};
   }
   getAllConfig() {
-    return localStorage.getItem("config") || {};
+    return LocalStorage.getItem("config") || {};
   }
   setConfig(key, data) {
     let storedUser = this.getAllConfig();
     storedUser[key] = data;
-    localStorage.setItem("config", JSON.stringify(storedUser));
+    LocalStorage.setItem("config", JSON.stringify(storedUser));
   }
 }
