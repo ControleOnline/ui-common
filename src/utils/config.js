@@ -4,7 +4,7 @@ export default class Config {
     return storedUser ? storedUser[key] : {};
   }
   getAllConfig() {
-    return localStorage.getItem("config") || {};
+    return JSON.parse(localStorage.getItem("config")) || {};
   }
   setConfig(key, data) {
     let storedUser = this.getAllConfig();
