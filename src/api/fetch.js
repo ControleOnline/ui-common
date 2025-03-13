@@ -6,7 +6,7 @@ export default function (resourceEndpoint, options = {}) {
 
   return fetch(new URL(resourceEndpoint, entryPoint), options)
     .then(response => {
-      console.log(options.responseType);
+      console.log(resourceEndpoint);
       if (response.ok || options.responseType == 'text') return response;
       return response.json().then(json => {
         if (json['@type'] == 'hydra:Error')
