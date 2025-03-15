@@ -11,7 +11,7 @@ export default {
     resourceEndpoint: "categories",
     isLoading: false,
     error: "",
-    violations: null,
+    
     totalItems: 0,
     filters: {},
     columns: [

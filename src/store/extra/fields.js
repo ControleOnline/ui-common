@@ -10,7 +10,7 @@ items:[],
     resourceEndpoint: "extra_fields",
     isLoading: false,
     error: "",
-    violations: null,
+    
     totalItems: 0,
     filters: {},
     columns: [

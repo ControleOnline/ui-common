@@ -10,7 +10,7 @@ export default {
     resourceEndpoint: "cities",
     isLoading: false,
     error: "",
-    violations: null,
+    
     totalItems: 0,
     filters: {},
   },
