@@ -1,5 +1,6 @@
-import * as getters from "./getters";
-import mutations from "./mutations";
+import * as getters from './getters';
+import mutations from './mutations';
+import * as actions from '@controleonline/ui-default/src/store/default/actions';
 
 export default {
   namespaced: true,
@@ -11,6 +12,7 @@ export default {
     disabled: true,
     isAdmin: false,
   },
+  actions,
   getters,
   mutations,
 };
