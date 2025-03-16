@@ -3,7 +3,6 @@ import {APP_ENV} from '../../../../../config/env.js';
 export default function (resourceEndpoint, options = {}) {
   const entryPoint =
     APP_ENV.API_ENTRYPOINT + (APP_ENV.API_ENTRYPOINT.endsWith('/') ? '' : '/');
-
   return fetch(new URL(resourceEndpoint, entryPoint), options)
     .then(response => {
       if (response.ok || options.responseType == 'text') return response;
