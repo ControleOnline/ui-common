@@ -1,4 +1,6 @@
 import React, {createContext, useContext, useEffect, useState} from 'react';
+import DeviceInfo from 'react-native-device-info';
+
 import {getStore} from '@store';
 const ThemeContext = createContext();
 
@@ -7,6 +9,22 @@ export const DefaultProvider = ({children}) => {
   const {colors, menus} = getters;
   const {getters: peopleGetters, actions: peopleActions} = getStore('people');
   const {currentCompany, defaultCompany, companies} = peopleGetters;
+
+  const storagedDevice = localStorage.getItem('device');
+  const [device, setDevice] = useState(() => {
+    return storagedDevice ? JSON.parse(storagedDevice) : {};
+  });
+
+  useEffect(() => {
+    const fetchDeviceId = async () => {
+      const id = await DeviceInfo.getUniqueId();
+      let localDevice = {...device};
+      localDevice.id = id;
+      localStorage.setItem('device', JSON.stringify(localDevice));
+    };
+
+    fetchDeviceId();
+  }, [device]);
 
   useEffect(() => {
     const fetchMenus = async () => {

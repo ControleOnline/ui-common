@@ -1,6 +1,7 @@
 import myFetch from '@controleonline/ui-common/src/api/fetch';
 import axios from 'axios';
 import {APP_ENV} from '../../../../../config/env';
+const device = JSON.parse(localStorage.getItem('device') || '{}');
 
 const MIME_TYPE = 'application/ld+json';
 export const api = {
@@ -10,6 +11,7 @@ export const api = {
 
     let token = await this.getToken();
     if (token) options.headers.set('API-TOKEN', token);
+    if (device) options.headers.set('DEVICE', device.id);
 
     if (options.responseType != 'text') {
       options.headers.set('Content-Type', MIME_TYPE);
