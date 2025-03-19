@@ -6,10 +6,11 @@ const ThemeContext = createContext();
 
 export const DefaultProvider = ({children}) => {
   const {getters, actions} = getStore('theme');
+  const {getters: authGetters, actions: authActions} = getStore('auth');
   const {colors, menus} = getters;
   const {getters: peopleGetters, actions: peopleActions} = getStore('people');
   const {currentCompany, defaultCompany, companies} = peopleGetters;
-
+  const {isLoggedIn} = authGetters;
   const storagedDevice = localStorage.getItem('device');
   const [device, setDevice] = useState(() => {
     return storagedDevice ? JSON.parse(storagedDevice) : {};
@@ -41,8 +42,8 @@ export const DefaultProvider = ({children}) => {
     peopleActions.defaultCompany();
   }, []);
   useEffect(() => {
-    peopleActions.myCompanies();
-  }, []);
+    if (isLoggedIn && !currentCompany) peopleActions.myCompanies();
+  }, [isLoggedIn]);
 
   useEffect(() => {
     const fetchColors = async () => {

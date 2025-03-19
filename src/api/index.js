@@ -1,17 +1,17 @@
 import myFetch from '@controleonline/ui-common/src/api/fetch';
 import axios from 'axios';
 import {APP_ENV} from '../../../../../config/env';
-const device = JSON.parse(localStorage.getItem('device') || '{}');
 
 const MIME_TYPE = 'application/ld+json';
 export const api = {
+  device: JSON.parse(localStorage.getItem('device') || '{}'),
   fetch: async function (uri, options = {}) {
     if (typeof options.headers === 'undefined')
       Object.assign(options, {headers: new Headers()});
 
     let token = await this.getToken();
     if (token) options.headers.set('API-TOKEN', token);
-    if (device) options.headers.set('DEVICE', device.id);
+    if (this.device) options.headers.set('DEVICE', this.device.id);
 
     if (options.responseType != 'text') {
       options.headers.set('Content-Type', MIME_TYPE);
@@ -31,8 +31,7 @@ export const api = {
     });
   },
   async getToken() {
-    // Obtém o valor da sessão e converte de volta para um objeto
-    const sessionString = await localStorage.getItem('session');
+    const sessionString =  localStorage.getItem('session');
     let session = null;
     if (sessionString) {
       try {
