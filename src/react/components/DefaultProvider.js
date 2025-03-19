@@ -7,11 +7,14 @@ const ThemeContext = createContext();
 export const DefaultProvider = ({children}) => {
   const {getters, actions} = getStore('theme');
   const {getters: authGetters, actions: authActions} = getStore('auth');
-  const {colors, menus} = getters;
+  const storagedDevice = localStorage.getItem('device');
   const {getters: peopleGetters, actions: peopleActions} = getStore('people');
+  const {getters: configsGetters, actions: configActions} = getStore('configs');
+  const {colors, menus} = getters;
   const {currentCompany, defaultCompany, companies} = peopleGetters;
   const {isLoggedIn, user} = authGetters;
-  const storagedDevice = localStorage.getItem('device');
+  const {item: config} = configsGetters;
+
   const [device, setDevice] = useState(() => {
     return storagedDevice ? JSON.parse(storagedDevice) : {};
   });
@@ -25,6 +28,19 @@ export const DefaultProvider = ({children}) => {
     };
 
     fetchDeviceId();
+  }, [device]);
+
+  useEffect(() => {
+    if (!config && device)
+      configActions
+        .getItems({
+          configKey: 'pdv-' + device.id,
+        })
+        .then(data => {
+          let c = {};
+          if (data && data[0]) c = JSON.parse(data[0]?.configValue);
+          configActions.setItem(c);
+        });
   }, [device]);
 
   useEffect(() => {
