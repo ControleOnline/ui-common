@@ -31,29 +31,19 @@ export const DefaultProvider = ({children}) => {
   }, [device]);
 
   useEffect(() => {
-    if (!config && device)
+    if (!config && device && authActions.isLogged())
       configActions
         .getItems({
           configKey: 'pdv-' + device.id,
         })
         .then(data => {
           let c = {};
+          console.log(data);
           if (data && data[0]) c = JSON.parse(data[0]?.configValue);
           configActions.setItem(c);
         });
-  }, [device]);
+  }, [device, isLoggedIn, user]);
 
-  useEffect(() => {
-    const fetchMenus = async () => {
-      if (!currentCompany) return;
-      const response = await api.fetch('menus-people', {
-        params: {myCompany: currentCompany.id},
-      });
-
-      actions.setMenus(response);
-    };
-    fetchMenus();
-  }, [currentCompany]);
   useEffect(() => {
     peopleActions.defaultCompany();
   }, []);
@@ -68,10 +58,9 @@ export const DefaultProvider = ({children}) => {
 
   useEffect(() => {
     const fetchColors = async () => {
-      const response = await api.fetch('themes-colors.css', {
+      const cssText = await api.fetch('themes-colors.css', {
         responseType: 'text',
       });
-      const cssText = await response.text();
 
       const parsedColors = {};
       const matches = cssText.match(/--[\w-]+:\s*#[0-9a-fA-F]+/g);
