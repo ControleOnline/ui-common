@@ -59,9 +59,8 @@ export const DefaultProvider = ({children}) => {
   }, []);
 
   useEffect(() => {
-    if (!isLoggedIn) authActions.isLogged();
     if (
-      isLoggedIn &&
+      authActions.isLogged() &&
       (!currentCompany || Object.entries(currentCompany).length === 0)
     )
       peopleActions.myCompanies();
