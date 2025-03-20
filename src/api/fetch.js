@@ -8,7 +8,7 @@ export default function (resourceEndpoint, options = {}) {
 
   return fetch(new URL(resourceEndpoint, entryPoint), options)
     .then(response => {
-      console.log(options.responseType, entryPoint, resourceEndpoint);
+
       if (options.responseType == 'text') return response.text();
 
       return response.json().then(json => {
