@@ -13,7 +13,7 @@ export const DefaultProvider = ({children}) => {
   const {colors, menus} = getters;
   const {currentCompany, defaultCompany, companies} = peopleGetters;
   const {isLoggedIn, user} = authGetters;
-  const {item: config} = configsGetters;
+  const {item: config, items: companyConfigs} = configsGetters;
 
   const [device, setDevice] = useState(() => {
     return storagedDevice ? JSON.parse(storagedDevice) : {};
@@ -21,9 +21,26 @@ export const DefaultProvider = ({children}) => {
 
   useEffect(() => {
     const fetchDeviceId = async () => {
-      const id = await DeviceInfo.getUniqueId();
-      let localDevice = {...device};
-      localDevice.id = id;
+      const uniqueId = await DeviceInfo.getUniqueId();
+      const deviceId = await DeviceInfo.getDeviceId();
+      const systemName = await DeviceInfo.getSystemName();
+      const systemVersion = await DeviceInfo.getSystemVersion();
+      const manufacturer = await DeviceInfo.getManufacturer();
+      const model = await DeviceInfo.getModel();
+      const batteryLevel = await DeviceInfo.getBatteryLevel();
+      const isEmulator = await DeviceInfo.isEmulator();
+
+      let localDevice = {
+        ...device,
+        id: uniqueId,
+        deviceType: deviceId,
+        systemName: systemName,
+        systemVersion: systemVersion,
+        manufacturer: manufacturer,
+        model: model,
+        batteryLevel: batteryLevel,
+        isEmulator: isEmulator,
+      };
       localStorage.setItem('device', JSON.stringify(localDevice));
     };
 
@@ -31,18 +48,26 @@ export const DefaultProvider = ({children}) => {
   }, [device]);
 
   useEffect(() => {
-    if (!config && device && authActions.isLogged())
+    if (
+      !config &&
+      device &&
+      authActions.isLogged() &&
+      currentCompany &&
+      Object.entries(currentCompany).length > 0
+    )
       configActions
         .getItems({
           configKey: 'pdv-' + device.id,
         })
         .then(data => {
           let c = {};
-          console.log(data);
-          if (data && data[0]) c = JSON.parse(data[0]?.configValue);
+          if (data && data[0]) c = JSON.parse(data[0].configValue);
           configActions.setItem(c);
+        })
+        .finally(() => {
+          configActions.setItems(currentCompany.configs);
         });
-  }, [device, isLoggedIn, user]);
+  }, [device, user, currentCompany]);
 
   useEffect(() => {
     peopleActions.defaultCompany();
@@ -54,7 +79,7 @@ export const DefaultProvider = ({children}) => {
       (!currentCompany || Object.entries(currentCompany).length === 0)
     )
       peopleActions.myCompanies();
-  }, [isLoggedIn, user]);
+  }, [user]);
 
   useEffect(() => {
     const fetchColors = async () => {
