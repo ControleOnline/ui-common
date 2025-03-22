@@ -5,9 +5,10 @@ export default function (resourceEndpoint, options = {}) {
     APP_ENV.API_ENTRYPOINT + (APP_ENV.API_ENTRYPOINT.endsWith('/') ? '' : '/');
 
   if (!resourceEndpoint || !entryPoint) return;
-  console.log(entryPoint, resourceEndpoint);
+  //console.log(entryPoint, resourceEndpoint);
   return fetch(new URL(resourceEndpoint, entryPoint), options)
     .then(response => {
+      if (options.method == 'DELETE') return;
       if (options.responseType == 'text') return response.text();
 
       return response.json().then(json => {
@@ -17,7 +18,7 @@ export default function (resourceEndpoint, options = {}) {
             code: response.status,
             status: response.status,
           };
-        if (options.method != 'DELETE') return json;
+        return json;
       });
     })
     .catch(error => {
