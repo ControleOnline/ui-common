@@ -41,6 +41,7 @@ const Settings = ({navigation}) => {
 
   useFocusEffect(
     useCallback(() => {
+      const lc = {...localConfig};
       if (
         device &&
         localConfig &&
@@ -51,25 +52,30 @@ const Settings = ({navigation}) => {
         Object.entries(currentCompany).length !== 0 &&
         companyConfigs['pdv-cash-wallet'] &&
         companyConfigs['pdv-withdrawl-wallet'] &&
-        (!config || config['config-version'] != device.buildNumber)
+        (!config ||
+          config['config-version'] != device.buildNumber ||
+          lc['pdv-type'] != selectedMode)
       ) {
-        const lc = {...localConfig};
         lc['config-version'] = device?.buildNumber;
-        configActions
-          .addConfigs({
-            configKey: 'pdv-' + device?.id,
-            configValue: JSON.stringify(lc),
-            visibility: 'public',
-            people: '/people/' + currentCompany.id,
-            module: '/modules/' + 8,
-          })
-          .then(value => {
-            configActions.setItem(JSON.parse(value.configValue));
-          });
+        addConfigs(lc);
+        setSelectedMode(lc['pdv-type']);
       }
     }, [device, localConfig, companyConfigs, currentCompany]),
   );
 
+  const addConfigs = lc => {
+    configActions
+      .addConfigs({
+        configKey: 'pdv-' + device?.id,
+        configValue: JSON.stringify(lc),
+        visibility: 'public',
+        people: '/people/' + currentCompany.id,
+        module: '/modules/' + 8,
+      })
+      .then(value => {
+        configActions.setItem(JSON.parse(value.configValue));
+      });
+  };
   const ckeckCompanyConfigs = () => {
     discoverWallet('pdv-cash-wallet', 'Caixa');
     discoverWallet('pdv-withdrawl-wallet', 'Gerência');
