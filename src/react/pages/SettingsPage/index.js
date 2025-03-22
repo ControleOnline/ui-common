@@ -51,7 +51,7 @@ const Settings = ({navigation}) => {
         Object.entries(currentCompany).length !== 0 &&
         companyConfigs['pdv-cash-wallet'] &&
         companyConfigs['pdv-withdrawl-wallet'] &&
-        
+        (!config || config['config-version'] != device.buildNumber)
       ) {
         const lc = {...localConfig};
         lc['config-version'] = device?.buildNumber;
@@ -64,8 +64,7 @@ const Settings = ({navigation}) => {
             module: '/modules/' + 8,
           })
           .then(value => {
-            console.log('V', value);
-            //configActions.setItem(value);
+            configActions.setItem(JSON.parse(value.configValue));
           });
       }
     }, [device, localConfig, companyConfigs, currentCompany]),
