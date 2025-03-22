@@ -12,6 +12,7 @@ import {getStore} from '@store';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import {Picker} from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import Cielo from '@controleonline/ui-orders/src/react/services/Cielo/Settings';
 
 const Settings = ({navigation}) => {
   const {styles, globalStyles} = css();
@@ -27,40 +28,42 @@ const Settings = ({navigation}) => {
   const {isLoading: walletLoading, items: wallets} = walletGetters;
   const {item: config, items: companyConfigs, isSaving} = configsGetters;
   const [selectedMode, setSelectedMode] = useState(null);
+  const [selectedGateway, setSelectedGateway] = useState(null);
+
   const storagedDevice = localStorage.getItem('device');
   const [device, setDevice] = useState(() => {
     return storagedDevice ? JSON.parse(storagedDevice) : {};
   });
-  const [localConfig, seLocalConfig] = useState({});
 
   const handleModeChange = mode => {
-    const lc = {...localConfig};
-    lc['pdv-type'] = mode;
-    seLocalConfig(lc);
+    setSelectedMode(mode);
+  };
+
+  const handleGatewayChange = gateway => {
+    setSelectedGateway(gateway);
   };
 
   useFocusEffect(
     useCallback(() => {
-      const lc = {...localConfig};
+      lc = {...companyConfigs};
       if (
         device &&
-        localConfig &&
-        Object.entries(localConfig).length !== 0 &&
         companyConfigs &&
-        Object.entries(companyConfigs).length !== 0 &&
-        currentCompany &&
-        Object.entries(currentCompany).length !== 0 &&
         companyConfigs['pdv-cash-wallet'] &&
         companyConfigs['pdv-withdrawl-wallet'] &&
+        selectedGateway &&
+        selectedMode &&
         (!config ||
           config['config-version'] != device.buildNumber ||
-          lc['pdv-type'] != selectedMode)
+          selectedMode != config['pdv-type'] ||
+          selectedGateway != config['pdv-gateway'])
       ) {
         lc['config-version'] = device?.buildNumber;
+        lc['pdv-type'] = selectedMode;
+        lc['pdv-gateway'] = selectedGateway;
         addConfigs(lc);
-        setSelectedMode(lc['pdv-type']);
       }
-    }, [device, localConfig, companyConfigs, currentCompany]),
+    }, [device, selectedMode, selectedGateway, companyConfigs]),
   );
 
   const addConfigs = lc => {
@@ -86,27 +89,29 @@ const Settings = ({navigation}) => {
       if (
         paymentTypes === null ||
         wallets === null ||
-        !currentCompany ||
-        Object.entries(currentCompany).length === 0
+        !companyConfigs ||
+        !companyConfigs['pdv-cash-wallet'] ||
+        !companyConfigs['pdv-withdrawl-wallet']
       )
         return;
-      const paymentCheck = {
-        paymentType: 'Dinheiro',
-        frequency: 'single',
-        installments: 'single',
-        people: '/people/' + currentCompany.id,
-      };
-      checkPaymentOptions(paymentTypes, paymentCheck).then(payment => {
-        if (companyConfigs['pdv-cash-wallet'])
-          checkWalletPaymentOptions(companyConfigs['pdv-cash-wallet'], [
-            payment,
-          ]);
-
-        if (companyConfigs['pdv-withdrawl-wallet'])
-          checkWalletPaymentOptions(companyConfigs['pdv-withdrawl-wallet'], [
-            payment,
-          ]);
-      });
+      const paymentsCheck = [
+        {
+          paymentType: 'Dinheiro',
+          frequency: 'single',
+          installments: 'single',
+          people: '/people/' + currentCompany.id,
+        },
+      ];
+      checkPaymentOptions(
+        companyConfigs['pdv-cash-wallet'],
+        paymentTypes,
+        paymentsCheck,
+      );
+      checkPaymentOptions(
+        companyConfigs['pdv-withdrawl-wallet'],
+        paymentTypes,
+        paymentsCheck,
+      );
     }, [companyConfigs, paymentTypes, wallets, currentCompany]),
   );
   useFocusEffect(
@@ -122,7 +127,7 @@ const Settings = ({navigation}) => {
     }, [paymentTypes, currentCompany]),
   );
 
-  const checkWalletPaymentOptions = (walletId, payments) => {
+  async function checkWalletPaymentOptions(walletId, payment, paymentCheck) {
     const wallet = wallets.find(
       element => element['@id'].replace(/\D/g, '') === walletId,
     );
@@ -130,56 +135,58 @@ const Settings = ({navigation}) => {
       element => element['@id'].replace(/\D/g, '') === walletId,
     );
 
-    payments.forEach(payment => {
-      if (!wallet.walletPaymentTypes || wallet.walletPaymentTypes.length == 0) {
-        walletPaymentTypeActions
-          .save({
-            wallet: wallet['@id'],
-            paymentType: payment['@id'],
-            paymentCode: payment.paymentCode,
-          })
-          .then(data => {
-            let w = [...wallets];
-
-            w[walletIndex].walletPaymentTypes.push(data);
-            walletActions.setItems(w);
-          });
-      } else {
-        let p = wallet.walletPaymentTypes.find(element => {
-          return (
-            element.paymentType.frequency === payment.frequency &&
-            element.paymentType.installments === payment.installments &&
-            element.paymentType.paymentType === payment.paymentType
-          );
+    if (!wallet.walletPaymentTypes || wallet.walletPaymentTypes.length == 0) {
+      console.log('aqui');
+      const data = await walletPaymentTypeActions.save({
+        wallet: wallet['@id'],
+        paymentType: payment['@id'],
+        paymentCode: paymentCheck.paymentCode,
+      });
+      let w = [...wallets];
+      w[walletIndex].walletPaymentTypes.push(data);
+      walletActions.setItems(w);
+    } else {
+      let p = wallet.walletPaymentTypes.find(element => {
+        return (
+          element.paymentType.frequency === payment.frequency &&
+          element.paymentType.installments === payment.installments &&
+          element.paymentType.paymentType === payment.paymentType
+        );
+      });
+      if (!p || Object.entries(p).length === 0) {
+        const data = await walletPaymentTypeActions.save({
+          wallet: wallet['@id'],
+          paymentType: payment['@id'],
+          paymentCode: paymentCheck.paymentCode,
         });
-        if (!p || Object.entries(p).length === 0)
-          walletPaymentTypeActions
-            .save({
-              wallet: wallet['@id'],
-              paymentType: payment['@id'],
-              paymentCode: payment.paymentCode,
-            })
-            .then(data => {
-              let w = [...wallets];
-              w[walletIndex].walletPaymentTypes.push(data);
-              walletActions.setItems(w);
-            });
+        let w = [...wallets];
+        w[walletIndex].walletPaymentTypes.push(data);
+        walletActions.setItems(w);
       }
-    });
-  };
-  async function checkPaymentOptions(paymentTypes, payment) {
-    const {frequency, installments, paymentType} = payment;
-    const matchingPayment = paymentTypes.find(
-      element =>
-        element.frequency === frequency &&
-        element.installments === installments &&
-        element.paymentType === paymentType,
-    );
+    }
+  }
 
-    if (matchingPayment) return Promise.resolve(matchingPayment);
-    else {
-      const savedPayment = await paymentTypeActions.save(payment);
-      return savedPayment;
+  async function checkPaymentOptions(wallet, paymentTypes, paymentsCheck) {
+    for (const paymentCheck of paymentsCheck) {
+      const {frequency, installments, paymentType} = paymentCheck;
+      const matchingPayment = paymentTypes.find(
+        element =>
+          element.frequency === frequency &&
+          element.installments === installments &&
+          element.paymentType === paymentType,
+      );
+      setTimeout(async () => {
+        if (matchingPayment) {
+          await checkWalletPaymentOptions(
+            wallet,
+            matchingPayment,
+            paymentCheck,
+          );
+        } else {
+          const savedPayment = await paymentTypeActions.save(payment);
+          await checkWalletPaymentOptions(wallet, savedPayment, paymentCheck);
+        }
+      }, 1000);
     }
   }
 
@@ -227,14 +234,7 @@ const Settings = ({navigation}) => {
           configActions.setItems(c);
         });
   };
-  useFocusEffect(
-    useCallback(() => {
-      let manufacturer = null;
-      if (device) manufacturer = device.manufacturer;
-      //pdv-cielo-wallet
-      //discoverCompanyWallet('pdv-default-wallets');
-    }, [device]),
-  );
+
   useFocusEffect(
     useCallback(() => {
       if (
@@ -249,7 +249,10 @@ const Settings = ({navigation}) => {
 
   useFocusEffect(
     useCallback(() => {
-      if (config) handleModeChange(config['pdv-type'] || 'full');
+      if (config) {
+        setSelectedMode(config['pdv-type'] || 'full');
+        setSelectedGateway(config['pdv-gateway'] || 'google');
+      }
     }, [config]),
   );
 
@@ -263,31 +266,23 @@ const Settings = ({navigation}) => {
               <Text style={styles.Settings.value}>{device?.id}</Text>
             </View>
             <View style={styles.Settings.row}>
-              <Text style={styles.Settings.label}>deviceType: </Text>
-              <Text style={styles.Settings.value}>{device?.deviceType}</Text>
-            </View>
-            <View style={styles.Settings.row}>
-              <Text style={styles.Settings.label}>systemName: </Text>
+              <Text style={styles.Settings.label}>Sistema: </Text>
               <Text style={styles.Settings.value}>{device?.systemName}</Text>
             </View>
             <View style={styles.Settings.row}>
-              <Text style={styles.Settings.label}>systemVersion: </Text>
+              <Text style={styles.Settings.label}>Versão do Sistema: </Text>
               <Text style={styles.Settings.value}>{device?.systemVersion}</Text>
             </View>
             <View style={styles.Settings.row}>
-              <Text style={styles.Settings.label}>manufacturer: </Text>
+              <Text style={styles.Settings.label}>Fabricante: </Text>
               <Text style={styles.Settings.value}>{device?.manufacturer}</Text>
             </View>
             <View style={styles.Settings.row}>
-              <Text style={styles.Settings.label}>model: </Text>
-              <Text style={styles.Settings.value}>{device?.model}</Text>
-            </View>
-            <View style={styles.Settings.row}>
-              <Text style={styles.Settings.label}>appVersion: </Text>
+              <Text style={styles.Settings.label}>Versão do PDV: </Text>
               <Text style={styles.Settings.value}>{device?.appVersion}</Text>
             </View>
             <View style={styles.Settings.row}>
-              <Text style={styles.Settings.label}>buildNumber: </Text>
+              <Text style={styles.Settings.label}>Compilaçãodo PDV: </Text>
               <Text style={styles.Settings.value}>{device?.buildNumber}</Text>
             </View>
           </View>
@@ -299,10 +294,7 @@ const Settings = ({navigation}) => {
                   {companyConfigs['pdv-cash-wallet']}
                 </Text>
                 {walletLoading || isSaving ? (
-                  <ActivityIndicator
-                    size={22}
-                    color={styles.Settings.label}
-                  />
+                  <ActivityIndicator size={22} color={styles.Settings.label} />
                 ) : companyConfigs['pdv-cash-wallet'] ? (
                   <Icon name={'check'} size={22} color="green" />
                 ) : (
@@ -317,10 +309,7 @@ const Settings = ({navigation}) => {
                   {companyConfigs['pdv-withdrawl-wallet']}
                 </Text>
                 {walletLoading || isSaving ? (
-                  <ActivityIndicator
-                    size={22}
-                    color={styles.Settings.label}
-                  />
+                  <ActivityIndicator size={22} color={styles.Settings.label} />
                 ) : companyConfigs['pdv-withdrawl-wallet'] ? (
                   <Icon name={'check'} size={22} color="green" />
                 ) : (
@@ -337,6 +326,24 @@ const Settings = ({navigation}) => {
               <Picker.Item label="Modo Balcão" value="simple" />
               <Picker.Item label="Modo Comanda" value="full" />
             </Picker>
+          </View>
+          <View style={{marginTop: 10}}>
+            <Picker
+              selectedValue={selectedGateway}
+              onValueChange={itemValue => handleGatewayChange(itemValue)}
+              style={styles.Settings.picker}>
+              <Picker.Item label="Cielo" value="cielo" />
+              <Picker.Item label="Google" value="google" />
+            </Picker>
+          </View>
+          <View style={{marginTop: 10}}>
+            {selectedGateway == 'cielo' && (
+              <Cielo
+                discoverWallet={discoverWallet}
+                checkPaymentOptions={checkPaymentOptions}
+                checkWalletPaymentOptions={checkWalletPaymentOptions}
+              />
+            )}
           </View>
         </View>
       </ScrollView>
