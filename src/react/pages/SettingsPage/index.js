@@ -254,90 +254,86 @@ const Settings = ({navigation}) => {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.CashRegister.mainContainer}>
+    <SafeAreaView style={styles.Settings.container}>
+      <ScrollView contentContainerStyle={styles.Settings.scrollContent}>
+        <View style={styles.Settings.mainContainer}>
           <View style={{marginTop: 20}}>
-            <View style={{flexDirection: 'row', alignItems: 'center', gap: 5}}>
-              <Text style={{flex: 0.5}}>ID do equipamento: </Text>
-              <Text style={{flex: 0.5}}>{device?.id}</Text>
+            <View style={styles.Settings.row}>
+              <Text style={styles.Settings.label}>ID do equipamento: </Text>
+              <Text style={styles.Settings.value}>{device?.id}</Text>
             </View>
-            <View style={{flexDirection: 'row', alignItems: 'center', gap: 5}}>
-              <Text style={{flex: 0.5}}>deviceType: </Text>
-              <Text style={{flex: 0.5}}>{device?.deviceType}</Text>
+            <View style={styles.Settings.row}>
+              <Text style={styles.Settings.label}>deviceType: </Text>
+              <Text style={styles.Settings.value}>{device?.deviceType}</Text>
             </View>
-
-            <View style={{flexDirection: 'row', alignItems: 'center', gap: 5}}>
-              <Text style={{flex: 0.5}}>systemName: </Text>
-              <Text style={{flex: 0.5}}>{device?.systemName}</Text>
+            <View style={styles.Settings.row}>
+              <Text style={styles.Settings.label}>systemName: </Text>
+              <Text style={styles.Settings.value}>{device?.systemName}</Text>
             </View>
-
-            <View style={{flexDirection: 'row', alignItems: 'center', gap: 5}}>
-              <Text style={{flex: 0.5}}>systemVersion: </Text>
-              <Text style={{flex: 0.5}}>{device?.systemVersion}</Text>
+            <View style={styles.Settings.row}>
+              <Text style={styles.Settings.label}>systemVersion: </Text>
+              <Text style={styles.Settings.value}>{device?.systemVersion}</Text>
             </View>
-            <View style={{flexDirection: 'row', alignItems: 'center', gap: 5}}>
-              <Text style={{flex: 0.5}}>manufacturer: </Text>
-              <Text style={{flex: 0.5}}>{device?.manufacturer}</Text>
+            <View style={styles.Settings.row}>
+              <Text style={styles.Settings.label}>manufacturer: </Text>
+              <Text style={styles.Settings.value}>{device?.manufacturer}</Text>
             </View>
-            <View style={{flexDirection: 'row', alignItems: 'center', gap: 5}}>
-              <Text style={{flex: 0.5}}>model: </Text>
-              <Text style={{flex: 0.5}}>{device?.model}</Text>
+            <View style={styles.Settings.row}>
+              <Text style={styles.Settings.label}>model: </Text>
+              <Text style={styles.Settings.value}>{device?.model}</Text>
             </View>
-            <View style={{flexDirection: 'row', alignItems: 'center', gap: 5}}>
-              <Text style={{flex: 0.5}}>appVersion: </Text>
-              <Text style={{flex: 0.5}}>{device?.appVersion}</Text>
+            <View style={styles.Settings.row}>
+              <Text style={styles.Settings.label}>appVersion: </Text>
+              <Text style={styles.Settings.value}>{device?.appVersion}</Text>
             </View>
-            <View style={{flexDirection: 'row', alignItems: 'center', gap: 5}}>
-              <Text style={{flex: 0.5}}>buildNumber: </Text>
-              <Text style={{flex: 0.5}}>{device?.buildNumber}</Text>
+            <View style={styles.Settings.row}>
+              <Text style={styles.Settings.label}>buildNumber: </Text>
+              <Text style={styles.Settings.value}>{device?.buildNumber}</Text>
             </View>
           </View>
           <View style={{marginTop: 20}}>
-            <View style={{flexDirection: 'row', alignItems: 'center', gap: 5}}>
-              <Text style={{flex: 0.5}}>Carteira p/ Dinheiro: </Text>
-              <View style={{flex: 0.5}}>
-                <Text size={22}>
+            <View style={styles.Settings.walletRow}>
+              <Text style={styles.Settings.label}>Carteira p/ Dinheiro: </Text>
+              <View style={styles.Settings.walletValueContainer}>
+                <Text style={styles.Settings.walletValue}>
                   {companyConfigs['pdv-cash-wallet']}
-                  {walletLoading || isSaving ? (
-                    <ActivityIndicator
-                      size={22}
-                      color={styles.primary?.color || '#000'}
-                    />
-                  ) : companyConfigs['pdv-cash-wallet'] ? (
-                    <Icon name={'check'} size={22} color="green" />
-                  ) : (
-                    <Icon name={'close'} size={22} color="red" />
-                  )}
                 </Text>
+                {walletLoading || isSaving ? (
+                  <ActivityIndicator
+                    size={22}
+                    color={styles.Settings.label}
+                  />
+                ) : companyConfigs['pdv-cash-wallet'] ? (
+                  <Icon name={'check'} size={22} color="green" />
+                ) : (
+                  <Icon name={'close'} size={22} color="red" />
+                )}
               </View>
             </View>
-            <View style={{flexDirection: 'row', alignItems: 'center', gap: 5}}>
-              <Text style={{flex: 0.5}}>Carteira p/ Sangria: </Text>
-              <View style={{flex: 0.5}}>
-                <Text size={22}>
+            <View style={styles.Settings.walletRow}>
+              <Text style={styles.Settings.label}>Carteira p/ Sangria: </Text>
+              <View style={styles.Settings.walletValueContainer}>
+                <Text style={styles.Settings.walletValue}>
                   {companyConfigs['pdv-withdrawl-wallet']}
-                  {walletLoading || isSaving ? (
-                    <ActivityIndicator
-                      size={22}
-                      color={styles.primary?.color || '#000'}
-                    />
-                  ) : companyConfigs['pdv-withdrawl-wallet'] ? (
-                    <Icon name={'check'} size={22} color="green" />
-                  ) : (
-                    <Icon name={'close'} size={22} color="red" />
-                  )}
                 </Text>
+                {walletLoading || isSaving ? (
+                  <ActivityIndicator
+                    size={22}
+                    color={styles.Settings.label}
+                  />
+                ) : companyConfigs['pdv-withdrawl-wallet'] ? (
+                  <Icon name={'check'} size={22} color="green" />
+                ) : (
+                  <Icon name={'close'} size={22} color="red" />
+                )}
               </View>
             </View>
           </View>
-
-          {/* Picker */}
-          <View style={{marginTop: 20}}>
+          <View style={{marginTop: 10}}>
             <Picker
               selectedValue={selectedMode}
               onValueChange={itemValue => handleModeChange(itemValue)}
-              style={{height: 50}}>
+              style={styles.Settings.picker}>
               <Picker.Item label="Modo Balcão" value="simple" />
               <Picker.Item label="Modo Comanda" value="full" />
             </Picker>

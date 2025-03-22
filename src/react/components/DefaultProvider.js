@@ -65,7 +65,7 @@ export const DefaultProvider = ({children}) => {
         (typeof companyConfigs['pdv-' + device.id] === 'object' ||
           companyConfigs['pdv-' + device.id].trim() != '')
       )
-        configActions.setItem(companyConfigs['pdv-' + device.id]);
+        configActions.setItem(JSON.parse(companyConfigs['pdv-' + device.id]));
       else configActions.setItem({});
   }, [companyConfigs, user]);
 
