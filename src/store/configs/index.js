@@ -1,6 +1,7 @@
 import * as actions from '@controleonline/ui-default/src/store/default/actions';
 import * as getters from '@controleonline/ui-default/src/store/default/getters';
 import mutations from '@controleonline/ui-default/src/store/default/mutations';
+import * as customActions from './customActions';
 
 export default {
   namespaced: true,
@@ -14,7 +15,10 @@ export default {
     totalItems: 0,
     filters: {},
   },
-  actions: actions,
+  actions: {
+    ...customActions,
+    ...actions,
+  },
   getters,
   mutations,
 };

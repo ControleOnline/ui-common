@@ -5,10 +5,9 @@ export default function (resourceEndpoint, options = {}) {
     APP_ENV.API_ENTRYPOINT + (APP_ENV.API_ENTRYPOINT.endsWith('/') ? '' : '/');
 
   if (!resourceEndpoint || !entryPoint) return;
-
+  console.log(entryPoint, resourceEndpoint);
   return fetch(new URL(resourceEndpoint, entryPoint), options)
     .then(response => {
-
       if (options.responseType == 'text') return response.text();
 
       return response.json().then(json => {

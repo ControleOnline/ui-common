@@ -29,7 +29,8 @@ export const DefaultProvider = ({children}) => {
       const model = await DeviceInfo.getModel();
       const batteryLevel = await DeviceInfo.getBatteryLevel();
       const isEmulator = await DeviceInfo.isEmulator();
-
+      const appVersion = await DeviceInfo.getVersion();
+      const buildNumber = await DeviceInfo.getBuildNumber();
       let localDevice = {
         ...device,
         id: uniqueId,
@@ -40,6 +41,8 @@ export const DefaultProvider = ({children}) => {
         model: model,
         batteryLevel: batteryLevel,
         isEmulator: isEmulator,
+        appVersion: appVersion,
+        buildNumber: buildNumber,
       };
       localStorage.setItem('device', JSON.stringify(localDevice));
     };
@@ -48,30 +51,32 @@ export const DefaultProvider = ({children}) => {
   }, [device]);
 
   useEffect(() => {
+    peopleActions.defaultCompany();
+  }, []);
+
+  useEffect(() => {
     if (
-      !config &&
-      device &&
+      authActions.isLogged() &&
+      companyConfigs &&
+      Object.entries(companyConfigs).length > 0
+    )
+      if (
+        companyConfigs['pdv-' + device.id] &&
+        (typeof companyConfigs['pdv-' + device.id] === 'object' ||
+          companyConfigs['pdv-' + device.id].trim() != '')
+      )
+        configActions.setItem(companyConfigs['pdv-' + device.id]);
+      else configActions.setItem({});
+  }, [companyConfigs, user]);
+
+  useEffect(() => {
+    if (
       authActions.isLogged() &&
       currentCompany &&
       Object.entries(currentCompany).length > 0
     )
-      configActions
-        .getItems({
-          configKey: 'pdv-' + device.id,
-        })
-        .then(data => {
-          let c = {};
-          if (data && data[0]) c = JSON.parse(data[0].configValue);
-          configActions.setItem(c);
-        })
-        .finally(() => {
-          configActions.setItems(currentCompany.configs);
-        });
-  }, [device, user, currentCompany]);
-
-  useEffect(() => {
-    peopleActions.defaultCompany();
-  }, []);
+      configActions.setItems(currentCompany.configs);
+  }, [currentCompany, user]);
 
   useEffect(() => {
     if (

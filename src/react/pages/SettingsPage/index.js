@@ -23,26 +23,57 @@ const Settings = ({navigation}) => {
   const {getters: paymentTypeGetters, actions: paymentTypeActions} =
     getStore('paymentType');
   const {items: paymentTypes} = paymentTypeGetters;
-
   const {currentCompany} = peopleGetters;
-  const storagedDevice = localStorage.getItem('device');
   const {isLoading: walletLoading, items: wallets} = walletGetters;
   const {item: config, items: companyConfigs, isSaving} = configsGetters;
   const [selectedMode, setSelectedMode] = useState(null);
+  const storagedDevice = localStorage.getItem('device');
   const [device, setDevice] = useState(() => {
     return storagedDevice ? JSON.parse(storagedDevice) : {};
   });
   const [localConfig, seLocalConfig] = useState({});
 
   const handleModeChange = mode => {
-    localConfig['pdv-type'] = mode;
+    const lc = {...localConfig};
+    lc['pdv-type'] = mode;
+    seLocalConfig(lc);
   };
+
+  useFocusEffect(
+    useCallback(() => {
+      if (
+        device &&
+        localConfig &&
+        Object.entries(localConfig).length !== 0 &&
+        companyConfigs &&
+        Object.entries(companyConfigs).length !== 0 &&
+        currentCompany &&
+        Object.entries(currentCompany).length !== 0 &&
+        companyConfigs['pdv-cash-wallet'] &&
+        companyConfigs['pdv-withdrawl-wallet'] &&
+        
+      ) {
+        const lc = {...localConfig};
+        lc['config-version'] = device?.buildNumber;
+        configActions
+          .addConfigs({
+            configKey: 'pdv-' + device?.id,
+            configValue: JSON.stringify(lc),
+            visibility: 'public',
+            people: '/people/' + currentCompany.id,
+            module: '/modules/' + 8,
+          })
+          .then(value => {
+            console.log('V', value);
+            //configActions.setItem(value);
+          });
+      }
+    }, [device, localConfig, companyConfigs, currentCompany]),
+  );
 
   const ckeckCompanyConfigs = () => {
     discoverWallet('pdv-cash-wallet', 'Caixa');
     discoverWallet('pdv-withdrawl-wallet', 'Gerência');
-    ckeckOrderStatus('pdv-default-status', 'waiting payment');
-    ckeckInvoiceStatus('pdv-paid-status', 'paid');
   };
 
   useFocusEffect(
@@ -147,10 +178,6 @@ const Settings = ({navigation}) => {
     }
   }
 
-  const ckeckInvoiceStatus = (configName, name) => {};
-  const ckeckOrderStatus = (configName, name) => {};
-
-  const discoverConfigWallet = (configName, name) => {};
   useFocusEffect(
     useCallback(() => {
       if (wallets == null)
@@ -229,6 +256,36 @@ const Settings = ({navigation}) => {
             <View style={{flexDirection: 'row', alignItems: 'center', gap: 5}}>
               <Text style={{flex: 0.5}}>ID do equipamento: </Text>
               <Text style={{flex: 0.5}}>{device?.id}</Text>
+            </View>
+            <View style={{flexDirection: 'row', alignItems: 'center', gap: 5}}>
+              <Text style={{flex: 0.5}}>deviceType: </Text>
+              <Text style={{flex: 0.5}}>{device?.deviceType}</Text>
+            </View>
+
+            <View style={{flexDirection: 'row', alignItems: 'center', gap: 5}}>
+              <Text style={{flex: 0.5}}>systemName: </Text>
+              <Text style={{flex: 0.5}}>{device?.systemName}</Text>
+            </View>
+
+            <View style={{flexDirection: 'row', alignItems: 'center', gap: 5}}>
+              <Text style={{flex: 0.5}}>systemVersion: </Text>
+              <Text style={{flex: 0.5}}>{device?.systemVersion}</Text>
+            </View>
+            <View style={{flexDirection: 'row', alignItems: 'center', gap: 5}}>
+              <Text style={{flex: 0.5}}>manufacturer: </Text>
+              <Text style={{flex: 0.5}}>{device?.manufacturer}</Text>
+            </View>
+            <View style={{flexDirection: 'row', alignItems: 'center', gap: 5}}>
+              <Text style={{flex: 0.5}}>model: </Text>
+              <Text style={{flex: 0.5}}>{device?.model}</Text>
+            </View>
+            <View style={{flexDirection: 'row', alignItems: 'center', gap: 5}}>
+              <Text style={{flex: 0.5}}>appVersion: </Text>
+              <Text style={{flex: 0.5}}>{device?.appVersion}</Text>
+            </View>
+            <View style={{flexDirection: 'row', alignItems: 'center', gap: 5}}>
+              <Text style={{flex: 0.5}}>buildNumber: </Text>
+              <Text style={{flex: 0.5}}>{device?.buildNumber}</Text>
             </View>
           </View>
           <View style={{marginTop: 20}}>
