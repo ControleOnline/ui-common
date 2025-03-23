@@ -209,30 +209,19 @@ const Settings = ({navigation}) => {
           people: '/people/' + currentCompany.id,
         })
         .then(data => {
-          if (data && data.length > 0) {
-            let w = [...wallets];
-            w.push(data);
-            walletActions.setItems(w);
-            saveConfig(configName, data['@id'].replace(/\D/g, ''));
-          }
+          saveConfig(configName, data['@id'].replace(/\D/g, ''));
         });
   };
 
   const saveConfig = (config, value) => {
     if (!companyConfigs[config])
-      configActions
-        .save({
-          configKey: config,
-          configValue: value,
-          visibility: 'public',
-          people: '/people/' + currentCompany.id,
-          module: '/modules/' + 8,
-        })
-        .then(() => {
-          let c = {...companyConfigs};
-          c[config] = value;
-          configActions.setItems(c);
-        });
+      configActions.save({
+        configKey: config,
+        configValue: value,
+        visibility: 'public',
+        people: '/people/' + currentCompany.id,
+        module: '/modules/' + 8,
+      });
   };
 
   useFocusEffect(
