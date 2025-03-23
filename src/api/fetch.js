@@ -5,7 +5,12 @@ export default function (resourceEndpoint, options = {}) {
     APP_ENV.API_ENTRYPOINT + (APP_ENV.API_ENTRYPOINT.endsWith('/') ? '' : '/');
 
   if (!resourceEndpoint || !entryPoint) return;
+
+  if (resourceEndpoint == 'configs/add-configs')
+    console.log(entryPoint, resourceEndpoint, options.body);
+
   console.log(entryPoint, resourceEndpoint);
+
   return fetch(new URL(resourceEndpoint, entryPoint), options).then(
     response => {
       if (options.method == 'DELETE') return;

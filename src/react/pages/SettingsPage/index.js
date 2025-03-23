@@ -45,12 +45,9 @@ const Settings = ({navigation}) => {
 
   useFocusEffect(
     useCallback(() => {
-      lc = {...companyConfigs};
+      lc = {...config};
       if (
         device &&
-        companyConfigs &&
-        companyConfigs['pdv-cash-wallet'] &&
-        companyConfigs['pdv-withdrawl-wallet'] &&
         selectedGateway &&
         selectedMode &&
         (!config ||
@@ -63,7 +60,7 @@ const Settings = ({navigation}) => {
         lc['pdv-gateway'] = selectedGateway;
         addConfigs(lc);
       }
-    }, [device, selectedMode, selectedGateway, companyConfigs]),
+    }, [device, selectedMode, selectedGateway, config]),
   );
 
   const addConfigs = lc => {
@@ -136,7 +133,6 @@ const Settings = ({navigation}) => {
     );
 
     if (!wallet.walletPaymentTypes || wallet.walletPaymentTypes.length == 0) {
-      console.log('aqui');
       const data = await walletPaymentTypeActions.save({
         wallet: wallet['@id'],
         paymentType: payment['@id'],
@@ -215,7 +211,7 @@ const Settings = ({navigation}) => {
 
   const saveConfig = (config, value) => {
     if (!companyConfigs[config])
-      configActions.save({
+      configActions.addConfigs({
         configKey: config,
         configValue: value,
         visibility: 'public',
