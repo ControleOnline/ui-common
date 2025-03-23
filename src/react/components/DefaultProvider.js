@@ -83,7 +83,9 @@ export const DefaultProvider = ({children}) => {
       authActions.isLogged() &&
       (!currentCompany || Object.entries(currentCompany).length === 0)
     )
-      peopleActions.myCompanies();
+      peopleActions.myCompanies({
+        device: device.id,
+      });
   }, [user]);
 
   useEffect(() => {

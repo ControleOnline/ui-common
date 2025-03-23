@@ -68,7 +68,7 @@ const Settings = ({navigation}) => {
       .addConfigs({
         configKey: 'pdv-' + device?.id,
         configValue: JSON.stringify(lc),
-        visibility: 'public',
+        visibility: 'private',
         people: '/people/' + currentCompany.id,
         module: '/modules/' + 8,
       })
