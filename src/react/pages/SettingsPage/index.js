@@ -12,7 +12,8 @@ import {getStore} from '@store';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import {Picker} from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import Cielo from '@controleonline/ui-orders/src/react/services/Cielo/Settings';
+import CieloPaySettings from '@controleonline/ui-orders/src/react/services/Cielo/Settings';
+import InfinitePaySettings from '@controleonline/ui-orders/src/react/services/InfinitePay/Settings';
 
 const Settings = ({navigation}) => {
   const {styles, globalStyles} = css();
@@ -45,7 +46,7 @@ const Settings = ({navigation}) => {
 
   useFocusEffect(
     useCallback(() => {
-      lc = {...config};
+      let lc = {...config};
       if (
         device &&
         selectedGateway &&
@@ -76,6 +77,7 @@ const Settings = ({navigation}) => {
         configActions.setItem(JSON.parse(value.configValue));
       });
   };
+
   const ckeckCompanyConfigs = () => {
     discoverWallet('pdv-cash-wallet', 'Caixa');
     discoverWallet('pdv-withdrawl-wallet', 'Gerência');
@@ -111,6 +113,7 @@ const Settings = ({navigation}) => {
       );
     }, [companyConfigs, paymentTypes, wallets, currentCompany]),
   );
+
   useFocusEffect(
     useCallback(() => {
       if (
@@ -125,12 +128,15 @@ const Settings = ({navigation}) => {
   );
 
   async function checkWalletPaymentOptions(walletId, payment, paymentCheck) {
+    const walletIdStr = String(walletId);
     const wallet = wallets.find(
-      element => element['@id'].replace(/\D/g, '') === walletId,
+      element => element['@id'].replace(/\D/g, '') === walletIdStr,
     );
     const walletIndex = wallets.findIndex(
-      element => element['@id'].replace(/\D/g, '') === walletId,
+      element => element['@id'].replace(/\D/g, '') === walletIdStr,
     );
+
+    if (!wallet) return;
 
     if (!wallet.walletPaymentTypes || wallet.walletPaymentTypes.length == 0) {
       const data = await walletPaymentTypeActions.save({
@@ -163,6 +169,8 @@ const Settings = ({navigation}) => {
   }
 
   async function checkPaymentOptions(wallet, paymentTypes, paymentsCheck) {
+    if (!wallets) return;
+
     for (const paymentCheck of paymentsCheck) {
       const {frequency, installments, paymentType} = paymentCheck;
       const matchingPayment = paymentTypes.find(
@@ -172,15 +180,19 @@ const Settings = ({navigation}) => {
           element.paymentType === paymentType,
       );
       setTimeout(async () => {
-        if (matchingPayment) {
-          await checkWalletPaymentOptions(
-            wallet,
-            matchingPayment,
-            paymentCheck,
-          );
-        } else {
-          const savedPayment = await paymentTypeActions.save(payment);
-          await checkWalletPaymentOptions(wallet, savedPayment, paymentCheck);
+        try {
+          if (matchingPayment) {
+            await checkWalletPaymentOptions(
+              wallet,
+              matchingPayment,
+              paymentCheck,
+            );
+          } else {
+            const savedPayment = await paymentTypeActions.save(paymentCheck);
+            await checkWalletPaymentOptions(wallet, savedPayment, paymentCheck);
+          }
+        } catch (error) {
+          console.error('Erro ao processar opções de pagamento:', error);
         }
       }, 1000);
     }
@@ -188,13 +200,16 @@ const Settings = ({navigation}) => {
 
   useFocusEffect(
     useCallback(() => {
-      if (wallets == null)
+      if (wallets == null && currentCompany)
         walletActions.getItems({
           people: '/people/' + currentCompany.id,
         });
-    }, [wallets]),
+    }, [wallets, currentCompany]),
   );
+
   const discoverWallet = (configName, name) => {
+    if (!wallets || !Array.isArray(wallets)) return;
+
     const w = wallets.find(element => element.wallet === name);
     if (w) saveConfig(configName, w['@id'].replace(/\D/g, ''));
     else
@@ -267,7 +282,7 @@ const Settings = ({navigation}) => {
               <Text style={styles.Settings.value}>{device?.appVersion}</Text>
             </View>
             <View style={styles.Settings.row}>
-              <Text style={styles.Settings.label}>Compilaçãodo PDV: </Text>
+              <Text style={styles.Settings.label}>Compilação do PDV: </Text>
               <Text style={styles.Settings.value}>{device?.buildNumber}</Text>
             </View>
           </View>
@@ -323,7 +338,14 @@ const Settings = ({navigation}) => {
           </View>
           <View style={{marginTop: 10}}>
             {selectedGateway == 'cielo' && (
-              <Cielo
+              <CieloPaySettings
+                discoverWallet={discoverWallet}
+                checkPaymentOptions={checkPaymentOptions}
+                checkWalletPaymentOptions={checkWalletPaymentOptions}
+              />
+            )}
+            {selectedGateway == 'infinite-pay' && (
+              <InfinitePaySettings
                 discoverWallet={discoverWallet}
                 checkPaymentOptions={checkPaymentOptions}
                 checkWalletPaymentOptions={checkWalletPaymentOptions}
