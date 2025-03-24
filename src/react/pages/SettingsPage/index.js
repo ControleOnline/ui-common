@@ -236,7 +236,7 @@ const Settings = ({navigation}) => {
     useCallback(() => {
       if (config) {
         setSelectedMode(config['pdv-type'] || 'full');
-        setSelectedGateway(config['pdv-gateway'] || 'google');
+        setSelectedGateway(config['pdv-gateway'] || 'infinite-pay');
       }
     }, [config]),
   );
@@ -318,7 +318,7 @@ const Settings = ({navigation}) => {
               onValueChange={itemValue => handleGatewayChange(itemValue)}
               style={styles.Settings.picker}>
               <Picker.Item label="Cielo" value="cielo" />
-              <Picker.Item label="Google" value="google" />
+              <Picker.Item label="Infinite Pay" value="infinite-pay" />
             </Picker>
           </View>
           <View style={{marginTop: 10}}>
