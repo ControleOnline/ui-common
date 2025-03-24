@@ -1,36 +1,52 @@
+let queue = null;
+timeout = [];
+
+export function execute(func, id, wait = 1000) {
+  const debounced = function (...args) {
+    clearTimeout(timeout[id]);
+    timeout[id] = setTimeout(() => {
+      if (queue == null) queue = new Queue();
+      queue.addtoQueue(() => func(...args));
+      return queue.processQueue();
+    }, wait);
+  };
+
+  debounced.cancel = (id) => {
+    clearTimeout(timeout[id]);
+  };
+  return debounced;
+}
+
 export default class Queue {
-  constructor(functionName, time = 1000) {
+  constructor() {
     this.queue = [];
     this.isProcessing = false;
-    this.timeout = null;
-    this.functionName = functionName;
-    this.time = time;
   }
-
+  addtoQueue(func) {
+    this.queue.push(func);
+  }
   processQueue() {
     if (this.isProcessing || this.queue.length === 0) return;
 
     this.isProcessing = true;
-    const product = this.queue[0];
+    const func = this.queue[0];
 
-    this.functionName(product).then(() => {
-      this.queue.shift();
-      this.isProcessing = false;
-      this.processQueue();
-    });
-  }
-
-  debounced(toQueue) {
-    clearTimeout(this.timeout);
-    this.timeout = setTimeout(() => {
-      this.queue.push(toQueue);
-      if (!this.isProcessing) {
-        this.processQueue();
-      }
-    }, this.time);
-  }
-
-  cancel() {
-    clearTimeout(this.timeout);
+    return func()
+      .then(() => {
+        this.queue.shift();
+        return this.processQueue();
+      })
+      .catch(error => {
+        console.error(
+          'Erro ao processar a fila. Nova tentativa em 1 segundo',
+          error,
+        );
+        setTimeout(() => {
+          return this.processQueue();
+        }, 1000);
+      })
+      .finally(() => {
+        this.isProcessing = false;
+      });
   }
 }
