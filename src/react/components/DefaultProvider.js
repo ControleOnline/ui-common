@@ -60,13 +60,9 @@ export const DefaultProvider = ({children}) => {
       companyConfigs &&
       Object.entries(companyConfigs).length > 0
     )
-      if (
-        companyConfigs['pdv-' + device.id] &&
-        (typeof companyConfigs['pdv-' + device.id] === 'object' ||
-          companyConfigs['pdv-' + device.id].trim() != '')
-      )
-        configActions.setItem(JSON.parse(companyConfigs['pdv-' + device.id]));
-      else configActions.setItem({});
+      configActions.setItem(
+        JSON.parse(companyConfigs['pdv-' + device.id] || '{}'),
+      );
   }, [companyConfigs, user]);
 
   useEffect(() => {
@@ -83,9 +79,7 @@ export const DefaultProvider = ({children}) => {
       authActions.isLogged() &&
       (!currentCompany || Object.entries(currentCompany).length === 0)
     )
-      peopleActions.myCompanies({
-        device: device.id,
-      });
+      peopleActions.myCompanies(device.id);
   }, [user]);
 
   useEffect(() => {

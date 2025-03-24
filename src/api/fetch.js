@@ -6,7 +6,7 @@ export default function (resourceEndpoint, options = {}) {
 
   if (!resourceEndpoint || !entryPoint) return;
 
-  if (resourceEndpoint == 'configs/add-configs')
+  if (resourceEndpoint == '/people/companies/my')
     console.log(entryPoint, resourceEndpoint, options.body);
 
   console.log(entryPoint, resourceEndpoint);
