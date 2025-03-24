@@ -2,7 +2,7 @@ import { openDB } from "idb";
 
 const DB_NAME = "ControleOnline";
 
-export default class LocalDB {
+export default class localDB {
   constructor(state) {
     this.state = state;
 
