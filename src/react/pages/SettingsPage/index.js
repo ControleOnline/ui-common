@@ -80,7 +80,7 @@ const Settings = ({navigation}) => {
 
   const ckeckCompanyConfigs = () => {
     discoverWallet('pdv-cash-wallet', 'Caixa');
-    discoverWallet('pdv-withdrawl-wallet', 'Gerência');
+    discoverWallet('pdv-withdrawl-wallet', 'Reserva');
   };
 
   useFocusEffect(
