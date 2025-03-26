@@ -1,50 +1,45 @@
 export default class Translate {
-  constructor(defaultCompany, currentCompany, translateActions) {
-    const config = JSON.parse(localStorage.getItem('config') || '{}');
-    this.translates = this.getTranslates();
-    this.language = config.language || 'pt-br';
+  constructor(defaultCompany, currentCompany, stores, translateActions) {
+    this.translates = JSON.parse(localStorage.getItem('translates') || '{}');
+    this.language =
+      JSON.parse(localStorage.getItem('config') || '{}').language || 'pt-br';
     this.defaultCompany = defaultCompany;
     this.currentCompany = currentCompany;
     this.translateActions = translateActions;
+    this.stores = stores;
   }
 
   t(store, type, key) {
-    if (!this.language) return this.formatMessage(key);
-
-    return this.findMessage(
-      this.translates,
-      store,
-      type,
-      key,
-      this.formatMessage(key),
+    return (
+      this.translates[this.language]?.[store]?.[type]?.[key] ||
+      this.formatMessage(key)
     );
   }
-  async discoveryAll(stores) {
-    return new Promise(resolve => {
-      Promise.all([
-        stores.forEach(store => {
-          this.discoveryStoreTranslate(store);
-        }),
-      ]).then(() => {
-        resolve(this.translates);
-      });
-    });
-  }
-  async discoveryStoreTranslate(store) {
-    return new Promise(resolve => {
-      const translates = this.getTranslates();
-      if (translates[this.language][store]) {
-        resolve(translates);
-        return;
-      }
 
-      Promise.all([
-        this.fetchTranslates(store, this.defaultCompany),
-        this.fetchTranslates(store, this.currentCompany),
-      ]).then(() => {
-        resolve(this.translates);
-      });
-    });
+  reload() {
+    this.clear();
+    this.discoveryAll();
+  }
+
+  clear() {
+    this.translates = {};
+    localStorage.setItem('translates', '{}');
+  }
+
+  async discoveryAll() {
+    await Promise.all(
+      this.stores.map(store => this.discoveryStoreTranslate(store)),
+    );
+    return this.translates;
+  }
+
+  async discoveryStoreTranslate(store) {
+    if (!this.translates[this.language]) this.translates[this.language] = {};
+    if (this.translates[this.language][store]) return this.translates;
+
+    await this.fetchTranslates(store, this.defaultCompany);
+    await this.fetchTranslates(store, this.currentCompany);
+    return this.translates;
   }
 
   fetchTranslates(store, company) {
@@ -55,43 +50,60 @@ export default class Translate {
         people: '/people/' + company.id,
       })
       .then(storeTranslates => {
-        storeTranslates.forEach(element => {
-          return this.findMessage(
-            this.translates,
-            element.store,
-            element.type,
-            element.key,
-          );
-        });
-        this.setTranslates(this.translates);
+        const currentTranslates = this.translates;
+
+        if (company === this.defaultCompany) {
+          storeTranslates.forEach(element => {
+            this.findMessage(
+              element.store,
+              element.type,
+              element.key,
+              element.translate || this.formatMessage(element.key),
+            );
+          });
+        } else if (company === this.currentCompany) {
+          storeTranslates.forEach(element => {
+            const existingMessage =
+              currentTranslates[this.language]?.[store]?.[element.type]?.[
+                element.key
+              ];
+            const newMessage =
+              element.translate || this.formatMessage(element.key);
+            if (existingMessage !== newMessage) {
+              this.findMessage(
+                element.store,
+                element.type,
+                element.key,
+                newMessage,
+              );
+            }
+          });
+        }
+
+        localStorage.setItem('translates', JSON.stringify(this.translates));
       });
   }
 
-  findMessage(find, store, type, key, message = null) {
-    if (!find[this.language]) find[this.language] = {};
-    if (!find[this.language][store]) find[this.language][store] = {};
-    if (!find[this.language][store][type])
-      find[this.language][store][type] = {};
-    if (!find[this.language][store][type][key]) {
-      //Adicionar para persistir?
-      find[this.language][store][type][key] = message;
-    }
-    return find[this.language][store][type][key];
+  findMessage(store, type, key, message) {
+    if (!this.translates[this.language]) this.translates[this.language] = {};
+    if (!this.translates[this.language][store])
+      this.translates[this.language][store] = {};
+    if (!this.translates[this.language][store][type])
+      this.translates[this.language][store][type] = {};
+    if (message !== null)
+      this.translates[this.language][store][type][key] = message;
+    return (
+      this.translates[this.language][store][type][key] ||
+      this.formatMessage(key)
+    );
   }
 
   formatMessage(key) {
-    if (key === undefined) return '';
+    if (!key) return '';
     return key
       .replace(/([a-z])([A-Z])/g, '$1_$2')
       .replace(/_/g, ' ')
       .replace(/-/g, ' ')
       .replace(/^\w/, c => c.toUpperCase());
-  }
-
-  getTranslates() {
-    return JSON.parse(localStorage.getItem('translates') || '{}');
-  }
-  setTranslates(translates) {
-    localStorage.setItem('translates', JSON.stringify(translates));
   }
 }

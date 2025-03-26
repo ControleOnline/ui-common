@@ -44,6 +44,10 @@ const Settings = ({navigation}) => {
     setSelectedGateway(gateway);
   };
 
+  const handleClearTranslate = () => {
+    t.reload();
+  };
+
   useFocusEffect(
     useCallback(() => {
       let lc = {...config};
@@ -353,6 +357,22 @@ const Settings = ({navigation}) => {
             )}
           </View>
         </View>
+
+        <TouchableOpacity
+          onPress={handleClearTranslate}
+          style={[
+            globalStyles.button,
+            globalStyles.btnAdd,
+            {
+              flex: 1,
+              flexDirection: 'row',
+              justifyContent: 'center',
+              alignItems: 'center',
+            },
+          ]}>
+          <Icon name="add-circle" size={24} color="#fff" />
+          <Text style={{color: '#fff', marginLeft: 8}}>Refazer traduções</Text>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );

@@ -2,6 +2,7 @@ import React, {createContext, useContext, useEffect, useState} from 'react';
 import {StatusBar, View, ActivityIndicator, Text} from 'react-native';
 import DeviceInfo from 'react-native-device-info';
 import Translate from '@controleonline/ui-common/src/utils/translate';
+import stores from '@stores';
 import {getStore} from '@store';
 const ThemeContext = createContext();
 
@@ -17,6 +18,7 @@ export const DefaultProvider = ({children}) => {
   const {currentCompany, defaultCompany, companies} = peopleGetters;
   const {isLoggedIn, user} = authGetters;
   const {item: config, items: companyConfigs} = configsGetters;
+
   const [translateReady, setTranslateReady] = useState(false);
 
   const [device, setDevice] = useState(() => {
@@ -87,13 +89,12 @@ export const DefaultProvider = ({children}) => {
       window.t = new Translate(
         defaultCompany,
         currentCompany,
+        ['invoice', 'orders'], // Object.keys(stores),
         translateActions,
       );
-      t.discoveryAll(['people', 'configs', 'category']).then(x => {
+      t.discoveryAll().then(() => {
         setTranslateReady(true);
       });
-
-      console.log(t.t('people', 'btn', 'save'));
     }
   }, [currentCompany]);
 
@@ -125,7 +126,7 @@ export const DefaultProvider = ({children}) => {
 
     fetchColors();
   }, []);
-  if (!translateReady) {
+  if (!translateReady && authActions.isLogged()) {
     return (
       <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
         <ActivityIndicator size="large" color="#1B5587" />
