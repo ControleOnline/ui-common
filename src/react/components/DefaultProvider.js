@@ -1,6 +1,7 @@
 import React, {createContext, useContext, useEffect, useState} from 'react';
+import {StatusBar, View, ActivityIndicator, Text} from 'react-native';
 import DeviceInfo from 'react-native-device-info';
-
+import Translate from '@controleonline/ui-common/src/utils/translate';
 import {getStore} from '@store';
 const ThemeContext = createContext();
 
@@ -10,10 +11,13 @@ export const DefaultProvider = ({children}) => {
   const storagedDevice = localStorage.getItem('device');
   const {getters: peopleGetters, actions: peopleActions} = getStore('people');
   const {getters: configsGetters, actions: configActions} = getStore('configs');
+  const {actions: translateActions} = getStore('translate');
+
   const {colors, menus} = getters;
   const {currentCompany, defaultCompany, companies} = peopleGetters;
   const {isLoggedIn, user} = authGetters;
   const {item: config, items: companyConfigs} = configsGetters;
+  const [translateReady, setTranslateReady] = useState(false);
 
   const [device, setDevice] = useState(() => {
     return storagedDevice ? JSON.parse(storagedDevice) : {};
@@ -77,6 +81,25 @@ export const DefaultProvider = ({children}) => {
   useEffect(() => {
     if (
       authActions.isLogged() &&
+      currentCompany &&
+      Object.entries(currentCompany).length > 0
+    ) {
+      window.t = new Translate(
+        defaultCompany,
+        currentCompany,
+        translateActions,
+      );
+      t.discoveryAll(['people', 'configs', 'category']).then(x => {
+        setTranslateReady(true);
+      });
+
+      console.log(t.t('people', 'btn', 'save'));
+    }
+  }, [currentCompany]);
+
+  useEffect(() => {
+    if (
+      authActions.isLogged() &&
       (!currentCompany || Object.entries(currentCompany).length === 0)
     )
       peopleActions.myCompanies(device.id);
@@ -102,7 +125,14 @@ export const DefaultProvider = ({children}) => {
 
     fetchColors();
   }, []);
-
+  if (!translateReady) {
+    return (
+      <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+        <ActivityIndicator size="large" color="#1B5587" />
+        <Text style={{marginTop: 10}}>Carregando...</Text>
+      </View>
+    );
+  }
   return (
     <ThemeContext.Provider value={{colors, menus}}>
       {children}
