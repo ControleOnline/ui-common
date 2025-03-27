@@ -1,6 +1,6 @@
 <script>
 import { BrowserAgent } from '@newrelic/browser-agent/src/loaders/browser-agent';
-import Analytics from "@controleonline/ui-common/src/utils/analytics";
+import Analytics from "@controleonline/ui-common/src/vue/utils/analytics";
 
 import { mapActions, mapGetters } from "vuex";
 

@@ -59,6 +59,7 @@ export default {
   computed: {
     ...mapGetters({
       myCompany: "people/currentCompany",
+      user: "auth/user",
     }),
   },
 
@@ -107,7 +108,7 @@ export default {
     },
     getNotifications() {
       let params = {};
-      params["people.id"] = this.$auth.user.people;
+      params["people.id"] = this.user.people;
       params["read"] = 0;
       params.itemsPerPage = 10;
 

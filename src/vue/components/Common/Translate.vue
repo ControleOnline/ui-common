@@ -7,6 +7,7 @@ export default {
   computed: {
     ...mapGetters({
       defaultCompany: "people/defaultCompany",
+      isLogged: "auth/isLogged",
     }),
     messages() {
       return this.$i18n.getLocaleMessage(this.getLanguage());
@@ -14,7 +15,6 @@ export default {
     stores() {
       return this.$translate.stores;
     },
-
   },
   data() {
     return {
@@ -27,8 +27,8 @@ export default {
   methods: {
     ...mapActions({
       getLanguages: "language/getItems",
-      getItems: "tt/getItems",
-      save: "tt/save",
+      getItems: "translate/getItems",
+      save: "translate/save",
     }),
     getLanguageId(languageCode) {
       const language = this.languages.find(
@@ -41,7 +41,7 @@ export default {
       return lang == undefined ? this.$i18n.locale : lang;
     },
     persist() {
-      if (!this.$auth.isLogged) return;
+      if (!this.isLogged) return;
       let persisted = this.$copyObject(this.persisted);
       for (const lang in this.$translate.persistMessages) {
         let languageId = this.getLanguageId(lang);

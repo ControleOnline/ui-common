@@ -1,6 +1,6 @@
 <template>
   <q-list>
-    <q-item :to="{ name: 'MenuIndex' }" v-if="$auth.user.isSuperAdmin" exact>
+    <q-item :to="{ name: 'MenuIndex' }" v-if="user.isSuperAdmin" exact>
       <q-item-section avatar>
         <q-icon name="settings" />
       </q-item-section>
@@ -62,6 +62,7 @@ export default {
     ...mapGetters({
       defaultCompany: "people/defaultCompany",
       myCompany: "people/currentCompany",
+      user: "auth/user",
     }),
   },
 

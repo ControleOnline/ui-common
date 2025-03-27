@@ -14,7 +14,7 @@
 
 <script>
 import Config from "@controleonline/ui-common/src/utils/config";
-import Language from "@controleonline/ui-common/src/utils/language";
+import Language from "@controleonline/ui-common/src/vue/utils/language";
 import { mapActions, mapGetters } from "vuex";
 
 export default {

@@ -1,15 +1,13 @@
 import { createApp } from "vue";
 import Formatter from "@controleonline/ui-common/src/utils/formatter.js";
 import * as methods from "@controleonline/ui-common/src/utils/methods.js";
-import Auth from "@controleonline/ui-common/src/utils/auth.js";
-import Acl from "@controleonline/ui-common/src/utils/acl.js";
-import Translate from "@controleonline/ui-common/src/utils/translate.js";
+import Acl from "@controleonline/ui-common/src/vue/utils/acl.js";
+import Translate from "@controleonline/ui-common/src/vue/utils/translate.js";
 import { APP_ENV } from "@controleonline/../../config/env.js";
 const app = createApp({});
 const t = new Translate();
 
 export default ({ app, router, store }) => {
-  app.config.globalProperties.$auth = new Auth(store, router);
   app.config.globalProperties.$acl = new Acl(store, router);
   app.config.globalProperties.$appType = APP_ENV.APP_TYPE;
   app.config.globalProperties.$copyObject = (obj) => methods.copyObject(obj);

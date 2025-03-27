@@ -42,7 +42,7 @@ export default class Acl {
   }
 
   initialPermissions() {
-    if (!this.store.state.auth.isLoggedIn) return;
+    //if (!this.store.state.auth.isLogged) return;
     this.store.commit("acl/SET_ISLOADING", true);
     this.store
       .dispatch("people/myCompanies")

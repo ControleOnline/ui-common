@@ -16,7 +16,7 @@ export const DefaultProvider = ({children}) => {
 
   const {colors, menus} = getters;
   const {currentCompany, defaultCompany, companies} = peopleGetters;
-  const {isLoggedIn, user} = authGetters;
+  const {isLogged, user} = authGetters;
   const {item: config, items: companyConfigs} = configsGetters;
 
   const [translateReady, setTranslateReady] = useState(false);

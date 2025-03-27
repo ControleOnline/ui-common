@@ -22,35 +22,16 @@ export default route(function ({ store, ssrContext }) {
     ),
   });
 
-  const autoLogin = () => {
-    if (
-      store.getters["auth/user"] !== null &&
-      store.getters["auth/user"].api_key
-    ) {
-      store.commit("auth/LOGIN_SET_IS_LOGGED_IN", true);
-      return true;
-    }
+  async function autoLogin() {
+    let session = JSON.parse(localStorage.getItem("session")) || {};
+    store.dispatch("auth/logIn", session);
+    return await store.dispatch("auth/isLogged");
+  }
 
-    let keys = Object.keys(localStorage);
-    for (let index = 0; index < keys.length; index++) {
-      if (keys[index] != "session") localStorage.removeItem(keys[index]);
-    }
-
-    if (localStorage.getItem("session")) {
-      let session = JSON.parse(localStorage.getItem("session")) || {}
-
-      if (session.user != undefined) {
-        store.dispatch("auth/logIn", session);
-        return true;
-      }
-    }
-
-    return false;
-  };
-
-  Router.beforeEach((to, from, next) => {
+  Router.beforeEach(async (to, from, next) => {
+    autoLogin();
     const isLoginPage = from.name == "LoginIndex";
-    const isLogged = autoLogin();
+    const isLogged = await store.dispatch("auth/isLogged");
 
     if (to.name == undefined) return next({ name: "HomeIndex" });
 
