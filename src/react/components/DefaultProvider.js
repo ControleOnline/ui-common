@@ -61,50 +61,42 @@ export const DefaultProvider = ({children}) => {
   }, []);
 
   useEffect(() => {
-    if (
-      authActions.isLogged() &&
-      companyConfigs &&
-      Object.entries(companyConfigs).length > 0
-    )
+    if (isLogged && companyConfigs && Object.entries(companyConfigs).length > 0)
       configActions.setItem(
-        JSON.parse(companyConfigs['pdv-' + device.id] || '{}'),
+        JSON.parse(companyConfigs['pos-' + device.id] || '{}'),
       );
-  }, [companyConfigs, user]);
+  }, [companyConfigs, isLogged]);
 
   useEffect(() => {
-    if (
-      authActions.isLogged() &&
-      currentCompany &&
-      Object.entries(currentCompany).length > 0
-    )
+    if (isLogged && currentCompany && Object.entries(currentCompany).length > 0)
       configActions.setItems(currentCompany.configs);
-  }, [currentCompany, user]);
+  }, [currentCompany, isLogged]);
 
   useEffect(() => {
     if (
-      authActions.isLogged() &&
+      isLogged &&
       currentCompany &&
       Object.entries(currentCompany).length > 0
     ) {
       window.t = new Translate(
         defaultCompany,
         currentCompany,
-        ['invoice', 'orders'], // Object.keys(stores),
+        ['invoice', 'orders'],
         translateActions,
       );
       t.discoveryAll().then(() => {
         setTranslateReady(true);
       });
     }
-  }, [currentCompany]);
+  }, [currentCompany, isLogged]);
 
   useEffect(() => {
     if (
-      authActions.isLogged() &&
+      isLogged &&
       (!currentCompany || Object.entries(currentCompany).length === 0)
     )
       peopleActions.myCompanies(device.id);
-  }, [user]);
+  }, [isLogged]);
 
   useEffect(() => {
     const fetchColors = async () => {
@@ -126,7 +118,7 @@ export const DefaultProvider = ({children}) => {
 
     fetchColors();
   }, []);
-  if (!translateReady && authActions.isLogged()) {
+  if (!translateReady && isLogged) {
     return (
       <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
         <ActivityIndicator size="large" color="#1B5587" />

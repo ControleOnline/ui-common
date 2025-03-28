@@ -57,12 +57,12 @@ const Settings = ({navigation}) => {
         selectedMode &&
         (!config ||
           config['config-version'] != device.buildNumber ||
-          selectedMode != config['pdv-type'] ||
-          selectedGateway != config['pdv-gateway'])
+          selectedMode != config['pos-type'] ||
+          selectedGateway != config['pos-gateway'])
       ) {
         lc['config-version'] = device?.buildNumber;
-        lc['pdv-type'] = selectedMode;
-        lc['pdv-gateway'] = selectedGateway;
+        lc['pos-type'] = selectedMode;
+        lc['pos-gateway'] = selectedGateway;
         addConfigs(lc);
       }
     }, [device, selectedMode, selectedGateway, config]),
@@ -71,7 +71,7 @@ const Settings = ({navigation}) => {
   const addConfigs = lc => {
     configActions
       .addConfigs({
-        configKey: 'pdv-' + device?.id,
+        configKey: 'pos-' + device?.id,
         configValue: JSON.stringify(lc),
         visibility: 'private',
         people: '/people/' + currentCompany.id,
@@ -83,8 +83,8 @@ const Settings = ({navigation}) => {
   };
 
   const ckeckCompanyConfigs = () => {
-    discoverWallet('pdv-cash-wallet', 'Caixa');
-    discoverWallet('pdv-withdrawl-wallet', 'Reserva');
+    discoverWallet('pos-cash-wallet', 'Caixa');
+    discoverWallet('pos-withdrawl-wallet', 'Reserva');
   };
 
   useFocusEffect(
@@ -93,8 +93,8 @@ const Settings = ({navigation}) => {
         paymentTypes === null ||
         wallets === null ||
         !companyConfigs ||
-        !companyConfigs['pdv-cash-wallet'] ||
-        !companyConfigs['pdv-withdrawl-wallet']
+        !companyConfigs['pos-cash-wallet'] ||
+        !companyConfigs['pos-withdrawl-wallet']
       )
         return;
       const paymentsCheck = [
@@ -106,12 +106,12 @@ const Settings = ({navigation}) => {
         },
       ];
       checkPaymentOptions(
-        companyConfigs['pdv-cash-wallet'],
+        companyConfigs['pos-cash-wallet'],
         paymentTypes,
         paymentsCheck,
       );
       checkPaymentOptions(
-        companyConfigs['pdv-withdrawl-wallet'],
+        companyConfigs['pos-withdrawl-wallet'],
         paymentTypes,
         paymentsCheck,
       );
@@ -254,8 +254,8 @@ const Settings = ({navigation}) => {
   useFocusEffect(
     useCallback(() => {
       if (config) {
-        setSelectedMode(config['pdv-type'] || 'full');
-        setSelectedGateway(config['pdv-gateway'] || 'infinite-pay');
+        setSelectedMode(config['pos-type'] || 'full');
+        setSelectedGateway(config['pos-gateway'] || 'infinite-pay');
       }
     }, [config]),
   );
@@ -282,11 +282,11 @@ const Settings = ({navigation}) => {
               <Text style={styles.Settings.value}>{device?.manufacturer}</Text>
             </View>
             <View style={styles.Settings.row}>
-              <Text style={styles.Settings.label}>Versão do PDV: </Text>
+              <Text style={styles.Settings.label}>Versão do POS: </Text>
               <Text style={styles.Settings.value}>{device?.appVersion}</Text>
             </View>
             <View style={styles.Settings.row}>
-              <Text style={styles.Settings.label}>Compilação do PDV: </Text>
+              <Text style={styles.Settings.label}>Compilação do POS: </Text>
               <Text style={styles.Settings.value}>{device?.buildNumber}</Text>
             </View>
           </View>
@@ -295,11 +295,11 @@ const Settings = ({navigation}) => {
               <Text style={styles.Settings.label}>Carteira p/ Dinheiro: </Text>
               <View style={styles.Settings.walletValueContainer}>
                 <Text style={styles.Settings.walletValue}>
-                  {companyConfigs['pdv-cash-wallet']}
+                  {companyConfigs['pos-cash-wallet']}
                 </Text>
                 {walletLoading || isSaving ? (
                   <ActivityIndicator size={22} color={styles.Settings.label} />
-                ) : companyConfigs['pdv-cash-wallet'] ? (
+                ) : companyConfigs['pos-cash-wallet'] ? (
                   <Icon name={'check'} size={22} color="green" />
                 ) : (
                   <Icon name={'close'} size={22} color="red" />
@@ -310,11 +310,11 @@ const Settings = ({navigation}) => {
               <Text style={styles.Settings.label}>Carteira p/ Sangria: </Text>
               <View style={styles.Settings.walletValueContainer}>
                 <Text style={styles.Settings.walletValue}>
-                  {companyConfigs['pdv-withdrawl-wallet']}
+                  {companyConfigs['pos-withdrawl-wallet']}
                 </Text>
                 {walletLoading || isSaving ? (
                   <ActivityIndicator size={22} color={styles.Settings.label} />
-                ) : companyConfigs['pdv-withdrawl-wallet'] ? (
+                ) : companyConfigs['pos-withdrawl-wallet'] ? (
                   <Icon name={'check'} size={22} color="green" />
                 ) : (
                   <Icon name={'close'} size={22} color="red" />
