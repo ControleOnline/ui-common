@@ -48,6 +48,7 @@ export default class Translate {
         store: store,
         'language.language': this.language,
         people: '/people/' + company.id,
+        itemsPerPage: 500,
       })
       .then(storeTranslates => {
         const currentTranslates = this.translates;
