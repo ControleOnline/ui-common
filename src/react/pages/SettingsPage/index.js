@@ -71,8 +71,6 @@ const Settings = ({navigation}) => {
   );
 
   const addDeviceConfigs = lc => {
-    console.log(lc);
-
     deviceActions
       .addDeviceConfigs({
         device: localDevice?.id,
