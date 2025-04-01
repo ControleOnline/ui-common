@@ -11,17 +11,14 @@ export const DefaultProvider = ({children}) => {
   const {getters: authGetters, actions: authActions} = getStore('auth');
   const storagedDevice = localStorage.getItem('device');
   const {getters: peopleGetters, actions: peopleActions} = getStore('people');
-  const {getters: configsGetters, actions: configActions} = getStore('configs');
+  const {actions: deviceActions} = getStore('device');
+  const {actions: configActions} = getStore('configs');
   const {actions: translateActions} = getStore('translate');
-
   const {colors, menus} = getters;
   const {currentCompany, defaultCompany, companies} = peopleGetters;
-  const {isLogged, user} = authGetters;
-  const {item: config, items: companyConfigs} = configsGetters;
-
+  const {isLogged} = authGetters;
   const [translateReady, setTranslateReady] = useState(false);
-
-  const [device, setDevice] = useState(() => {
+  const [localDevice] = useState(() => {
     return storagedDevice ? JSON.parse(storagedDevice) : {};
   });
 
@@ -37,8 +34,8 @@ export const DefaultProvider = ({children}) => {
       const isEmulator = await DeviceInfo.isEmulator();
       const appVersion = await DeviceInfo.getVersion();
       const buildNumber = await DeviceInfo.getBuildNumber();
-      let localDevice = {
-        ...device,
+      let ld = {
+        ...localDevice,
         id: uniqueId,
         deviceType: deviceId,
         systemName: systemName,
@@ -50,22 +47,26 @@ export const DefaultProvider = ({children}) => {
         appVersion: appVersion,
         buildNumber: buildNumber,
       };
-      localStorage.setItem('device', JSON.stringify(localDevice));
+      localStorage.setItem('device', JSON.stringify(ld));
     };
 
     fetchDeviceId();
-  }, [device]);
+  }, [localDevice]);
 
   useEffect(() => {
     peopleActions.defaultCompany();
   }, []);
 
   useEffect(() => {
-    if (isLogged && companyConfigs && Object.entries(companyConfigs).length > 0)
-      configActions.setItem(
-        JSON.parse(companyConfigs['pos-' + device.id] || '{}'),
-      );
-  }, [companyConfigs, isLogged]);
+    if (isLogged && currentCompany && Object.entries(currentCompany).length > 0)
+      deviceActions.getItems({device: localDevice.id}).then(data => {
+        if (data && data.length > 0) {
+          let d = {...data[0]};
+          d.configs = JSON.parse(d.configs);
+          deviceActions.setItem(d);
+        }
+      });
+  }, [currentCompany, isLogged]);
 
   useEffect(() => {
     if (isLogged && currentCompany && Object.entries(currentCompany).length > 0)
@@ -95,7 +96,7 @@ export const DefaultProvider = ({children}) => {
       isLogged &&
       (!currentCompany || Object.entries(currentCompany).length === 0)
     )
-      peopleActions.myCompanies(device.id);
+      peopleActions.myCompanies(localDevice.id);
   }, [isLogged]);
 
   useEffect(() => {

@@ -20,19 +20,21 @@ const Settings = ({navigation}) => {
   const {getters: walletGetters, actions: walletActions} = getStore('wallet');
   const {getters: peopleGetters, actions: peopleActions} = getStore('people');
   const {getters: configsGetters, actions: configActions} = getStore('configs');
-  const {getters: walletPaymentTypeGetters, actions: walletPaymentTypeActions} =
-    getStore('walletPaymentType');
+  const {actions: walletPaymentTypeActions} = getStore('walletPaymentType');
+  const {getters: deviceGetters, actions: deviceActions} = getStore('device');
+  const {item: device} = deviceGetters;
+
   const {getters: paymentTypeGetters, actions: paymentTypeActions} =
     getStore('paymentType');
   const {items: paymentTypes} = paymentTypeGetters;
   const {currentCompany} = peopleGetters;
   const {isLoading: walletLoading, items: wallets} = walletGetters;
-  const {item: config, items: companyConfigs, isSaving} = configsGetters;
+  const {items: companyConfigs, isSaving} = configsGetters;
   const [selectedMode, setSelectedMode] = useState(null);
   const [selectedGateway, setSelectedGateway] = useState(null);
 
   const storagedDevice = localStorage.getItem('device');
-  const [device, setDevice] = useState(() => {
+  const [localDevice] = useState(() => {
     return storagedDevice ? JSON.parse(storagedDevice) : {};
   });
 
@@ -50,35 +52,39 @@ const Settings = ({navigation}) => {
 
   useFocusEffect(
     useCallback(() => {
-      let lc = {...config};
+      let lc = {...(device?.configs || {})};
       if (
-        device &&
+        localDevice &&
         selectedGateway &&
         selectedMode &&
-        (!config ||
-          config['config-version'] != device.buildNumber ||
-          selectedMode != config['pos-type'] ||
-          selectedGateway != config['pos-gateway'])
+        (!lc ||
+          lc['config-version'] != localDevice.buildNumber ||
+          selectedMode != lc['pos-type'] ||
+          selectedGateway != lc['pos-gateway'])
       ) {
-        lc['config-version'] = device?.buildNumber;
+        lc['config-version'] = localDevice?.buildNumber;
         lc['pos-type'] = selectedMode;
         lc['pos-gateway'] = selectedGateway;
-        addConfigs(lc);
+        addDeviceConfigs(lc);
       }
-    }, [device, selectedMode, selectedGateway, config]),
+    }, [localDevice, selectedMode, selectedGateway, device]),
   );
 
-  const addConfigs = lc => {
-    configActions
-      .addConfigs({
-        configKey: 'pos-' + device?.id,
-        configValue: JSON.stringify(lc),
-        visibility: 'private',
+  const addDeviceConfigs = lc => {
+    console.log(lc);
+
+    deviceActions
+      .addDeviceConfigs({
+        device: localDevice?.id,
+        configs: JSON.stringify(lc),
         people: '/people/' + currentCompany.id,
-        module: '/modules/' + 8,
       })
-      .then(value => {
-        configActions.setItem(JSON.parse(value.configValue));
+      .then(data => {
+        if (data && Object.keys(data).length > 0) {
+          let d = {...data};
+          d.configs = JSON.parse(d.configs);
+          deviceActions.setItem(d);
+        }
       });
   };
 
@@ -253,11 +259,11 @@ const Settings = ({navigation}) => {
 
   useFocusEffect(
     useCallback(() => {
-      if (config) {
-        setSelectedMode(config['pos-type'] || 'full');
-        setSelectedGateway(config['pos-gateway'] || 'infinite-pay');
+      if (device?.configs) {
+        setSelectedMode(device?.configs['pos-type'] || 'full');
+        setSelectedGateway(device?.configs['pos-gateway'] || 'infinite-pay');
       }
-    }, [config]),
+    }, [device]),
   );
 
   return (
@@ -267,27 +273,37 @@ const Settings = ({navigation}) => {
           <View style={{marginTop: 20}}>
             <View style={styles.Settings.row}>
               <Text style={styles.Settings.label}>ID do equipamento: </Text>
-              <Text style={styles.Settings.value}>{device?.id}</Text>
+              <Text style={styles.Settings.value}>{localDevice?.id}</Text>
             </View>
             <View style={styles.Settings.row}>
               <Text style={styles.Settings.label}>Sistema: </Text>
-              <Text style={styles.Settings.value}>{device?.systemName}</Text>
+              <Text style={styles.Settings.value}>
+                {localDevice?.systemName}
+              </Text>
             </View>
             <View style={styles.Settings.row}>
               <Text style={styles.Settings.label}>Versão do Sistema: </Text>
-              <Text style={styles.Settings.value}>{device?.systemVersion}</Text>
+              <Text style={styles.Settings.value}>
+                {localDevice?.systemVersion}
+              </Text>
             </View>
             <View style={styles.Settings.row}>
               <Text style={styles.Settings.label}>Fabricante: </Text>
-              <Text style={styles.Settings.value}>{device?.manufacturer}</Text>
+              <Text style={styles.Settings.value}>
+                {localDevice?.manufacturer}
+              </Text>
             </View>
             <View style={styles.Settings.row}>
               <Text style={styles.Settings.label}>Versão do POS: </Text>
-              <Text style={styles.Settings.value}>{device?.appVersion}</Text>
+              <Text style={styles.Settings.value}>
+                {localDevice?.appVersion}
+              </Text>
             </View>
             <View style={styles.Settings.row}>
               <Text style={styles.Settings.label}>Compilação do POS: </Text>
-              <Text style={styles.Settings.value}>{device?.buildNumber}</Text>
+              <Text style={styles.Settings.value}>
+                {localDevice?.buildNumber}
+              </Text>
             </View>
           </View>
           <View style={{marginTop: 20}}>
