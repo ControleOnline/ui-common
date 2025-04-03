@@ -109,7 +109,7 @@ export default {
         name: null,
         alias: null,
         people_document: null,
-        link: "/people/" + this.user.id,
+        link: "/people/" + this.user?.id,
         link_type: "employee",
         peopleType: "J",
       },
