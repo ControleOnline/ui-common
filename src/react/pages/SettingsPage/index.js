@@ -14,10 +14,9 @@ import {Picker} from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 const Settings = ({navigation}) => {
   const {styles, globalStyles} = css();
-  const {getters: walletGetters, actions: walletActions} = getStore('wallet');
-  const {getters: peopleGetters, actions: peopleActions} = getStore('people');
+  const {getters: walletGetters} = getStore('wallet');
+  const {getters: peopleGetters} = getStore('people');
   const {getters: configsGetters, actions: configActions} = getStore('configs');
-  const {actions: walletPaymentTypeActions} = getStore('walletPaymentType');
   const {getters: deviceConfigGetters, actions: deviceConfigsActions} =
     getStore('device_config');
   const {item: device} = deviceConfigGetters;
@@ -26,7 +25,7 @@ const Settings = ({navigation}) => {
     getStore('paymentType');
   const {items: paymentTypes} = paymentTypeGetters;
   const {currentCompany} = peopleGetters;
-  const {isLoading: walletLoading, items: wallets} = walletGetters;
+  const {isLoading: walletLoading} = walletGetters;
   const {items: companyConfigs, isSaving} = configsGetters;
   const [selectedMode, setSelectedMode] = useState(null);
   const [selectedGateway, setSelectedGateway] = useState(null);
@@ -47,8 +46,8 @@ const Settings = ({navigation}) => {
   useFocusEffect(
     useCallback(() => {
       if (!discovered)
-        deviceConfigsActions
-          .discoveryDeviceConfigs({
+        configActions
+          .discoveryMainConfigs({
             people: '/people/' + currentCompany.id,
           })
           .finally(() => {

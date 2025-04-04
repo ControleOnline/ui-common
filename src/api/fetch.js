@@ -6,8 +6,8 @@ export default function (resourceEndpoint, options = {}) {
 
   if (!resourceEndpoint || !entryPoint) return;
 
-  if (resourceEndpoint == "/people/companies/my")
-    console.log(entryPoint, resourceEndpoint, options.body);
+ // if (resourceEndpoint == "/people/companies/my")
+ //   console.log(entryPoint, resourceEndpoint, options.body);
 
   console.log(entryPoint, resourceEndpoint);
 
