@@ -11,7 +11,7 @@ export const DefaultProvider = ({children}) => {
   const {getters: authGetters, actions: authActions} = getStore('auth');
   const storagedDevice = localStorage.getItem('device');
   const {getters: peopleGetters, actions: peopleActions} = getStore('people');
-  const {actions: deviceActions} = getStore('device');
+  const {actions: deviceConfigsActions} = getStore('device_config');
   const {actions: configActions} = getStore('configs');
   const {actions: translateActions} = getStore('translate');
   const {colors, menus} = getters;
@@ -58,15 +58,25 @@ export const DefaultProvider = ({children}) => {
   }, []);
 
   useEffect(() => {
-    if (isLogged && currentCompany && Object.entries(currentCompany).length > 0)
-      deviceActions.getItems({device: localDevice.id}).then(data => {
-        if (data && data.length > 0) {
-          let d = {...data[0]};
-          d.configs = JSON.parse(d.configs);
-          deviceActions.setItem(d);
-        }
-      });
-  }, [currentCompany, isLogged]);
+    if (
+      localDevice &&
+      isLogged &&
+      currentCompany &&
+      Object.entries(currentCompany).length > 0
+    )
+      deviceConfigsActions
+        .getItems({
+          'device.device': localDevice?.id,
+          people: '/people/' + currentCompany.id,
+        })
+        .then(data => {
+          if (data && data.length > 0) {
+            let d = {...data[0]};
+            d.configs = JSON.parse(d.configs);
+            deviceConfigsActions.setItem(d);
+          }
+        });
+  }, [currentCompany, isLogged, localDevice]);
 
   useEffect(() => {
     if (isLogged && currentCompany && Object.entries(currentCompany).length > 0)
@@ -96,7 +106,7 @@ export const DefaultProvider = ({children}) => {
       isLogged &&
       (!currentCompany || Object.entries(currentCompany).length === 0)
     )
-      peopleActions.myCompanies(localDevice.id);
+      peopleActions.myCompanies();
   }, [isLogged]);
 
   useEffect(() => {

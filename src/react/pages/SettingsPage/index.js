@@ -21,8 +21,9 @@ const Settings = ({navigation}) => {
   const {getters: peopleGetters, actions: peopleActions} = getStore('people');
   const {getters: configsGetters, actions: configActions} = getStore('configs');
   const {actions: walletPaymentTypeActions} = getStore('walletPaymentType');
-  const {getters: deviceGetters, actions: deviceActions} = getStore('device');
-  const {item: device} = deviceGetters;
+  const {getters: deviceConfigGetters, actions: deviceConfigsActions} =
+    getStore('device_config');
+  const {item: device} = deviceConfigGetters;
 
   const {getters: paymentTypeGetters, actions: paymentTypeActions} =
     getStore('paymentType');
@@ -71,19 +72,11 @@ const Settings = ({navigation}) => {
   );
 
   const addDeviceConfigs = lc => {
-    deviceActions
-      .addDeviceConfigs({
-        device: localDevice?.id,
-        configs: JSON.stringify(lc),
-        people: '/people/' + currentCompany.id,
-      })
-      .then(data => {
-        if (data && Object.keys(data).length > 0) {
-          let d = {...data};
-          d.configs = JSON.parse(d.configs);
-          deviceActions.setItem(d);
-        }
-      });
+    deviceConfigsActions.addDeviceConfigs({
+      'device.device': localDevice?.id,
+      configs: JSON.stringify(lc),
+      people: '/people/' + currentCompany.id,
+    });
   };
 
   const ckeckCompanyConfigs = () => {
@@ -258,8 +251,11 @@ const Settings = ({navigation}) => {
   useFocusEffect(
     useCallback(() => {
       if (device?.configs) {
-        setSelectedMode(device?.configs['pos-type'] || 'full');
-        setSelectedGateway(device?.configs['pos-gateway'] || 'infinite-pay');
+        setSelectedMode(device?.configs['pos-type']);
+        setSelectedGateway(device?.configs['pos-gateway']);
+      } else {
+        setSelectedMode('full');
+        setSelectedGateway('infinite-pay');
       }
     }, [device]),
   );

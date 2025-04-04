@@ -10,9 +10,12 @@ export const addDeviceConfigs = ({commit, getters}, params) => {
   return api
     .fetch(getters.resourceEndpoint + '/add-configs', options)
     .then(data => {
-      return data;
+      const parsedConfigs = data?.configs ? JSON.parse(data.configs) : {};
+      const d = {...getters.item, configs: parsedConfigs};
+      commit(types.SET_ITEM, d);
     })
     .catch(e => {
+      console.log(e);
       commit(types.SET_ERROR, e.message);
       throw e;
     })
