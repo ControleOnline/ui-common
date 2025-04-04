@@ -12,9 +12,6 @@ import {getStore} from '@store';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import {Picker} from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import CieloPaySettings from '@controleonline/ui-orders/src/react/services/Cielo/Settings';
-import InfinitePaySettings from '@controleonline/ui-orders/src/react/services/InfinitePay/Settings';
-
 const Settings = ({navigation}) => {
   const {styles, globalStyles} = css();
   const {getters: walletGetters, actions: walletActions} = getStore('wallet');
@@ -33,220 +30,44 @@ const Settings = ({navigation}) => {
   const {items: companyConfigs, isSaving} = configsGetters;
   const [selectedMode, setSelectedMode] = useState(null);
   const [selectedGateway, setSelectedGateway] = useState(null);
+  const [discovered, setDiscovered] = useState(false);
 
   const storagedDevice = localStorage.getItem('device');
   const [localDevice] = useState(() => {
     return storagedDevice ? JSON.parse(storagedDevice) : {};
   });
 
-  const handleModeChange = mode => {
-    setSelectedMode(mode);
-  };
-
-  const handleGatewayChange = gateway => {
-    setSelectedGateway(gateway);
-  };
-
-  const handleClearTranslate = () => {
-    t.reload();
-  };
+  useFocusEffect(
+    useCallback(() => {
+      if (localDevice && selectedGateway && selectedMode && discovered)
+        addDeviceConfigs();
+    }, [localDevice, selectedMode, selectedGateway, discovered]),
+  );
 
   useFocusEffect(
     useCallback(() => {
-      let lc = {...(device?.configs || {})};
-      if (
-        localDevice &&
-        selectedGateway &&
-        selectedMode &&
-        (!lc ||
-          lc['config-version'] != localDevice.buildNumber ||
-          selectedMode != lc['pos-type'] ||
-          selectedGateway != lc['pos-gateway'])
-      ) {
-        lc['config-version'] = localDevice?.buildNumber;
-        lc['pos-type'] = selectedMode;
-        lc['pos-gateway'] = selectedGateway;
-        addDeviceConfigs(lc);
-      }
-    }, [localDevice, selectedMode, selectedGateway, device]),
+      if (!discovered)
+        deviceConfigsActions
+          .discoveryDeviceConfigs({
+            people: '/people/' + currentCompany.id,
+          })
+          .finally(() => {
+            setDiscovered(true);
+          });
+    }, [discovered]),
   );
 
-  const addDeviceConfigs = lc => {
+  const addDeviceConfigs = () => {
+    let lc = {...(device?.configs || {})};
+    lc['config-version'] = localDevice?.buildNumber;
+    lc['pos-type'] = selectedMode;
+    lc['pos-gateway'] = selectedGateway;
+
     deviceConfigsActions.addDeviceConfigs({
-      'device.device': localDevice?.id,
       configs: JSON.stringify(lc),
       people: '/people/' + currentCompany.id,
     });
   };
-
-  const ckeckCompanyConfigs = () => {
-    discoverWallet('pos-cash-wallet', 'Caixa');
-    discoverWallet('pos-withdrawl-wallet', 'Reserva');
-  };
-
-  useFocusEffect(
-    useCallback(() => {
-      if (
-        paymentTypes === null ||
-        wallets === null ||
-        !companyConfigs ||
-        !companyConfigs['pos-cash-wallet'] ||
-        !companyConfigs['pos-withdrawl-wallet']
-      )
-        return;
-      const paymentsCheck = [
-        {
-          paymentType: 'Dinheiro',
-          frequency: 'single',
-          installments: 'single',
-          people: '/people/' + currentCompany.id,
-        },
-      ];
-      checkPaymentOptions(
-        companyConfigs['pos-cash-wallet'],
-        paymentTypes,
-        paymentsCheck,
-      );
-      checkPaymentOptions(
-        companyConfigs['pos-withdrawl-wallet'],
-        paymentTypes,
-        paymentsCheck,
-      );
-    }, [companyConfigs, paymentTypes, wallets, currentCompany]),
-  );
-
-  useFocusEffect(
-    useCallback(() => {
-      if (
-        paymentTypes == null &&
-        currentCompany &&
-        Object.entries(currentCompany).length !== 0
-      )
-        paymentTypeActions.getItems({
-          people: '/people/' + currentCompany.id,
-        });
-    }, [paymentTypes, currentCompany]),
-  );
-
-  async function checkWalletPaymentOptions(walletId, payment, paymentCheck) {
-    const walletIdStr = String(walletId);
-    const wallet = wallets.find(
-      element => element['@id'].replace(/\D/g, '') === walletIdStr,
-    );
-    const walletIndex = wallets.findIndex(
-      element => element['@id'].replace(/\D/g, '') === walletIdStr,
-    );
-
-    if (!wallet) return;
-
-    if (!wallet.walletPaymentTypes || wallet.walletPaymentTypes.length == 0) {
-      const data = await walletPaymentTypeActions.save({
-        wallet: wallet['@id'],
-        paymentType: payment['@id'],
-        paymentCode: paymentCheck.paymentCode,
-      });
-      let w = [...wallets];
-      w[walletIndex].walletPaymentTypes.push(data);
-      walletActions.setItems(w);
-    } else {
-      let p = wallet.walletPaymentTypes.find(element => {
-        return (
-          element.paymentType.frequency === payment.frequency &&
-          element.paymentType.installments === payment.installments &&
-          element.paymentType.paymentType === payment.paymentType
-        );
-      });
-      if (!p || Object.entries(p).length === 0) {
-        const data = await walletPaymentTypeActions.save({
-          wallet: wallet['@id'],
-          paymentType: payment['@id'],
-          paymentCode: paymentCheck.paymentCode,
-        });
-        let w = [...wallets];
-        w[walletIndex].walletPaymentTypes.push(data);
-        walletActions.setItems(w);
-      }
-    }
-  }
-
-  async function checkPaymentOptions(wallet, paymentTypes, paymentsCheck) {
-    if (!wallets) return;
-
-    for (const paymentCheck of paymentsCheck) {
-      const {frequency, installments, paymentType} = paymentCheck;
-      const matchingPayment = paymentTypes.find(
-        element =>
-          element.frequency === frequency &&
-          element.installments === installments &&
-          element.paymentType === paymentType,
-      );
-      setTimeout(async () => {
-        try {
-          if (matchingPayment) {
-            await checkWalletPaymentOptions(
-              wallet,
-              matchingPayment,
-              paymentCheck,
-            );
-          } else {
-            const savedPayment = await paymentTypeActions.save(paymentCheck);
-            await checkWalletPaymentOptions(wallet, savedPayment, paymentCheck);
-          }
-        } catch (error) {
-          console.error('Erro ao processar opções de pagamento:', error);
-        }
-      }, 1000);
-    }
-  }
-
-  useFocusEffect(
-    useCallback(() => {
-      if (wallets == null && currentCompany)
-        walletActions.getItems({
-          people: '/people/' + currentCompany.id,
-        });
-    }, [wallets, currentCompany]),
-  );
-
-  const discoverWallet = (configName, name) => {
-    if (!wallets || !Array.isArray(wallets)) return;
-
-    const w = wallets.find(element => element.wallet === name);
-    if (w) saveConfig(configName, w['@id'].replace(/\D/g, ''));
-    else
-      walletActions
-        .save({
-          wallet: name,
-          balance: 0,
-          people: '/people/' + currentCompany.id,
-        })
-        .then(data => {
-          saveConfig(configName, data['@id'].replace(/\D/g, ''));
-        });
-  };
-
-  const saveConfig = (config, value) => {
-    if (!companyConfigs[config])
-      configActions.addConfigs({
-        configKey: config,
-        configValue: value,
-        visibility: 'public',
-        people: '/people/' + currentCompany.id,
-        module: '/modules/' + 8,
-      });
-  };
-
-  useFocusEffect(
-    useCallback(() => {
-      if (
-        wallets !== null &&
-        companyConfigs &&
-        currentCompany &&
-        Object.entries(currentCompany).length !== 0
-      )
-        ckeckCompanyConfigs();
-    }, [companyConfigs, currentCompany, wallets]),
-  );
 
   useFocusEffect(
     useCallback(() => {
@@ -259,6 +80,10 @@ const Settings = ({navigation}) => {
       }
     }, [device]),
   );
+
+  const handleClearTranslate = () => {
+    t.reload();
+  };
 
   return (
     <SafeAreaView style={styles.Settings.container}>
@@ -335,7 +160,7 @@ const Settings = ({navigation}) => {
           <View style={{marginTop: 10}}>
             <Picker
               selectedValue={selectedMode}
-              onValueChange={itemValue => handleModeChange(itemValue)}
+              onValueChange={itemValue => setSelectedMode(itemValue)}
               style={styles.Settings.picker}>
               <Picker.Item label="Modo Balcão" value="simple" />
               <Picker.Item label="Modo Comanda" value="full" />
@@ -344,27 +169,11 @@ const Settings = ({navigation}) => {
           <View style={{marginTop: 10}}>
             <Picker
               selectedValue={selectedGateway}
-              onValueChange={itemValue => handleGatewayChange(itemValue)}
+              onValueChange={itemValue => setSelectedGateway(itemValue)}
               style={styles.Settings.picker}>
               <Picker.Item label="Cielo" value="cielo" />
               <Picker.Item label="Infinite Pay" value="infinite-pay" />
             </Picker>
-          </View>
-          <View style={{marginTop: 10}}>
-            {selectedGateway == 'cielo' && (
-              <CieloPaySettings
-                discoverWallet={discoverWallet}
-                checkPaymentOptions={checkPaymentOptions}
-                checkWalletPaymentOptions={checkWalletPaymentOptions}
-              />
-            )}
-            {selectedGateway == 'infinite-pay' && (
-              <InfinitePaySettings
-                discoverWallet={discoverWallet}
-                checkPaymentOptions={checkPaymentOptions}
-                checkWalletPaymentOptions={checkWalletPaymentOptions}
-              />
-            )}
           </View>
         </View>
 
