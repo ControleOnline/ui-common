@@ -180,7 +180,7 @@ const Settings = ({navigation}) => {
           onPress={handleClearTranslate}
           style={[
             globalStyles.button,
-            globalStyles.btnAdd,
+            
             {
               flex: 1,
               flexDirection: 'row',
