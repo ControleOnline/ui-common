@@ -72,9 +72,19 @@ const Settings = ({navigation}) => {
     useCallback(() => {
       if (device?.configs) {
         setSelectedMode(device?.configs['pos-type']);
-        setSelectedGateway(device?.configs['pos-gateway']);
       } else {
         setSelectedMode('full');
+      }
+    }, [device]),
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      if (localDevice?.manufacturer == 'Quantum' && !localDevice?.isEmulator)
+        setSelectedGateway('cielo');
+      else if (device?.configs) {
+        setSelectedGateway(device?.configs['pos-gateway']);
+      } else {
         setSelectedGateway('infinite-pay');
       }
     }, [device]),
@@ -165,22 +175,28 @@ const Settings = ({navigation}) => {
               <Picker.Item label="Modo Comanda" value="full" />
             </Picker>
           </View>
-          <View style={{marginTop: 10}}>
-            <Picker
-              selectedValue={selectedGateway}
-              onValueChange={itemValue => setSelectedGateway(itemValue)}
-              style={styles.Settings.picker}>
-              <Picker.Item label="Cielo" value="cielo" />
-              <Picker.Item label="Infinite Pay" value="infinite-pay" />
-            </Picker>
-          </View>
+          {(localDevice?.manufacturer != 'Quantum' ||
+            localDevice?.isEmulator) && (
+            <View style={{marginTop: 10}}>
+              <Picker
+                selectedValue={selectedGateway}
+                onValueChange={itemValue => setSelectedGateway(itemValue)}
+                style={styles.Settings.picker}>
+                <Picker.Item label="Infinite Pay" value="infinite-pay" />
+                {(localDevice?.manufacturer == 'Quantum' ||
+                  localDevice?.isEmulator) && (
+                  <Picker.Item label="Cielo" value="cielo" />
+                )}
+              </Picker>
+            </View>
+          )}
         </View>
 
         <TouchableOpacity
           onPress={handleClearTranslate}
           style={[
             globalStyles.button,
-            
+
             {
               flex: 1,
               flexDirection: 'row',
