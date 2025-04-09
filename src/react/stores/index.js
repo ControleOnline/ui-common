@@ -1,4 +1,4 @@
-import {createContext, useContext, useState, useMemo, useEffect} from 'react';
+import {createContext, useContext, useState, useMemo} from 'react';
 import stores from './../../../../../../src/store/stores';
 
 const StoreContext = createContext();
