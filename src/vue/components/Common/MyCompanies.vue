@@ -6,7 +6,7 @@
       v-if="
         isMultipleCompanies() == true && !dialog /*&& !this.$q.screen.gt.sm*/
       "
-      :label="myCompany  ? myCompany?.alias : 'Loading...'"
+      :label="myCompany ? myCompany?.alias : 'Loading...'"
       :class="(expanded ? '' : 'company-swich') + ' ellipsis full-width'"
     >
       <q-list>
@@ -14,7 +14,7 @@
           clickable
           v-close-popup
           dense
-          v-for="(company, index) in myCompanies"
+          v-for="(company, index) in companies"
           :disable="
             company.enabled && company.user.employee_enabled ? false : true
           "
@@ -66,13 +66,10 @@ export default {
   data() {
     return {
       dialog: false,
-      myCompanies: [],
     };
   },
 
-  created() {
-    this.setCompanies(this.companies);
-  },
+  created() {},
 
   computed: {
     ...mapGetters({
@@ -89,13 +86,12 @@ export default {
   watch: {
     companies(companies) {
       this.dialog = companies.length > 0 ? false : true;
-      this.setCompanies(companies);
     },
   },
 
   methods: {
     ...mapActions({
-      setCompany: "people/currentCompany",
+      setCurrentCompany: "people/setCurrentCompany",
       save: "people/company",
     }),
 
@@ -107,38 +103,9 @@ export default {
     isMultipleCompanies() {
       return this.companies.length > 1 ? true : false;
     },
-    setCompanies(companies) {
-      let session = localStorage.getItem("session")
-        ? JSON.parse(localStorage.getItem("session")) || {}
-        : {};
-      let selected = session.mycompany;
-      let currentCompany;
-
-      this.myCompanies = [];
-      for (let index in companies) {
-        let item = companies[index];
-        this.myCompanies.push(item);
-        if (item.enabled && !selected) selected = item;
-      }
-
-      if (selected != -1) {
-        currentCompany = this.companies.find(
-          (companies) => companies.id === selected
-        );
-      } else currentCompany = selected;
-
-      if (currentCompany) {
-        this.setCompany(currentCompany);
-      }
-    },
 
     onCompanySelection(company) {
-      this.setCompany(company);
-      let session = localStorage.getItem("session")
-        ? JSON.parse(localStorage.getItem("session")) || {}
-        : {};
-      session.mycompany = company.id;
-      localStorage.setItem("session", JSON.stringify(session));
+      this.setCurrentCompany(company);
     },
   },
 };

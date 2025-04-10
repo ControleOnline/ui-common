@@ -1,22 +1,22 @@
-import React, {createContext, useContext, useEffect, useState} from 'react';
-import {StatusBar, View, ActivityIndicator, Text} from 'react-native';
-import DeviceInfo from 'react-native-device-info';
-import Translate from '@controleonline/ui-common/src/utils/translate';
-import stores from '@stores';
-import {getStore} from '@store';
+import React, { createContext, useContext, useEffect, useState } from "react";
+import { StatusBar, View, ActivityIndicator, Text } from "react-native";
+import DeviceInfo from "react-native-device-info";
+import Translate from "@controleonline/ui-common/src/utils/translate";
+import stores from "@stores";
+import { getStore } from "@store";
 const ThemeContext = createContext();
 
-export const DefaultProvider = ({children}) => {
-  const {getters, actions} = getStore('theme');
-  const {getters: authGetters, actions: authActions} = getStore('auth');
-  const storagedDevice = localStorage.getItem('device');
-  const {getters: peopleGetters, actions: peopleActions} = getStore('people');
-  const {actions: deviceConfigsActions} = getStore('device_config');
-  const {actions: configActions} = getStore('configs');
-  const {actions: translateActions} = getStore('translate');
-  const {colors, menus} = getters;
-  const {currentCompany, defaultCompany, companies} = peopleGetters;
-  const {isLogged} = authGetters;
+export const DefaultProvider = ({ children }) => {
+  const { getters, actions } = getStore("theme");
+  const { getters: authGetters, actions: authActions } = getStore("auth");
+  const storagedDevice = localStorage.getItem("device");
+  const { getters: peopleGetters, actions: peopleActions } = getStore("people");
+  const { actions: deviceConfigsActions } = getStore("device_config");
+  const { actions: configActions } = getStore("configs");
+  const { actions: translateActions } = getStore("translate");
+  const { colors, menus } = getters;
+  const { currentCompany, defaultCompany, companies } = peopleGetters;
+  const { isLogged } = authGetters;
   const [translateReady, setTranslateReady] = useState(false);
   const [localDevice] = useState(() => {
     return storagedDevice ? JSON.parse(storagedDevice) : {};
@@ -47,7 +47,7 @@ export const DefaultProvider = ({children}) => {
         appVersion: appVersion,
         buildNumber: buildNumber,
       };
-      localStorage.setItem('device', JSON.stringify(ld));
+      localStorage.setItem("device", JSON.stringify(ld));
     };
 
     fetchDeviceId();
@@ -66,12 +66,12 @@ export const DefaultProvider = ({children}) => {
     )
       deviceConfigsActions
         .getItems({
-          'device.device': localDevice?.id,
-          people: '/people/' + currentCompany.id,
+          "device.device": localDevice?.id,
+          people: "/people/" + currentCompany.id,
         })
-        .then(data => {
+        .then((data) => {
           if (data && data.length > 0) {
-            let d = {...data[0]};
+            let d = { ...data[0] };
             d.configs = JSON.parse(d.configs);
             deviceConfigsActions.setItem(d);
           }
@@ -92,8 +92,8 @@ export const DefaultProvider = ({children}) => {
       window.t = new Translate(
         defaultCompany,
         currentCompany,
-        ['invoice', 'orders'],
-        translateActions,
+        ["invoice", "orders"],
+        translateActions
       );
       t.discoveryAll().then(() => {
         setTranslateReady(true);
@@ -106,21 +106,23 @@ export const DefaultProvider = ({children}) => {
       isLogged &&
       (!currentCompany || Object.entries(currentCompany).length === 0)
     )
-      peopleActions.myCompanies();
+      peopleActions.myCompanies().then((data) => {
+        peopleActions.setCurrentCompany(data?.data[0]);
+      });
   }, [isLogged]);
 
   useEffect(() => {
     const fetchColors = async () => {
-      const cssText = await api.fetch('themes-colors.css', {
-        responseType: 'text',
+      const cssText = await api.fetch("themes-colors.css", {
+        responseType: "text",
       });
 
       const parsedColors = {};
       const matches = cssText.match(/--[\w-]+:\s*#[0-9a-fA-F]+/g);
       if (matches) {
-        matches.forEach(match => {
-          const [key, value] = match.split(':');
-          const cleanKey = key.replace('--', '').trim();
+        matches.forEach((match) => {
+          const [key, value] = match.split(":");
+          const cleanKey = key.replace("--", "").trim();
           parsedColors[cleanKey] = value.trim();
         });
       }
@@ -131,14 +133,14 @@ export const DefaultProvider = ({children}) => {
   }, []);
   if (!translateReady && isLogged) {
     return (
-      <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="large" color="#1B5587" />
-        <Text style={{marginTop: 10}}>Carregando...</Text>
+        <Text style={{ marginTop: 10 }}>Carregando...</Text>
       </View>
     );
   }
   return (
-    <ThemeContext.Provider value={{colors, menus}}>
+    <ThemeContext.Provider value={{ colors, menus }}>
       {children}
     </ThemeContext.Provider>
   );
