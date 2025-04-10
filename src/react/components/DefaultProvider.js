@@ -106,9 +106,7 @@ export const DefaultProvider = ({ children }) => {
       isLogged &&
       (!currentCompany || Object.entries(currentCompany).length === 0)
     )
-      peopleActions.myCompanies().then((data) => {
-        peopleActions.setCurrentCompany(data?.data[0]);
-      });
+      peopleActions.myCompanies();
   }, [isLogged]);
 
   useEffect(() => {
