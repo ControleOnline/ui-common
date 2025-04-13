@@ -17,9 +17,9 @@ export default function (resourceEndpoint, options = {}) {
       if (options.responseType == "text") return response.text();
 
       return response.json().then((json) => {
-        if (json["@type"] == "hydra:Error")
+        if (json["@type"] == "Error")
           throw {
-            message: json["hydra:description"],
+            message: json["description"],
             code: response.status,
             status: response.status,
           };

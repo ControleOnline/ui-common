@@ -118,8 +118,8 @@ export default {
         })
 
         .then((result) => {
-          this.notifications = result["hydra:member"];
-          this.notificationsUnread = result["hydra:totalItems"];
+          this.notifications = result["member"];
+          this.notificationsUnread = result["totalItems"];
         });
     },
     redirecionaTasks(notfication) {
