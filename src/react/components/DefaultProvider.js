@@ -3,6 +3,8 @@ import {StatusBar, View, ActivityIndicator, Text} from 'react-native';
 import DeviceInfo from 'react-native-device-info';
 import Translate from '@controleonline/ui-common/src/utils/translate';
 import {WebsocketListener} from '@controleonline/ui-common/src/react/components/WebsocketListener';
+import PrintService from '@controleonline/ui-common/src/react/components/PrintService';
+
 import {getStore} from '@store';
 const ThemeContext = createContext();
 
@@ -140,7 +142,8 @@ export const DefaultProvider = ({children}) => {
   return (
     <ThemeContext.Provider value={{colors, menus}}>
       {children}
-      <WebsocketListener/>
+      <WebsocketListener />
+      <PrintService />
     </ThemeContext.Provider>
   );
 };
