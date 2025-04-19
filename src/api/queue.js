@@ -3,6 +3,7 @@ class Queue {
     this.queue = [];
     this.isProcessing = false;
     this.timeout = [];
+    this.onFinish = null;
   }
   addToQueue(func) {
     this.queue.push(func);
@@ -22,11 +23,16 @@ class Queue {
     return debounced;
   }
 
+  finalize = () => {
+        this.isProcessing = false;
+    console.log(this.onFinish);
+    if (this.onFinish) this.onFinish();
+  }
+
   processQueue() {
-    if (this.queue.length === 0 && this.isProcessing === true) {
-      this.isProcessing = false;
-      return;
-    }
+    if (this.queue.length === 0 && this.isProcessing === true)
+      return this.finalize();
+
     const func = this.queue[0];
 
     return func()
@@ -45,9 +51,10 @@ class Queue {
         }, 1000);
       });
   }
-  initQueue() {
+  initQueue(callback) {
     if (this.queue.length > 0 && this.isProcessing === false) {
       this.isProcessing = true;
+      this.onFinish = callback;
       this.processQueue();
     }
   }

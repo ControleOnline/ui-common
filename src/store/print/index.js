@@ -8,7 +8,7 @@ export default {
   state: {
     item: {},
     items: [],
-    resourceEndpoint: 'statuses',
+    resourceEndpoint: 'print',
     isLoading: false,
     reload: false,
     error: '',

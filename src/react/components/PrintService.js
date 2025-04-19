@@ -11,35 +11,21 @@ const PrintService = ({}) => {
   const {items: spool} = printGetters;
 
   useEffect(() => {
-
-    console.log('SPOOL:', spool);
-
-
-    const processPrints = async () => {
-
-      if (spool && spool.length > 0) {
-        for (const print of spool) {
-          try {
-            const data = await getData(print);
-            const cielo = new CieloPrint();
-            cielo.print(data).then(() => {
-              console.log('r');
-
-              const newSpool = spool.filter(
-                item => item.printId !== print.printId,
-              );
-              console.log('r');
-              //printActions.setItems(newSpool);
-            });
-          } catch (err) {
-            console.error('Erro no processamento do print:', err);
-          }
-        }
-      }
-    };
-
-    processPrints();
+    if (spool && spool.length > 0) {
+      console.log(spool);
+      for (const print of spool) printActions.addToQueue(() => goPrint(print));
+      printActions.initQueue(function () {
+        console.log('ee');
+        //printActions.getItems();
+      });
+    }
   }, [spool]);
+
+  goPrint = async print => {
+    const data = await getData(print);
+    const cielo = new CieloPrint();
+    cielo.print(data);
+  };
 
   getData = async print => {
     if (print.printType == 'order') return await printOrder(print);
