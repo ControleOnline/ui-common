@@ -14,7 +14,7 @@ const PrintService = ({}) => {
     if (spool && spool.length > 0) {
       console.log(spool);
       for (const print of spool) printActions.addToQueue(() => goPrint(print));
-      printActions.initQueue(function () {
+      printActions.initQueue(() => {
         console.log('ee');
         //printActions.getItems();
       });
