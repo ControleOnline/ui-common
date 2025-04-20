@@ -3,69 +3,83 @@ import {CieloPrint} from '@controleonline/ui-orders/src/react/services/Cielo/Pri
 import {getStore} from '@store';
 
 const PrintService = ({}) => {
-  const {getters: deviceConfigGetters} = getStore('device_config');
   const {getters: peopleGetters} = getStore('people');
   const {getters: printGetters, actions: printActions} = getStore('print');
   const {currentCompany} = peopleGetters;
-  const {item: device} = deviceConfigGetters;
-  const {items: spool} = printGetters;
-
+  const {reload, print, items: spool} = printGetters;
+  const storagedDevice = localStorage.getItem('device');
+  const [localDevice] = useState(() => {
+    return storagedDevice ? JSON.parse(storagedDevice) : {};
+  });
   useEffect(() => {
-    if (spool && spool.length > 0) {
-      console.log(spool);
-      for (const print of spool) printActions.addToQueue(() => goPrint(print));
+    if (print && print.length > 0) {
+      for (const p of print) printActions.addToQueue(() => getData(p));
       printActions.initQueue(() => {
-        console.log('ee');
-        //printActions.getItems();
+        printActions.setPrint([]);
       });
     }
+  }, [print]);
+
+  useEffect(() => {
+    if (reload) printActions.getItems({device: localDevice.id});
+  }, [reload]);
+
+  useEffect(() => {
+    if (spool && spool.length > 0) goPrint(spool[0]);
   }, [spool]);
 
-  goPrint = async print => {
-    const data = await getData(print);
-    const cielo = new CieloPrint();
-    cielo.print(data);
+  goPrint = async data => {
+  
+    let s = [...print];
+    if (data?.file?.content) {
+      const cielo = new CieloPrint();
+      cielo.print(data.file.content).then(() => {
+        printActions.setItems(s.shift());
+      });
+    } else {
+      printActions.setItems(s.shift());
+    }
   };
 
   getData = async print => {
-    if (print.printType == 'order') return await printOrder(print);
-    if (print.printType == 'cash-register')
-      return await printCashRegister(print);
+    let data = null;
+    let s = [...spool || []];
+
+    if (print.printType == 'order') data = await printOrder(print);
+    if (print.printType == 'cash-register') data = await printCashRegister();
     if (print.printType == 'purchasing-suggestion')
-      return await printPurchasingSuggestion(print);
-    if (print.printType == 'inventory') return await printInventory(print);
+      data = await printPurchasingSuggestion();
+    if (print.printType == 'inventory') data = await printInventory();
+    s.push(data);
+    
+    printActions.setItems(s);
   };
 
-  printInventory = async print => {
+  printInventory = async () => {
     return await printActions.printInventory({
+      device: localDevice.id,
       people: currentCompany.id,
-      'print-type': 'pos',
-      'device-type': 'cielo',
     });
   };
 
-  printPurchasingSuggestion = async print => {
+  printPurchasingSuggestion = async () => {
     return await printActions.printPurchasingSuggestion({
+      device: localDevice.id,
       people: currentCompany.id,
-      'print-type': 'pos',
-      'device-type': 'cielo',
     });
   };
 
-  printCashRegister = async print => {
+  printCashRegister = async () => {
     return await printActions.getCashRegisterPrint({
-      device: device,
+      device: localDevice.id,
       people: currentCompany.id,
-      'print-type': 'pos',
-      'device-type': 'cielo',
     });
   };
 
-  printOrder = async print => {
+  printOrder = async order => {
     return await printActions.printOrder({
-      id: print.id,
-      'print-type': 'pos',
-      'device-type': 'cielo',
+      id: order.id,
+      device: localDevice.id,
     });
   };
 

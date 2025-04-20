@@ -15,6 +15,7 @@ export default {
     totalItems: 0,
     filters: {},
     columns: [],
+    print: [],
   },
   actions: {...actions, ...customActions},
   getters,

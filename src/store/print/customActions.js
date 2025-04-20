@@ -25,7 +25,6 @@ export function printOrder({commit}, params = {}) {
     });
 }
 
-
 export function getCashRegisterPrint({commit}, params = {}) {
   commit(types.SET_ISLOADING);
 
@@ -96,7 +95,7 @@ export function printInventory({commit}, params = {}) {
 }
 
 export const addToPrint = ({commit, getters}, print) => {
-  const spool = getters.items;
+  let spool = [...getters.print];
   spool.push(print);
-  commit(types.SET_ITEMS, spool);
+  commit(types.SET_PRINT, spool);
 };
