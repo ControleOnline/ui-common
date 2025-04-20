@@ -5,7 +5,7 @@ export const WebsocketListener = () => {
   const websocketRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
   const reconnectAttempts = useRef(0);
-  const {getters: printGetters, actions: printActions} = getStore('print');
+  const {actions: printActions} = getStore('print');
   const url = 'ws://api.controleonline.com';
   const device = JSON.parse(localStorage.getItem('device') || '{}');
   const headers = {'X-Device': device.id};
@@ -20,11 +20,10 @@ export const WebsocketListener = () => {
     websocketRef.current.onmessage = async event => {
       try {
         if (!event.data) return;
-
         const payload = JSON.parse(event.data);
-        console.log(payload);
+        console.log('Ws:', payload);
         const data = Array.isArray(payload) ? payload[0] : payload;
-        if (data.action == 'print') printActions.addToPrint(data);
+        if (data.action == 'print') printActions.setReload(true);
       } catch (e) {
         console.error('Erro ao processar mensagem:', e, 'Dados:', event.data);
       }
@@ -70,7 +69,6 @@ export const WebsocketListener = () => {
 
   useEffect(() => {
     connect();
-    //return () => close();
   }, []);
 
   return null;

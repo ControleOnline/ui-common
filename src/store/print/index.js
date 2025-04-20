@@ -8,7 +8,7 @@ export default {
   state: {
     item: {},
     items: [],
-    resourceEndpoint: 'print',
+    resourceEndpoint: 'spools',
     isLoading: false,
     reload: false,
     error: '',

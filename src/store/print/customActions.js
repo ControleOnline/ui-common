@@ -72,6 +72,27 @@ export function printPurchasingSuggestion({commit}, params = {}) {
     });
 }
 
+export function makePrintDone({commit}, id = {}) {
+  commit(types.SET_ISLOADING);
+
+  const options = {
+    method: 'PUT',
+  };
+
+  return api
+    .fetch('/print/'+id+'/done', options)
+    .then(data => {
+      commit(types.SET_ISSAVING, false);
+      return data;
+    })
+    .catch(e => {
+      commit(types.SET_ISSAVING, false);
+
+      commit(types.SET_ERROR, e.message);
+      throw e;
+    });
+}
+
 export function printInventory({commit}, params = {}) {
   commit(types.SET_ISLOADING);
 
