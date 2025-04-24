@@ -53,7 +53,7 @@ class Queue {
   initQueue(callback) {
     if (this.queue.length > 0 && this.isProcessing === false) {
       this.isProcessing = true;
-      this.onFinish =  callback;
+      this.onFinish = callback;
       this.processQueue();
     }
   }
