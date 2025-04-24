@@ -1,19 +1,22 @@
 import React, {useEffect, useState, useRef} from 'react';
 import {getStore} from '@store';
+import {env} from '@env';
 
 export const WebsocketListener = () => {
   const websocketRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
   const reconnectAttempts = useRef(0);
   const {actions: printActions} = getStore('print');
-  const url = 'ws://api.controleonline.com';
+  const url = env.SOCKET;
   const device = JSON.parse(localStorage.getItem('device') || '{}');
   const headers = {'X-Device': device.id};
 
   const connect = () => {
     if (websocketRef.current?.readyState === WebSocket.OPEN) return;
     websocketRef.current = new WebSocket(url, null, {headers});
+    //console.log( websocketRef.current);
     websocketRef.current.onopen = () => {
+      console.log('Conected:', url);
       reconnectAttempts.current = 0;
     };
 
