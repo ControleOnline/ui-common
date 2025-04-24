@@ -56,12 +56,13 @@ export const DefaultProvider = ({children}) => {
   }, [localDevice]);
 
   useEffect(() => {
-    peopleActions.defaultCompany();
-  }, []);
+    if (localDevice && localDevice.id) peopleActions.defaultCompany();
+  }, [localDevice]);
 
   useEffect(() => {
     if (
       localDevice &&
+      localDevice.id &&
       isLogged &&
       currentCompany &&
       Object.entries(currentCompany).length > 0
@@ -105,11 +106,13 @@ export const DefaultProvider = ({children}) => {
 
   useEffect(() => {
     if (
+      localDevice &&
+      localDevice.id &&
       isLogged &&
       (!currentCompany || Object.entries(currentCompany).length === 0)
     )
       peopleActions.myCompanies();
-  }, [isLogged]);
+  }, [isLogged, localDevice]);
 
   useEffect(() => {
     const fetchColors = async () => {
@@ -129,8 +132,8 @@ export const DefaultProvider = ({children}) => {
       actions.setColors(parsedColors);
     };
 
-    fetchColors();
-  }, []);
+    if (localDevice && localDevice.id) fetchColors();
+  }, [localDevice]);
   if (!translateReady && isLogged) {
     return (
       <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
@@ -140,11 +143,14 @@ export const DefaultProvider = ({children}) => {
     );
   }
   return (
-    <ThemeContext.Provider value={{colors, menus}}>
-      {children}
-      <WebsocketListener />
-      <PrintService />
-    </ThemeContext.Provider>
+    localDevice &&
+    localDevice.id && (
+      <ThemeContext.Provider value={{colors, menus}}>
+        {children}
+        <WebsocketListener />
+        <PrintService />
+      </ThemeContext.Provider>
+    )
   );
 };
 

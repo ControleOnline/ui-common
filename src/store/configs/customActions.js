@@ -37,7 +37,6 @@ export const discoveryMainConfigs = ({commit, getters}, params) => {
       commit(types.SET_ITEM, d);
     })
     .catch(e => {
-      console.log(e);
       commit(types.SET_ERROR, e.message);
       throw e;
     })
