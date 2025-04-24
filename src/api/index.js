@@ -11,8 +11,7 @@ export const api = {
 
     let token = await this.getToken();
     if (token) options.headers.set('API-TOKEN', token);
-    if (this.device) options.headers.set('DEVICE', this.device.id);
-
+    if (this.device?.id) options.headers.set('DEVICE', this.device.id);
     if (options.responseType != 'text') {
       options.headers.set('Content-Type', MIME_TYPE);
       options.headers.set('Accept', MIME_TYPE);
@@ -31,7 +30,7 @@ export const api = {
     });
   },
   async getToken() {
-    const sessionString =  localStorage.getItem('session');
+    const sessionString = localStorage.getItem('session');
     let session = null;
     if (sessionString) {
       try {

@@ -9,7 +9,7 @@ export default function (resourceEndpoint, options = {}) {
  // if (resourceEndpoint == "/people/companies/my")
  //   console.log(entryPoint, resourceEndpoint, options.body);
 
-  console.log(entryPoint, resourceEndpoint);
+  console.log(entryPoint, resourceEndpoint,options.headers.map.device);
 
   return fetch(new URL(resourceEndpoint, entryPoint), options).then(
     (response) => {

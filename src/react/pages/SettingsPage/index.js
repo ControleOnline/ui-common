@@ -57,6 +57,7 @@ const Settings = ({navigation}) => {
   );
 
   const addDeviceConfigs = () => {
+
     let lc = {...(device?.configs || {})};
     lc['config-version'] = localDevice?.buildNumber;
     lc['pos-type'] = selectedMode;
