@@ -13,11 +13,18 @@ export const DefaultProvider = ({children}) => {
   const {getters: authGetters, actions: authActions} = getStore('auth');
   const storagedDevice = localStorage.getItem('device');
   const {getters: peopleGetters, actions: peopleActions} = getStore('people');
-  const {actions: deviceConfigsActions} = getStore('device_config');
-  const {actions: configActions} = getStore('configs');
+  const {getters: deviceConfigsGetters, actions: deviceConfigsActions} =
+    getStore('device_config');
+
+  const {actions: configActions, getters: configsGetters} = getStore('configs');
+  const {getters: printerGetters, actions: printerActions} =
+    getStore('printer');
+  const {actions: paymentTypeActions} = getStore('walletPaymentType');
   const {actions: translateActions} = getStore('translate');
+  const {items: companyConfigs} = configsGetters;
   const {colors, menus} = getters;
   const {currentCompany, defaultCompany, companies} = peopleGetters;
+  const {item: device_config} = deviceConfigsGetters;
   const {isLogged} = authGetters;
   const [translateReady, setTranslateReady] = useState(false);
   const [localDevice] = useState(() => {
@@ -58,6 +65,42 @@ export const DefaultProvider = ({children}) => {
   useEffect(() => {
     if (localDevice && localDevice.id) peopleActions.defaultCompany();
   }, [localDevice]);
+
+  useEffect(() => {
+    if (currentCompany && currentCompany.id) {
+      printerActions.getPrinters({people: currentCompany.id});
+    }
+  }, [currentCompany]);
+
+  useEffect(() => {
+    if (
+      companyConfigs &&
+      device_config?.configs &&
+      Object.entries(device_config.configs).length > 0 &&
+      device_config.configs['pos-gateway']
+    ) {
+      let wallets = [];
+
+      if (
+        companyConfigs[
+          'pos-' + device_config.configs['pos-gateway'] + '-wallet'
+        ]
+      )
+        wallets.push(
+          companyConfigs[
+            'pos-' + device_config.configs['pos-gateway'] + '-wallet'
+          ],
+        );
+
+      if (companyConfigs['pos-cash-wallet'])
+        wallets.push(companyConfigs['pos-cash-wallet']);
+
+      paymentTypeActions.getItems({
+        people: '/people/' + currentCompany.id,
+        wallet: wallets,
+      });
+    }
+  }, [currentCompany, companyConfigs, device_config]);
 
   useEffect(() => {
     if (
