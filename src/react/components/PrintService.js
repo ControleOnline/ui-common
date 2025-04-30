@@ -51,7 +51,6 @@ const PrintService = ({}) => {
 
     if (p['@id'])
       printActions.get(p['@id'].replace(/\D/g, '')).then(data => {
-        console.log(data.file.content);
         if (data?.file?.content)
           cielo.print(data.file.content).then(() => {
             printActions
