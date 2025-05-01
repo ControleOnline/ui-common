@@ -36,6 +36,8 @@ const Settings = ({navigation}) => {
     return storagedDevice ? JSON.parse(storagedDevice) : {};
   });
 
+  const cieloDevices = ['Quantum', 'ingenico'];
+
   useFocusEffect(
     useCallback(() => {
       if (localDevice && selectedGateway && selectedMode && discovered)
@@ -57,7 +59,6 @@ const Settings = ({navigation}) => {
   );
 
   const addDeviceConfigs = () => {
-
     let lc = {...(device?.configs || {})};
     lc['config-version'] = localDevice?.buildNumber;
     lc['pos-type'] = selectedMode;
@@ -81,7 +82,10 @@ const Settings = ({navigation}) => {
 
   useFocusEffect(
     useCallback(() => {
-      if (localDevice?.manufacturer == 'Quantum' && !localDevice?.isEmulator)
+      if (
+        cieloDevices.includes(localDevice?.manufacturer) &&
+        !localDevice?.isEmulator
+      )
         setSelectedGateway('cielo');
       else if (device?.configs) {
         setSelectedGateway(device?.configs['pos-gateway']);
@@ -176,7 +180,7 @@ const Settings = ({navigation}) => {
               <Picker.Item label="Modo Comanda" value="full" />
             </Picker>
           </View>
-          {(localDevice?.manufacturer != 'Quantum' ||
+          {(!cieloDevices.includes(localDevice?.manufacturer) ||
             localDevice?.isEmulator) && (
             <View style={{marginTop: 10}}>
               <Picker
@@ -184,7 +188,7 @@ const Settings = ({navigation}) => {
                 onValueChange={itemValue => setSelectedGateway(itemValue)}
                 style={styles.Settings.picker}>
                 <Picker.Item label="Infinite Pay" value="infinite-pay" />
-                {(localDevice?.manufacturer == 'Quantum' ||
+                {(cieloDevices.includes(localDevice?.manufacturer) ||
                   localDevice?.isEmulator) && (
                   <Picker.Item label="Cielo" value="cielo" />
                 )}

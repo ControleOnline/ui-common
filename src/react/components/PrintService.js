@@ -52,15 +52,17 @@ const PrintService = ({}) => {
     if (p['@id'])
       printActions.get(p['@id'].replace(/\D/g, '')).then(data => {
         if (data?.file?.content)
-          cielo.print(data.file.content).then(() => {
-            printActions
-              .makePrintDone(data['@id'].replace(/\D/g, ''))
-              .then(() => {
-                printActions.setItems(s.shift() || []);
-              });
-          });
+          printActions
+            .makePrintDone(data['@id'].replace(/\D/g, ''))
+            .then(() => {
+              cielo.print(data.file.content);
+              s.shift();
+              printActions.setItems(s);
+            });
       });
-    else printActions.setItems(s.shift() || []);
+    else {
+      printActions.setItems(s.shift() || []);
+    }
   };
 
   getData = async print => {
@@ -71,12 +73,6 @@ const PrintService = ({}) => {
     if (print.printType == 'purchasing-suggestion')
       data = await printPurchasingSuggestion();
     if (print.printType == 'inventory') data = await printInventory();
-
-    if (printer == localDevice.id) {
-      let s = [...spool];
-      s.push(data);
-      printActions.setItems(s);
-    }
   };
 
   printInventory = async () => {
