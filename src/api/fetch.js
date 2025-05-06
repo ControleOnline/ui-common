@@ -6,10 +6,10 @@ export default function (resourceEndpoint, options = {}) {
 
   if (!resourceEndpoint || !entryPoint) return;
 
- // if (resourceEndpoint == "/people/companies/my")
- //   console.log(entryPoint, resourceEndpoint, options.body);
+  // if (resourceEndpoint == "/people/companies/my")
+  //   console.log(entryPoint, resourceEndpoint, options.body);
 
-  console.log(entryPoint, resourceEndpoint,options.headers.map.device);
+  console.log(entryPoint, resourceEndpoint);
 
   return fetch(new URL(resourceEndpoint, entryPoint), options).then(
     (response) => {
