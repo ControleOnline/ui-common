@@ -1,6 +1,7 @@
 import React, {useEffect, useState, useRef} from 'react';
 import {getStore} from '@store';
 import {env} from '@env';
+import Sound from 'react-native-sound';
 
 export const WebsocketListener = () => {
   const websocketRef = useRef(null);
@@ -10,6 +11,17 @@ export const WebsocketListener = () => {
   const url = env.SOCKET;
   const device = JSON.parse(localStorage.getItem('device') || '{}');
   const headers = {'X-Device': device.id};
+
+  const playSound = file => {
+    const sound = new Sound(
+      file.toLowerCase() + '.mp3',
+      Sound.MAIN_BUNDLE,
+      error => {
+        if (error) return;
+        sound.play(() => sound.release());
+      },
+    );
+  };
 
   const connect = () => {
     if (websocketRef.current?.readyState === WebSocket.OPEN) return;
@@ -27,6 +39,7 @@ export const WebsocketListener = () => {
         console.log('Ws:', payload);
         const data = Array.isArray(payload) ? payload[0] : payload;
         if (data.action == 'print') printActions.setReload(true);
+        if (data.sound) playSound(data.sound);
       } catch (e) {
         console.error('Erro ao processar mensagem:', e, 'Dados:', event.data);
       }
