@@ -11,8 +11,10 @@ const ThemeContext = createContext();
 export const DefaultProvider = ({children}) => {
   const {getters, actions} = getStore('theme');
   const {getters: authGetters, actions: authActions} = getStore('auth');
-  const storagedDevice = localStorage.getItem('device');
   const {getters: peopleGetters, actions: peopleActions} = getStore('people');
+  const {getters: deviceGetters, actions: deviceActions} = getStore('device');
+  const {item: device} = deviceGetters;
+
   const {getters: deviceConfigsGetters, actions: deviceConfigsActions} =
     getStore('device_config');
 
@@ -27,24 +29,21 @@ export const DefaultProvider = ({children}) => {
   const {item: device_config} = deviceConfigsGetters;
   const {isLogged} = authGetters;
   const [translateReady, setTranslateReady] = useState(false);
-  const [localDevice] = useState(() => {
-    return storagedDevice ? JSON.parse(storagedDevice) : {};
-  });
 
-  useEffect(() => {
-    const fetchDeviceId = async () => {
-      const uniqueId = await DeviceInfo.getUniqueId();
-      const deviceId = await DeviceInfo.getDeviceId();
-      const systemName = await DeviceInfo.getSystemName();
-      const systemVersion = await DeviceInfo.getSystemVersion();
-      const manufacturer = await DeviceInfo.getManufacturer();
-      const model = await DeviceInfo.getModel();
-      const batteryLevel = await DeviceInfo.getBatteryLevel();
-      const isEmulator = await DeviceInfo.isEmulator();
-      const appVersion = await DeviceInfo.getVersion();
-      const buildNumber = await DeviceInfo.getBuildNumber();
-      let ld = {
-        ...localDevice,
+  const fetchDeviceId = async () => {
+    const uniqueId = await DeviceInfo.getUniqueId();
+    const deviceId = await DeviceInfo.getDeviceId();
+    const systemName = await DeviceInfo.getSystemName();
+    const systemVersion = await DeviceInfo.getSystemVersion();
+    const manufacturer = await DeviceInfo.getManufacturer();
+    const model = await DeviceInfo.getModel();
+    const batteryLevel = await DeviceInfo.getBatteryLevel();
+    const isEmulator = await DeviceInfo.isEmulator();
+    const appVersion = await DeviceInfo.getVersion();
+    const buildNumber = await DeviceInfo.getBuildNumber();
+    let ld = null;
+    if (uniqueId) {
+      ld = {
         id: uniqueId,
         deviceType: deviceId,
         systemName: systemName,
@@ -56,20 +55,25 @@ export const DefaultProvider = ({children}) => {
         appVersion: appVersion,
         buildNumber: buildNumber,
       };
+      deviceActions.setItem(ld);
       localStorage.setItem('device', JSON.stringify(ld));
-    };
-
-    fetchDeviceId();
-  }, [localDevice]);
-
-  useEffect(() => {
-    if (localDevice && localDevice.id) peopleActions.defaultCompany();
-  }, [localDevice]);
-
-  useEffect(() => {
-    if (currentCompany && currentCompany.id) {
-      printerActions.getPrinters({people: currentCompany.id});
+    } else {
+      setTimeout(() => {
+        fetchDeviceId();
+      }, 300);
     }
+  };
+  useEffect(() => {
+    if (!device || !device.id) fetchDeviceId();
+  }, [device]);
+
+  useEffect(() => {
+    if (device && device.id) peopleActions.defaultCompany();
+  }, [device]);
+
+  useEffect(() => {
+    if (currentCompany && currentCompany.id)
+      printerActions.getPrinters({people: currentCompany.id});
   }, [currentCompany]);
 
   useEffect(() => {
@@ -104,15 +108,15 @@ export const DefaultProvider = ({children}) => {
 
   useEffect(() => {
     if (
-      localDevice &&
-      localDevice.id &&
+      device &&
+      device.id &&
       isLogged &&
       currentCompany &&
       Object.entries(currentCompany).length > 0
     )
       deviceConfigsActions
         .getItems({
-          'device.device': localDevice?.id,
+          'device.device': device.id,
           people: '/people/' + currentCompany.id,
         })
         .then(data => {
@@ -122,7 +126,7 @@ export const DefaultProvider = ({children}) => {
             deviceConfigsActions.setItem(d);
           }
         });
-  }, [currentCompany, isLogged, localDevice]);
+  }, [currentCompany, isLogged, device]);
 
   useEffect(() => {
     if (isLogged && currentCompany && Object.entries(currentCompany).length > 0)
@@ -149,13 +153,13 @@ export const DefaultProvider = ({children}) => {
 
   useEffect(() => {
     if (
-      localDevice &&
-      localDevice.id &&
+      device &&
+      device.id &&
       isLogged &&
       (!currentCompany || Object.entries(currentCompany).length === 0)
     )
       peopleActions.myCompanies();
-  }, [isLogged, localDevice]);
+  }, [isLogged, device]);
 
   useEffect(() => {
     const fetchColors = async () => {
@@ -175,8 +179,8 @@ export const DefaultProvider = ({children}) => {
       actions.setColors(parsedColors);
     };
 
-    if (localDevice && localDevice.id) fetchColors();
-  }, [localDevice]);
+    if (device && device.id) fetchColors();
+  }, [device]);
   if (!translateReady && isLogged) {
     return (
       <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
@@ -186,8 +190,8 @@ export const DefaultProvider = ({children}) => {
     );
   }
   return (
-    localDevice &&
-    localDevice.id && (
+    device &&
+    device.id && (
       <ThemeContext.Provider value={{colors, menus}}>
         {children}
         <WebsocketListener />

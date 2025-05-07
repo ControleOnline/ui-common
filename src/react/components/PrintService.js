@@ -6,18 +6,17 @@ const PrintService = ({}) => {
   const {getters: peopleGetters} = getStore('people');
   const {getters: printGetters, actions: printActions} = getStore('print');
   const {getters: deviceConfigGetters} = getStore('device_config');
-  const storagedDevice = localStorage.getItem('device');
+  const {getters: deviceGetters} = getStore('device');
+  const {item: storagedDevice} = deviceGetters;  
   const {reload, print, items: spool} = printGetters;
   const {currentCompany} = peopleGetters;
-  const [localDevice] = useState(() => {
-    return storagedDevice ? JSON.parse(storagedDevice) : {};
-  });
+
   const {item: device_config} = deviceConfigGetters;
   const [printer, setPrinter] = useState(null);
 
   useEffect(() => {
     if (device_config && device_config.configs)
-      setPrinter(device_config.configs.printer || localDevice.id);
+      setPrinter(device_config.configs.printer || storagedDevice.id);
   }, [device_config]);
 
   useEffect(() => {
@@ -33,7 +32,7 @@ const PrintService = ({}) => {
     if (reload)
       printActions
         .getItems({
-          'device.device': localDevice.id,
+          'device.device': storagedDevice.id,
           'status.realStatus': 'open',
         })
         .finally(() => {
@@ -77,21 +76,21 @@ const PrintService = ({}) => {
 
   printInventory = async () => {
     return await printActions.printInventory({
-      device: localDevice.id,
+      device: storagedDevice.id,
       people: currentCompany.id,
     });
   };
 
   printPurchasingSuggestion = async () => {
     return await printActions.printPurchasingSuggestion({
-      device: localDevice.id,
+      device: storagedDevice.id,
       people: currentCompany.id,
     });
   };
 
   printCashRegister = async () => {
     return await printActions.getCashRegisterPrint({
-      device: localDevice.id,
+      device: storagedDevice.id,
       people: currentCompany.id,
     });
   };
@@ -99,7 +98,7 @@ const PrintService = ({}) => {
   printOrder = async order => {
     return await printActions.printOrder({
       id: order.id,
-      device: localDevice.id,
+      device: storagedDevice.id,
     });
   };
 

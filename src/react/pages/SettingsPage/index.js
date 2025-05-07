@@ -30,19 +30,17 @@ const Settings = ({navigation}) => {
   const [selectedMode, setSelectedMode] = useState(null);
   const [selectedGateway, setSelectedGateway] = useState(null);
   const [discovered, setDiscovered] = useState(false);
+  const {getters: deviceGetters} = getStore('device');
+  const {item: storagedDevice} = deviceGetters;  
 
-  const storagedDevice = localStorage.getItem('device');
-  const [localDevice] = useState(() => {
-    return storagedDevice ? JSON.parse(storagedDevice) : {};
-  });
 
   const cieloDevices = ['Quantum', 'ingenico'];
 
   useFocusEffect(
     useCallback(() => {
-      if (localDevice && selectedGateway && selectedMode && discovered)
+      if (storagedDevice && selectedGateway && selectedMode && discovered)
         addDeviceConfigs();
-    }, [localDevice, selectedMode, selectedGateway, discovered]),
+    }, [storagedDevice, selectedMode, selectedGateway, discovered]),
   );
 
   useFocusEffect(
@@ -60,7 +58,7 @@ const Settings = ({navigation}) => {
 
   const addDeviceConfigs = () => {
     let lc = {...(device?.configs || {})};
-    lc['config-version'] = localDevice?.buildNumber;
+    lc['config-version'] = storagedDevice?.buildNumber;
     lc['pos-type'] = selectedMode;
     lc['pos-gateway'] = selectedGateway;
 
@@ -83,8 +81,8 @@ const Settings = ({navigation}) => {
   useFocusEffect(
     useCallback(() => {
       if (
-        cieloDevices.includes(localDevice?.manufacturer) &&
-        !localDevice?.isEmulator
+        cieloDevices.includes(storagedDevice?.manufacturer) &&
+        !storagedDevice?.isEmulator
       )
         setSelectedGateway('cielo');
       else if (device?.configs) {
@@ -106,36 +104,36 @@ const Settings = ({navigation}) => {
           <View style={{marginTop: 20}}>
             <View style={styles.Settings.row}>
               <Text style={styles.Settings.label}>ID do equipamento: </Text>
-              <Text style={styles.Settings.value}>{localDevice?.id}</Text>
+              <Text style={styles.Settings.value}>{storagedDevice.id}</Text>
             </View>
             <View style={styles.Settings.row}>
               <Text style={styles.Settings.label}>Sistema: </Text>
               <Text style={styles.Settings.value}>
-                {localDevice?.systemName}
+                {storagedDevice?.systemName}
               </Text>
             </View>
             <View style={styles.Settings.row}>
               <Text style={styles.Settings.label}>Versão do Sistema: </Text>
               <Text style={styles.Settings.value}>
-                {localDevice?.systemVersion}
+                {storagedDevice?.systemVersion}
               </Text>
             </View>
             <View style={styles.Settings.row}>
               <Text style={styles.Settings.label}>Fabricante: </Text>
               <Text style={styles.Settings.value}>
-                {localDevice?.manufacturer}
+                {storagedDevice?.manufacturer}
               </Text>
             </View>
             <View style={styles.Settings.row}>
               <Text style={styles.Settings.label}>Versão do POS: </Text>
               <Text style={styles.Settings.value}>
-                {localDevice?.appVersion}
+                {storagedDevice?.appVersion}
               </Text>
             </View>
             <View style={styles.Settings.row}>
               <Text style={styles.Settings.label}>Compilação do POS: </Text>
               <Text style={styles.Settings.value}>
-                {localDevice?.buildNumber}
+                {storagedDevice?.buildNumber}
               </Text>
             </View>
           </View>
@@ -180,16 +178,16 @@ const Settings = ({navigation}) => {
               <Picker.Item label="Modo Comanda" value="full" />
             </Picker>
           </View>
-          {(!cieloDevices.includes(localDevice?.manufacturer) ||
-            localDevice?.isEmulator) && (
+          {(!cieloDevices.includes(storagedDevice?.manufacturer) ||
+            storagedDevice?.isEmulator) && (
             <View style={{marginTop: 10}}>
               <Picker
                 selectedValue={selectedGateway}
                 onValueChange={itemValue => setSelectedGateway(itemValue)}
                 style={styles.Settings.picker}>
                 <Picker.Item label="Infinite Pay" value="infinite-pay" />
-                {(cieloDevices.includes(localDevice?.manufacturer) ||
-                  localDevice?.isEmulator) && (
+                {(cieloDevices.includes(storagedDevice?.manufacturer) ||
+                  storagedDevice?.isEmulator) && (
                   <Picker.Item label="Cielo" value="cielo" />
                 )}
               </Picker>
