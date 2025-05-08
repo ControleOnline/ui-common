@@ -63,6 +63,7 @@ export const DefaultProvider = ({children}) => {
       }, 300);
     }
   };
+
   useEffect(() => {
     if (!device || !device.id) fetchDeviceId();
   }, [device]);

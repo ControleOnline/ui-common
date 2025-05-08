@@ -19,6 +19,7 @@ const Settings = ({navigation}) => {
   const {getters: configsGetters, actions: configActions} = getStore('configs');
   const {getters: deviceConfigGetters, actions: deviceConfigsActions} =
     getStore('device_config');
+  const {actions: categoryActions} = getStore('categories');
   const {item: device} = deviceConfigGetters;
 
   const {getters: paymentTypeGetters, actions: paymentTypeActions} =
@@ -31,8 +32,7 @@ const Settings = ({navigation}) => {
   const [selectedGateway, setSelectedGateway] = useState(null);
   const [discovered, setDiscovered] = useState(false);
   const {getters: deviceGetters} = getStore('device');
-  const {item: storagedDevice} = deviceGetters;  
-
+  const {item: storagedDevice} = deviceGetters;
 
   const cieloDevices = ['Quantum', 'ingenico'];
 
@@ -93,6 +93,10 @@ const Settings = ({navigation}) => {
     }, [device]),
   );
 
+  const handleClearProducts = () => {
+    localStorage.setItem('categories', JSON.stringify([]));
+    categoryActions.setItems([]);
+  };
   const handleClearTranslate = () => {
     t.reload();
   };
@@ -209,6 +213,24 @@ const Settings = ({navigation}) => {
           ]}>
           <Icon name="add-circle" size={24} color="#fff" />
           <Text style={{color: '#fff', marginLeft: 8}}>Refazer traduções</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          onPress={handleClearProducts}
+          style={[
+            globalStyles.button,
+
+            {
+              flex: 1,
+              flexDirection: 'row',
+              justifyContent: 'center',
+              alignItems: 'center',
+            },
+          ]}>
+          <Icon name="add-circle" size={24} color="#fff" />
+          <Text style={{color: '#fff', marginLeft: 8}}>
+            Sincronizar Produtos
+          </Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
