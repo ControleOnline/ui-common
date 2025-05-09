@@ -9,8 +9,8 @@ export const WebsocketListener = () => {
   const reconnectAttempts = useRef(0);
   const {actions: printActions} = getStore('print');
   const url = env.SOCKET;
-  const device = JSON.parse(localStorage.getItem('device') || '{}');
-  const headers = {'X-Device': device.id};
+  const {getters: deviceGetters, actions: deviceActions} = getStore('device');
+  const {item: device} = deviceGetters;
 
   const playSound = file => {
     const sound = new Sound(
@@ -25,10 +25,12 @@ export const WebsocketListener = () => {
 
   const connect = () => {
     if (websocketRef.current?.readyState === WebSocket.OPEN) return;
-    websocketRef.current = new WebSocket(url, null, {headers});
-    //console.log( websocketRef.current);
+    websocketRef.current = new WebSocket(url, null, {
+      headers: {'X-Device': device.id},
+    });
+
     websocketRef.current.onopen = () => {
-      console.log('Conected:', url);
+      console.log('Conected:', url, device.id);
       reconnectAttempts.current = 0;
     };
 
@@ -70,9 +72,9 @@ export const WebsocketListener = () => {
 
     reconnectTimeoutRef.current = setTimeout(() => {
       console.debug(
-        `Tentando reconectar... Tentativa ${reconnectAttempts.current}`,
+        `Tentando reconectar... Tentativa ${reconnectAttempts.current} no device ${device.id}`,
       );
-      connect();
+      if (device.id) connect();
       reconnectTimeoutRef.current = null;
     }, delay);
   };
@@ -84,8 +86,8 @@ export const WebsocketListener = () => {
   };
 
   useEffect(() => {
-    connect();
-  }, []);
+    if (device.id) connect(device.id);
+  }, [device]);
 
   return null;
 };

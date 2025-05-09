@@ -13,7 +13,6 @@ export const DefaultProvider = ({children}) => {
   const {getters: authGetters, actions: authActions} = getStore('auth');
   const {getters: peopleGetters, actions: peopleActions} = getStore('people');
   const {getters: deviceGetters, actions: deviceActions} = getStore('device');
-  const {item: device} = deviceGetters;
 
   const {getters: deviceConfigsGetters, actions: deviceConfigsActions} =
     getStore('device_config');
@@ -29,6 +28,9 @@ export const DefaultProvider = ({children}) => {
   const {item: device_config} = deviceConfigsGetters;
   const {isLogged} = authGetters;
   const [translateReady, setTranslateReady] = useState(false);
+  const [device, setDevice] = useState(
+    JSON.parse(localStorage.getItem('device') || '{}'),
+  );
 
   const fetchDeviceId = async () => {
     const uniqueId = await DeviceInfo.getUniqueId();
@@ -55,7 +57,7 @@ export const DefaultProvider = ({children}) => {
         appVersion: appVersion,
         buildNumber: buildNumber,
       };
-      deviceActions.setItem(ld);
+      setDevice(ld);
       localStorage.setItem('device', JSON.stringify(ld));
     } else {
       setTimeout(() => {
@@ -63,9 +65,17 @@ export const DefaultProvider = ({children}) => {
       }, 300);
     }
   };
+  useEffect(() => {
+    checkVersion = async () => {
+      const appVersion = await DeviceInfo.getVersion();
+      if (device && device.appVersion && device.appVersion != appVersion) fetchDeviceId();
+    };
+    checkVersion();
+  }, [device]);
 
   useEffect(() => {
     if (!device || !device.id) fetchDeviceId();
+    else deviceActions.setItem(device);
   }, [device]);
 
   useEffect(() => {
