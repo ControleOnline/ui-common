@@ -1,5 +1,5 @@
 import {createContext, useContext, useState, useMemo} from 'react';
-import stores from './../../../../../../src/store/stores';
+import stores from '../../../../../../src/store/stores';
 
 const StoreContext = createContext();
 
@@ -94,4 +94,9 @@ export function getStore(storeName) {
     );
   }
   return storesState[storeName];
+}
+
+export function getAllStores() {
+  const storesState = useContext(StoreContext);
+  return storesState;
 }

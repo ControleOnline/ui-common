@@ -3,15 +3,18 @@ import axios from 'axios';
 import {APP_ENV} from '../../../../../config/env';
 
 const MIME_TYPE = 'application/ld+json';
+
 export const api = {
   device: JSON.parse(localStorage.getItem('device') || '{}'),
+  //masterDevice: JSON.parse(localStorage.getItem('master-device') || '{}'),
   fetch: async function (uri, options = {}) {
     if (typeof options.headers === 'undefined')
       Object.assign(options, {headers: new Headers()});
 
     let token = await this.getToken();
     if (token) options.headers.set('API-TOKEN', token);
-    if (this.device?.id) options.headers.set('DEVICE', this.device.id);
+    if (this.device?.id || this.masterDevice?.id)
+      options.headers.set('DEVICE', this.masterDevice?.id || this.device?.id);
     if (options.responseType != 'text') {
       options.headers.set('Content-Type', MIME_TYPE);
       options.headers.set('Accept', MIME_TYPE);
