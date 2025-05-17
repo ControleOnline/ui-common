@@ -8,22 +8,22 @@ import {
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import css from '@controleonline/ui-orders/src/react/css/orders';
-import {getStore} from '@store';
+import {useGetStore} from '@store';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import {Picker} from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 const Settings = ({navigation}) => {
   const {styles, globalStyles} = css();
-  const {getters: walletGetters} = getStore('wallet');
-  const {getters: peopleGetters} = getStore('people');
-  const {getters: configsGetters, actions: configActions} = getStore('configs');
+  const {getters: walletGetters} = useGetStore('wallet');
+  const {getters: peopleGetters} = useGetStore('people');
+  const {getters: configsGetters, actions: configActions} = useGetStore('configs');
   const {getters: deviceConfigGetters, actions: deviceConfigsActions} =
-    getStore('device_config');
-  const {actions: categoryActions} = getStore('categories');
+    useGetStore('device_config');
+  const {actions: categoryActions} = useGetStore('categories');
   const {item: device} = deviceConfigGetters;
 
   const {getters: paymentTypeGetters, actions: paymentTypeActions} =
-    getStore('paymentType');
+    useGetStore('paymentType');
   const {items: paymentTypes} = paymentTypeGetters;
   const {currentCompany} = peopleGetters;
   const {isLoading: walletLoading} = walletGetters;
@@ -31,7 +31,7 @@ const Settings = ({navigation}) => {
   const [selectedMode, setSelectedMode] = useState(null);
   const [selectedGateway, setSelectedGateway] = useState(null);
   const [discovered, setDiscovered] = useState(false);
-  const {getters: deviceGetters} = getStore('device');
+  const {getters: deviceGetters} = useGetStore('device');
   const {item: storagedDevice} = deviceGetters;
 
   const cieloDevices = ['Quantum', 'ingenico'];
