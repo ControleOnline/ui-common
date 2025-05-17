@@ -1,14 +1,9 @@
 import {createContext, useContext, useState, useMemo} from 'react';
 import stores from '../../../../../../src/store/stores';
 
-const StoreContext = createContext();
+const StoreContext = createContext({});
 
 export function StoreProvider({children}) {
-  if (!stores || Object.keys(stores).length === 0) {
-    console.warn('No stores defined.');
-    return <>{children}</>;
-  }
-
   const initialState = useMemo(() => {
     const state = {};
     Object.keys(stores).forEach(storeName => {
@@ -55,15 +50,13 @@ export function StoreProvider({children}) {
         const name = storeModule.mutations[type](getters, payload);
 
         setStoresStateData(prev => {
-          const newState = {
+          return {
             ...prev,
             [storeName]: {
               ...prev[storeName],
               [name]: payload,
             },
           };
-
-          return newState;
         });
       };
 
@@ -86,7 +79,7 @@ export function StoreProvider({children}) {
   );
 }
 
-export function getStore(storeName) {
+export function useGetStore(storeName) {
   const storesState = useContext(StoreContext);
   if (!storesState || !storesState[storeName]) {
     throw new Error(
@@ -96,7 +89,6 @@ export function getStore(storeName) {
   return storesState[storeName];
 }
 
-export function getAllStores() {
-  const storesState = useContext(StoreContext);
-  return storesState;
+export function useGetAllStores() {
+  return useContext(StoreContext);
 }

@@ -1,5 +1,5 @@
 import React, {useEffect, useState, useRef} from 'react';
-import {getStore, getAllStores} from '@store';
+import {useGetStore, useGetAllStores} from '@store';
 import {env} from '@env';
 
 export const WebsocketListener = () => {
@@ -7,9 +7,9 @@ export const WebsocketListener = () => {
   const reconnectTimeoutRef = useRef(null);
   const reconnectAttempts = useRef(0);
   const url = env.SOCKET;
-  const {getters: deviceGetters, actions: deviceActions} = getStore('device');
+  const {getters: deviceGetters, actions: deviceActions} = useGetStore('device');
   const {item: device} = deviceGetters;
-  const stores = getAllStores();
+  const stores = useGetAllStores();
   const getStoreByName = name => stores[name];
 
   const connect = () => {

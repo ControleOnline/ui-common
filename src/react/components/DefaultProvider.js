@@ -1,27 +1,27 @@
 import React, {createContext, useContext, useEffect, useState} from 'react';
-import {StatusBar, View, ActivityIndicator, Text} from 'react-native';
+import {View, ActivityIndicator, Text} from 'react-native';
 import DeviceInfo from 'react-native-device-info';
 import Translate from '@controleonline/ui-common/src/utils/translate';
 import {WebsocketListener} from '@controleonline/ui-common/src/react/components/WebsocketListener';
 import PrintService from '@controleonline/ui-common/src/react/components/PrintService';
 
-import {getStore} from '@store';
-const ThemeContext = createContext();
+import {useGetStore} from '@store';
+const ThemeContext = createContext({});
 
 export const DefaultProvider = ({children}) => {
-  const {getters, actions} = getStore('theme');
-  const {getters: authGetters, actions: authActions} = getStore('auth');
-  const {getters: peopleGetters, actions: peopleActions} = getStore('people');
-  const {getters: deviceGetters, actions: deviceActions} = getStore('device');
+  const {getters, actions} = useGetStore('theme');
+  const {getters: authGetters, actions: authActions} = useGetStore('auth');
+  const {getters: peopleGetters, actions: peopleActions} = useGetStore('people');
+  const {getters: deviceGetters, actions: deviceActions} = useGetStore('device');
 
   const {getters: deviceConfigsGetters, actions: deviceConfigsActions} =
-    getStore('device_config');
+    useGetStore('device_config');
 
-  const {actions: configActions, getters: configsGetters} = getStore('configs');
+  const {actions: configActions, getters: configsGetters} = useGetStore('configs');
   const {getters: printerGetters, actions: printerActions} =
-    getStore('printer');
-  const {actions: paymentTypeActions} = getStore('walletPaymentType');
-  const {actions: translateActions} = getStore('translate');
+    useGetStore('printer');
+  const {actions: paymentTypeActions} = useGetStore('walletPaymentType');
+  const {actions: translateActions} = useGetStore('translate');
   const {items: companyConfigs} = configsGetters;
   const {colors, menus} = getters;
   const {currentCompany, defaultCompany, companies} = peopleGetters;
