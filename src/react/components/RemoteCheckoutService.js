@@ -10,10 +10,8 @@ import {getStore} from '@store';
 export default Checkout = ({route}) => {
   const {getters: deviceConfigGetters} = getStore('device_config');
   const {actions: categoryActions} = getStore('categories');
-  const {actions: cartActions} = getStore('cart');
   const {item: device} = deviceConfigGetters;
   const {getters: ordersGetters, actions: ordersActions} = getStore('orders');
-  const {actions: orderProductsActions} = getStore('order_products');
   const {getters: invoiceGetters, actions: invoiceActions} =
     getStore('invoice');
   const {getters: peopleGetters} = getStore('people');
@@ -32,7 +30,6 @@ export default Checkout = ({route}) => {
           JSON.stringify({id: message['master-device']}),
         );
         ordersActions.get(message.order).then(data => {
-          orderProductsActions.setItems(data.orderProducts);
           setPaymentType(message.wallet_payment_type);
           setPaymentValue(message.total);
         });
@@ -58,15 +55,12 @@ export default Checkout = ({route}) => {
   const clear = () => {
     localStorage.removeItem('master-device');
     invoiceActions.setMessage(null);
-    orderProductsActions.setItems([]);
     setPaymentType(null);
     setPaymentValue(0);
     categoryActions.setItems(null);
     ordersActions.setItem(null);
-    orderProductsActions.setItems([]);
-    cartActions.setItem(null);
     invoiceActions.setItems([]);
-    cartActions.setPayable(0);
+    ordersActions.setPayable(0);
     navigation.reset('HomePage');
   };
   const createInvoice = (selectedPayment, total) => {

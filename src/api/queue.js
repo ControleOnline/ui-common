@@ -29,6 +29,9 @@ class Queue {
   };
 
   processQueue() {
+
+    console.log('Queue Lenght', this.queue.length);
+    
     if (this.queue.length === 0 && this.isProcessing === true)
       return this.finalize();
 
