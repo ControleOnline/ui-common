@@ -8,6 +8,10 @@ class Queue {
   addToQueue(func) {
     this.queue.push(func);
   }
+  executeQueue(func, callback) {
+    this.addToQueue(func);
+    this.initQueue(callback);
+  }
 
   execute(func, id, wait = 1000) {
     const debounced = function (...args) {
@@ -25,13 +29,10 @@ class Queue {
 
   finalize = () => {
     this.isProcessing = false;
-    if (this.onFinish) this.onFinish();
+    if (this.onFinish && typeof this.onFinish == 'function') this.onFinish();
   };
 
   processQueue() {
-
-    console.log('Queue Lenght', this.queue.length);
-    
     if (this.queue.length === 0 && this.isProcessing === true)
       return this.finalize();
 
