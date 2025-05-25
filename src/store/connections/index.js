@@ -67,7 +67,7 @@ export default {
           },
           {
             value: "support",
-            label: "Atendimento",
+            label: "Suporte",
           },
           {
             value: null,
