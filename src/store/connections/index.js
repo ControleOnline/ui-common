@@ -40,11 +40,57 @@ export default {
         },
       },
       {
+        externalFilter: false,
+        sortable: true,
+        editable: false,
+        name: "phone",
+        align: "left",
+        label: "phone",
+        format: function (value, row, column) {
+          const phone = String(value.phone);
+          const lastFour = phone.slice(-4);
+          const firstPart = phone.slice(0, -4);
+          return `(${value?.ddd}) ${firstPart}-${lastFour}`;
+        },
+      },
+
+      {
+        externalFilter: false,
+        sortable: true,
+        name: "type",
+        align: "left",
+        label: "type",
+        list: [
+          {
+            value: "crm",
+            label: "CRM",
+          },
+          {
+            value: "support",
+            label: "Atendimento",
+          },
+          {
+            value: null,
+            label: "Nenhum",
+          },
+        ],
+        format: function (value) {
+          return value;
+        },
+      },
+
+      {
         sortable: true,
         editable: false,
         name: "channel",
         align: "left",
         label: "channel",
+        list: [
+          {
+            value: "whatsapp",
+            label: "Whatsapp",
+          },
+        ],
         format: function (value) {
           return value;
         },
@@ -66,8 +112,8 @@ export default {
         },
       },
       {
-        name:"connection"
-      }
+        name: "connection",
+      },
     ],
     print: [],
   },
