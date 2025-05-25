@@ -1,5 +1,5 @@
 <template>
-  <DefaultTable :configs="configs" />
+  <DefaultTable :configs="configs" @reload="reload" />
 </template>
 
 <script>
@@ -30,10 +30,22 @@ export default {
         companyParam: "people",
         add: false,
         delete: false,
+        editable: false,
         filters: true,
         selection: false,
         search: true,
         components: {
+          customColumns: {
+            connection: {
+              component: this.$components.DefaultButtonDialog,
+              configs: {
+                component: CreateConnection,
+                store: "connections",
+                label: "connections",
+                icon: "add",
+              },
+            },
+          },
           headerActions: [
             {
               component: this.$components.DefaultButtonDialog,
@@ -53,6 +65,9 @@ export default {
   methods: {
     ...mapActions({}),
     init() {},
+    reload() {
+      console.log("eee");
+    },
   },
 };
 </script>

@@ -3,8 +3,8 @@
     <div>
       <input v-model="ddi" placeholder="DDI" />
       <input v-model="ddd" placeholder="DDD" />
-      <input v-model="number" placeholder="Telefone" />
-      <button @click="solicitarQrCode">Solicitar QR Code</button>
+      <input v-model="phone" placeholder="Telefone" />
+      <button @click="startQrInterval">Solicitar QR Code</button>
     </div>
     <div v-if="qrImage">
       <img :src="qrImage" alt="QR Code" />
@@ -21,9 +21,15 @@ export default {
     return {
       ddi: "55",
       ddd: "",
-      number: "",
+      phone: "",
       qrImage: null,
+      qrInterval: null,
     };
+  },
+  props: {
+    row: {
+      default: {},
+    },
   },
   computed: {
     ...mapGetters({
@@ -31,24 +37,40 @@ export default {
       defaultCompany: "people/defaultCompany",
       companies: "people/companies",
     }),
-    phone() {
-      return `${this.ddi}${this.ddd}${this.number}`;
+    completePhone() {
+      return `${this.ddi}${this.ddd}${this.phone}`;
     },
+  },
+  created() {
+    this.ddd = this.row?.phone?.ddd;
+    this.phone = this.row?.phone?.phone;
+    if (this.row) this.startQrInterval();
+    console.log(this.row);
   },
   methods: {
     ...mapActions({
       createWhatsappConnection: "connections/createWhatsappConnection",
     }),
-    solicitarQrCode() {
-      this.createWhatsappConnection({ phone: this.phone }).then((response) => {
-        if (response.qr)
-          QRCode.toDataURL(response.qr).then((url) => {
-            this.qrImage = url;
-          });
-      });
+
+    getQrCode() {
+      this.createWhatsappConnection({ phone: this.completePhone }).then(
+        (response) => {
+          if (response.status === "CONNECTED") this.$emit("saved");
+          if (response.qr)
+            QRCode.toDataURL(response.qr).then((url) => {
+              this.qrImage = url;
+            });
+        }
+      );
     },
+    startQrInterval() {
+      clearInterval(this.qrInterval);
+      this.getQrCode();
+      this.qrInterval = setInterval(this.getQrCode, 5000);
+    },
+  },
+  beforeUnmount() {
+    if (this.qrInterval) clearInterval(this.qrInterval);
   },
 };
 </script>
-
-<style scoped></style>

@@ -41,6 +41,7 @@ export default {
       },
       {
         sortable: true,
+        editable: false,
         name: "channel",
         align: "left",
         label: "channel",
@@ -49,6 +50,7 @@ export default {
         },
       },
       {
+        editable: false,
         externalFilter: false,
         sortable: true,
         name: "status",
@@ -63,6 +65,9 @@ export default {
           return value ? "/statuses/" + (value.value || value) : null;
         },
       },
+      {
+        name:"connection"
+      }
     ],
     print: [],
   },
