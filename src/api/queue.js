@@ -13,7 +13,7 @@ class Queue {
     this.initQueue(callback);
   }
 
-  execute(func, id, wait = 1000) {
+  execute(func, id, wait = 10) {
     const debounced = function (...args) {
       clearTimeout(this.timeout[id]);
       this.timeout[id] = setTimeout(() => {
@@ -51,12 +51,12 @@ class Queue {
 
         setTimeout(() => {
           return this.processQueue();
-        }, 1000);
+        }, 10);
       });
   }
   initQueue(callback) {
     if (this.queue.length > 0 && this.isProcessing === false) {
-      this.isProcessing = true;
+      this.isProcessing = true;      
       if (typeof callback == 'function') this.onFinish = callback;
       this.processQueue();
     }
