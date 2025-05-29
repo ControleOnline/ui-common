@@ -28,13 +28,16 @@ class Queue {
   }
 
   finalize = () => {
-    this.isProcessing = false;
     if (this.onFinish && typeof this.onFinish == 'function') this.onFinish();
+    this.isProcessing = false;
+    this.onFinish = null;
   };
 
   processQueue() {
-    if (this.queue.length === 0 && this.isProcessing === true)
-      return this.finalize();
+    if (this.queue.length === 0) return this.finalize();
+    else this.isProcessing = true;
+
+    if (this.isProcessing === false) return;
 
     const func = this.queue[0];
 
@@ -45,21 +48,21 @@ class Queue {
       })
       .catch(error => {
         console.log(
-          'Erro ao processar a fila. Nova tentativa em 1 segundo',
+          'Erro ao processar a fila. Nova tentativa em 5 segundos',
           error,
         );
 
         setTimeout(() => {
           return this.processQueue();
-        }, 10);
+        }, 5000);
       });
   }
   initQueue(callback) {
-    if (this.queue.length > 0 && this.isProcessing === false) {
-      this.isProcessing = true;      
-      if (typeof callback == 'function') this.onFinish = callback;
-      this.processQueue();
-    }
+    if (typeof callback == 'function') this.onFinish = callback;
+
+    console.log(this.isProcessing);
+    if (this.isProcessing === true) return;
+    this.processQueue();
   }
 }
 export const queue = new Queue();

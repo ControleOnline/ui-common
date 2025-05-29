@@ -1,2 +1,12 @@
 import {EventEmitter} from 'events';
-export const eventBus = new EventEmitter();
+
+let eventBusLocal = null;
+
+const getEventBus = () => {
+  if (!eventBusLocal) {
+    eventBusLocal = new EventEmitter();
+  }
+  return eventBusLocal;
+};
+
+export default getEventBus();
