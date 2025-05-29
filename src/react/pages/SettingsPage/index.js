@@ -29,6 +29,7 @@ const Settings = ({navigation}) => {
   const {isLoading: walletLoading} = walletGetters;
   const {items: companyConfigs, isSaving} = configsGetters;
   const [selectedMode, setSelectedMode] = useState(null);
+  const [printingMode, setPrintingMode] = useState('order');
   const [selectedGateway, setSelectedGateway] = useState(null);
   const [discovered, setDiscovered] = useState(false);
   const {getters: deviceGetters} = getStore('device');
@@ -38,14 +39,21 @@ const Settings = ({navigation}) => {
 
   useFocusEffect(
     useCallback(() => {
-      if (storagedDevice && selectedGateway && selectedMode && discovered)
+      if (storagedDevice && selectedGateway && selectedMode && discovered) {
         addDeviceConfigs();
-    }, [storagedDevice, selectedMode, selectedGateway, discovered]),
+      }
+    }, [
+      storagedDevice,
+      selectedMode,
+      selectedGateway,
+      discovered,
+      printingMode,
+    ]),
   );
 
   useFocusEffect(
     useCallback(() => {
-      if (!discovered)
+      if (!discovered) {
         configActions
           .discoveryMainConfigs({
             people: '/people/' + currentCompany.id,
@@ -53,6 +61,7 @@ const Settings = ({navigation}) => {
           .finally(() => {
             setDiscovered(true);
           });
+      }
     }, [discovered]),
   );
 
@@ -61,6 +70,7 @@ const Settings = ({navigation}) => {
     lc['config-version'] = storagedDevice?.buildNumber;
     lc['pos-type'] = selectedMode;
     lc['pos-gateway'] = selectedGateway;
+    lc['print-mode'] = printingMode;
 
     deviceConfigsActions.addDeviceConfigs({
       configs: JSON.stringify(lc),
@@ -71,9 +81,11 @@ const Settings = ({navigation}) => {
   useFocusEffect(
     useCallback(() => {
       if (device?.configs) {
-        setSelectedMode(device?.configs['pos-type']);
+        setSelectedMode(device?.configs['pos-type'] || 'full');
+        setPrintingMode(device?.configs['print-mode'] || 'order');
       } else {
         setSelectedMode('full');
+        setPrintingMode('order');
       }
     }, [device]),
   );
@@ -83,9 +95,9 @@ const Settings = ({navigation}) => {
       if (
         cieloDevices.includes(storagedDevice?.manufacturer) &&
         !storagedDevice?.isEmulator
-      )
+      ) {
         setSelectedGateway('cielo');
-      else if (device?.configs) {
+      } else if (device?.configs) {
         setSelectedGateway(device?.configs['pos-gateway']);
       } else {
         setSelectedGateway('infinite-pay');
@@ -141,7 +153,7 @@ const Settings = ({navigation}) => {
               </Text>
             </View>
           </View>
-          <View style={{marginTop: 20}}>
+          <View style={{marginTop: 12}}>
             <View style={styles.Settings.walletRow}>
               <Text style={styles.Settings.label}>Carteira p/ Dinheiro: </Text>
               <View style={styles.Settings.walletValueContainer}>
@@ -173,13 +185,22 @@ const Settings = ({navigation}) => {
               </View>
             </View>
           </View>
-          <View style={{marginTop: 10}}>
+          <View style={{marginTop: 6}}>
             <Picker
               selectedValue={selectedMode}
               onValueChange={itemValue => setSelectedMode(itemValue)}
               style={styles.Settings.picker}>
               <Picker.Item label="Modo Balcão" value="simple" />
               <Picker.Item label="Modo Comanda" value="full" />
+            </Picker>
+          </View>
+          <View style={{marginTop: 6, marginBottom: 10}}>
+            <Picker
+              selectedValue={printingMode}
+              onValueChange={itemValue => setPrintingMode(itemValue)}
+              style={styles.Settings.picker}>
+              <Picker.Item label="Impressão Pedidos" value="order" />
+              <Picker.Item label="Impressão Fichas" value="form" />
             </Picker>
           </View>
           {(!cieloDevices.includes(storagedDevice?.manufacturer) ||
@@ -225,6 +246,7 @@ const Settings = ({navigation}) => {
               flexDirection: 'row',
               justifyContent: 'center',
               alignItems: 'center',
+              marginTop: 6,
             },
           ]}>
           <Icon name="add-circle" size={24} color="#fff" />
