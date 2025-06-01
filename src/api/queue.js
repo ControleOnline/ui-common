@@ -54,13 +54,11 @@ class Queue {
 
         setTimeout(() => {
           return this.processQueue();
-        }, 5000);
+        }, 10);
       });
   }
   initQueue(callback) {
     if (typeof callback == 'function') this.onFinish = callback;
-
-    console.log(this.isProcessing);
     if (this.isProcessing === true) return;
     this.processQueue();
   }
