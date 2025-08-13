@@ -5,16 +5,22 @@ import CieloCheckout from '@controleonline/ui-orders/src/react/services/Cielo/Ch
 import InfinitePay from '@controleonline/ui-orders/src/react/services/InfinitePay/Checkout';
 import Formatter from '@controleonline/ui-common/src/utils/formatter';
 
-import {getStore} from '@store';
+import {useStores} from '@store';
 
-export default Checkout = ({route}) => {
-  const {getters: deviceConfigGetters} = getStore('device_config');
-  const {actions: categoryActions} = getStore('categories');
+export const Checkout = ({route}) => {
+  const device_configStore = useStores(state => state.device_config);
+  const deviceConfigGetters = device_configStore.getters;
+  const categoriesStore = useStores(state => state.categories);
+  const categoryActions = categoriesStore.actions;
   const {item: device} = deviceConfigGetters;
-  const {getters: ordersGetters, actions: ordersActions} = getStore('orders');
-  const {getters: invoiceGetters, actions: invoiceActions} =
-    getStore('invoice');
-  const {getters: peopleGetters} = getStore('people');
+  const ordersStore = useStores(state => state.orders);
+  const ordersGetters = ordersStore.getters;
+  const ordersActions = ordersStore.actions;
+  const invoiceStore = useStores(state => state.invoice);
+  const invoiceGetters = invoiceStore.getters;
+  const invoiceActions = invoiceStore.actions;
+  const peopleStore = useStores(state => state.people);
+  const peopleGetters = peopleStore.getters;
   const {currentCompany, defaultCompany} = peopleGetters;
   const {item: order} = ordersGetters;
   const {messages, message} = invoiceGetters;

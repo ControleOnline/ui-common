@@ -1,30 +1,41 @@
 import React, {createContext, useContext, useEffect, useState} from 'react';
-import {StatusBar, View, ActivityIndicator, Text} from 'react-native';
+import {View, ActivityIndicator, Text} from 'react-native';
 import DeviceInfo from 'react-native-device-info';
 import Translate from '@controleonline/ui-common/src/utils/translate';
 import {WebsocketListener} from '@controleonline/ui-common/src/react/components/WebsocketListener';
 import PrintService from '@controleonline/ui-common/src/react/components/PrintService';
 
-import {getStore} from '@store';
+import {useStores} from '@store';
 const ThemeContext = createContext();
 
 export const DefaultProvider = ({children}) => {
-  const {getters, actions} = getStore('theme');
-  const {getters: authGetters, actions: authActions} = getStore('auth');
-  const {getters: peopleGetters, actions: peopleActions} = getStore('people');
-  const {getters: deviceGetters, actions: deviceActions} = getStore('device');
+  const themeStore = useStores(state => state.theme);
+  const getters = themeStore.getters;
+  const actions = themeStore.actions;
+  const authStore = useStores(state => state.auth);
+  const authGetters = authStore.getters;
+  const peopleStore = useStores(state => state.people);
+  const peopleGetters = peopleStore.getters;
+  const peopleActions = peopleStore.actions;
+  const deviceStore = useStores(state => state.device);
+  const deviceActions = deviceStore.actions;
 
-  const {getters: deviceConfigsGetters, actions: deviceConfigsActions} =
-    getStore('device_config');
+  const device_configStore = useStores(state => state.device_config);
+  const deviceConfigsGetters = device_configStore.getters;
+  const deviceConfigsActions = device_configStore.actions;
 
-  const {actions: configActions, getters: configsGetters} = getStore('configs');
-  const {getters: printerGetters, actions: printerActions} =
-    getStore('printer');
-  const {actions: paymentTypeActions} = getStore('walletPaymentType');
-  const {actions: translateActions} = getStore('translate');
+  const configsStore = useStores(state => state.configs);
+  const configsGetters = configsStore.getters;
+  const configActions = configsStore.actions;
+  const printerStore = useStores(state => state.printer);
+  const printerActions = printerStore.actions;
+  const walletPaymentTypeStore = useStores(state => state.walletPaymentType);
+  const paymentTypeActions = walletPaymentTypeStore.actions;
+  const translateStore = useStores(state => state.translate);
+  const translateActions = translateStore.actions;
   const {items: companyConfigs} = configsGetters;
   const {colors, menus} = getters;
-  const {currentCompany, defaultCompany, companies} = peopleGetters;
+  const {currentCompany, defaultCompany} = peopleGetters;
   const {item: device_config} = deviceConfigsGetters;
   const {isLogged} = authGetters;
   const [translateReady, setTranslateReady] = useState(false);
@@ -66,25 +77,33 @@ export const DefaultProvider = ({children}) => {
     }
   };
   useEffect(() => {
-    checkVersion = async () => {
+    const checkVersion = async () => {
       const appVersion = await DeviceInfo.getVersion();
-      if (device && device.appVersion && device.appVersion != appVersion) fetchDeviceId();
+      if (device && device.appVersion && device.appVersion != appVersion) {
+        fetchDeviceId();
+      }
     };
     checkVersion();
   }, [device]);
 
   useEffect(() => {
-    if (!device || !device.id) fetchDeviceId();
-    else deviceActions.setItem(device);
+    if (!device || !device.id) {
+      fetchDeviceId();
+    } else {
+      deviceActions.setItem(device);
+    }
   }, [device]);
 
   useEffect(() => {
-    if (device && device.id) peopleActions.defaultCompany();
+    if (device && device.id) {
+      peopleActions.defaultCompany();
+    }
   }, [device]);
 
   useEffect(() => {
-    if (currentCompany && currentCompany.id)
+    if (currentCompany && currentCompany.id) {
       printerActions.getPrinters({people: currentCompany.id});
+    }
   }, [currentCompany]);
 
   useEffect(() => {
@@ -100,15 +119,17 @@ export const DefaultProvider = ({children}) => {
         companyConfigs[
           'pos-' + device_config.configs['pos-gateway'] + '-wallet'
         ]
-      )
+      ) {
         wallets.push(
           companyConfigs[
             'pos-' + device_config.configs['pos-gateway'] + '-wallet'
           ],
         );
+      }
 
-      if (companyConfigs['pos-cash-wallet'])
+      if (companyConfigs['pos-cash-wallet']) {
         wallets.push(companyConfigs['pos-cash-wallet']);
+      }
 
       paymentTypeActions.getItems({
         people: '/people/' + currentCompany.id,
@@ -124,7 +145,7 @@ export const DefaultProvider = ({children}) => {
       isLogged &&
       currentCompany &&
       Object.entries(currentCompany).length > 0
-    )
+    ) {
       deviceConfigsActions
         .getItems({
           'device.device': device.id,
@@ -137,11 +158,17 @@ export const DefaultProvider = ({children}) => {
             deviceConfigsActions.setItem(d);
           }
         });
+    }
   }, [currentCompany, isLogged, device]);
 
   useEffect(() => {
-    if (isLogged && currentCompany && Object.entries(currentCompany).length > 0)
+    if (
+      isLogged &&
+      currentCompany &&
+      Object.entries(currentCompany).length > 0
+    ) {
       configActions.setItems(currentCompany.configs);
+    }
   }, [currentCompany, isLogged]);
 
   useEffect(() => {
@@ -168,8 +195,9 @@ export const DefaultProvider = ({children}) => {
       device.id &&
       isLogged &&
       (!currentCompany || Object.entries(currentCompany).length === 0)
-    )
+    ) {
       peopleActions.myCompanies();
+    }
   }, [isLogged, device]);
 
   useEffect(() => {
@@ -190,7 +218,9 @@ export const DefaultProvider = ({children}) => {
       actions.setColors(parsedColors);
     };
 
-    if (device && device.id) fetchColors();
+    if (device && device.id) {
+      fetchColors();
+    }
   }, [device]);
   if (!translateReady && isLogged) {
     return (

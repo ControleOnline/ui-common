@@ -1,5 +1,5 @@
-import React, {useEffect, useState, useRef} from 'react';
-import {getStore, getAllStores} from '@store';
+import React, {useEffect, useRef} from 'react';
+import {useStores} from '@store';
 import {env} from '@env';
 
 export const WebsocketListener = () => {
@@ -7,13 +7,19 @@ export const WebsocketListener = () => {
   const reconnectTimeoutRef = useRef(null);
   const reconnectAttempts = useRef(0);
   const url = env.SOCKET;
-  const {getters: deviceGetters, actions: deviceActions} = getStore('device');
+  const deviceStore = useStores(state => state.device);
+  const deviceGetters = deviceStore.getters;
   const {item: device} = deviceGetters;
-  const stores = getAllStores();
-  const getStoreByName = name => stores[name];
+  const stores = useStores();
+
+  const getStoreByName = name => {
+    return stores[name];
+  };
 
   const connect = () => {
-    if (websocketRef.current?.readyState === WebSocket.OPEN) return;
+    if (websocketRef.current?.readyState === WebSocket.OPEN) {
+      return;
+    }
     websocketRef.current = new WebSocket(url, null, {
       headers: {'X-Device': device.id},
     });
@@ -25,7 +31,9 @@ export const WebsocketListener = () => {
 
     websocketRef.current.onmessage = async event => {
       try {
-        if (!event.data) return;
+        if (!event.data) {
+          return;
+        }
         const payload = JSON.parse(event.data);
         const data = Array.isArray(payload) ? payload[0] : payload;
         const storeModule = getStoreByName(data.store);
@@ -57,7 +65,9 @@ export const WebsocketListener = () => {
   };
 
   const scheduleReconnect = () => {
-    if (reconnectTimeoutRef.current) return;
+    if (reconnectTimeoutRef.current) {
+      return;
+    }
 
     const delay = Math.min(1000 * 2 ** reconnectAttempts.current, 30000);
     reconnectAttempts.current += 1;
@@ -66,19 +76,27 @@ export const WebsocketListener = () => {
       console.debug(
         `Tentando reconectar... Tentativa ${reconnectAttempts.current} no device ${device.id}`,
       );
-      if (device.id) connect();
+      if (device.id) {
+        connect();
+      }
       reconnectTimeoutRef.current = null;
     }, delay);
   };
 
   const close = () => {
     console.debug('Limpando WebSocket...');
-    if (websocketRef.current) websocketRef.current.close();
-    if (reconnectTimeoutRef.current) clearTimeout(reconnectTimeoutRef.current);
+    if (websocketRef.current) {
+      websocketRef.current.close();
+    }
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+    }
   };
 
   useEffect(() => {
-    if (device.id) connect(device.id);
+    if (device.id) {
+      connect(device.id);
+    }
   }, [device]);
 
   return null;
