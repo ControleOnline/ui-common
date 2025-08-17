@@ -9,10 +9,11 @@ import {
 import {SafeAreaView} from 'react-native-safe-area-context';
 import css from '@controleonline/ui-orders/src/react/css/orders';
 import {getStore} from '@store';
-import {useNavigation, useFocusEffect} from '@react-navigation/native';
+import {useFocusEffect} from '@react-navigation/native';
 import {Picker} from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-const Settings = ({navigation}) => {
+
+const Settings = () => {
   const {styles, globalStyles} = css();
   const {getters: walletGetters} = getStore('wallet');
   const {getters: peopleGetters} = getStore('people');
@@ -21,10 +22,6 @@ const Settings = ({navigation}) => {
     getStore('device_config');
   const {actions: categoryActions} = getStore('categories');
   const {item: device} = deviceConfigGetters;
-
-  const {getters: paymentTypeGetters, actions: paymentTypeActions} =
-    getStore('paymentType');
-  const {items: paymentTypes} = paymentTypeGetters;
   const {currentCompany} = peopleGetters;
   const {isLoading: walletLoading} = walletGetters;
   const {items: companyConfigs, isSaving} = configsGetters;

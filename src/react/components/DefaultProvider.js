@@ -1,5 +1,5 @@
 import React, {createContext, useContext, useEffect, useState} from 'react';
-import {StatusBar, View, ActivityIndicator, Text} from 'react-native';
+import { View, ActivityIndicator, Text} from 'react-native';
 import DeviceInfo from 'react-native-device-info';
 import Translate from '@controleonline/ui-common/src/utils/translate';
 import {WebsocketListener} from '@controleonline/ui-common/src/react/components/WebsocketListener';
@@ -10,21 +10,21 @@ const ThemeContext = createContext();
 
 export const DefaultProvider = ({children}) => {
   const {getters, actions} = getStore('theme');
-  const {getters: authGetters, actions: authActions} = getStore('auth');
+  const {getters: authGetters} = getStore('auth');
   const {getters: peopleGetters, actions: peopleActions} = getStore('people');
-  const {getters: deviceGetters, actions: deviceActions} = getStore('device');
+  const {actions: deviceActions} = getStore('device');
 
   const {getters: deviceConfigsGetters, actions: deviceConfigsActions} =
     getStore('device_config');
 
   const {actions: configActions, getters: configsGetters} = getStore('configs');
-  const {getters: printerGetters, actions: printerActions} =
+  const {actions: printerActions} =
     getStore('printer');
   const {actions: paymentTypeActions} = getStore('walletPaymentType');
   const {actions: translateActions} = getStore('translate');
   const {items: companyConfigs} = configsGetters;
   const {colors, menus} = getters;
-  const {currentCompany, defaultCompany, companies} = peopleGetters;
+  const {currentCompany, defaultCompany} = peopleGetters;
   const {item: device_config} = deviceConfigsGetters;
   const {isLogged} = authGetters;
   const [translateReady, setTranslateReady] = useState(false);

@@ -7,7 +7,7 @@ import Formatter from '@controleonline/ui-common/src/utils/formatter';
 
 import {getStore} from '@store';
 
-export default Checkout = ({route}) => {
+const Checkout = () => {
   const {getters: deviceConfigGetters} = getStore('device_config');
   const {actions: categoryActions} = getStore('categories');
   const {item: device} = deviceConfigGetters;
@@ -106,3 +106,5 @@ export default Checkout = ({route}) => {
     )
   );
 };
+
+export default Checkout;

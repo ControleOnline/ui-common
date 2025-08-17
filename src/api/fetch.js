@@ -7,12 +7,14 @@ export default function (resourceEndpoint, options = {}) {
   if (!resourceEndpoint || !entryPoint) return;
 
   // if (resourceEndpoint == "/people/companies/my")
-  //   console.log(entryPoint, resourceEndpoint, options.body);
+  console.log(entryPoint, resourceEndpoint, options);
 
-  console.log(entryPoint, resourceEndpoint);
+  //console.log(entryPoint, resourceEndpoint);
 
   return fetch(new URL(resourceEndpoint, entryPoint), options).then(
     (response) => {
+      console.log('Response:', response);
+
       if (options.method == "DELETE") return;
       if (options.responseType == "text") return response.text();
 

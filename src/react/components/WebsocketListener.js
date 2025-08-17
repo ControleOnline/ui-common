@@ -1,4 +1,4 @@
-import React, {useEffect, useState, useRef} from 'react';
+import React, {useEffect, useRef} from 'react';
 import {getStore, getAllStores} from '@store';
 import {env} from '@env';
 
@@ -7,7 +7,7 @@ export const WebsocketListener = () => {
   const reconnectTimeoutRef = useRef(null);
   const reconnectAttempts = useRef(0);
   const url = env.SOCKET;
-  const {getters: deviceGetters, actions: deviceActions} = getStore('device');
+  const {getters: deviceGetters} = getStore('device');
   const {item: device} = deviceGetters;
   const stores = getAllStores();
   const getStoreByName = name => stores[name];
@@ -24,6 +24,7 @@ export const WebsocketListener = () => {
     };
 
     websocketRef.current.onmessage = async event => {
+      console.log('event: ', event);
       try {
         if (!event.data) return;
         const payload = JSON.parse(event.data);
