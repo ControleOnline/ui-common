@@ -6,27 +6,27 @@ export default class Acl {
     this.router = router;
     this.permissions = [];
     this.myCompany = store.state.people.myCompany;
-
+    this.storedUser = JSON.parse(localStorage.getItem("session")) || {};
     this.initialPermissions();
   }
 
   getPermissions() {
-    let storedUser = JSON.parse(localStorage.getItem("session")) || {};
-    return storedUser.actions ? storedUser.actions[this.router.name] : {};
+    return this.storedUser.actions
+      ? this.storedUser.actions[this.router.name]
+      : {};
   }
 
   fetchPermission() {
-    let storedUser = JSON.parse(localStorage.getItem("session")) || {};
-    let route = storedUser.route;
-    if (!storedUser.actions) storedUser.actions = {};
+    let route = this.storedUser.route;
+    if (!this.storedUser.actions) this.storedUser.actions = {};
 
-    if (storedUser.mycompany && route)
+    if (this.storedUser.mycompany && route)
       return api
         .fetch(`/actions/people`, {
-          params: { myCompany: storedUser.mycompany, route: route },
+          params: { myCompany: this.storedUser.mycompany, route: route },
         })
         .then((result) => {
-          storedUser.actions[route] = result.response
+          this.storedUser.actions[route] = result.response
             ? result.response.data
             : {};
           localStorage.setItem("session", JSON.stringify(storedUser));
@@ -45,7 +45,7 @@ export default class Acl {
     //if (!this.store.state.auth.isLogged) return;
     this.store.commit("acl/SET_ISLOADING", true);
     this.store
-      .dispatch("people/myCompanies")
+      .dispatch("people/myCompanies", { user: this.storedUser })
       .then((companies) => {
         companies?.data.forEach((company) => {
           company?.permission?.forEach((item) => {
