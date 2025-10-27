@@ -1,5 +1,5 @@
 import React, {createContext, useContext, useEffect, useState} from 'react';
-import { View, ActivityIndicator, Text} from 'react-native';
+import {View, ActivityIndicator, Text} from 'react-native';
 import DeviceInfo from 'react-native-device-info';
 import Translate from '@controleonline/ui-common/src/utils/translate';
 import {WebsocketListener} from '@controleonline/ui-common/src/react/components/WebsocketListener';
@@ -12,14 +12,14 @@ export const DefaultProvider = ({children}) => {
   const {getters, actions} = getStore('theme');
   const {getters: authGetters} = getStore('auth');
   const {getters: peopleGetters, actions: peopleActions} = getStore('people');
+
   const {actions: deviceActions} = getStore('device');
 
   const {getters: deviceConfigsGetters, actions: deviceConfigsActions} =
     getStore('device_config');
 
   const {actions: configActions, getters: configsGetters} = getStore('configs');
-  const {actions: printerActions} =
-    getStore('printer');
+  const {actions: printerActions} = getStore('printer');
   const {actions: paymentTypeActions} = getStore('walletPaymentType');
   const {actions: translateActions} = getStore('translate');
   const {items: companyConfigs} = configsGetters;
@@ -68,23 +68,31 @@ export const DefaultProvider = ({children}) => {
   useEffect(() => {
     checkVersion = async () => {
       const appVersion = await DeviceInfo.getVersion();
-      if (device && device.appVersion && device.appVersion != appVersion) fetchDeviceId();
+      if (device && device.appVersion && device.appVersion != appVersion) {
+        fetchDeviceId();
+      }
     };
     checkVersion();
   }, [device]);
 
   useEffect(() => {
-    if (!device || !device.id) fetchDeviceId();
-    else deviceActions.setItem(device);
+    if (!device || !device.id) {
+      fetchDeviceId();
+    } else {
+      deviceActions.setItem(device);
+    }
   }, [device]);
 
   useEffect(() => {
-    if (device && device.id) peopleActions.defaultCompany();
+    if (device && device.id) {
+      peopleActions.defaultCompany();
+    }
   }, [device]);
 
   useEffect(() => {
-    if (currentCompany && currentCompany.id)
+    if (currentCompany && currentCompany.id) {
       printerActions.getPrinters({people: currentCompany.id});
+    }
   }, [currentCompany]);
 
   useEffect(() => {
@@ -100,15 +108,17 @@ export const DefaultProvider = ({children}) => {
         companyConfigs[
           'pos-' + device_config.configs['pos-gateway'] + '-wallet'
         ]
-      )
+      ) {
         wallets.push(
           companyConfigs[
             'pos-' + device_config.configs['pos-gateway'] + '-wallet'
           ],
         );
+      }
 
-      if (companyConfigs['pos-cash-wallet'])
+      if (companyConfigs['pos-cash-wallet']) {
         wallets.push(companyConfigs['pos-cash-wallet']);
+      }
 
       paymentTypeActions.getItems({
         people: '/people/' + currentCompany.id,
@@ -124,7 +134,7 @@ export const DefaultProvider = ({children}) => {
       isLogged &&
       currentCompany &&
       Object.entries(currentCompany).length > 0
-    )
+    ) {
       deviceConfigsActions
         .getItems({
           'device.device': device.id,
@@ -137,11 +147,17 @@ export const DefaultProvider = ({children}) => {
             deviceConfigsActions.setItem(d);
           }
         });
+    }
   }, [currentCompany, isLogged, device]);
 
   useEffect(() => {
-    if (isLogged && currentCompany && Object.entries(currentCompany).length > 0)
+    if (
+      isLogged &&
+      currentCompany &&
+      Object.entries(currentCompany).length > 0
+    ) {
       configActions.setItems(currentCompany.configs);
+    }
   }, [currentCompany, isLogged]);
 
   useEffect(() => {
@@ -168,8 +184,9 @@ export const DefaultProvider = ({children}) => {
       device.id &&
       isLogged &&
       (!currentCompany || Object.entries(currentCompany).length === 0)
-    )
+    ) {
       peopleActions.myCompanies();
+    }
   }, [isLogged, device]);
 
   useEffect(() => {
@@ -190,7 +207,9 @@ export const DefaultProvider = ({children}) => {
       actions.setColors(parsedColors);
     };
 
-    if (device && device.id) fetchColors();
+    if (device && device.id) {
+      fetchColors();
+    }
   }, [device]);
   if (!translateReady && isLogged) {
     return (
