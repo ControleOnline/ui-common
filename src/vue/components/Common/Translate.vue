@@ -75,7 +75,11 @@ export default {
     },
     getTranslate(locale, store) {
       this.loaded[locale][store] = true;
-      this.getItems({ "language.language": locale, store })
+      this.getItems({ "language.language": locale, 
+        store, 
+        "people": this.defaultCompany.id,
+        "itemsPerPage": 150,
+    })
         .then((data) => {
           if (
             typeof data === "object" &&
