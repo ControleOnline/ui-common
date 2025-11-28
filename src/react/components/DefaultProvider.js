@@ -178,16 +178,18 @@ export const DefaultProvider = ({children}) => {
     }
   }, [currentCompany, isLogged]);
 
+
   useEffect(() => {
     if (
       device &&
       device.id &&
-      isLogged &&
-      (!currentCompany || Object.entries(currentCompany).length === 0)
+      isLogged
     ) {
       peopleActions.myCompanies();
     }
   }, [isLogged, device]);
+
+
 
   useEffect(() => {
     const fetchColors = async () => {
