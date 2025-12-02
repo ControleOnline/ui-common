@@ -1,8 +1,8 @@
 export default class Translate {
   constructor(defaultCompany, currentCompany, stores, translateActions) {
-    this.translates = JSON.parse(localStorage.getItem('translates') || '{}');
+    this.translates = JSON.parse(localStorage.getItem("translates") || "{}");
     this.language =
-      JSON.parse(localStorage.getItem('config') || '{}').language || 'pt-br';
+      JSON.parse(localStorage.getItem("config") || "{}").language || "pt-br";
     this.defaultCompany = defaultCompany;
     this.currentCompany = currentCompany;
     this.translateActions = translateActions;
@@ -23,12 +23,12 @@ export default class Translate {
 
   clear() {
     this.translates = {};
-    localStorage.setItem('translates', '{}');
+    localStorage.setItem("translates", "{}");
   }
 
   async discoveryAll() {
     await Promise.all(
-      this.stores.map(store => this.discoveryStoreTranslate(store)),
+      this.stores.map((store) => this.discoveryStoreTranslate(store)),
     );
     return this.translates;
   }
@@ -46,15 +46,15 @@ export default class Translate {
     return this.translateActions
       .getItems({
         store: store,
-        'language.language': this.language,
-        people: '/people/' + company.id,
+        "language.language": this.language,
+        people: "/people/" + company.id,
         itemsPerPage: 500,
       })
-      .then(storeTranslates => {
+      .then((storeTranslates) => {
         const currentTranslates = this.translates;
 
         if (company === this.defaultCompany) {
-          storeTranslates.forEach(element => {
+          storeTranslates.forEach((element) => {
             this.findMessage(
               element.store,
               element.type,
@@ -63,7 +63,7 @@ export default class Translate {
             );
           });
         } else if (company === this.currentCompany) {
-          storeTranslates.forEach(element => {
+          storeTranslates.forEach((element) => {
             const existingMessage =
               currentTranslates[this.language]?.[store]?.[element.type]?.[
                 element.key
@@ -81,7 +81,7 @@ export default class Translate {
           });
         }
 
-        localStorage.setItem('translates', JSON.stringify(this.translates));
+        localStorage.setItem("translates", JSON.stringify(this.translates));
       });
   }
 
@@ -100,11 +100,11 @@ export default class Translate {
   }
 
   formatMessage(key) {
-    if (!key) return '';
+    if (!key) return "";
     return key
-      .replace(/([a-z])([A-Z])/g, '$1_$2')
-      .replace(/_/g, ' ')
-      .replace(/-/g, ' ')
-      .replace(/^\w/, c => c.toUpperCase());
+      .replace(/([a-z])([A-Z])/g, "$1_$2")
+      .replace(/_/g, " ")
+      .replace(/-/g, " ")
+      .replace(/^\w/, (c) => c.toUpperCase());
   }
 }
