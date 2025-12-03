@@ -11,7 +11,7 @@ items:[],
     resourceEndpoint: "statuses",
     isLoading: false,
     error: "",
-    
+
     totalItems: 0,messages:[], message:{},
     filters: {},
     columns: [
@@ -28,6 +28,7 @@ items:[],
         },
       },
       {
+        translate: true,
         externalFilter: false,
         sortable: true,
         name: "status",
@@ -49,6 +50,7 @@ items:[],
         },
       },
       {
+        translate: true,
         sortable: true,
         name: "realStatus",
         align: "left",
