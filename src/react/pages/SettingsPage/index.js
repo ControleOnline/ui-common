@@ -8,18 +8,25 @@ import {
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import css from '@controleonline/ui-orders/src/react/css/orders';
-import {getStore} from '@store';
+import {useStores} from '@store';
 import {useFocusEffect} from '@react-navigation/native';
 import {Picker} from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const Settings = () => {
   const {styles, globalStyles} = css();
-  const {getters: walletGetters} = getStore('wallet');
-  const {getters: peopleGetters} = getStore('people');
-  const {getters: configsGetters, actions: configActions} = getStore('configs');
-  const {getters: deviceConfigGetters, actions: deviceConfigsActions} = getStore('device_config');
-  const {actions: categoryActions} = getStore('categories');
+  const walletStore = useStores(state => state.wallet);
+  const walletGetters = walletStore.getters;
+  const peopleStore = useStores(state => state.people);
+  const peopleGetters = peopleStore.getters;
+  const configsStore = useStores(state => state.configs);
+  const configsGetters = configsStore.getters;
+  const configActions = configsStore.actions;
+  const device_configStore = useStores(state => state.device_config);
+  const deviceConfigGetters = device_configStore.getters;
+  const deviceConfigsActions = device_configStore.actions;
+  const categoriesStore = useStores(state => state.categories);
+  const categoryActions = categoriesStore.actions;
   const {item: device} = deviceConfigGetters;
   const {currentCompany} = peopleGetters;
   const {isLoading: walletLoading} = walletGetters;
@@ -28,7 +35,8 @@ const Settings = () => {
   const [printingMode, setPrintingMode] = useState('order');
   const [selectedGateway, setSelectedGateway] = useState(null);
   const [discovered, setDiscovered] = useState(false);
-  const {getters: deviceGetters} = getStore('device');
+  const deviceStore = useStores(state => state.device);
+  const deviceGetters = deviceStore.getters;
   const {item: storagedDevice} = deviceGetters;
 
   const cieloDevices = ['Quantum', 'ingenico'];

@@ -5,22 +5,35 @@ import Translate from '@controleonline/ui-common/src/utils/translate';
 import {WebsocketListener} from '@controleonline/ui-common/src/react/components/WebsocketListener';
 import PrintService from '@controleonline/ui-common/src/react/components/PrintService';
 
-import {getStore} from '@store';
+import {useStores} from '@store';
 const ThemeContext = createContext();
 
 export const DefaultProvider = ({children}) => {
-  const {getters, actions} = getStore('theme');
-  const {getters: authGetters} = getStore('auth');
-  const {getters: peopleGetters, actions: peopleActions} = getStore('people');
+  const themeStore = useStores(state => state.theme);
+  const getters = themeStore.getters;
+  const actions = themeStore.actions;
+  const authStore = useStores(state => state.auth);
+  const authGetters = authStore.getters;
+  const peopleStore = useStores(state => state.people);
+  const peopleGetters = peopleStore.getters;
+  const peopleActions = peopleStore.actions;
 
-  const {actions: deviceActions} = getStore('device');
+  const deviceStore = useStores(state => state.device);
+  const deviceActions = deviceStore.actions;
 
-  const {getters: deviceConfigsGetters, actions: deviceConfigsActions} = getStore('device_config');
+  const device_configStore = useStores(state => state.device_config);
+  const deviceConfigsGetters = device_configStore.getters;
+  const deviceConfigsActions = device_configStore.actions;
 
-  const {actions: configActions, getters: configsGetters} = getStore('configs');
-  const {actions: printerActions} = getStore('printer');
-  const {actions: paymentTypeActions} = getStore('walletPaymentType');
-  const {actions: translateActions} = getStore('translate');
+  const configsStore = useStores(state => state.configs);
+  const configActions = configsStore.actions;
+  const configsGetters = configsStore.getters;
+  const printerStore = useStores(state => state.printer);
+  const printerActions = printerStore.actions;
+  const walletPaymentTypeStore = useStores(state => state.walletPaymentType);
+  const paymentTypeActions = walletPaymentTypeStore.actions;
+  const translateStore = useStores(state => state.translate);
+  const translateActions = translateStore.actions;
   const {items: companyConfigs} = configsGetters;
   const {colors, menus} = getters;
   const {currentCompany, defaultCompany} = peopleGetters;
