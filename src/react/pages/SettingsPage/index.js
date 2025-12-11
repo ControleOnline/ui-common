@@ -18,8 +18,7 @@ const Settings = () => {
   const {getters: walletGetters} = getStore('wallet');
   const {getters: peopleGetters} = getStore('people');
   const {getters: configsGetters, actions: configActions} = getStore('configs');
-  const {getters: deviceConfigGetters, actions: deviceConfigsActions} =
-    getStore('device_config');
+  const {getters: deviceConfigGetters, actions: deviceConfigsActions} = getStore('device_config');
   const {actions: categoryActions} = getStore('categories');
   const {item: device} = deviceConfigGetters;
   const {currentCompany} = peopleGetters;

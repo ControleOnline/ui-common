@@ -15,8 +15,7 @@ export const DefaultProvider = ({children}) => {
 
   const {actions: deviceActions} = getStore('device');
 
-  const {getters: deviceConfigsGetters, actions: deviceConfigsActions} =
-    getStore('device_config');
+  const {getters: deviceConfigsGetters, actions: deviceConfigsActions} = getStore('device_config');
 
   const {actions: configActions, getters: configsGetters} = getStore('configs');
   const {actions: printerActions} = getStore('printer');
