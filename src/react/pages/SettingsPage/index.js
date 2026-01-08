@@ -5,6 +5,7 @@ import {
   ScrollView,
   ActivityIndicator,
   TouchableOpacity,
+  Switch,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import css from '@controleonline/ui-orders/src/react/css/orders';
@@ -12,6 +13,7 @@ import {useStores} from '@store';
 import {useFocusEffect} from '@react-navigation/native';
 import {Picker} from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+
 
 const Settings = () => {
   const {styles, globalStyles} = css();
@@ -39,7 +41,22 @@ const Settings = () => {
   const deviceGetters = deviceStore.getters;
   const {item: storagedDevice} = deviceGetters;
 
+  const [showBarcode, setShowBarcode] = useState(false);
+
   const cieloDevices = ['Quantum', 'ingenico'];
+
+  useFocusEffect(
+  useCallback(() => {
+    if (device?.configs) {
+      setShowBarcode(
+        device?.configs['show-barcode'] === true ||
+        device?.configs['show-barcode'] === '1'
+      );
+    } else {
+      setShowBarcode(false);
+    }
+  }, [device]),
+);
 
   useFocusEffect(
     useCallback(() => {
@@ -75,6 +92,8 @@ const Settings = () => {
     lc['pos-type'] = selectedMode;
     lc['pos-gateway'] = selectedGateway;
     lc['print-mode'] = printingMode;
+
+    lc['show-barcode'] = showBarcode;
 
     deviceConfigsActions.addDeviceConfigs({
       configs: JSON.stringify(lc),
@@ -189,6 +208,24 @@ const Settings = () => {
               </View>
             </View>
           </View>
+
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginTop: 12,
+            }}>
+            <Text style={styles.Settings.label}>
+              Ler de código de barras
+            </Text>
+
+            <Switch
+              value={showBarcode}
+              onValueChange={value => setShowBarcode(value)}
+            />
+          </View>
+
           <View style={{marginTop: 6}}>
             <Picker
               selectedValue={selectedMode}
