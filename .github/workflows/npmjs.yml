@@ -23,6 +23,7 @@ jobs:
           scope: '@controleonline'
 
       - run: npm install
+      - run: npm whoami || true
       - run: |
           rm -f ~/.npmrc
           rm -f .npmrc
