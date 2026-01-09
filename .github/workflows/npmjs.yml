@@ -23,7 +23,9 @@ jobs:
           scope: '@controleonline'
 
       - run: npm install
-
+      - run: |
+          rm -f ~/.npmrc
+          rm -f .npmrc
       - run: |
           CURRENT=$(node -p "require('./package.json').version")
           PREVIOUS=$(git show HEAD~1:package.json | node -p "JSON.parse(require('fs').readFileSync(0)).version")
