@@ -6,7 +6,7 @@ on:
       - master
 
 jobs:
-  build:
+  publish:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -22,16 +22,11 @@ jobs:
           registry-url: 'https://registry.npmjs.org'
           scope: '@controleonline'
 
-      - run: npm ci
+      - run: npm install
 
       - run: |
           CURRENT=$(node -p "require('./package.json').version")
           PREVIOUS=$(git show HEAD~1:package.json | node -p "JSON.parse(require('fs').readFileSync(0)).version")
-          if [ "$CURRENT" = "$PREVIOUS" ]; then
-            echo "Versão não mudou, abortando publish"
-            exit 0
-          fi
+          [ "$CURRENT" = "$PREVIOUS" ] && exit 0 || true
 
       - run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
