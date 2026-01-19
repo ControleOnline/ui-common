@@ -1,4 +1,5 @@
-import {create} from 'zustand';
+import { create } from 'zustand';
+import { useSyncExternalStore } from 'react';
 
 const storeState = {};
 
@@ -41,10 +42,12 @@ export const useStores = create((set, get) => {
         console.error(`Mutation "${type}" not found in store "${storeName}"`);
         return;
       }
+
       const keyChanged = storeModule.mutations[type](
         storeState[storeName].getters,
         payload,
       );
+
       set(state => ({
         [storeName]: {
           ...state[storeName],
@@ -56,7 +59,7 @@ export const useStores = create((set, get) => {
     Object.keys(storeModule.actions).forEach(actionName => {
       storeState[storeName].actions[actionName] = (...args) =>
         storeModule.actions[actionName](
-          {commit, getters: storeState[storeName].getters},
+          { commit, getters: storeState[storeName].getters },
           ...args,
         );
     });
@@ -65,14 +68,11 @@ export const useStores = create((set, get) => {
   return storeState;
 });
 
-export const getStore = storeName => {
-  const store = useStores.getState()[storeName];
-  if (!store) {
-    throw new Error(
-      `Store "${storeName}" not found. Ensure useStores is initialized.`,
-    );
-  }
-  return store;
-};
+export const useStore = storeName =>
+  useSyncExternalStore(
+    useStores.subscribe,
+    () => useStores.getState()[storeName]
+  );
+
 
 export const getAllStores = () => useStores.getState();

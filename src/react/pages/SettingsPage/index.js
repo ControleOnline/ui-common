@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import css from '@controleonline/ui-orders/src/react/css/orders';
-import {useStores} from '@store';
+import {useStore} from '@store';
 import {useFocusEffect} from '@react-navigation/native';
 import {Picker} from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -17,17 +17,17 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 
 const Settings = () => {
   const {styles, globalStyles} = css();
-  const walletStore = useStores(state => state.wallet);
+  const walletStore = useStore('wallet');
   const walletGetters = walletStore.getters;
-  const peopleStore = useStores(state => state.people);
+  const peopleStore = useStore('people');
   const peopleGetters = peopleStore.getters;
-  const configsStore = useStores(state => state.configs);
+  const configsStore = useStore('configs');
   const configsGetters = configsStore.getters;
   const configActions = configsStore.actions;
-  const device_configStore = useStores(state => state.device_config);
+  const device_configStore = useStore('device_config');
   const deviceConfigGetters = device_configStore.getters;
   const deviceConfigsActions = device_configStore.actions;
-  const categoriesStore = useStores(state => state.categories);
+  const categoriesStore = useStore('categories');
   const categoryActions = categoriesStore.actions;
   const {item: device} = deviceConfigGetters;
   const {currentCompany} = peopleGetters;
@@ -37,7 +37,7 @@ const Settings = () => {
   const [printingMode, setPrintingMode] = useState('order');
   const [selectedGateway, setSelectedGateway] = useState(null);
   const [discovered, setDiscovered] = useState(false);
-  const deviceStore = useStores(state => state.device);
+  const deviceStore = useStore('device');
   const deviceGetters = deviceStore.getters;
   const {item: storagedDevice} = deviceGetters;
 

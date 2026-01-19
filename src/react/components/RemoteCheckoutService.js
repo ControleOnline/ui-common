@@ -5,21 +5,21 @@ import CieloCheckout from '@controleonline/ui-orders/src/react/services/Cielo/Ch
 import InfinitePay from '@controleonline/ui-orders/src/react/services/InfinitePay/Checkout';
 import Formatter from '@controleonline/ui-common/src/utils/formatter';
 
-import {useStores} from '@store';
+import {useStore} from '@store';
 
 const Checkout = () => {
-  const device_configStore = useStores(state => state.device_config);
+  const device_configStore = useStore('device_config');
   const deviceConfigGetters = device_configStore.getters;
-  const categoriesStore = useStores(state => state.categories);
+  const categoriesStore = useStore('categories');
   const categoryActions = categoriesStore.actions;
   const {item: device} = deviceConfigGetters;
-  const ordersStore = useStores(state => state.orders);
+  const ordersStore = useStore('orders');
   const ordersGetters = ordersStore.getters;
   const ordersActions = ordersStore.actions;
-  const invoiceStore = useStores(state => state.invoice);
+  const invoiceStore = useStore('invoice');
   const invoiceGetters = invoiceStore.getters;
   const invoiceActions = invoiceStore.actions;
-  const peopleStore = useStores(state => state.people);
+  const peopleStore = useStore('people');
   const peopleGetters = peopleStore.getters;
   const {currentCompany, defaultCompany} = peopleGetters;
   const {item: order} = ordersGetters;

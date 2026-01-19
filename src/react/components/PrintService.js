@@ -1,15 +1,15 @@
 import React, {useEffect} from 'react';
 import {CieloPrint} from '@controleonline/ui-orders/src/react/services/Cielo/Print';
 import Sound from 'react-native-sound';
-import {useStores} from '@store';
+import {useStore} from '@store';
 
 const PrintService = ({}) => {
-  const peopleStore = useStores(state => state.people);
+  const peopleStore = useStore('people');
   const peopleGetters = peopleStore.getters;
-  const printStore = useStores(state => state.print);
+  const printStore = useStore('print');
   const printGetters = printStore.getters;
   const printActions = printStore.actions;
-  const deviceStore = useStores(state => state.device);
+  const deviceStore = useStore('device');
   const deviceGetters = deviceStore.getters;
   const {item: storagedDevice} = deviceGetters;
   const {reload, print, items: spool, message, messages} = printGetters;

@@ -5,34 +5,34 @@ import Translate from '@controleonline/ui-common/src/utils/translate';
 import {WebsocketListener} from '@controleonline/ui-common/src/react/components/WebsocketListener';
 import PrintService from '@controleonline/ui-common/src/react/components/PrintService';
 
-import {useStores} from '@store';
+import {useStore} from '@store';
 const ThemeContext = createContext();
 
 export const DefaultProvider = ({children}) => {
-  const themeStore = useStores(state => state.theme);
+  const themeStore = useStore('theme');
   const getters = themeStore.getters;
   const actions = themeStore.actions;
-  const authStore = useStores(state => state.auth);
+  const authStore = useStore('auth');
   const authGetters = authStore.getters;
-  const peopleStore = useStores(state => state.people);
+  const peopleStore = useStore('people');
   const peopleGetters = peopleStore.getters;
   const peopleActions = peopleStore.actions;
 
-  const deviceStore = useStores(state => state.device);
+  const deviceStore = useStore('device');
   const deviceActions = deviceStore.actions;
 
-  const device_configStore = useStores(state => state.device_config);
+  const device_configStore = useStore('device_config');
   const deviceConfigsGetters = device_configStore.getters;
   const deviceConfigsActions = device_configStore.actions;
 
-  const configsStore = useStores(state => state.configs);
+  const configsStore = useStore('configs');
   const configActions = configsStore.actions;
   const configsGetters = configsStore.getters;
-  const printerStore = useStores(state => state.printer);
+  const printerStore = useStore('printer');
   const printerActions = printerStore.actions;
-  const walletPaymentTypeStore = useStores(state => state.walletPaymentType);
+  const walletPaymentTypeStore = useStore('walletPaymentType');
   const paymentTypeActions = walletPaymentTypeStore.actions;
-  const translateStore = useStores(state => state.translate);
+  const translateStore = useStore('translate');
   const translateActions = translateStore.actions;
   const {items: companyConfigs} = configsGetters;
   const {colors, menus} = getters;
