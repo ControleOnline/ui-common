@@ -78,7 +78,7 @@ export const DefaultProvider = ({children}) => {
     }
   };
   useEffect(() => {
-    checkVersion = async () => {
+    const checkVersion = async () => {
       const appVersion = await DeviceInfo.getVersion();
       if (device && device.appVersion && device.appVersion != appVersion) {
         fetchDeviceId();

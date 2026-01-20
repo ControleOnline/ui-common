@@ -1,4 +1,4 @@
-import React, {useState, useCallback} from 'react';
+import React, {useState, useCallback, useEffect} from 'react';
 import {
   Text,
   View,
@@ -13,7 +13,6 @@ import {useStore} from '@store';
 import {useFocusEffect} from '@react-navigation/native';
 import {Picker} from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-
 
 const Settings = () => {
   const {styles, globalStyles} = css();
@@ -33,52 +32,78 @@ const Settings = () => {
   const {currentCompany} = peopleGetters;
   const {isLoading: walletLoading} = walletGetters;
   const {items: companyConfigs, isSaving} = configsGetters;
+
   const [selectedMode, setSelectedMode] = useState(null);
   const [printingMode, setPrintingMode] = useState('order');
   const [selectedGateway, setSelectedGateway] = useState(null);
   const [discovered, setDiscovered] = useState(false);
+  const [showBarcode, setShowBarcode] = useState(false);
+  const [configsLoaded, setConfigsLoaded] = useState(false);
+
   const deviceStore = useStore('device');
   const deviceGetters = deviceStore.getters;
   const {item: storagedDevice} = deviceGetters;
 
-  const [showBarcode, setShowBarcode] = useState(false);
-
   const cieloDevices = ['Quantum', 'ingenico'];
 
-  useFocusEffect(
-  useCallback(() => {
-    if (device?.configs) {
-      setShowBarcode(
-        device?.configs['show-barcode'] === true ||
-        device?.configs['show-barcode'] === '1'
-      );
-    } else {
-      setShowBarcode(false);
-    }
-  }, [device]),
-);
+  const saveDeviceConfigs = useCallback((configs) => {
+    if (!currentCompany) return;
 
-  useFocusEffect(
-    useCallback(() => {
-      if (storagedDevice && selectedGateway && selectedMode && discovered) {
-        addDeviceConfigs();
+    deviceConfigsActions.addDeviceConfigs({
+      configs: JSON.stringify(configs),
+      people: '/people/' + currentCompany.id,
+    });
+  }, [currentCompany, deviceConfigsActions]);
+
+  const createDefaultConfigs = useCallback(() => {
+    if (!currentCompany || configsLoaded || !device) return;
+
+    let lc = {...(device?.configs || {})};
+    let needsUpdate = false;
+
+    if (!lc['pos-type']) {
+      lc['pos-type'] = 'full';
+      needsUpdate = true;
+    }
+    if (!lc['print-mode']) {
+      lc['print-mode'] = 'order';
+      needsUpdate = true;
+    }
+    if (!lc['barcode-reader']) {
+      lc['barcode-reader'] = '0';
+      needsUpdate = true;
+    }
+    if (!lc['config-version']) {
+      lc['config-version'] = storagedDevice?.buildNumber;
+      needsUpdate = true;
+    }
+    if (!lc['pos-gateway']) {
+      if (
+        cieloDevices.includes(storagedDevice?.manufacturer) &&
+        !storagedDevice?.isEmulator
+      ) {
+        lc['pos-gateway'] = 'cielo';
+      } else {
+        lc['pos-gateway'] = 'infinite-pay';
       }
-    }, [
-      storagedDevice,
-      selectedMode,
-      selectedGateway,
-      discovered,
-      printingMode,
-    ]),
-  );
+      needsUpdate = true;
+    }
+
+    if (needsUpdate) {
+      saveDeviceConfigs(lc);
+    }
+
+    setConfigsLoaded(true);
+  }, [device, currentCompany, configsLoaded, storagedDevice, saveDeviceConfigs]);
 
   useFocusEffect(
     useCallback(() => {
       if (!discovered) {
+        const params = {
+          people: '/people/' + currentCompany.id,
+        };
         configActions
-          .discoveryMainConfigs({
-            people: '/people/' + currentCompany.id,
-          })
+          .discoveryMainConfigs(params)
           .finally(() => {
             setDiscovered(true);
           });
@@ -86,52 +111,75 @@ const Settings = () => {
     }, [discovered]),
   );
 
-  const addDeviceConfigs = () => {
-    let lc = {...(device?.configs || {})};
-    lc['config-version'] = storagedDevice?.buildNumber;
-    lc['pos-type'] = selectedMode;
-    lc['pos-gateway'] = selectedGateway;
-    lc['print-mode'] = printingMode;
-
-    lc['show-barcode'] = showBarcode;
-
-    deviceConfigsActions.addDeviceConfigs({
-      configs: JSON.stringify(lc),
-      people: '/people/' + currentCompany.id,
-    });
-  };
+  useFocusEffect(
+    useCallback(() => {
+      createDefaultConfigs();
+    }, [createDefaultConfigs]),
+  );
 
   useFocusEffect(
     useCallback(() => {
       if (device?.configs) {
+        setShowBarcode(
+          device?.configs['barcode-reader'] === true ||
+          device?.configs['barcode-reader'] === '1'
+        );
         setSelectedMode(device?.configs['pos-type'] || 'full');
         setPrintingMode(device?.configs['print-mode'] || 'order');
+        setSelectedGateway(device?.configs['pos-gateway'] || 'infinite-pay');
       } else {
+        setShowBarcode(false);
         setSelectedMode('full');
         setPrintingMode('order');
+        if (
+          cieloDevices.includes(storagedDevice?.manufacturer) &&
+          !storagedDevice?.isEmulator
+        ) {
+          setSelectedGateway('cielo');
+        } else {
+          setSelectedGateway('infinite-pay');
+        }
       }
-    }, [device]),
+    }, [device, storagedDevice]),
   );
 
-  useFocusEffect(
-    useCallback(() => {
-      if (
-        cieloDevices.includes(storagedDevice?.manufacturer) &&
-        !storagedDevice?.isEmulator
-      ) {
-        setSelectedGateway('cielo');
-      } else if (device?.configs) {
-        setSelectedGateway(device?.configs['pos-gateway']);
-      } else {
-        setSelectedGateway('infinite-pay');
-      }
-    }, [device]),
-  );
+  const handleBarcodeChange = (value) => {
+    setShowBarcode(value);
+    let lc = {...(device?.configs || {})};
+    lc['barcode-reader'] = value ? '1' : '0';
+    lc['config-version'] = storagedDevice?.buildNumber;
+    saveDeviceConfigs(lc);
+  };
+
+  const handleModeChange = (value) => {
+    setSelectedMode(value);
+    let lc = {...(device?.configs || {})};
+    lc['pos-type'] = value;
+    lc['config-version'] = storagedDevice?.buildNumber;
+    saveDeviceConfigs(lc);
+  };
+
+  const handlePrintingModeChange = (value) => {
+    setPrintingMode(value);
+    let lc = {...(device?.configs || {})};
+    lc['print-mode'] = value;
+    lc['config-version'] = storagedDevice?.buildNumber;
+    saveDeviceConfigs(lc);
+  };
+
+  const handleGatewayChange = (value) => {
+    setSelectedGateway(value);
+    let lc = {...(device?.configs || {})};
+    lc['pos-gateway'] = value;
+    lc['config-version'] = storagedDevice?.buildNumber;
+    saveDeviceConfigs(lc);
+  };
 
   const handleClearProducts = () => {
     localStorage.setItem('categories', JSON.stringify([]));
     categoryActions.setItems([]);
   };
+
   const handleClearTranslate = () => {
     t.reload();
   };
@@ -217,19 +265,19 @@ const Settings = () => {
               marginTop: 12,
             }}>
             <Text style={styles.Settings.label}>
-              Ler de código de barras
+              Leitor barras / qrcode
             </Text>
 
             <Switch
               value={showBarcode}
-              onValueChange={value => setShowBarcode(value)}
+              onValueChange={handleBarcodeChange}
             />
           </View>
 
           <View style={{marginTop: 6}}>
             <Picker
               selectedValue={selectedMode}
-              onValueChange={itemValue => setSelectedMode(itemValue)}
+              onValueChange={handleModeChange}
               style={styles.Settings.picker}>
               <Picker.Item label="Modo Balcão" value="simple" />
               <Picker.Item label="Modo Comanda" value="full" />
@@ -238,7 +286,7 @@ const Settings = () => {
           <View style={{marginTop: 6, marginBottom: 10}}>
             <Picker
               selectedValue={printingMode}
-              onValueChange={itemValue => setPrintingMode(itemValue)}
+              onValueChange={handlePrintingModeChange}
               style={styles.Settings.picker}>
               <Picker.Item label="Impressão Pedidos" value="order" />
               <Picker.Item label="Impressão Fichas" value="form" />
@@ -249,7 +297,7 @@ const Settings = () => {
             <View style={{marginTop: 10}}>
               <Picker
                 selectedValue={selectedGateway}
-                onValueChange={itemValue => setSelectedGateway(itemValue)}
+                onValueChange={handleGatewayChange}
                 style={styles.Settings.picker}>
                 <Picker.Item label="Infinite Pay" value="infinite-pay" />
                 {(cieloDevices.includes(storagedDevice?.manufacturer) ||

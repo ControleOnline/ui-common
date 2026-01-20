@@ -32,9 +32,14 @@ export const discoveryMainConfigs = ({commit, getters}, params) => {
   return api
     .fetch(getters.resourceEndpoint + '/discovery-configs', options)
     .then(data => {
-      const parsedConfigs = data?.configs ? JSON.parse(data.configs) : {};
-      const d = {...getters.item, configs: parsedConfigs};
-      commit(types.SET_ITEM, d);
+      let parsedConfigs = {};
+      if (data?.configs) {
+        const configsArray = JSON.parse(data.configs);
+        configsArray.forEach(config => {
+          parsedConfigs[config.configKey] = config.configValue;
+        });
+      }
+      commit(types.SET_ITEMS, parsedConfigs);
     })
     .catch(e => {
       commit(types.SET_ERROR, e.message);
