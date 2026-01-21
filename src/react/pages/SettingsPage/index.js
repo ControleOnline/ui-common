@@ -128,7 +128,7 @@ const Settings = () => {
 
   useFocusEffect(
     useCallback(() => {
-      console.log('Device configs do banco:', device?.configs);
+      // console.log('Device configs do banco:', device?.configs);
       if (device?.configs) {
         setShowBarcode(
           device?.configs['barcode-reader'] === true ||
@@ -181,7 +181,7 @@ const Settings = () => {
     lc['sound'] = showSound ? '1' : '0';
     lc['vibration'] = showVibration ? '1' : '0';
 
-    console.log('Enviando para banco:', lc);
+    // console.log('Enviando para banco:', lc);
     
     deviceConfigsActions.addDeviceConfigs({
       configs: JSON.stringify(lc),
