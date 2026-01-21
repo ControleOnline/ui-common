@@ -201,6 +201,7 @@ const Settings = () => {
 
   const handleSoundChange = (value) => {
     setShowSound(value);
+    localStorage.setItem('sound', value);
     let lc = {...(device?.configs || {})};
     lc['sound'] = value ? '1' : '0';
     deviceConfigsActions.addDeviceConfigs({
@@ -211,6 +212,7 @@ const Settings = () => {
 
   const handleVibrationChange = (value) => {
     setShowVibration(value);
+    localStorage.setItem('vibration', value);
     let lc = {...(device?.configs || {})};
     lc['vibration'] = value ? '1' : '0';
     deviceConfigsActions.addDeviceConfigs({
