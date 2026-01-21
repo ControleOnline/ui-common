@@ -37,30 +37,24 @@ const Settings = () => {
   const [printingMode, setPrintingMode] = useState('order');
   const [selectedGateway, setSelectedGateway] = useState(null);
   const [discovered, setDiscovered] = useState(false);
-  const [showBarcode, setShowBarcode] = useState(false);
-  const [configsLoaded, setConfigsLoaded] = useState(false);
-
   const deviceStore = useStore('device');
   const deviceGetters = deviceStore.getters;
   const {item: storagedDevice} = deviceGetters;
 
+  const [showBarcode, setShowBarcode] = useState(false);
+  const [showSound, setShowSound] = useState(false);
+  const [showVibration, setShowVibration] = useState(false);
+  const [configsLoaded, setConfigsLoaded] = useState(false);
+
   const cieloDevices = ['Quantum', 'ingenico'];
 
-  const saveDeviceConfigs = useCallback((configs) => {
-    if (!currentCompany) return;
-
-    deviceConfigsActions.addDeviceConfigs({
-      configs: JSON.stringify(configs),
-      people: '/people/' + currentCompany.id,
-    });
-  }, [currentCompany, deviceConfigsActions]);
-
   const createDefaultConfigs = useCallback(() => {
-    if (!currentCompany || configsLoaded || !device) return;
+    if (!currentCompany || configsLoaded) return;
 
     let lc = {...(device?.configs || {})};
     let needsUpdate = false;
 
+    // Verifica cada config e cria o padrão se não existir
     if (!lc['pos-type']) {
       lc['pos-type'] = 'full';
       needsUpdate = true;
@@ -71,6 +65,14 @@ const Settings = () => {
     }
     if (!lc['barcode-reader']) {
       lc['barcode-reader'] = '0';
+      needsUpdate = true;
+    }
+    if (!lc['sound']) {
+      lc['sound'] = '0';
+      needsUpdate = true;
+    }
+    if (!lc['vibration']) {
+      lc['vibration'] = '0';
       needsUpdate = true;
     }
     if (!lc['config-version']) {
@@ -89,12 +91,51 @@ const Settings = () => {
       needsUpdate = true;
     }
 
+    // Se faltava alguma coisa, grava tudo no banco
     if (needsUpdate) {
-      saveDeviceConfigs(lc);
+      deviceConfigsActions.addDeviceConfigs({
+        configs: JSON.stringify(lc),
+        people: '/people/' + currentCompany.id,
+      });
     }
 
     setConfigsLoaded(true);
-  }, [device, currentCompany, configsLoaded, storagedDevice, saveDeviceConfigs]);
+  }, [device, currentCompany, configsLoaded, storagedDevice]);
+
+  useFocusEffect(
+    useCallback(() => {
+      createDefaultConfigs();
+    }, [createDefaultConfigs]),
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      if (device?.configs) {
+        setShowBarcode(
+          device?.configs['barcode-reader'] === true ||
+          device?.configs['barcode-reader'] === '1'
+        );
+        setShowSound(
+          device?.configs['sound'] === true ||
+          device?.configs['sound'] === '1'
+        );
+        setShowVibration(
+          device?.configs['vibration'] === true ||
+          device?.configs['vibration'] === '1'
+        );
+        setSelectedMode(device?.configs['pos-type'] || 'full');
+        setPrintingMode(device?.configs['print-mode'] || 'order');
+        setSelectedGateway(device?.configs['pos-gateway'] || 'infinite-pay');
+      } else {
+        setShowBarcode(false);
+        setShowSound(false);
+        setShowVibration(false);
+        setSelectedMode('full');
+        setPrintingMode('order');
+        setSelectedGateway('infinite-pay');
+      }
+    }, [device]),
+  );
 
   useFocusEffect(
     useCallback(() => {
@@ -111,68 +152,50 @@ const Settings = () => {
     }, [discovered]),
   );
 
-  useFocusEffect(
-    useCallback(() => {
-      createDefaultConfigs();
-    }, [createDefaultConfigs]),
-  );
+  const addDeviceConfigs = () => {
+    let lc = {...(device?.configs || {})};
+    lc['config-version'] = storagedDevice?.buildNumber;
+    lc['pos-type'] = selectedMode;
+    lc['pos-gateway'] = selectedGateway;
+    lc['print-mode'] = printingMode;
+    lc['barcode-reader'] = showBarcode ? '1' : '0';
+    lc['sound'] = showSound ? '1' : '0';
+    lc['vibration'] = showVibration ? '1' : '0';
 
-  useFocusEffect(
-    useCallback(() => {
-      if (device?.configs) {
-        setShowBarcode(
-          device?.configs['barcode-reader'] === true ||
-          device?.configs['barcode-reader'] === '1'
-        );
-        setSelectedMode(device?.configs['pos-type'] || 'full');
-        setPrintingMode(device?.configs['print-mode'] || 'order');
-        setSelectedGateway(device?.configs['pos-gateway'] || 'infinite-pay');
-      } else {
-        setShowBarcode(false);
-        setSelectedMode('full');
-        setPrintingMode('order');
-        if (
-          cieloDevices.includes(storagedDevice?.manufacturer) &&
-          !storagedDevice?.isEmulator
-        ) {
-          setSelectedGateway('cielo');
-        } else {
-          setSelectedGateway('infinite-pay');
-        }
-      }
-    }, [device, storagedDevice]),
-  );
+    deviceConfigsActions.addDeviceConfigs({
+      configs: JSON.stringify(lc),
+      people: '/people/' + currentCompany.id,
+    });
+  };
 
   const handleBarcodeChange = (value) => {
     setShowBarcode(value);
     let lc = {...(device?.configs || {})};
     lc['barcode-reader'] = value ? '1' : '0';
-    lc['config-version'] = storagedDevice?.buildNumber;
-    saveDeviceConfigs(lc);
+    deviceConfigsActions.addDeviceConfigs({
+      configs: JSON.stringify(lc),
+      people: '/people/' + currentCompany.id,
+    });
   };
 
-  const handleModeChange = (value) => {
-    setSelectedMode(value);
+  const handleSoundChange = (value) => {
+    setShowSound(value);
     let lc = {...(device?.configs || {})};
-    lc['pos-type'] = value;
-    lc['config-version'] = storagedDevice?.buildNumber;
-    saveDeviceConfigs(lc);
+    lc['sound'] = value ? '1' : '0';
+    deviceConfigsActions.addDeviceConfigs({
+      configs: JSON.stringify(lc),
+      people: '/people/' + currentCompany.id,
+    });
   };
 
-  const handlePrintingModeChange = (value) => {
-    setPrintingMode(value);
+  const handleVibrationChange = (value) => {
+    setShowVibration(value);
     let lc = {...(device?.configs || {})};
-    lc['print-mode'] = value;
-    lc['config-version'] = storagedDevice?.buildNumber;
-    saveDeviceConfigs(lc);
-  };
-
-  const handleGatewayChange = (value) => {
-    setSelectedGateway(value);
-    let lc = {...(device?.configs || {})};
-    lc['pos-gateway'] = value;
-    lc['config-version'] = storagedDevice?.buildNumber;
-    saveDeviceConfigs(lc);
+    lc['vibration'] = value ? '1' : '0';
+    deviceConfigsActions.addDeviceConfigs({
+      configs: JSON.stringify(lc),
+      people: '/people/' + currentCompany.id,
+    });
   };
 
   const handleClearProducts = () => {
@@ -274,10 +297,42 @@ const Settings = () => {
             />
           </View>
 
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginTop: 12,
+            }}>
+            <Text style={styles.Settings.label}>Som</Text>
+
+            <Switch
+              value={showSound}
+              onValueChange={handleSoundChange}
+            />
+          </View>
+
+          <View
+            style={{
+              flexDirection: 'row',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              marginTop: 12,
+            }}>
+            <Text style={styles.Settings.label}>Vibração</Text>
+
+            <Switch
+              value={showVibration}
+              onValueChange={handleVibrationChange}
+            />
+          </View>
+
           <View style={{marginTop: 6}}>
             <Picker
               selectedValue={selectedMode}
-              onValueChange={handleModeChange}
+              onValueChange={itemValue => {
+                setSelectedMode(itemValue);
+              }}
               style={styles.Settings.picker}>
               <Picker.Item label="Modo Balcão" value="simple" />
               <Picker.Item label="Modo Comanda" value="full" />
@@ -286,7 +341,9 @@ const Settings = () => {
           <View style={{marginTop: 6, marginBottom: 10}}>
             <Picker
               selectedValue={printingMode}
-              onValueChange={handlePrintingModeChange}
+              onValueChange={itemValue => {
+                setPrintingMode(itemValue);
+              }}
               style={styles.Settings.picker}>
               <Picker.Item label="Impressão Pedidos" value="order" />
               <Picker.Item label="Impressão Fichas" value="form" />
@@ -297,7 +354,9 @@ const Settings = () => {
             <View style={{marginTop: 10}}>
               <Picker
                 selectedValue={selectedGateway}
-                onValueChange={handleGatewayChange}
+                onValueChange={itemValue => {
+                  setSelectedGateway(itemValue);
+                }}
                 style={styles.Settings.picker}>
                 <Picker.Item label="Infinite Pay" value="infinite-pay" />
                 {(cieloDevices.includes(storagedDevice?.manufacturer) ||
@@ -308,17 +367,17 @@ const Settings = () => {
             </View>
           )}
         </View>
-
+        
         <TouchableOpacity
           onPress={handleClearTranslate}
           style={[
             globalStyles.button,
-
             {
               flex: 1,
               flexDirection: 'row',
               justifyContent: 'center',
               alignItems: 'center',
+              marginTop: 6,
             },
           ]}>
           <Icon name="add-circle" size={24} color="#fff" />
@@ -329,7 +388,6 @@ const Settings = () => {
           onPress={handleClearProducts}
           style={[
             globalStyles.button,
-
             {
               flex: 1,
               flexDirection: 'row',
