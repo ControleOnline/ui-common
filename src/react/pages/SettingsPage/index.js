@@ -45,11 +45,12 @@ const Settings = () => {
   const [showSound, setShowSound] = useState(false);
   const [showVibration, setShowVibration] = useState(false);
   const [configsLoaded, setConfigsLoaded] = useState(false);
+  const [deviceConfigsLoaded, setDeviceConfigsLoaded] = useState(false);
 
   const cieloDevices = ['Quantum', 'ingenico'];
 
   const createDefaultConfigs = useCallback(() => {
-    if (!currentCompany || configsLoaded) return;
+    if (!currentCompany || configsLoaded || !device?.configs) return;
 
     let lc = {...(device?.configs || {})};
     let needsUpdate = false;
@@ -104,12 +105,30 @@ const Settings = () => {
 
   useFocusEffect(
     useCallback(() => {
-      createDefaultConfigs();
-    }, [createDefaultConfigs]),
+      setDeviceConfigsLoaded(false);
+      setConfigsLoaded(false);
+    }, []),
   );
 
   useFocusEffect(
     useCallback(() => {
+      if (device?.configs !== undefined) {
+        setDeviceConfigsLoaded(true);
+      }
+    }, [device?.configs]),
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      if (deviceConfigsLoaded) {
+        createDefaultConfigs();
+      }
+    }, [deviceConfigsLoaded, createDefaultConfigs]),
+  );
+
+  useFocusEffect(
+    useCallback(() => {
+      console.log('Device configs do banco:', device?.configs);
       if (device?.configs) {
         setShowBarcode(
           device?.configs['barcode-reader'] === true ||
@@ -162,6 +181,8 @@ const Settings = () => {
     lc['sound'] = showSound ? '1' : '0';
     lc['vibration'] = showVibration ? '1' : '0';
 
+    console.log('Enviando para banco:', lc);
+    
     deviceConfigsActions.addDeviceConfigs({
       configs: JSON.stringify(lc),
       people: '/people/' + currentCompany.id,
