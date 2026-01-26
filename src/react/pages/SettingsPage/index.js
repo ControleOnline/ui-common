@@ -41,7 +41,8 @@ const Settings = () => {
   const deviceGetters = deviceStore.getters;
   const {item: storagedDevice} = deviceGetters;
 
-  const [showBarcode, setShowBarcode] = useState(false);
+  const [checkType, setCheckType] = useState('manual');
+  const [productInputType, setProductInputType] = useState('manual');
   const [showSound, setShowSound] = useState(false);
   const [showVibration, setShowVibration] = useState(false);
   const [configsLoaded, setConfigsLoaded] = useState(false);
@@ -64,8 +65,12 @@ const Settings = () => {
       lc['print-mode'] = 'order';
       needsUpdate = true;
     }
-    if (!lc['barcode-reader']) {
-      lc['barcode-reader'] = '0';
+    if (!lc['check-type']) {
+      lc['check-type'] = 'manual';
+      needsUpdate = true;
+    }
+    if (!lc['product-input-type']) {
+      lc['product-input-type'] = 'manual';
       needsUpdate = true;
     }
     if (!lc['sound']) {
@@ -130,10 +135,8 @@ const Settings = () => {
     useCallback(() => {
       // console.log('Device configs do banco:', device?.configs);
       if (device?.configs) {
-        setShowBarcode(
-          device?.configs['barcode-reader'] === true ||
-          device?.configs['barcode-reader'] === '1'
-        );
+        setCheckType(device?.configs['check-type'] || 'manual');
+        setProductInputType(device?.configs['product-input-type'] || 'manual');
         setShowSound(
           device?.configs['sound'] === true ||
           device?.configs['sound'] === '1'
@@ -146,7 +149,8 @@ const Settings = () => {
         setPrintingMode(device?.configs['print-mode'] || 'order');
         setSelectedGateway(device?.configs['pos-gateway'] || 'infinite-pay');
       } else {
-        setShowBarcode(false);
+        setCheckType('manual');
+        setProductInputType('manual');
         setShowSound(false);
         setShowVibration(false);
         setSelectedMode('full');
@@ -177,7 +181,8 @@ const Settings = () => {
     lc['pos-type'] = selectedMode;
     lc['pos-gateway'] = selectedGateway;
     lc['print-mode'] = printingMode;
-    lc['barcode-reader'] = showBarcode ? '1' : '0';
+    lc['check-type'] = checkType;
+    lc['product-input-type'] = productInputType;
     lc['sound'] = showSound ? '1' : '0';
     lc['vibration'] = showVibration ? '1' : '0';
 
@@ -189,10 +194,20 @@ const Settings = () => {
     });
   };
 
-  const handleBarcodeChange = (value) => {
-    setShowBarcode(value);
+  const handleCheckTypeChange = (value) => {
+    setCheckType(value);
     let lc = {...(device?.configs || {})};
-    lc['barcode-reader'] = value ? '1' : '0';
+    lc['check-type'] = value;
+    deviceConfigsActions.addDeviceConfigs({
+      configs: JSON.stringify(lc),
+      people: '/people/' + currentCompany.id,
+    });
+  };
+
+  const handleProductInputTypeChange = (value) => {
+    setProductInputType(value);
+    let lc = {...(device?.configs || {})};
+    lc['product-input-type'] = value;
     deviceConfigsActions.addDeviceConfigs({
       configs: JSON.stringify(lc),
       people: '/people/' + currentCompany.id,
@@ -303,21 +318,28 @@ const Settings = () => {
             </View>
           </View>
 
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginTop: 12,
-            }}>
-            <Text style={styles.Settings.label}>
-              Leitor barras / qrcode
-            </Text>
+          <View style={{marginTop: 12, marginBottom: 10}}>
+            <Text style={styles.Settings.label}>Tipo de Comanda</Text>
+            <Picker
+              selectedValue={checkType}
+              onValueChange={handleCheckTypeChange}
+              style={styles.Settings.picker}>
+              <Picker.Item label="Manual" value="manual" />
+              <Picker.Item label="Código de Barras" value="barcode" />
+              <Picker.Item label="RFID" value="rfid" />
+            </Picker>
+          </View>
 
-            <Switch
-              value={showBarcode}
-              onValueChange={handleBarcodeChange}
-            />
+          <View style={{marginTop: 6, marginBottom: 10}}>
+            <Text style={styles.Settings.label}>Input de Produto</Text>
+            <Picker
+              selectedValue={productInputType}
+              onValueChange={handleProductInputTypeChange}
+              style={styles.Settings.picker}>
+              <Picker.Item label="Manual" value="manual" />
+              <Picker.Item label="Código de Barras" value="barcode" />
+              <Picker.Item label="RFID" value="rfid" />
+            </Picker>
           </View>
 
           <View
