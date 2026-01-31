@@ -5,9 +5,9 @@ import {
   ScrollView,
   ActivityIndicator,
   TouchableOpacity,
+  SafeAreaView,
   Switch,
 } from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
 import css from '@controleonline/ui-orders/src/react/css/orders';
 import {useStore} from '@store';
 import {useFocusEffect} from '@react-navigation/native';
