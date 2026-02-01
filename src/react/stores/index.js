@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { useSyncExternalStore } from 'react';
+import stores from '../../../../../../src/store/stores';
 
 const storeState = {};
 
@@ -8,7 +9,6 @@ export const useStores = create((set, get) => {
     return storeState;
   }
 
-  const stores = require('../../../../../../src/store/stores').default;
   if (!stores || Object.keys(stores).length === 0) {
     console.warn('No stores defined.');
     return {};
@@ -24,7 +24,7 @@ export const useStores = create((set, get) => {
       !storeModule.actions
     ) {
       console.warn(
-        `Store "${storeName}" is missing required properties. Skipping.`,
+        `Store "${storeName}" is missing required properties (state, mutations, or actions). Skipping.`,
       );
       return;
     }
@@ -68,11 +68,10 @@ export const useStores = create((set, get) => {
   return storeState;
 });
 
-export const useStore = storeName =>
+export const useStore = (storeName) =>
   useSyncExternalStore(
     useStores.subscribe,
     () => useStores.getState()[storeName]
   );
-
 
 export const getAllStores = () => useStores.getState();
