@@ -11,8 +11,28 @@ import {
 import css from '@controleonline/ui-orders/src/react/css/orders';
 import {useStore} from '@store';
 import {useFocusEffect} from '@react-navigation/native';
-import {Picker} from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+
+const Dropdown = ({label, value, options, onChange}) => (
+  <View style={{marginBottom: 10}}>
+    <Text style={styles.Settings.label}>{label}</Text>
+    {options.map(opt => (
+      <TouchableOpacity
+        key={opt.value}
+        onPress={() => onChange(opt.value)}
+        style={{
+          padding: 10,
+          backgroundColor: value === opt.value ? '#ddd' : '#fff',
+          borderWidth: 1,
+          borderColor: '#ccc',
+          marginTop: 2,
+          borderRadius: 4,
+        }}>
+        <Text>{opt.label}</Text>
+      </TouchableOpacity>
+    ))}
+  </View>
+);
 
 const Settings = () => {
   const {styles, globalStyles} = css();
@@ -56,7 +76,6 @@ const Settings = () => {
     let lc = {...(device?.configs || {})};
     let needsUpdate = false;
 
-    // Verifica cada config e cria o padrão se não existir
     if (!lc['pos-type']) {
       lc['pos-type'] = 'full';
       needsUpdate = true;
@@ -97,7 +116,6 @@ const Settings = () => {
       needsUpdate = true;
     }
 
-    // Se faltava alguma coisa, grava tudo no banco
     if (needsUpdate) {
       deviceConfigsActions.addDeviceConfigs({
         configs: JSON.stringify(lc),
@@ -133,7 +151,6 @@ const Settings = () => {
 
   useFocusEffect(
     useCallback(() => {
-      // console.log('Device configs do banco:', device?.configs);
       if (device?.configs) {
         setCheckType(device?.configs['check-type'] || 'manual');
         setProductInputType(device?.configs['product-input-type'] || 'manual');
@@ -186,15 +203,13 @@ const Settings = () => {
     lc['sound'] = showSound ? '1' : '0';
     lc['vibration'] = showVibration ? '1' : '0';
 
-    // console.log('Enviando para banco:', lc);
-    
     deviceConfigsActions.addDeviceConfigs({
       configs: JSON.stringify(lc),
       people: '/people/' + currentCompany.id,
     });
   };
 
-  const handleCheckTypeChange = (value) => {
+  const handleCheckTypeChange = value => {
     setCheckType(value);
     let lc = {...(device?.configs || {})};
     lc['check-type'] = value;
@@ -204,7 +219,7 @@ const Settings = () => {
     });
   };
 
-  const handleProductInputTypeChange = (value) => {
+  const handleProductInputTypeChange = value => {
     setProductInputType(value);
     let lc = {...(device?.configs || {})};
     lc['product-input-type'] = value;
@@ -214,7 +229,7 @@ const Settings = () => {
     });
   };
 
-  const handleSoundChange = (value) => {
+  const handleSoundChange = value => {
     setShowSound(value);
     localStorage.setItem('sound', String(value));
     let lc = {...(device?.configs || {})};
@@ -225,7 +240,7 @@ const Settings = () => {
     });
   };
 
-  const handleVibrationChange = (value) => {
+  const handleVibrationChange = value => {
     setShowVibration(value);
     localStorage.setItem('vibration', String(value));
     let lc = {...(device?.configs || {})};
@@ -285,6 +300,7 @@ const Settings = () => {
               </Text>
             </View>
           </View>
+
           <View style={{marginTop: 12}}>
             <View style={styles.Settings.walletRow}>
               <Text style={styles.Settings.label}>Carteira p/ Dinheiro: </Text>
@@ -301,6 +317,7 @@ const Settings = () => {
                 )}
               </View>
             </View>
+
             <View style={styles.Settings.walletRow}>
               <Text style={styles.Settings.label}>Carteira p/ Sangria: </Text>
               <View style={styles.Settings.walletValueContainer}>
@@ -318,29 +335,27 @@ const Settings = () => {
             </View>
           </View>
 
-          <View style={{marginTop: 12, marginBottom: 10}}>
-            <Text style={styles.Settings.label}>Tipo de Comanda</Text>
-            <Picker
-              selectedValue={checkType}
-              onValueChange={handleCheckTypeChange}
-              style={styles.Settings.picker}>
-              <Picker.Item label="Manual" value="manual" />
-              <Picker.Item label="Código de Barras" value="barcode" />
-              <Picker.Item label="RFID" value="rfid" />
-            </Picker>
-          </View>
+          <Dropdown
+            label="Tipo de Comanda"
+            value={checkType}
+            onChange={handleCheckTypeChange}
+            options={[
+              {label: 'Manual', value: 'manual'},
+              {label: 'Código de Barras', value: 'barcode'},
+              {label: 'RFID', value: 'rfid'},
+            ]}
+          />
 
-          <View style={{marginTop: 6, marginBottom: 10}}>
-            <Text style={styles.Settings.label}>Input de Produto</Text>
-            <Picker
-              selectedValue={productInputType}
-              onValueChange={handleProductInputTypeChange}
-              style={styles.Settings.picker}>
-              <Picker.Item label="Manual" value="manual" />
-              <Picker.Item label="Código de Barras" value="barcode" />
-              <Picker.Item label="RFID" value="rfid" />
-            </Picker>
-          </View>
+          <Dropdown
+            label="Input de Produto"
+            value={productInputType}
+            onChange={handleProductInputTypeChange}
+            options={[
+              {label: 'Manual', value: 'manual'},
+              {label: 'Código de Barras', value: 'barcode'},
+              {label: 'RFID', value: 'rfid'},
+            ]}
+          />
 
           <View
             style={{
@@ -350,11 +365,7 @@ const Settings = () => {
               marginTop: 12,
             }}>
             <Text style={styles.Settings.label}>Som</Text>
-
-            <Switch
-              value={showSound}
-              onValueChange={handleSoundChange}
-            />
+            <Switch value={showSound} onValueChange={handleSoundChange} />
           </View>
 
           <View
@@ -365,54 +376,44 @@ const Settings = () => {
               marginTop: 12,
             }}>
             <Text style={styles.Settings.label}>Vibração</Text>
-
-            <Switch
-              value={showVibration}
-              onValueChange={handleVibrationChange}
-            />
+            <Switch value={showVibration} onValueChange={handleVibrationChange} />
           </View>
 
-          <View style={{marginTop: 6}}>
-            <Picker
-              selectedValue={selectedMode}
-              onValueChange={itemValue => {
-                setSelectedMode(itemValue);
-              }}
-              style={styles.Settings.picker}>
-              <Picker.Item label="Modo Balcão" value="simple" />
-              <Picker.Item label="Modo Comanda" value="full" />
-            </Picker>
-          </View>
-          <View style={{marginTop: 6, marginBottom: 10}}>
-            <Picker
-              selectedValue={printingMode}
-              onValueChange={itemValue => {
-                setPrintingMode(itemValue);
-              }}
-              style={styles.Settings.picker}>
-              <Picker.Item label="Impressão Pedidos" value="order" />
-              <Picker.Item label="Impressão Fichas" value="form" />
-            </Picker>
-          </View>
+          <Dropdown
+            label="Modo POS"
+            value={selectedMode}
+            onChange={setSelectedMode}
+            options={[
+              {label: 'Modo Balcão', value: 'simple'},
+              {label: 'Modo Comanda', value: 'full'},
+            ]}
+          />
+
+          <Dropdown
+            label="Impressão"
+            value={printingMode}
+            onChange={setPrintingMode}
+            options={[
+              {label: 'Impressão Pedidos', value: 'order'},
+              {label: 'Impressão Fichas', value: 'form'},
+            ]}
+          />
+
           {(!cieloDevices.includes(storagedDevice?.manufacturer) ||
             storagedDevice?.isEmulator) && (
-            <View style={{marginTop: 10}}>
-              <Picker
-                selectedValue={selectedGateway}
-                onValueChange={itemValue => {
-                  setSelectedGateway(itemValue);
-                }}
-                style={styles.Settings.picker}>
-                <Picker.Item label="Infinite Pay" value="infinite-pay" />
-                {(cieloDevices.includes(storagedDevice?.manufacturer) ||
-                  storagedDevice?.isEmulator) && (
-                  <Picker.Item label="Cielo" value="cielo" />
-                )}
-              </Picker>
-            </View>
+            <Dropdown
+              label="Gateway"
+              value={selectedGateway}
+              onChange={setSelectedGateway}
+              options={[
+                {label: 'Infinite Pay', value: 'infinite-pay'},
+                (cieloDevices.includes(storagedDevice?.manufacturer) ||
+                  storagedDevice?.isEmulator) && {label: 'Cielo', value: 'cielo'},
+              ].filter(Boolean)}
+            />
           )}
         </View>
-        
+
         <TouchableOpacity
           onPress={handleClearTranslate}
           style={[
@@ -442,9 +443,7 @@ const Settings = () => {
             },
           ]}>
           <Icon name="add-circle" size={24} color="#fff" />
-          <Text style={{color: '#fff', marginLeft: 8}}>
-            Sincronizar Produtos
-          </Text>
+          <Text style={{color: '#fff', marginLeft: 8}}>Sincronizar Produtos</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
