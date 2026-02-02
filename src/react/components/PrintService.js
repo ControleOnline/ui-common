@@ -26,7 +26,7 @@ const PrintService = () => {
       }
 
       const {sound} = await Audio.Sound.createAsync(
-        require(`../assets/${file.toLowerCase()}.mp3`)
+        require(`../assets/tap.mp3`)
       )
 
       soundRef.current = sound
