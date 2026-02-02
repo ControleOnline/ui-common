@@ -1,5 +1,5 @@
 import React, {useEffect, useRef} from 'react'
-import {Audio} from 'expo-av'
+import {Audio} from 'expo-audio'
 import {CieloPrint} from '@controleonline/ui-orders/src/react/services/Cielo/Print'
 import {useStore} from '@store'
 
@@ -13,7 +13,6 @@ const PrintService = () => {
   const deviceGetters = deviceStore.getters
 
   const soundRef = useRef(null)
-
   const {item: storagedDevice} = deviceGetters
   const {reload, print, items: spool, message, messages} = printGetters
   const {currentCompany} = peopleGetters
@@ -21,14 +20,12 @@ const PrintService = () => {
   const playSound = async file => {
     try {
       if (soundRef.current) {
-        await soundRef.current.unloadAsync()
+        await soundRef.current.unloadAsync?.()
         soundRef.current = null
       }
 
-      const {sound} = await Audio.Sound.createAsync(
-        require(`../assets/tap.mp3`)
-      )
-
+      const sound = new Audio.Sound()
+      await sound.loadAsync(require('../assets/tap.mp3'))
       soundRef.current = sound
       await sound.playAsync()
     } catch (e) {}
@@ -55,9 +52,7 @@ const PrintService = () => {
           'device.device': storagedDevice.id,
           'status.realStatus': 'open',
         })
-        .finally(() => {
-          printActions.setReload(false)
-        })
+        .finally(() => printActions.setReload(false))
   }, [reload])
 
   useEffect(() => {
@@ -90,7 +85,7 @@ const PrintService = () => {
     if (
       messages &&
       messages.length > 0 &&
-      (!message || Object.keys(message) == 0)
+      (!message || Object.keys(message).length === 0)
     ) {
       const m = [...messages]
       printActions.setMessage(m.pop())

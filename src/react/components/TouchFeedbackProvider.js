@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react'
+import React, { createContext, useContext, useEffect, useState } from 'react'
 import { Vibration, Platform, TouchableOpacity, Pressable } from 'react-native'
-import { Audio } from 'expo-av'
+import { Audio } from 'expo-audio'
 
 const TouchFeedbackContext = createContext({
   soundEnabled: true,
@@ -14,44 +14,17 @@ export function useTouchFeedback() {
 function withFeedback(Component) {
   return function Wrapped(props) {
     const { soundEnabled, vibrationEnabled } = useTouchFeedback()
-    const soundRef = useRef(null)
-
-    useEffect(() => {
-      let isMounted = true
-
-      async function loadSound() {
-        if (soundEnabled) {
-          try {
-            const { sound } = await Audio.Sound.createAsync(
-              require('../assets/tap.mp3')
-            )
-            if (isMounted) soundRef.current = sound
-          } catch (error) {
-            console.warn('Erro ao carregar tap.mp3', error)
-          }
-        }
-      }
-
-      loadSound()
-
-      return () => {
-        isMounted = false
-        if (soundRef.current) {
-          soundRef.current.unloadAsync()
-          soundRef.current = null
-        }
-      }
-    }, [soundEnabled])
 
     const handlePressIn = async e => {
-      if (vibrationEnabled && Platform.OS !== 'web') {
-        Vibration.vibrate(10)
-      }
+      if (vibrationEnabled && Platform.OS !== 'web') Vibration.vibrate(10)
 
-      if (soundEnabled && soundRef.current) {
+      if (soundEnabled) {
         try {
-          await soundRef.current.stopAsync()
-          await soundRef.current.playAsync()
+          const { sound } = await Audio.Sound.createAsync(
+            require('../assets/tap.mp3')
+          )
+          await sound.playAsync()
+          sound.unloadAsync()
         } catch (err) {
           console.warn('Erro ao tocar som', err)
         }
