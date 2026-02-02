@@ -178,7 +178,7 @@ export const DefaultProvider = ({children}) => {
       currentCompany &&
       Object.entries(currentCompany).length > 0
     ) {
-      window.t = new Translate(
+      global.t = new Translate(
         defaultCompany,
         currentCompany,
         ['invoice', 'orders'],
