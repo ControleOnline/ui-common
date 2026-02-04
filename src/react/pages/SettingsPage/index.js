@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   Switch,
+  Alert,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import css from '@controleonline/ui-orders/src/react/css/orders';
@@ -13,6 +14,7 @@ import {useStore} from '@store';
 import {useFocusEffect} from '@react-navigation/native';
 import {Picker} from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import StateStore from '@controleonline/ui-layout/src/react/components/StateStore';
 
 const Settings = () => {
   const {styles, globalStyles} = css();
@@ -82,7 +84,8 @@ const Settings = () => {
       needsUpdate = true;
     }
     if (!lc['config-version']) {
-      lc['config-version'] = storagedDevice?.buildNumber;
+      // Use appVersion (e.g. "1.0.152") instead of buildNumber (usually an integer)
+      lc['config-version'] = storagedDevice?.appVersion;
       needsUpdate = true;
     }
     if (!lc['pos-gateway']) {
@@ -99,10 +102,15 @@ const Settings = () => {
 
     // Se faltava alguma coisa, grava tudo no banco
     if (needsUpdate) {
-      deviceConfigsActions.addDeviceConfigs({
-        configs: JSON.stringify(lc),
-        people: '/people/' + currentCompany.id,
-      });
+      deviceConfigsActions
+        .addDeviceConfigs({
+          configs: JSON.stringify(lc),
+          people: '/people/' + currentCompany.id,
+        })
+        .catch(err => {
+          console.error('addDeviceConfigs (createDefaultConfigs) failed:', err);
+          Alert.alert('Erro ao gravar configurações', err.message || JSON.stringify(err));
+        });
     }
 
     setConfigsLoaded(true);
@@ -177,7 +185,7 @@ const Settings = () => {
 
   const addDeviceConfigs = () => {
     let lc = {...(device?.configs || {})};
-    lc['config-version'] = storagedDevice?.buildNumber;
+    lc['config-version'] = storagedDevice?.appVersion;
     lc['pos-type'] = selectedMode;
     lc['pos-gateway'] = selectedGateway;
     lc['print-mode'] = printingMode;
@@ -188,30 +196,45 @@ const Settings = () => {
 
     // console.log('Enviando para banco:', lc);
     
-    deviceConfigsActions.addDeviceConfigs({
-      configs: JSON.stringify(lc),
-      people: '/people/' + currentCompany.id,
-    });
+    deviceConfigsActions
+      .addDeviceConfigs({
+        configs: JSON.stringify(lc),
+        people: '/people/' + currentCompany.id,
+      })
+      .catch(err => {
+        console.error('addDeviceConfigs failed:', err);
+        Alert.alert('Erro ao gravar configurações', err.message || JSON.stringify(err));
+      });
   };
 
   const handleCheckTypeChange = (value) => {
     setCheckType(value);
     let lc = {...(device?.configs || {})};
     lc['check-type'] = value;
-    deviceConfigsActions.addDeviceConfigs({
-      configs: JSON.stringify(lc),
-      people: '/people/' + currentCompany.id,
-    });
+    deviceConfigsActions
+      .addDeviceConfigs({
+        configs: JSON.stringify(lc),
+        people: '/people/' + currentCompany.id,
+      })
+      .catch(err => {
+        console.error('addDeviceConfigs (check-type) failed:', err);
+        Alert.alert('Erro ao gravar configurações', err.message || JSON.stringify(err));
+      });
   };
 
   const handleProductInputTypeChange = (value) => {
     setProductInputType(value);
     let lc = {...(device?.configs || {})};
     lc['product-input-type'] = value;
-    deviceConfigsActions.addDeviceConfigs({
-      configs: JSON.stringify(lc),
-      people: '/people/' + currentCompany.id,
-    });
+    deviceConfigsActions
+      .addDeviceConfigs({
+        configs: JSON.stringify(lc),
+        people: '/people/' + currentCompany.id,
+      })
+      .catch(err => {
+        console.error('addDeviceConfigs (product-input-type) failed:', err);
+        Alert.alert('Erro ao gravar configurações', err.message || JSON.stringify(err));
+      });
   };
 
   const handleSoundChange = (value) => {
@@ -219,10 +242,15 @@ const Settings = () => {
     localStorage.setItem('sound', String(value));
     let lc = {...(device?.configs || {})};
     lc['sound'] = value ? '1' : '0';
-    deviceConfigsActions.addDeviceConfigs({
-      configs: JSON.stringify(lc),
-      people: '/people/' + currentCompany.id,
-    });
+    deviceConfigsActions
+      .addDeviceConfigs({
+        configs: JSON.stringify(lc),
+        people: '/people/' + currentCompany.id,
+      })
+      .catch(err => {
+        console.error('addDeviceConfigs (sound) failed:', err);
+        Alert.alert('Erro ao gravar configurações', err.message || JSON.stringify(err));
+      });
   };
 
   const handleVibrationChange = (value) => {
@@ -230,10 +258,15 @@ const Settings = () => {
     localStorage.setItem('vibration', String(value));
     let lc = {...(device?.configs || {})};
     lc['vibration'] = value ? '1' : '0';
-    deviceConfigsActions.addDeviceConfigs({
-      configs: JSON.stringify(lc),
-      people: '/people/' + currentCompany.id,
-    });
+    deviceConfigsActions
+      .addDeviceConfigs({
+        configs: JSON.stringify(lc),
+        people: '/people/' + currentCompany.id,
+      })
+      .catch(err => {
+        console.error('addDeviceConfigs (vibration) failed:', err);
+        Alert.alert('Erro ao gravar configurações', err.message || JSON.stringify(err));
+      });
   };
 
   const handleClearProducts = () => {
@@ -247,6 +280,7 @@ const Settings = () => {
 
   return (
     <SafeAreaView style={styles.Settings.container}>
+      <StateStore store="device_config" />
       <ScrollView contentContainerStyle={styles.Settings.scrollContent}>
         <View style={styles.Settings.mainContainer}>
           <View style={{marginTop: 20}}>

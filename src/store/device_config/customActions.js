@@ -7,14 +7,27 @@ export const addDeviceConfigs = ({commit, getters}, params) => {
     body: params,
   };
   commit(types.SET_ISSAVING, true);
+  console.log('addDeviceConfigs REQUEST:', getters.resourceEndpoint + '/add-configs', params);
   return api
     .fetch(getters.resourceEndpoint + '/add-configs', options)
     .then(data => {
-      const parsedConfigs = data?.configs ? JSON.parse(data.configs) : {};
+      let parsedConfigs = {};
+      if (data?.configs) {
+        if (typeof data.configs === 'string') {
+          try {
+            parsedConfigs = JSON.parse(data.configs);
+          } catch (e) {
+            parsedConfigs = {};
+          }
+        } else if (typeof data.configs === 'object') {
+          parsedConfigs = data.configs;
+        }
+      }
       const d = {...getters.item, configs: parsedConfigs};
       commit(types.SET_ITEM, d);
     })
     .catch(e => {
+      console.error('addDeviceConfigs API error:', e);
       commit(types.SET_ERROR, e.message);
       throw e;
     })

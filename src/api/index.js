@@ -11,6 +11,13 @@ export const api = {
     if (typeof options.headers === 'undefined')
       Object.assign(options, {headers: new Headers()});
 
+    // Always refresh device from localStorage in case it was set after module load
+    try {
+      this.device = JSON.parse(localStorage.getItem('device') || '{}');
+    } catch (e) {
+      this.device = {};
+    }
+
     let token = await this.getToken();
     if (token) options.headers.set('API-TOKEN', token);
     if (this.device?.id || this.masterDevice?.id)
@@ -24,7 +31,6 @@ export const api = {
     if (options.body && typeof options.body != 'string') {
       options.body = JSON.stringify(options.body);
     }
-
     if (options.params) {
       uri = this.buildQueryString(uri, options);
     }

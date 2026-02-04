@@ -32,7 +32,10 @@ export const useStores = create((set, get) => {
     storeState[storeName] = {
       ...storeModule.state,
       getters: new Proxy(storeModule.state, {
-        get: (_, prop) => get()[storeName][prop],
+        get: (_, prop) => {
+          const s = get()[storeName];
+          return s ? s[prop] : undefined;
+        },
       }),
       actions: {},
     };
@@ -68,10 +71,19 @@ export const useStores = create((set, get) => {
   return storeState;
 });
 
+const EMPTY_STORE = { getters: {}, actions: {} };
 export const useStore = (storeName) =>
   useSyncExternalStore(
     useStores.subscribe,
-    () => useStores.getState()[storeName]
+    () => {
+      const state = useStores.getState();
+      if (!state[storeName]) {
+        // warn once to help trace missing store causing ReferenceError
+        console.warn(`useStore: store not found "${String(storeName)}"`);
+        return EMPTY_STORE;
+      }
+      return state[storeName];
+    }
   );
 
 export const getAllStores = () => useStores.getState();
