@@ -53,7 +53,10 @@ const Settings = () => {
   const cieloDevices = ['Quantum', 'ingenico'];
 
   const createDefaultConfigs = useCallback(() => {
-    if (!currentCompany || configsLoaded || !device?.configs) return;
+    
+    // ALEMAC //
+    //if (!currentCompany || configsLoaded || !device?.configs) return;
+    if (!currentCompany || configsLoaded || device === undefined || device === null) return;
 
     let lc = {...(device?.configs || {})};
     let needsUpdate = false;
@@ -84,7 +87,7 @@ const Settings = () => {
       needsUpdate = true;
     }
     if (!lc['config-version']) {
-      // Use appVersion (e.g. "1.0.152") instead of buildNumber (usually an integer)
+      // ALEMAC // pega o appVersion ao invés do buildNumber
       lc['config-version'] = storagedDevice?.appVersion;
       needsUpdate = true;
     }
@@ -123,13 +126,26 @@ const Settings = () => {
     }, []),
   );
 
-  useFocusEffect(
-    useCallback(() => {
-      if (device?.configs !== undefined) {
-        setDeviceConfigsLoaded(true);
-      }
-    }, [device?.configs]),
-  );
+  // ALEMAC // ===== ALTERAÇÃO: CORRIGIDO PARA VERIFICAR device AO INVÉS DE device.configs =====
+// useFocusEffect(
+//   useCallback(() => {
+//     if (device?.configs !== undefined) {
+//       setDeviceConfigsLoaded(true);
+//     }
+//   }, [device?.configs]),
+// );
+
+useFocusEffect(
+  useCallback(() => {
+    if (device !== undefined) {
+      setDeviceConfigsLoaded(true);
+    }
+  }, [device]),
+);
+
+
+
+
 
   useFocusEffect(
     useCallback(() => {
@@ -141,7 +157,6 @@ const Settings = () => {
 
   useFocusEffect(
     useCallback(() => {
-      // console.log('Device configs do banco:', device?.configs);
       if (device?.configs) {
         setCheckType(device?.configs['check-type'] || 'manual');
         setProductInputType(device?.configs['product-input-type'] || 'manual');
@@ -185,7 +200,10 @@ const Settings = () => {
 
   const addDeviceConfigs = () => {
     let lc = {...(device?.configs || {})};
+
+    // ALEMAC // pega o appVersion ao invés do buildNumber
     lc['config-version'] = storagedDevice?.appVersion;
+
     lc['pos-type'] = selectedMode;
     lc['pos-gateway'] = selectedGateway;
     lc['print-mode'] = printingMode;
@@ -193,8 +211,6 @@ const Settings = () => {
     lc['product-input-type'] = productInputType;
     lc['sound'] = showSound ? '1' : '0';
     lc['vibration'] = showVibration ? '1' : '0';
-
-    // console.log('Enviando para banco:', lc);
     
     deviceConfigsActions
       .addDeviceConfigs({
@@ -211,6 +227,9 @@ const Settings = () => {
     setCheckType(value);
     let lc = {...(device?.configs || {})};
     lc['check-type'] = value;
+    // ===== ALTERAÇÃO: ADICIONAR VERSÃO DO APP =====
+    lc['config-version'] = storagedDevice?.appVersion;
+    // ===== FIM DA ALTERAÇÃO =====
     deviceConfigsActions
       .addDeviceConfigs({
         configs: JSON.stringify(lc),
@@ -226,6 +245,9 @@ const Settings = () => {
     setProductInputType(value);
     let lc = {...(device?.configs || {})};
     lc['product-input-type'] = value;
+    // ===== ALTERAÇÃO: ADICIONAR VERSÃO DO APP =====
+    lc['config-version'] = storagedDevice?.appVersion;
+    // ===== FIM DA ALTERAÇÃO =====
     deviceConfigsActions
       .addDeviceConfigs({
         configs: JSON.stringify(lc),
@@ -242,6 +264,9 @@ const Settings = () => {
     localStorage.setItem('sound', String(value));
     let lc = {...(device?.configs || {})};
     lc['sound'] = value ? '1' : '0';
+    // ===== ALTERAÇÃO: ADICIONAR VERSÃO DO APP =====
+    lc['config-version'] = storagedDevice?.appVersion;
+    // ===== FIM DA ALTERAÇÃO =====
     deviceConfigsActions
       .addDeviceConfigs({
         configs: JSON.stringify(lc),
@@ -258,6 +283,9 @@ const Settings = () => {
     localStorage.setItem('vibration', String(value));
     let lc = {...(device?.configs || {})};
     lc['vibration'] = value ? '1' : '0';
+    // ===== ALTERAÇÃO: ADICIONAR VERSÃO DO APP =====
+    lc['config-version'] = storagedDevice?.appVersion;
+    // ===== FIM DA ALTERAÇÃO =====
     deviceConfigsActions
       .addDeviceConfigs({
         configs: JSON.stringify(lc),
