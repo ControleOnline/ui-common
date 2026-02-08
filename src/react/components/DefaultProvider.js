@@ -1,248 +1,166 @@
-import React, {createContext, useContext, useEffect, useState} from 'react';
-import {View, ActivityIndicator, Text} from 'react-native';
-import DeviceInfo from 'react-native-device-info';
-import Translate from '@controleonline/ui-common/src/utils/translate';
-import {WebsocketListener} from '@controleonline/ui-common/src/react/components/WebsocketListener';
-import PrintService from '@controleonline/ui-common/src/react/components/PrintService';
+import React, {createContext, useContext, useEffect, useState} from 'react'
+import {View, ActivityIndicator, Text, Button, Platform} from 'react-native'
+import DeviceInfo from 'react-native-device-info'
+import * as RNIap from 'react-native-iap'
+import Translate from '@controleonline/ui-common/src/utils/translate'
+import {WebsocketListener} from '@controleonline/ui-common/src/react/components/WebsocketListener'
+import PrintService from '@controleonline/ui-common/src/react/components/PrintService'
+import {useStore} from '@store'
 
-import {useStore} from '@store';
-const ThemeContext = createContext();
+const ThemeContext = createContext()
+
+const SUBSCRIPTIONS = Platform.select({
+  android: ['premium_monthly'],
+  ios: [],
+})
 
 export const DefaultProvider = ({children}) => {
-  const themeStore = useStore('theme');
-  const getters = themeStore.getters;
-  const actions = themeStore.actions;
-  const authStore = useStore('auth');
-  const authGetters = authStore.getters;
-  const peopleStore = useStore('people');
-  const peopleGetters = peopleStore.getters;
-  const peopleActions = peopleStore.actions;
+  const themeStore = useStore('theme')
+  const getters = themeStore.getters
+  const actions = themeStore.actions
 
-  const deviceStore = useStore('device');
-  const deviceActions = deviceStore.actions;
+  const authStore = useStore('auth')
+  const {isLogged} = authStore.getters
 
-  const device_configStore = useStore('device_config');
-  const deviceConfigsGetters = device_configStore.getters;
-  const deviceConfigsActions = device_configStore.actions;
+  const peopleStore = useStore('people')
+  const {currentCompany, defaultCompany} = peopleStore.getters
+  const peopleActions = peopleStore.actions
 
-  const configsStore = useStore('configs');
-  const configActions = configsStore.actions;
-  const configsGetters = configsStore.getters;
-  const printerStore = useStore('printer');
-  const printerActions = printerStore.actions;
-  const walletPaymentTypeStore = useStore('walletPaymentType');
-  const paymentTypeActions = walletPaymentTypeStore.actions;
-  const translateStore = useStore('translate');
-  const translateActions = translateStore.actions;
-  const {items: companyConfigs} = configsGetters;
-  const {colors, menus} = getters;
-  const {currentCompany, defaultCompany} = peopleGetters;
-  const {item: device_config} = deviceConfigsGetters;
-  const {isLogged} = authGetters;
-  const [translateReady, setTranslateReady] = useState(false);
-  const [device, setDevice] = useState(
-    JSON.parse(localStorage.getItem('device') || '{}'),
-  );
+  const deviceStore = useStore('device')
+  const deviceActions = deviceStore.actions
+
+  const translateStore = useStore('translate')
+  const translateActions = translateStore.actions
+
+  const {colors, menus} = getters
+
+  const [translateReady, setTranslateReady] = useState(false)
+  const [device, setDevice] = useState(JSON.parse(localStorage.getItem('device') || '{}'))
+
+  const [hasGms, setHasGms] = useState(true)
+  const [iapReady, setIapReady] = useState(false)
+  const [products, setProducts] = useState([])
+  const [isSubscribed, setIsSubscribed] = useState(false)
+  const [loadingSub, setLoadingSub] = useState(true)
 
   const fetchDeviceId = async () => {
-    const uniqueId = await DeviceInfo.getUniqueId();
-    const deviceId = await DeviceInfo.getDeviceId();
-    const systemName = await DeviceInfo.getSystemName();
-    const systemVersion = await DeviceInfo.getSystemVersion();
-    const manufacturer = await DeviceInfo.getManufacturer();
-    const model = await DeviceInfo.getModel();
-    const batteryLevel = await DeviceInfo.getBatteryLevel();
-    const isEmulator = await DeviceInfo.isEmulator();
-    const appVersion = await DeviceInfo.getVersion();
-    const buildNumber = await DeviceInfo.getBuildNumber();
-    let ld = null;
-    if (uniqueId) {
-      ld = {
-        id: uniqueId,
-        deviceType: deviceId,
-        systemName: systemName,
-        systemVersion: systemVersion,
-        manufacturer: manufacturer,
-        model: model,
-        batteryLevel: batteryLevel,
-        isEmulator: isEmulator,
-        appVersion: appVersion,
-        buildNumber: buildNumber,
-      };
-      setDevice(ld);
-      localStorage.setItem('device', JSON.stringify(ld));
-    } else {
-      setTimeout(() => {
-        fetchDeviceId();
-      }, 300);
+    const id = await DeviceInfo.getUniqueId()
+    if (!id) return
+
+    const d = {
+      id,
+      deviceType: await DeviceInfo.getDeviceId(),
+      systemName: await DeviceInfo.getSystemName(),
+      systemVersion: await DeviceInfo.getSystemVersion(),
+      manufacturer: await DeviceInfo.getManufacturer(),
+      model: await DeviceInfo.getModel(),
+      batteryLevel: await DeviceInfo.getBatteryLevel(),
+      isEmulator: await DeviceInfo.isEmulator(),
+      appVersion: await DeviceInfo.getVersion(),
+      buildNumber: await DeviceInfo.getBuildNumber(),
     }
-  };
+
+    setDevice(d)
+    localStorage.setItem('device', JSON.stringify(d))
+  }
+
   useEffect(() => {
-    const checkVersion = async () => {
-      const appVersion = await DeviceInfo.getVersion();
-      if (device && device.appVersion && device.appVersion != appVersion) {
-        fetchDeviceId();
+    const checkGms = async () => {
+      if (Platform.OS === 'android') {
+        const gms = await DeviceInfo.hasGms()
+        setHasGms(gms)
       }
-    };
-    checkVersion();
-  }, [device]);
-
-  useEffect(() => {
-    if (!device || !device.id) {
-      fetchDeviceId();
-    } else {
-      deviceActions.setItem(device);
     }
-  }, [device]);
+    checkGms()
+  }, [])
 
   useEffect(() => {
-    if (device && device.id) {
-      peopleActions.defaultCompany();
+    if (!device?.id) fetchDeviceId()
+    else deviceActions.setItem(device)
+  }, [device])
+
+  useEffect(() => {
+    if (device?.id) peopleActions.defaultCompany()
+  }, [device])
+
+  useEffect(() => {
+    if (isLogged && currentCompany) {
+      global.t = new Translate(defaultCompany, currentCompany, ['invoice', 'orders'], translateActions)
+      t.discoveryAll().then(() => setTranslateReady(true))
     }
-  }, [device]);
+  }, [currentCompany, isLogged])
 
   useEffect(() => {
-    if (currentCompany && currentCompany.id) {
-      printerActions.getPrinters({people: currentCompany.id});
-    }
-  }, [currentCompany]);
-
-  useEffect(() => {
-    if (
-      companyConfigs &&
-      device_config?.configs &&
-      Object.entries(device_config.configs).length > 0 &&
-      device_config.configs['pos-gateway']
-    ) {
-      let wallets = [];
-
-      if (
-        companyConfigs[
-          'pos-' + device_config.configs['pos-gateway'] + '-wallet'
-        ]
-      ) {
-        wallets.push(
-          companyConfigs[
-            'pos-' + device_config.configs['pos-gateway'] + '-wallet'
-          ],
-        );
+    const initIap = async () => {
+      if (!hasGms || Platform.OS !== 'android') {
+        setLoadingSub(false)
+        return
       }
 
-      if (companyConfigs['pos-cash-wallet']) {
-        wallets.push(companyConfigs['pos-cash-wallet']);
+      try {
+        await RNIap.initConnection()
+        const subs = await RNIap.getSubscriptions({skus: SUBSCRIPTIONS})
+        setProducts(subs)
+
+        const purchases = await RNIap.getAvailablePurchases()
+        const active = purchases.some(p => SUBSCRIPTIONS.includes(p.productId))
+
+        setIsSubscribed(active)
+        setIapReady(true)
+      } catch (e) {
+        setIapReady(false)
+      } finally {
+        setLoadingSub(false)
       }
-
-      paymentTypeActions.getItems({
-        people: '/people/' + currentCompany.id,
-        wallet: wallets,
-      });
     }
-  }, [currentCompany, companyConfigs, device_config]);
 
-  useEffect(() => {
-    if (
-      device &&
-      device.id &&
-      isLogged &&
-      currentCompany &&
-      Object.entries(currentCompany).length > 0
-    ) {
-      deviceConfigsActions
-        .getItems({
-          'device.device': device.id,
-          people: '/people/' + currentCompany.id,
-        })
-        .then(data => {
-          if (data && data.length > 0) {
-            let d = {...data[0]};
-            d.configs = JSON.parse(d.configs);
-            deviceConfigsActions.setItem(d);
-          }
-        });
+    if (isLogged) initIap()
+
+    return () => {
+      if (hasGms) RNIap.endConnection()
     }
-  }, [currentCompany, isLogged, device]);
+  }, [isLogged, hasGms])
 
-  useEffect(() => {
-    if (
-      isLogged &&
-      currentCompany &&
-      Object.entries(currentCompany).length > 0
-    ) {
-      configActions.setItems(currentCompany.configs);
-    }
-  }, [currentCompany, isLogged]);
-
-  useEffect(() => {
-    if (
-      isLogged &&
-      currentCompany &&
-      Object.entries(currentCompany).length > 0
-    ) {
-      global.t = new Translate(
-        defaultCompany,
-        currentCompany,
-        ['invoice', 'orders'],
-        translateActions,
-      );
-      t.discoveryAll().then(() => {
-        setTranslateReady(true);
-      });
-    }
-  }, [currentCompany, isLogged]);
-
-
-  useEffect(() => {
-    if (
-      device &&
-      device.id &&
-      isLogged
-    ) {
-      peopleActions.myCompanies();
-    }
-  }, [isLogged, device]);
-
-
-
-  useEffect(() => {
-    const fetchColors = async () => {
-      const cssText = await api.fetch('themes-colors.css', {
-        responseType: 'text',
-      });
-
-      const parsedColors = {};
-      const matches = cssText.match(/--[\w-]+:\s*#[0-9a-fA-F]+/g);
-      if (matches) {
-        matches.forEach(match => {
-          const [key, value] = match.split(':');
-          const cleanKey = key.replace('--', '').trim();
-          parsedColors[cleanKey] = value.trim();
-        });
-      }
-      actions.setColors(parsedColors);
-    };
-
-    if (device && device.id) {
-      fetchColors();
-    }
-  }, [device]);
   if (!translateReady && isLogged) {
     return (
-      <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+      <View style={{flex:1,justifyContent:'center',alignItems:'center'}}>
         <ActivityIndicator size="large" color="#1B5587" />
-        <Text style={{marginTop: 10}}>Carregando...</Text>
+        <Text style={{marginTop:10}}>Carregando...</Text>
       </View>
-    );
+    )
   }
+
+  if (isLogged && hasGms && (loadingSub || !iapReady)) {
+    return (
+      <View style={{flex:1,justifyContent:'center',alignItems:'center'}}>
+        <ActivityIndicator size="large" />
+      </View>
+    )
+  }
+
+  if (isLogged && hasGms && !isSubscribed) {
+    return (
+      <View style={{flex:1,justifyContent:'center',alignItems:'center',padding:24}}>
+        <Text style={{fontSize:18,fontWeight:'600',marginBottom:12}}>
+          Assinatura necessária
+        </Text>
+        <Text style={{textAlign:'center',marginBottom:20}}>
+          Para continuar usando o aplicativo é necessário assinar o plano mensal.
+        </Text>
+        <Button title="Assinar agora" onPress={subscribe} />
+      </View>
+    )
+  }
+
   return (
-    device &&
-    device.id && (
+    device?.id && (
       <ThemeContext.Provider value={{colors, menus}}>
         {children}
         <WebsocketListener />
         <PrintService />
       </ThemeContext.Provider>
     )
-  );
-};
+  )
+}
 
-export const useTheme = () => useContext(ThemeContext);
+export const useTheme = () => useContext(ThemeContext)
