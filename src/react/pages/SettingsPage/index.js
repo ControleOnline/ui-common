@@ -104,7 +104,7 @@ const Settings = () => {
     }
 
     // Se faltava alguma coisa, grava tudo no banco
-    if (needsUpdate) {
+    if (needsUpdate && currentCompany?.id) {
       deviceConfigsActions
         .addDeviceConfigs({
           configs: JSON.stringify(lc),
@@ -352,11 +352,11 @@ useFocusEffect(
               <Text style={styles.Settings.label}>Carteira p/ Dinheiro: </Text>
               <View style={styles.Settings.walletValueContainer}>
                 <Text style={styles.Settings.walletValue}>
-                  {companyConfigs['pos-cash-wallet']}
+                  {companyConfigs?.['pos-cash-wallet']}
                 </Text>
                 {walletLoading || isSaving ? (
                   <ActivityIndicator size={22} color={styles.Settings.label} />
-                ) : companyConfigs['pos-cash-wallet'] ? (
+                ) : companyConfigs?.['pos-cash-wallet'] ? (
                   <Icon name={'check'} size={22} color="green" />
                 ) : (
                   <Icon name={'close'} size={22} color="red" />
@@ -367,11 +367,11 @@ useFocusEffect(
               <Text style={styles.Settings.label}>Carteira p/ Sangria: </Text>
               <View style={styles.Settings.walletValueContainer}>
                 <Text style={styles.Settings.walletValue}>
-                  {companyConfigs['pos-withdrawl-wallet']}
+                  {companyConfigs?.['pos-withdrawl-wallet']}
                 </Text>
                 {walletLoading || isSaving ? (
                   <ActivityIndicator size={22} color={styles.Settings.label} />
-                ) : companyConfigs['pos-withdrawl-wallet'] ? (
+                ) : companyConfigs?.['pos-withdrawl-wallet'] ? (
                   <Icon name={'check'} size={22} color="green" />
                 ) : (
                   <Icon name={'close'} size={22} color="red" />

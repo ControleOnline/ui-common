@@ -138,7 +138,7 @@ export const DefaultProvider = ({ children }) => {
         )
       }
 
-      if (companyConfigs['pos-cash-wallet']) {
+      if (companyConfigs && companyConfigs['pos-cash-wallet']) {
         wallets.push(companyConfigs['pos-cash-wallet'])
       }
 
