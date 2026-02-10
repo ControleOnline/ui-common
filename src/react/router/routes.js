@@ -1,12 +1,12 @@
 import React from 'react';
 import SettingsPage from '@controleonline/ui-common/src/react/pages/SettingsPage';
-import ShopLayout from '@controleonline/ui-layout/src/react/layouts/ShopLayout';
+import DefaultLayout from '@controleonline/ui-layout/src/react/layouts/DefaultLayout';
 
 
 const WrappedSettingsPage = ({navigation, route}) => (
-  <ShopLayout navigation={navigation} route={route}>
+  <DefaultLayout navigation={navigation} route={route}>
     <SettingsPage navigation={navigation} route={route} />
-  </ShopLayout>
+  </DefaultLayout>
 );
 
 const commonRoutes = [
