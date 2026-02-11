@@ -13,6 +13,7 @@ export const DefaultProvider = ({ children }) => {
   const themeStore = useStore('theme')
   const authStore = useStore('auth')
   const peopleStore = useStore('people')
+  const translateStore = useStore('translate')
 
   const { colors, menus } = themeStore.getters
   const { isLogged } = authStore.getters
@@ -49,9 +50,12 @@ export const DefaultProvider = ({ children }) => {
         defaultCompany,
         currentCompany,
         ['invoice', 'orders'],
-        useStore('translate').actions,
+        translateStore.actions,
       )
-      t.discoveryAll().then(() => setTranslateReady(true))
+
+      t.discoveryAll()
+        .then(() => setTranslateReady(true))
+        .catch(() => setTranslateReady(true))
     }
   }, [currentCompany, isLogged])
 
@@ -64,23 +68,23 @@ export const DefaultProvider = ({ children }) => {
     )
   }
 
+  if (!device?.id) return null
+
   return (
-    device?.id && (
-      <ThemeContext.Provider value={{ colors, menus }}>
-        {!blocked ? (
-          children
-        ) : (
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <Text>Assine para continuar</Text>
-            <Pressable onPress={subscribe}>
-              <Text>Assinar agora</Text>
-            </Pressable>
-          </View>
-        )}
-        <WebsocketListener />
-        <PrintService />
-      </ThemeContext.Provider>
-    )
+    <ThemeContext.Provider value={{ colors, menus }}>
+      {!blocked ? (
+        children
+      ) : (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <Text>Assine para continuar</Text>
+          <Pressable onPress={subscribe}>
+            <Text>Assinar agora</Text>
+          </Pressable>
+        </View>
+      )}
+      <WebsocketListener />
+      <PrintService />
+    </ThemeContext.Provider>
   )
 }
 
