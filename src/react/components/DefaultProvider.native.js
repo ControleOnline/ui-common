@@ -41,6 +41,7 @@ export const DefaultProvider = ({ children }) => {
   }
 
   useEffect(() => {
+    peopleStore.actions.defaultCompany()
     peopleStore.actions.myCompanies()
   }, [])
 
