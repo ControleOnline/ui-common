@@ -41,6 +41,10 @@ export const DefaultProvider = ({ children }) => {
   }
 
   useEffect(() => {
+    peopleStore.actions.myCompanies()
+  }, [])
+
+  useEffect(() => {
     if (!device?.id) fetchDeviceId()
   }, [device])
 

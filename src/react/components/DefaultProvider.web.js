@@ -35,12 +35,16 @@ export const DefaultProvider = ({ children }) => {
   useEffect(() => {
     if (!device?.id) {
       fetchIp().then(ip => {
-        const fallback = { id: ip || `web-${Date.now()}`, appVersion: 'web' }
+        const fallback =   ip || `web-${Date.now()}`, appVersion: 'web' 
         setDevice(fallback)
         localStorage.setItem('device', JSON.stringify(fallback))
       })
     }
   }, [device])
+
+  useEffect(() => {
+    peopleStore.actions.myCompanies()
+  }, [])
 
   useEffect(() => {
     if (isLogged && currentCompany) {
