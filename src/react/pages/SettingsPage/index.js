@@ -56,7 +56,6 @@ const Settings = () => {
   const createDefaultConfigs = useCallback(() => {
     
     // ALEMAC //
-    //if (!currentCompany || configsLoaded || !device?.configs) return;
     if (!currentCompany || configsLoaded || device === undefined || device === null) return;
 
     let lc = {...(device?.configs || {})};
@@ -341,33 +340,21 @@ useFocusEffect(
               <Text style={styles.Settings.value}>{storagedDevice.id}</Text>
             </View>
             <View style={styles.Settings.row}>
-              <Text style={styles.Settings.label}>Sistema: </Text>
-              <Text style={styles.Settings.value}>
-                {storagedDevice?.systemName}
-              </Text>
-            </View>
-            <View style={styles.Settings.row}>
-              <Text style={styles.Settings.label}>Versão do Sistema: </Text>
-              <Text style={styles.Settings.value}>
-                {storagedDevice?.systemVersion}
-              </Text>
-            </View>
-            <View style={styles.Settings.row}>
               <Text style={styles.Settings.label}>Fabricante: </Text>
               <Text style={styles.Settings.value}>
                 {storagedDevice?.manufacturer}
               </Text>
             </View>
             <View style={styles.Settings.row}>
-              <Text style={styles.Settings.label}>Versão do POS: </Text>
+              <Text style={styles.Settings.label}>Sistema: </Text>
               <Text style={styles.Settings.value}>
-                {storagedDevice?.appVersion}
+                {storagedDevice?.systemName}, v{storagedDevice?.systemVersion}
               </Text>
             </View>
             <View style={styles.Settings.row}>
-              <Text style={styles.Settings.label}>Compilação do POS: </Text>
+              <Text style={styles.Settings.label}>Versão do App: </Text>
               <Text style={styles.Settings.value}>
-                {storagedDevice?.buildNumber}
+                {storagedDevice?.appVersion}
               </Text>
             </View>
           </View>
