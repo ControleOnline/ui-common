@@ -45,6 +45,7 @@ const Settings = () => {
 
   const [checkType, setCheckType] = useState('manual');
   const [productInputType, setProductInputType] = useState('manual');
+  const [selectionType, setSelectionType] = useState('single');
   const [showSound, setShowSound] = useState(false);
   const [showVibration, setShowVibration] = useState(false);
   const [configsLoaded, setConfigsLoaded] = useState(false);
@@ -76,6 +77,10 @@ const Settings = () => {
     }
     if (!lc['product-input-type']) {
       lc['product-input-type'] = 'manual';
+      needsUpdate = true;
+    }
+    if (!lc['selection-type']) {
+      lc['selection-type'] = 'single';
       needsUpdate = true;
     }
     if (!lc['sound']) {
@@ -160,6 +165,7 @@ useFocusEffect(
       if (device?.configs) {
         setCheckType(device?.configs['check-type'] || 'manual');
         setProductInputType(device?.configs['product-input-type'] || 'manual');
+        setSelectionType(device?.configs['selection-type'] || 'single');
         setShowSound(
           device?.configs['sound'] === true ||
           device?.configs['sound'] === '1'
@@ -174,6 +180,7 @@ useFocusEffect(
       } else {
         setCheckType('manual');
         setProductInputType('manual');
+        setSelectionType('single');
         setShowSound(false);
         setShowVibration(false);
         setSelectedMode('full');
@@ -209,6 +216,7 @@ useFocusEffect(
     lc['print-mode'] = printingMode;
     lc['check-type'] = checkType;
     lc['product-input-type'] = productInputType;
+    lc['selection-type'] = selectionType;
     lc['sound'] = showSound ? '1' : '0';
     lc['vibration'] = showVibration ? '1' : '0';
     
@@ -219,6 +227,22 @@ useFocusEffect(
       })
       .catch(err => {
         console.error('addDeviceConfigs failed:', err);
+        Alert.alert('Erro ao gravar configurações', err.message || JSON.stringify(err));
+      });
+  };
+
+  const handleSelectionTypeChange = (value) => {
+    setSelectionType(value);
+    let lc = {...(device?.configs || {})};
+    lc['selection-type'] = value;
+    lc['config-version'] = storagedDevice?.appVersion;
+    deviceConfigsActions
+      .addDeviceConfigs({
+        configs: JSON.stringify(lc),
+        people: '/people/' + currentCompany.id,
+      })
+      .catch(err => {
+        console.error('addDeviceConfigs (selection-type) failed:', err);
         Alert.alert('Erro ao gravar configurações', err.message || JSON.stringify(err));
       });
   };
@@ -401,6 +425,17 @@ useFocusEffect(
               <Picker.Item label="Manual" value="manual" />
               <Picker.Item label="Código de Barras" value="barcode" />
               <Picker.Item label="RFID" value="rfid" />
+            </Picker>
+          </View>
+
+          <View style={{marginTop: 6, marginBottom: 10}}>
+            <Text style={styles.Settings.label}>Tipo de Seleção</Text>
+            <Picker
+              selectedValue={selectionType}
+              onValueChange={handleSelectionTypeChange}
+              style={styles.Settings.picker}>
+              <Picker.Item label="Única" value="single" />
+              <Picker.Item label="Múltipla" value="multiple" />
             </Picker>
           </View>
 

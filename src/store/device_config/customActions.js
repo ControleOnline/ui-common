@@ -1,6 +1,30 @@
 import {api} from '@controleonline/ui-common/src/api';
 import * as types from '@controleonline/ui-default/src/store/default/mutation_types';
-import DeviceInfo from 'react-native-device-info';
+
+const getAppVersion = () => {
+  if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+    try {
+      const device = JSON.parse(localStorage.getItem('device') || '{}');
+      if (device && device.appVersion) {
+        return device.appVersion;
+      }
+    } catch (e) {
+      console.warn('Erro ao ler device do localStorage:', e);
+    }
+  }
+
+  try {
+    const deviceInfoModule = require('react-native-device-info');
+    const deviceInfo = deviceInfoModule?.default || deviceInfoModule;
+    if (deviceInfo && typeof deviceInfo.getVersion === 'function') {
+      return deviceInfo.getVersion();
+    }
+  } catch (e) {
+    console.warn('Erro ao ler versao do app:', e);
+  }
+
+  return 'unknown';
+};
 
 export const addDeviceConfigs = ({commit, getters}, params) => {
   let configsObj = {};
@@ -16,8 +40,8 @@ export const addDeviceConfigs = ({commit, getters}, params) => {
     }
   }
 
-  // Sobrescrever a versão com a versão atual do app
-  configsObj['config-version'] = DeviceInfo.getVersion();
+  // Sobrescrever a versao com a versao atual do app
+  configsObj['config-version'] = getAppVersion();
 
   // Remontar o params com a versão atualizada
   const updatedParams = {
@@ -70,7 +94,7 @@ export const initializeDeviceConfigs = ({commit, getters, dispatch}, people) => 
     'product-input-type': 'rfid',
     'sound': '0',
     'vibration': '0',
-    'config-version': DeviceInfo.getVersion(),
+    'config-version': getAppVersion(),
     'pos-gateway': 'infinite-pay',
     'cash-wallet-closed-id': 0,
     'cash-wallet-open-id': 0,

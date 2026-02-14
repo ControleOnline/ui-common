@@ -5,7 +5,6 @@ import {WebsocketListener} from '@controleonline/ui-common/src/react/components/
 import PrintService from '@controleonline/ui-common/src/react/components/PrintService';
 import {useStore} from '@store';
 import {api} from '@controleonline/ui-common/src/api';
-import packageJson from '../../../package.json';
 
 const ThemeContext = createContext();
 
@@ -64,6 +63,19 @@ export const DefaultProvider = ({children}) => {
 
   const fetchDeviceId = async () => {
     const ip = await fetchPublicIP();
+    
+    // Tenta pegar a versão do package.json, senão usa 'unknown'
+    let appVersion = 'unknown';
+    try {
+      const response = await fetch('/package.json');
+      if (response.ok) {
+        const packageJsonData = await response.json();
+        appVersion = packageJsonData.version || 'unknown';
+      }
+      console.log('App Version:', appVersion);
+    } catch (e) {
+      console.warn('Não foi possível carregar package.json:', e);
+    }
 
     const ld = {
       id: ip,
@@ -74,9 +86,10 @@ export const DefaultProvider = ({children}) => {
       model: 'unknow',
       batteryLevel: 'unknow',
       isEmulator: 'unknow',
-      appVersion: packageJson.version || 'unknow',
-      buildNumber: packageJson.version || 'unknow',
+      appVersion: appVersion,
+      buildNumber: appVersion,
     };
+
 
     setDevice(ld);
     localStorage.setItem('device', JSON.stringify(ld));
