@@ -348,7 +348,11 @@ useFocusEffect(
             <View style={styles.Settings.row}>
               <Text style={styles.Settings.label}>Sistema: </Text>
               <Text style={styles.Settings.value}>
-                {storagedDevice?.systemName}, v{storagedDevice?.systemVersion}
+                {storagedDevice?.systemName}
+                {storagedDevice?.systemVersion &&
+                String(storagedDevice?.systemVersion).toLowerCase() !== 'unknown'
+                  ? `, ${storagedDevice?.systemVersion}`
+                  : ''}
               </Text>
             </View>
             <View style={styles.Settings.row}>
