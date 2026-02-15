@@ -408,7 +408,7 @@ useFocusEffect(
           </View>
 
           <View style={{marginTop: 6, marginBottom: 10}}>
-            <Text style={styles.Settings.label}>Input de Produto</Text>
+            <Text style={styles.Settings.label}>Leitura de Produto</Text>
             <Picker
               selectedValue={productInputType}
               onValueChange={handleProductInputTypeChange}
