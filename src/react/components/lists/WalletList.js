@@ -3,16 +3,19 @@ import { View, Text, StyleSheet } from 'react-native'
 import { Picker } from '@react-native-picker/picker'
 import { useStore } from '@store';
 
-const WalletSelect = ({ context = null }) => {
+const WalletSelect = ({ people_id }) => {
+    const peopleStore = useStore('people');
+      const { getters: peopleGetters } = peopleStore;
+      const { currentCompany } = peopleGetters;
+      
   const { getters: walletGetters, actions: walletActions } = useStore('wallet')
 
   useEffect(() => {
-    walletActions.getItems({ context })
-  }, [context])
+    if (people_id)
+      walletActions.getItems({ people: people_id })
+  }, [people_id])
 
-  const wallets = (walletGetters.items || []).filter(
-    item => item.context === context
-  )
+    const wallets = walletGetters.items || [];
 
   const selectedValue = walletGetters.item ? walletGetters.item.id : null
 

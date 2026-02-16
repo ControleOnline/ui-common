@@ -4,15 +4,17 @@ import { Picker } from '@react-native-picker/picker'
 import { useStore } from '@store';
 
 const CategorySelect = ({ context = null }) => {
+  const peopleStore = useStore('people');
+  const { getters: peopleGetters } = peopleStore;
+  const { currentCompany } = peopleGetters;
+
   const { getters: categoryGetters, actions: categoryActions } = useStore('categories')
 
   useEffect(() => {
-    categoryActions.getItems({ context })
-  }, [context])
+    categoryActions.getItems({ context:context, people:currentCompany?.id  })
+  }, [context, currentCompany])
 
-  const categories = (categoryGetters.items || []).filter(
-    item => item.context === context
-  )
+  const categories = categoryGetters.items || [];
 
   const selectedValue = categoryGetters.item ? categoryGetters.item.id : null
 
