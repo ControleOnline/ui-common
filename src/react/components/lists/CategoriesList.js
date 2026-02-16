@@ -39,7 +39,7 @@ const CategorySelect = ({ context = null }) => {
           {categories.map(category => (
             <Picker.Item
               key={category.id}
-              label={category.category}
+              label={category.name}
               value={category.id}
               color={category.color}
             />
