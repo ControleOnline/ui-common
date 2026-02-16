@@ -36,7 +36,7 @@ const WalletSelect = ({ context = null }) => {
           onValueChange={handleChange}
         >
           <Picker.Item label="Selecione..." value={null} />
-          {walletes.map(wallet => (
+          {wallets.map(wallet => (
             <Picker.Item
               key={wallet.id}
               label={wallet.wallet}
