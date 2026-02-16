@@ -1,0 +1,68 @@
+import React, { useEffect } from 'react'
+import { View, Text, StyleSheet } from 'react-native'
+import { Picker } from '@react-native-picker/picker'
+import { useStore } from '@store';
+
+const WalletSelect = ({ context = null }) => {
+  const { getters: walletGetters, actions: walletActions } = useStore('wallet')
+
+  useEffect(() => {
+    walletActions.getItems({ context })
+  }, [context])
+
+  const wallets = (walletGetters.items || []).filter(
+    item => item.context === context
+  )
+
+  const selectedValue = walletGetters.item ? walletGetters.item.id : null
+
+  const handleChange = (value) => {
+
+    const selected = wallets.find(s => s.id == value)
+    if (selected) {
+      walletActions.setItem(selected)
+    }
+    else {
+      walletActions.setItem({});
+    }
+  }
+
+  return (
+    <View style={styles.container}>
+      <Text style={styles.label}>wallet</Text>
+      <View style={styles.pickerWrapper}>
+        <Picker
+          selectedValue={selectedValue}
+          onValueChange={handleChange}
+        >
+          <Picker.Item label="Selecione..." value={null} />
+          {walletes.map(wallet => (
+            <Picker.Item
+              key={wallet.id}
+              label={wallet.wallet}
+              value={wallet.id}
+              color={wallet.color}
+            />
+          ))}
+        </Picker>
+      </View>
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({
+  container: {
+    marginVertical: 10
+  },
+  label: {
+    fontSize: 16,
+    marginBottom: 5
+  },
+  pickerWrapper: {
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 6
+  }
+})
+
+export default WalletSelect
