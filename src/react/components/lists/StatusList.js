@@ -3,7 +3,7 @@ import { View, Text, StyleSheet } from 'react-native'
 import { Picker } from '@react-native-picker/picker'
 import { useStore } from '@store';
 
-const StatusSelect = ({ context = 'invoice' }) => {
+const StatusSelect = ({ context = 'null' }) => {
   const { getters: statusGetters, actions: statusActions } = useStore('status')
 
   useEffect(() => {
