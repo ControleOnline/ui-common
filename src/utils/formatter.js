@@ -1,4 +1,6 @@
 export default class Formatter {
+
+  // Formata CPF ou CNPJ
   static formatDocument(value) {
     if (/^([0-9]{11})$/.test(value))
       return value.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/g, '$1.$2.$3-$4');
@@ -12,10 +14,12 @@ export default class Formatter {
     return value || '';
   }
 
+  // Formata CPF ou CNPJ (reutiliza formatDocument)
   static formatBRDocument(value) {
     return Formatter.formatDocument(value); // Reutiliza formatDocument
   }
 
+  // Formata telefone brasileiro
   static formatBRPhone(value) {
     if (/^([0-9]{10})$/.test(value))
       return value.replace(/(\d{2})(\d{4})(\d{4})/g, '($1) $2-$3');
@@ -26,12 +30,62 @@ export default class Formatter {
     return value || '';
   }
 
-  static formatDateToBR(dateISO) {
-    if (!dateISO) return '';
-    const [year, month, day] = dateISO.split(/[-/]/); // Suporta YYYY-MM-DD ou DD/MM/YYYY
-    return `${day}/${month}/${year}`;
+  // Formata telefone brasileiro (reutiliza formatBRPhone)
+  static formatPhone(value) {
+    return Formatter.formatBRPhone(value); // Reutiliza formatBRPhone
   }
 
+  // ALEMAC // 17/02/2026 // Formata data para o formato brasileiro (DD/MM/YYYY)
+  // aceita entradas YYYY-MM-DD, YYYY/MM/DD, DD-MM-YYYY, DD/MM/YYYY e remove horário se existir
+
+  // static formatDateToBR(dateISO) {
+  //   if (!dateISO) return '';
+  //   const [year, month, day] = dateISO.split(/[-/]/); // Suporta YYYY-MM-DD ou DD/MM/YYYY
+  //   return `${day}/${month}/${year}`;
+  // }
+
+   // ALEMAC // 17/02/2026 // Formata data para o formato brasileiro (DD/MM/YYYY)
+  // aceita entradas YYYY-MM-DD, YYYY/MM/DD, DD-MM-YYYY, DD/MM/YYYY e remove horário se existir
+  static formatDateToBR(dateInput) {
+    if (!dateInput) return '';
+    
+    // Remove horário se existir
+    const dateOnly = String(dateInput).split(' ')[0];
+    
+    // Tenta identificar o formato e converter para DD/MM/YYYY
+    const parts = dateOnly.split(/[-/]/);
+    
+    if (parts.length !== 3) return dateInput;
+    
+    const [part1, part2, part3] = parts;
+    let day, month, year;
+    
+    // Verifica se é YYYY-MM-DD ou YYYY/MM/DD (parte1 é o ano com 4 dígitos)
+    if (part1.length === 4) {
+      year = part1;
+      month = part2;
+      day = part3;
+    }
+    // Verifica se é DD-MM-YYYY ou DD/MM/YYYY (parte3 é o ano com 4 dígitos)
+    else if (part3.length === 4) {
+      day = part1;
+      month = part2;
+      year = part3;
+    }
+    // Se não se encaixa em nenhum padrão, retorna igual
+    else {
+      return dateInput;
+    }
+    
+    // Valida se é uma data válida
+    if (day > 31 || month > 12 || day < 1 || month < 1) {
+      return dateInput;
+    }
+    
+    return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
+  }
+
+  
   static validateBRDate(value) {
     if (!value) return true;
 
@@ -54,9 +108,7 @@ export default class Formatter {
     return true;
   }
 
-  static formatPhone(value) {
-    return Formatter.formatBRPhone(value); // Reutiliza formatBRPhone
-  }
+
 
   static formatCEP(value) {
     if (!value) return '';

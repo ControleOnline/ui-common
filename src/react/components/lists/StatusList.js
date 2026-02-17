@@ -40,7 +40,7 @@ const StatusSelect = ({ context = 'null' }) => {
           {statuses.map(status => (
             <Picker.Item
               key={status.id}
-              label={status.status} // TO DO // traduzir
+              label={global.t?.t("invoice", "label", status.status)}
               value={status.id}
               color={status.color}
             />
