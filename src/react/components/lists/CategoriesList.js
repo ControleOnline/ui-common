@@ -31,13 +31,13 @@ const CategorySelect = ({ context = null }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>category</Text>
+      <Text style={styles.label}>{global.t?.t("invoice", "label", "category")}</Text>
       <View style={styles.pickerWrapper}>
         <Picker
           selectedValue={selectedValue}
           onValueChange={handleChange}
         >
-          <Picker.Item label="Selecione..." value={null} />
+          <Picker.Item label={global.t?.t("invoice", "label", "select")} value={null} />
           {categories.map(category => (
             <Picker.Item
               key={category.id}

@@ -29,17 +29,18 @@ const StatusSelect = ({ context = 'null' }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>Status</Text>
+      <Text style={styles.label}>{global.t?.t("invoice", "label", "status")}</Text>
+      
       <View style={styles.pickerWrapper}>
         <Picker
           selectedValue={selectedValue}
           onValueChange={handleChange}
         >
-          <Picker.Item label="Selecione..." value={null} />
+          <Picker.Item label={global.t?.t("invoice", "label", "select")} value={null} />
           {statuses.map(status => (
             <Picker.Item
               key={status.id}
-              label={status.status}
+              label={status.status} // TO DO // traduzir
               value={status.id}
               color={status.color}
             />

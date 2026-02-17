@@ -32,13 +32,14 @@ const WalletSelect = ({ people_id }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>wallet</Text>
+      <Text style={styles.label}>{global.t?.t("invoice", "label", "wallet")}</Text>
+      
       <View style={styles.pickerWrapper}>
         <Picker
           selectedValue={selectedValue}
           onValueChange={handleChange}
         >
-          <Picker.Item label="Selecione..." value={null} />
+          <Picker.Item label={global.t?.t("invoice", "label", "select")} value={null} />
           {wallets.map(wallet => (
             <Picker.Item
               key={wallet.id}

@@ -32,17 +32,16 @@ const PaymentTypeList = ({ context = null }) => {
     <View style={styles.container}>
       <Text style={styles.label}>{global.t?.t("invoice", "label", "payment method")}</Text>
 
-
       <View style={styles.pickerWrapper}>
         <Picker
           selectedValue={selectedValue}
           onValueChange={handleChange}
         >
-          <Picker.Item label="Selecione..." value={null} />
+          <Picker.Item label={global.t?.t("invoice", "label", "select")} value={null} />
           {paymentMethods.map(method => (
             <Picker.Item
               key={method.id}
-              label={method.paymentType}
+              label={method.paymentType} // TO DO // traduzir
               value={method.id}
             />
           ))}
