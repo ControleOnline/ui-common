@@ -189,7 +189,7 @@ export const DefaultProvider = ({children}) => {
       global.t = new Translate(
         defaultCompany,
         currentCompany,
-        ['invoice', 'orders'],
+        ['invoice', 'orders', 'settings'],
         translateActions,
       );
       t.discoveryAll().then(() => {

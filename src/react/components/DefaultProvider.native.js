@@ -181,7 +181,7 @@ export const DefaultProvider = ({children}) => {
       global.t = new Translate(
         defaultCompany,
         currentCompany,
-        ['invoice', 'orders'],
+        ['invoice', 'orders', 'settings'],
         translateActions,
       );
       t.discoveryAll().then(() => {
@@ -200,8 +200,6 @@ export const DefaultProvider = ({children}) => {
       peopleActions.myCompanies();
     }
   }, [isLogged, device]);
-
-
 
   useEffect(() => {
     const fetchColors = async () => {
