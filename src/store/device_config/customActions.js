@@ -49,8 +49,6 @@ export const addDeviceConfigs = ({commit, getters}, params) => {
     configs: JSON.stringify(configsObj),
   };
 
-  console.log('addDeviceConfigs PARAMS:', updatedParams);
-
   let options = {
     method: 'POST',
     body: updatedParams,
@@ -104,8 +102,6 @@ export const initializeDeviceConfigs = ({commit, getters, dispatch}, people) => 
     configs: JSON.stringify(defaultConfigs),
     people: people,
   };
-
-  console.log('initializeDeviceConfigs PARAMS:', params);
 
   return dispatch('addDeviceConfigs', params);
 };

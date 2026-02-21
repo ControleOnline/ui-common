@@ -395,6 +395,7 @@ useFocusEffect(
             </View>
           </View>
 
+          {/* // // // // // TIPO DE COMANDA */}
           <View style={{marginTop: 12, marginBottom: 10}}>
             <Text style={styles.Settings.label}>{global.t?.t("settings", "label", "tab type")}</Text>
             <Picker
@@ -409,6 +410,7 @@ useFocusEffect(
             </Picker>
           </View>
 
+          {/* // // // // // TIPO DE LEITURA DE PRODUTO */}
           <View style={{marginTop: 6, marginBottom: 10}}>
             <Text style={styles.Settings.label}>{global.t?.t("settings", "label", "product read method")}</Text>
             <Picker
