@@ -6,9 +6,9 @@ const commonRoutes = [
     component: SettingsPage,
     options: {
       headerShown: true,
+      headerBackVisible: true,
       showToolBar: true,
       title: 'Configurações',
-      headerBackButtonMenuEnabled: true,
     },
     initialParams: {store: 'configs'},
   },
