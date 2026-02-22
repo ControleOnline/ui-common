@@ -20,8 +20,24 @@ export const api = {
 
     let token = await this.getToken();
     if (token) options.headers.set('API-TOKEN', token);
-    if (this.device?.id || this.masterDevice?.id)
-      options.headers.set('DEVICE', this.masterDevice?.id || this.device?.id);
+
+    let bodyDeviceId = null;
+    if (options.body) {
+      if (typeof options.body === 'object') {
+        bodyDeviceId = options.body.device || null;
+      } else if (typeof options.body === 'string') {
+        try {
+          const parsedBody = JSON.parse(options.body);
+          bodyDeviceId = parsedBody?.device || null;
+        } catch (e) {
+          bodyDeviceId = null;
+        }
+      }
+    }
+
+    const headerDeviceId =
+      this.masterDevice?.id || this.device?.id || bodyDeviceId;
+    if (headerDeviceId) options.headers.set('DEVICE', headerDeviceId);
     if (options.responseType != 'text') {
       options.headers.set('Content-Type', MIME_TYPE);
       options.headers.set('Accept', MIME_TYPE);

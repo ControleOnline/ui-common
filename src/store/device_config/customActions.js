@@ -26,6 +26,21 @@ const getAppVersion = () => {
   return 'unknown';
 };
 
+const getDeviceId = () => {
+  if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+    try {
+      const device = JSON.parse(localStorage.getItem('device') || '{}');
+      if (device && device.id) {
+        return device.id;
+      }
+    } catch (e) {
+      console.warn('Erro ao ler id do device do localStorage:', e);
+    }
+  }
+
+  return null;
+};
+
 export const addDeviceConfigs = ({commit, getters}, params) => {
   let configsObj = {};
   if (params.configs) {
@@ -46,6 +61,7 @@ export const addDeviceConfigs = ({commit, getters}, params) => {
   // Remontar o params com a versão atualizada
   const updatedParams = {
     ...params,
+    device: params.device || getDeviceId(),
     configs: JSON.stringify(configsObj),
   };
 
