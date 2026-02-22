@@ -47,6 +47,7 @@ export const DefaultProvider = ({children}) => {
   const fetchDeviceId = async () => {
     const uniqueId = await DeviceInfo.getUniqueId();
     const deviceId = await DeviceInfo.getDeviceId();
+    const appName = DeviceInfo.getApplicationName();
     const systemName = await DeviceInfo.getSystemName();
     const systemVersion = await DeviceInfo.getSystemVersion();
     const manufacturer = await DeviceInfo.getManufacturer();
@@ -59,6 +60,7 @@ export const DefaultProvider = ({children}) => {
     if (uniqueId) {
       ld = {
         id: uniqueId,
+        appName: appName,
         deviceType: deviceId,
         systemName: systemName,
         systemVersion: systemVersion,
@@ -80,7 +82,10 @@ export const DefaultProvider = ({children}) => {
   useEffect(() => {
     const checkVersion = async () => {
       const appVersion = await DeviceInfo.getVersion();
-      if (device && device.appVersion && device.appVersion != appVersion) {
+      if (
+        device &&
+        ((device.appVersion && device.appVersion != appVersion) || !device.appName)
+      ) {
         fetchDeviceId();
       }
     };

@@ -336,6 +336,10 @@ useFocusEffect(
         <View style={styles.Settings.mainContainer}>
           <View style={{marginTop: 20}}>
             <View style={styles.Settings.row}>
+              <Text style={styles.Settings.value}>{storagedDevice?.appName}:</Text>
+              <Text style={styles.Settings.value}>{storagedDevice?.appVersion}</Text>
+            </View>
+            <View style={styles.Settings.row}>
               <Text style={styles.Settings.label}>{global.t?.t("settings", "label", "machineId")}: </Text>
               <Text style={styles.Settings.value}>{storagedDevice.id}</Text>
             </View>
@@ -355,14 +359,6 @@ useFocusEffect(
                   : ''}
               </Text>
             </View>
-            <View style={styles.Settings.row}>
-              <Text style={styles.Settings.label}>{global.t?.t("settings", "label", "appVersion")}: </Text>
-              <Text style={styles.Settings.value}>
-                {storagedDevice?.appVersion}
-              </Text>
-            </View>
-          </View>
-          <View style={{marginTop: 12}}>
             <View style={styles.Settings.walletRow}>
               <Text style={styles.Settings.label}>{global.t?.t("settings", "label", "cashWallet")}: </Text>
               <View style={styles.Settings.walletValueContainer}>

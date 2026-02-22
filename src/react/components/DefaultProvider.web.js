@@ -66,19 +66,21 @@ export const DefaultProvider = ({children}) => {
     
     // Tenta pegar a versão do package.json, senão usa 'unknown'
     let appVersion = 'unknown';
+    let appName = 'Web App';
     try {
       const response = await fetch('/package.json');
       if (response.ok) {
         const packageJsonData = await response.json();
         appVersion = packageJsonData.version || 'unknown';
+        appName = packageJsonData.displayName || packageJsonData.name || appName;
       }
-      console.log('App Version:', appVersion);
     } catch (e) {
       console.warn('Não foi possível carregar package.json:', e);
     }
 
     const ld = {
       id: ip,
+      appName: appName,
       deviceType: 'web',
       systemName: 'web',
       systemVersion: 'unknow',
@@ -96,7 +98,7 @@ export const DefaultProvider = ({children}) => {
   };
 
   useEffect(() => {
-    if (!device || !device.id) {
+    if (!device || !device.id || !device.appName) {
       fetchDeviceId();
     } else {
       deviceActions.setItem(device);
