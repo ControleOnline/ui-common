@@ -13,8 +13,11 @@ const IdInput = () => {
   }
 
   const handleBlur = () => {
-    // Executa a pesquisa ao sair do campo
-    invoiceActions.fetchInvoices() // ou o nome correto da action
+    invoiceActions.fetchInvoices()
+  }
+
+  const handleSubmit = () => {
+    invoiceActions.fetchInvoices()
   }
 
   return (
@@ -29,8 +32,10 @@ const IdInput = () => {
         value={inputValue}
         onChangeText={handleTextChange}
         onBlur={handleBlur}
+        onSubmitEditing={handleSubmit}
         placeholderTextColor="#999"
         keyboardType="number-pad"
+        returnKeyType="search"
       />
     </View>
   )
