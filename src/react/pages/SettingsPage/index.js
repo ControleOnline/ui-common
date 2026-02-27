@@ -61,6 +61,7 @@ const Settings = () => {
   const [languageOptions, setLanguageOptions] = useState(['pt-BR', 'en-US']);
   const [configsLoaded, setConfigsLoaded] = useState(false);
   const [deviceConfigsLoaded, setDeviceConfigsLoaded] = useState(false);
+  const pickerMode = Platform.OS === 'android' ? 'dropdown' : undefined;
 
   const cieloDevices = ['Quantum', 'ingenico'];
 
@@ -529,6 +530,7 @@ useFocusEffect(
               <Picker
                 selectedValue={selectedLanguage}
                 onValueChange={handleLanguageChange}
+                mode={pickerMode}
                 style={styles.Settings.picker}>
                 {languageOptions.map(language => (
                   <Picker.Item key={language} label={language} value={language} />
@@ -574,6 +576,7 @@ useFocusEffect(
             <Picker
               selectedValue={checkType}
               onValueChange={handleCheckTypeChange}
+              mode={pickerMode}
               style={styles.Settings.picker}>
 
               <Picker.Item label={global.t?.t("settings", "option", "manual")} value="manual" />
@@ -589,6 +592,7 @@ useFocusEffect(
             <Picker
               selectedValue={productInputType}
               onValueChange={handleProductInputTypeChange}
+              mode={pickerMode}
               style={styles.Settings.picker}>
               <Picker.Item label={global.t?.t("settings", "option", "manual")} value="manual" />
               <Picker.Item label={global.t?.t("settings", "option", "barcode")} value="barcode" />
@@ -601,6 +605,7 @@ useFocusEffect(
             <Picker
               selectedValue={selectionType}
               onValueChange={handleSelectionTypeChange}
+              mode={pickerMode}
               style={styles.Settings.picker}>
               <Picker.Item label={global.t?.t("settings", "option", "single")}  value="single" />
               <Picker.Item label={global.t?.t("settings", "option", "multiple")}  value="multiple" />
@@ -641,6 +646,7 @@ useFocusEffect(
             <Picker
               selectedValue={selectedMode}
               onValueChange={handlePosTypeChange}
+              mode={pickerMode}
               style={styles.Settings.picker}>
               <Picker.Item label={global.t?.t("settings", "option", "simple order")} value="simple" />
               <Picker.Item label={global.t?.t("settings", "option", "full order")} value="full" />
@@ -650,6 +656,7 @@ useFocusEffect(
             <Picker
               selectedValue={printingMode}
               onValueChange={handlePrintModeChange}
+              mode={pickerMode}
               style={styles.Settings.picker}>
               <Picker.Item label={global.t?.t("settings", "option", "printSingleOrder")} value="order" />
               <Picker.Item label={global.t?.t("settings", "option", "printFullOrder")} value="form" />
@@ -661,6 +668,7 @@ useFocusEffect(
               <Picker
                 selectedValue={selectedGateway}
                 onValueChange={handleGatewayChange}
+                mode={pickerMode}
                 style={styles.Settings.picker}>
                 <Picker.Item label="Infinite Pay" value="infinite-pay" />
                 {(cieloDevices.includes(storagedDevice?.manufacturer) ||
