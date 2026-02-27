@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Switch,
   Alert,
+  Platform,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import css from '@controleonline/ui-orders/src/react/css/orders';
@@ -409,8 +410,11 @@ useFocusEffect(
               <Text style={styles.Settings.label}>{global.t?.t("settings", "label", "systemVersion")}: </Text>
               <Text style={styles.Settings.value}>
                 {storagedDevice?.systemName}
-                {appVersion
-                  ? `, ${appVersion}`
+                {Platform.OS !== 'web' &&
+                storagedDevice?.systemVersion &&
+                String(storagedDevice.systemVersion).toLowerCase() !== 'unknown' &&
+                String(storagedDevice.systemVersion).toLowerCase() !== 'unknow'
+                  ? `, ${storagedDevice.systemVersion}`
                   : ''}
               </Text>
             </View>
