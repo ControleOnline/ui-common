@@ -12,13 +12,15 @@ import {
 import {SafeAreaView} from 'react-native-safe-area-context';
 import css from '@controleonline/ui-orders/src/react/css/orders';
 import {useStore} from '@store';
-import {useFocusEffect} from '@react-navigation/native';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {Picker} from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import StateStore from '@controleonline/ui-layout/src/react/components/StateStore';
 import packageJson from '@package';
+import {api} from '@controleonline/ui-common/src/api';
 
 const Settings = () => {
+  const navigation = useNavigation();
   const {styles, globalStyles} = css();
   const walletStore = useStore('wallet');
   const walletGetters = walletStore.getters;
@@ -55,6 +57,8 @@ const Settings = () => {
   const [selectionType, setSelectionType] = useState('single');
   const [showSound, setShowSound] = useState(false);
   const [showVibration, setShowVibration] = useState(false);
+  const [selectedLanguage, setSelectedLanguage] = useState('pt-BR');
+  const [languageOptions, setLanguageOptions] = useState(['pt-BR', 'en-US']);
   const [configsLoaded, setConfigsLoaded] = useState(false);
   const [deviceConfigsLoaded, setDeviceConfigsLoaded] = useState(false);
 
@@ -95,6 +99,10 @@ const Settings = () => {
     }
     if (!lc['vibration']) {
       lc['vibration'] = '0';
+      needsUpdate = true;
+    }
+    if (!lc['language']) {
+      lc['language'] = 'pt-BR';
       needsUpdate = true;
     }
     if (!lc['config-version']) {
@@ -186,6 +194,7 @@ useFocusEffect(
           device?.configs['vibration'] === true ||
           device?.configs['vibration'] === '1'
         );
+        setSelectedLanguage(device?.configs['language'] || 'pt-BR');
         setSelectedMode(device?.configs['pos-type'] || 'full');
         setPrintingMode(device?.configs['print-mode'] || 'order');
         setSelectedGateway(device?.configs['pos-gateway'] || 'infinite-pay');
@@ -195,6 +204,7 @@ useFocusEffect(
         setSelectionType('single');
         setShowSound(false);
         setShowVibration(false);
+        setSelectedLanguage('pt-BR');
         setSelectedMode('full');
         setPrintingMode('order');
         setSelectedGateway('infinite-pay');
@@ -220,6 +230,36 @@ useFocusEffect(
     }, [discovered, currentCompany?.id, configActions]),
   );
 
+  useFocusEffect(
+    useCallback(() => {
+      let isActive = true;
+
+      api
+        .fetch('languages', {params: {itemsPerPage: 500}})
+        .then(data => {
+          if (!isActive) {
+            return;
+          }
+
+          const rows = data?.member || data?.['hydra:member'] || [];
+          const uniqueLanguages = [...new Set(
+            rows
+              .map(item => String(item?.language || '').trim())
+              .filter(Boolean),
+          )];
+
+          if (uniqueLanguages.length > 0) {
+            setLanguageOptions(uniqueLanguages);
+          }
+        })
+        .catch(() => {});
+
+      return () => {
+        isActive = false;
+      };
+    }, []),
+  );
+
   const addDeviceConfigs = () => {
     let lc = {...(device?.configs || {})};
 
@@ -234,6 +274,7 @@ useFocusEffect(
     lc['selection-type'] = selectionType;
     lc['sound'] = showSound ? '1' : '0';
     lc['vibration'] = showVibration ? '1' : '0';
+    lc['language'] = selectedLanguage;
     
     deviceConfigsActions
       .addDeviceConfigs({
@@ -242,7 +283,7 @@ useFocusEffect(
       })
       .catch(err => {
         console.error('addDeviceConfigs failed:', err);
-        Alert.alert('Erro ao gravar configurações', err.message || JSON.stringify(err));
+        Alert.alert('Erro ao gravar ', err.message || JSON.stringify(err));
       });
   };
 
@@ -384,13 +425,70 @@ useFocusEffect(
       });
   };
 
+  const handleLanguageChange = (value) => {
+    setSelectedLanguage(value);
+
+    const languageCode = String(value || 'pt-BR').trim();
+    const currentConfig = JSON.parse(localStorage.getItem('config') || '{}');
+    localStorage.setItem(
+      'config',
+      JSON.stringify({...currentConfig, language: languageCode}),
+    );
+
+    if (global.t) {
+      global.t.language = languageCode;
+    }
+
+    let lc = {...(device?.configs || {})};
+    lc['language'] = value;
+    lc['config-version'] = appVersion;
+
+    deviceConfigsActions
+      .addDeviceConfigs({
+        configs: JSON.stringify(lc),
+        people: '/people/' + currentCompany.id,
+      })
+      .then(async () => {
+        await global.t?.reload?.();
+        global.refreshTranslationsUI?.();
+
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+          window.location.reload();
+          return;
+        }
+
+        navigation.reset({
+          index: 0,
+          routes: [{name: 'SettingsPage'}],
+        });
+      })
+      .catch(err => {
+        console.error('addDeviceConfigs (language) failed:', err);
+        Alert.alert('Erro ao gravar configurações', err.message || JSON.stringify(err));
+      });
+  };
+
   const handleClearProducts = () => {
     localStorage.setItem('categories', JSON.stringify([]));
     categoryActions.setItems([]);
   };
 
   const handleClearTranslate = () => {
-    global.t?.reload();
+    Promise.resolve(global.t?.reload?.())
+      .then(() => {
+        global.refreshTranslationsUI?.();
+
+        if (Platform.OS === 'web' && typeof window !== 'undefined') {
+          window.location.reload();
+          return;
+        }
+
+        navigation.reset({
+          index: 0,
+          routes: [{name: 'SettingsPage'}],
+        });
+      })
+      .catch(() => {});
   };
 
   return (
@@ -425,6 +523,19 @@ useFocusEffect(
                   : ''}
               </Text>
             </View>
+
+            <View style={{marginTop: 6, marginBottom: 10}}>
+              <Text style={styles.Settings.label}>{global.t?.t('settings', 'label', 'language')}</Text>
+              <Picker
+                selectedValue={selectedLanguage}
+                onValueChange={handleLanguageChange}
+                style={styles.Settings.picker}>
+                {languageOptions.map(language => (
+                  <Picker.Item key={language} label={language} value={language} />
+                ))}
+              </Picker>
+            </View>
+
             <View style={styles.Settings.walletRow}>
               <Text style={styles.Settings.label}>{global.t?.t("settings", "label", "cashWallet")}: </Text>
               <View style={styles.Settings.walletValueContainer}>

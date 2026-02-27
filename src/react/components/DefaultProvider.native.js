@@ -8,7 +8,7 @@ import PrintService from '@controleonline/ui-common/src/react/components/PrintSe
 import {useStore} from '@store';
 const ThemeContext = createContext();
 
-export const DefaultProvider = ({children}) => {
+export const DefaultProvider = ({children, onBootstrapReady}) => {
   const themeStore = useStore('theme');
   const getters = themeStore.getters;
   const actions = themeStore.actions;
@@ -40,9 +40,23 @@ export const DefaultProvider = ({children}) => {
   const {item: device_config} = deviceConfigsGetters;
   const {isLogged} = authGetters;
   const [translateReady, setTranslateReady] = useState(false);
+  const [deviceConfigFetched, setDeviceConfigFetched] = useState(false);
+  const [, setTranslateVersion] = useState(0);
   const [device, setDevice] = useState(
     JSON.parse(localStorage.getItem('device') || '{}'),
   );
+
+  useEffect(() => {
+    global.refreshTranslationsUI = () => {
+      setTranslateVersion(version => version + 1);
+    };
+
+    return () => {
+      if (global.refreshTranslationsUI) {
+        delete global.refreshTranslationsUI;
+      }
+    };
+  }, []);
 
   const fetchDeviceId = async () => {
     const uniqueId = await DeviceInfo.getUniqueId();
@@ -152,6 +166,7 @@ export const DefaultProvider = ({children}) => {
       currentCompany &&
       Object.entries(currentCompany).length > 0
     ) {
+      setDeviceConfigFetched(false);
       deviceConfigsActions
         .getItems({
           'device.device': device.id,
@@ -163,6 +178,10 @@ export const DefaultProvider = ({children}) => {
             d.configs = JSON.parse(d.configs);
             deviceConfigsActions.setItem(d);
           }
+        })
+        .catch(() => {})
+        .finally(() => {
+          setDeviceConfigFetched(true);
         });
     }
   }, [currentCompany, isLogged, device]);
@@ -181,19 +200,44 @@ export const DefaultProvider = ({children}) => {
     if (
       isLogged &&
       currentCompany &&
-      Object.entries(currentCompany).length > 0
+      Object.entries(currentCompany).length > 0 &&
+      deviceConfigFetched
     ) {
+      const configuredLanguage =
+        device_config?.configs?.language ||
+        'pt-BR';
+      const currentConfig = JSON.parse(localStorage.getItem('config') || '{}');
+
+      if (currentConfig.language !== configuredLanguage) {
+        localStorage.setItem(
+          'config',
+          JSON.stringify({...currentConfig, language: configuredLanguage}),
+        );
+      }
+
       global.t = new Translate(
         defaultCompany,
         currentCompany,
-        ['invoice', 'orders', 'settings'],
+        [],
         translateActions,
       );
-      t.discoveryAll().then(() => {
+
+      if (global.t.hasCache()) {
+        setTranslateReady(true);
+        return;
+      }
+
+      global.t.discoveryAll().then(() => {
         setTranslateReady(true);
       });
     }
-  }, [currentCompany, isLogged]);
+  }, [currentCompany, defaultCompany, device_config, deviceConfigFetched, isLogged]);
+
+  useEffect(() => {
+    if (!isLogged || translateReady) {
+      onBootstrapReady?.();
+    }
+  }, [isLogged, translateReady, onBootstrapReady]);
 
 
   useEffect(() => {
