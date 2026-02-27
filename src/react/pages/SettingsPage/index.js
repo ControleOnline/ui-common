@@ -15,6 +15,7 @@ import {useFocusEffect} from '@react-navigation/native';
 import {Picker} from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import StateStore from '@controleonline/ui-layout/src/react/components/StateStore';
+import packageJson from '@package';
 
 const Settings = () => {
   const {styles, globalStyles} = css();
@@ -42,6 +43,8 @@ const Settings = () => {
   const deviceStore = useStore('device');
   const deviceGetters = deviceStore.getters;
   const {item: storagedDevice} = deviceGetters;
+  const packageVersion = packageJson?.version || packageJson?.default?.version;
+  const appVersion = packageVersion || storagedDevice?.appVersion;
 
   const [checkType, setCheckType] = useState('manual');
   const [productInputType, setProductInputType] = useState('manual');
@@ -92,7 +95,7 @@ const Settings = () => {
     }
     if (!lc['config-version']) {
       // ALEMAC // pega o appVersion ao invés do buildNumber
-      lc['config-version'] = storagedDevice?.appVersion;
+      lc['config-version'] = appVersion;
       needsUpdate = true;
     }
     if (!lc['pos-gateway']) {
@@ -121,7 +124,7 @@ const Settings = () => {
     }
 
     setConfigsLoaded(true);
-  }, [device, currentCompany, configsLoaded, storagedDevice]);
+  }, [device, currentCompany, configsLoaded, storagedDevice, appVersion]);
 
   useFocusEffect(
     useCallback(() => {
@@ -208,7 +211,7 @@ useFocusEffect(
     let lc = {...(device?.configs || {})};
 
     // ALEMAC // pega o appVersion ao invés do buildNumber
-    lc['config-version'] = storagedDevice?.appVersion;
+    lc['config-version'] = appVersion;
 
     lc['pos-type'] = selectedMode;
     lc['pos-gateway'] = selectedGateway;
@@ -234,7 +237,7 @@ useFocusEffect(
     setSelectionType(value);
     let lc = {...(device?.configs || {})};
     lc['selection-type'] = value;
-    lc['config-version'] = storagedDevice?.appVersion;
+    lc['config-version'] = appVersion;
     deviceConfigsActions
       .addDeviceConfigs({
         configs: JSON.stringify(lc),
@@ -251,7 +254,7 @@ useFocusEffect(
     let lc = {...(device?.configs || {})};
     lc['check-type'] = value;
     // ===== ALTERAÇÃO: ADICIONAR VERSÃO DO APP =====
-    lc['config-version'] = storagedDevice?.appVersion;
+    lc['config-version'] = appVersion;
     // ===== FIM DA ALTERAÇÃO =====
     deviceConfigsActions
       .addDeviceConfigs({
@@ -269,7 +272,7 @@ useFocusEffect(
     let lc = {...(device?.configs || {})};
     lc['product-input-type'] = value;
     // ===== ALTERAÇÃO: ADICIONAR VERSÃO DO APP =====
-    lc['config-version'] = storagedDevice?.appVersion;
+    lc['config-version'] = appVersion;
     // ===== FIM DA ALTERAÇÃO =====
     deviceConfigsActions
       .addDeviceConfigs({
@@ -288,7 +291,7 @@ useFocusEffect(
     let lc = {...(device?.configs || {})};
     lc['sound'] = value ? '1' : '0';
     // ===== ALTERAÇÃO: ADICIONAR VERSÃO DO APP =====
-    lc['config-version'] = storagedDevice?.appVersion;
+    lc['config-version'] = appVersion;
     // ===== FIM DA ALTERAÇÃO =====
     deviceConfigsActions
       .addDeviceConfigs({
@@ -307,7 +310,7 @@ useFocusEffect(
     let lc = {...(device?.configs || {})};
     lc['vibration'] = value ? '1' : '0';
     // ===== ALTERAÇÃO: ADICIONAR VERSÃO DO APP =====
-    lc['config-version'] = storagedDevice?.appVersion;
+    lc['config-version'] = appVersion;
     // ===== FIM DA ALTERAÇÃO =====
     deviceConfigsActions
       .addDeviceConfigs({
@@ -316,6 +319,54 @@ useFocusEffect(
       })
       .catch(err => {
         console.error('addDeviceConfigs (vibration) failed:', err);
+        Alert.alert('Erro ao gravar configurações', err.message || JSON.stringify(err));
+      });
+  };
+
+  const handlePosTypeChange = (value) => {
+    setSelectedMode(value);
+    let lc = {...(device?.configs || {})};
+    lc['pos-type'] = value;
+    lc['config-version'] = appVersion;
+    deviceConfigsActions
+      .addDeviceConfigs({
+        configs: JSON.stringify(lc),
+        people: '/people/' + currentCompany.id,
+      })
+      .catch(err => {
+        console.error('addDeviceConfigs (pos-type) failed:', err);
+        Alert.alert('Erro ao gravar configurações', err.message || JSON.stringify(err));
+      });
+  };
+
+  const handlePrintModeChange = (value) => {
+    setPrintingMode(value);
+    let lc = {...(device?.configs || {})};
+    lc['print-mode'] = value;
+    lc['config-version'] = appVersion;
+    deviceConfigsActions
+      .addDeviceConfigs({
+        configs: JSON.stringify(lc),
+        people: '/people/' + currentCompany.id,
+      })
+      .catch(err => {
+        console.error('addDeviceConfigs (print-mode) failed:', err);
+        Alert.alert('Erro ao gravar configurações', err.message || JSON.stringify(err));
+      });
+  };
+
+  const handleGatewayChange = (value) => {
+    setSelectedGateway(value);
+    let lc = {...(device?.configs || {})};
+    lc['pos-gateway'] = value;
+    lc['config-version'] = appVersion;
+    deviceConfigsActions
+      .addDeviceConfigs({
+        configs: JSON.stringify(lc),
+        people: '/people/' + currentCompany.id,
+      })
+      .catch(err => {
+        console.error('addDeviceConfigs (pos-gateway) failed:', err);
         Alert.alert('Erro ao gravar configurações', err.message || JSON.stringify(err));
       });
   };
@@ -337,7 +388,7 @@ useFocusEffect(
           <View style={{marginTop: 20}}>
             <View style={styles.Settings.row}>
               <Text style={styles.Settings.value}>{storagedDevice?.appName}:</Text>
-              <Text style={styles.Settings.value}>{storagedDevice?.appVersion}</Text>
+              <Text style={styles.Settings.value}>{appVersion}</Text>
             </View>
             <View style={styles.Settings.row}>
               <Text style={styles.Settings.label}>{global.t?.t("settings", "label", "machineId")}: </Text>
@@ -353,9 +404,10 @@ useFocusEffect(
               <Text style={styles.Settings.label}>{global.t?.t("settings", "label", "systemVersion")}: </Text>
               <Text style={styles.Settings.value}>
                 {storagedDevice?.systemName}
-                {storagedDevice?.systemVersion &&
-                String(storagedDevice?.systemVersion).toLowerCase() !== 'unknown'
-                  ? `, ${storagedDevice?.systemVersion}`
+                {appVersion &&
+                String(appVersion).toLowerCase() !== 'unknown' &&
+                String(appVersion).toLowerCase() !== 'unknow'
+                  ? `, ${appVersion}`
                   : ''}
               </Text>
             </View>
@@ -463,9 +515,7 @@ useFocusEffect(
           <View style={{marginTop: 6}}>
             <Picker
               selectedValue={selectedMode}
-              onValueChange={itemValue => {
-                setSelectedMode(itemValue);
-              }}
+              onValueChange={handlePosTypeChange}
               style={styles.Settings.picker}>
               <Picker.Item label={global.t?.t("settings", "option", "simple order")} value="simple" />
               <Picker.Item label={global.t?.t("settings", "option", "full order")} value="full" />
@@ -474,9 +524,7 @@ useFocusEffect(
           <View style={{marginTop: 6, marginBottom: 10}}>
             <Picker
               selectedValue={printingMode}
-              onValueChange={itemValue => {
-                setPrintingMode(itemValue);
-              }}
+              onValueChange={handlePrintModeChange}
               style={styles.Settings.picker}>
               <Picker.Item label={global.t?.t("settings", "option", "printSingleOrder")} value="order" />
               <Picker.Item label={global.t?.t("settings", "option", "printFullOrder")} value="form" />
@@ -487,9 +535,7 @@ useFocusEffect(
             <View style={{marginTop: 10}}>
               <Picker
                 selectedValue={selectedGateway}
-                onValueChange={itemValue => {
-                  setSelectedGateway(itemValue);
-                }}
+                onValueChange={handleGatewayChange}
                 style={styles.Settings.picker}>
                 <Picker.Item label="Infinite Pay" value="infinite-pay" />
                 {(cieloDevices.includes(storagedDevice?.manufacturer) ||

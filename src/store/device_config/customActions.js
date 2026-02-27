@@ -1,7 +1,13 @@
 import {api} from '@controleonline/ui-common/src/api';
 import * as types from '@controleonline/ui-default/src/store/default/mutation_types';
+import packageJson from '@package';
 
 const getAppVersion = () => {
+  const packageVersion = packageJson?.version || packageJson?.default?.version;
+  if (packageVersion) {
+    return packageVersion;
+  }
+
   if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
     try {
       const device = JSON.parse(localStorage.getItem('device') || '{}');
