@@ -59,7 +59,7 @@ const Settings = () => {
   const createDefaultConfigs = useCallback(() => {
     
     // ALEMAC //
-    if (!currentCompany || configsLoaded || device === undefined || device === null) return;
+    if (!currentCompany?.id || configsLoaded || device === undefined || device === null) return;
 
     let lc = {...(device?.configs || {})};
     let needsUpdate = false;
@@ -117,14 +117,19 @@ const Settings = () => {
           configs: JSON.stringify(lc),
           people: '/people/' + currentCompany.id,
         })
+        .then(() => {
+          setConfigsLoaded(true);
+        })
         .catch(err => {
           console.error('addDeviceConfigs (createDefaultConfigs) failed:', err);
           Alert.alert('Erro ao gravar configurações', err.message || JSON.stringify(err));
         });
+
+      return;
     }
 
     setConfigsLoaded(true);
-  }, [device, currentCompany, configsLoaded, storagedDevice, appVersion]);
+  }, [device, currentCompany?.id, configsLoaded, storagedDevice, appVersion, deviceConfigsActions]);
 
   useFocusEffect(
     useCallback(() => {
