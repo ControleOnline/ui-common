@@ -29,7 +29,7 @@ const getAppVersion = () => {
     console.warn('Erro ao ler versao do app:', e);
   }
 
-  return 'unknown';
+  return null;
 };
 
 const getDeviceId = () => {

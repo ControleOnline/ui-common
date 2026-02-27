@@ -64,14 +64,13 @@ export const DefaultProvider = ({children}) => {
   const fetchDeviceId = async () => {
     const ip = await fetchPublicIP();
     
-    // Tenta pegar a versão do package.json, senão usa 'unknown'
-    let appVersion = 'unknown';
+    let appVersion = null;
     let appName = 'Web App';
     try {
       const response = await fetch('/package.json');
       if (response.ok) {
         const packageJsonData = await response.json();
-        appVersion = packageJsonData.version || 'unknown';
+        appVersion = packageJsonData.version;
         appName = packageJsonData.displayName || packageJsonData.name || appName;
       }
     } catch (e) {

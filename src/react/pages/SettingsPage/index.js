@@ -409,9 +409,7 @@ useFocusEffect(
               <Text style={styles.Settings.label}>{global.t?.t("settings", "label", "systemVersion")}: </Text>
               <Text style={styles.Settings.value}>
                 {storagedDevice?.systemName}
-                {appVersion &&
-                String(appVersion).toLowerCase() !== 'unknown' &&
-                String(appVersion).toLowerCase() !== 'unknow'
+                {appVersion
                   ? `, ${appVersion}`
                   : ''}
               </Text>
