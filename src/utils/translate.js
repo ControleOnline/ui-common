@@ -1,16 +1,65 @@
 import { api } from "@controleonline/ui-common/src/api";
 
 export default class Translate {
-  constructor(defaultCompany, currentCompany, stores, translateActions) {
-    this.translates = JSON.parse(localStorage.getItem("translates") || "{}");
-    this.language =
-      JSON.parse(localStorage.getItem("config") || "{}").language || "pt-br";
+  constructor(defaultCompany, currentCompany, stores = [], translateActions) {
     this.defaultCompany = defaultCompany;
     this.currentCompany = currentCompany;
+    this.language = this.getLanguageFromConfig();
+    this.translates = this.readFromStorage();
     this.translateActions = translateActions;
     this.stores = stores;
     this.persistedMessages = {};
     this.languageIri = null;
+  }
+
+  getLanguageFromConfig() {
+    try {
+      return JSON.parse(localStorage.getItem("config") || "{}").language || "pt-BR";
+    } catch (e) {
+      return "pt-BR";
+    }
+  }
+
+  normalizeLanguageCode(value) {
+    return String(value || "")
+      .trim()
+      .replace("_", "-")
+      .toLowerCase();
+  }
+
+  getStorageKey() {
+    return [
+      "translates",
+      this.language,
+      this.defaultCompany?.id || "default",
+      this.currentCompany?.id || "current",
+    ].join(":");
+  }
+
+  readFromStorage() {
+    try {
+      const value =
+        localStorage.getItem(this.getStorageKey?.() || "translates") ||
+        localStorage.getItem("translates") ||
+        "{}";
+      const parsed = JSON.parse(value);
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  writeToStorage() {
+    const payload = JSON.stringify(this.translates || {});
+    localStorage.setItem(this.getStorageKey(), payload);
+    localStorage.setItem("translates", payload);
+  }
+
+  hasCache() {
+    return (
+      !!this.translates?.[this.language] &&
+      Object.keys(this.translates[this.language]).length > 0
+    );
   }
 
   t(store, type, key) {
@@ -34,21 +83,31 @@ export default class Translate {
   async getLanguageIri() {
     if (this.languageIri) return this.languageIri;
 
+    const normalized = this.normalizeLanguageCode(this.language);
+    const fallbackLanguageByCode = {
+      "pt-br": "/languages/1",
+      "en-us": "/languages/2",
+    };
+
     try {
       const languages = await api.fetch("languages", {
-        params: { language: this.language, itemsPerPage: 1 },
+        params: { itemsPerPage: 500 },
       });
-      const language = languages?.member?.[0];
+      const rows = languages?.member || languages?.["hydra:member"] || [];
+      const language = rows.find((item) => {
+        const candidate = this.normalizeLanguageCode(item?.language);
+        return candidate === normalized;
+      });
 
       if (language?.id) {
         this.languageIri = "/languages/" + language.id;
       } else if (language?.["@id"]) {
         this.languageIri = language["@id"];
       } else {
-        this.languageIri = "/languages/" + this.language;
+        this.languageIri = fallbackLanguageByCode[normalized] || "/languages/1";
       }
     } catch (e) {
-      this.languageIri = "/languages/" + this.language;
+      this.languageIri = fallbackLanguageByCode[normalized] || "/languages/1";
     }
 
     return this.languageIri;
@@ -90,19 +149,21 @@ export default class Translate {
   }
 
   reload() {
+    this.language = this.getLanguageFromConfig();
     this.clear();
-    this.discoveryAll();
+    return this.discoveryAll();
   }
 
   clear() {
     this.translates = {};
+    localStorage.removeItem(this.getStorageKey());
     localStorage.setItem("translates", "{}");
   }
 
   async discoveryAll() {
-    await Promise.all(
-      this.stores.map((store) => this.discoveryStoreTranslate(store)),
-    );
+    await this.fetchAllTranslates(this.defaultCompany, false);
+    await this.fetchAllTranslates(this.currentCompany, true);
+    this.writeToStorage();
     return this.translates;
   }
 
@@ -155,6 +216,46 @@ export default class Translate {
 
         localStorage.setItem("translates", JSON.stringify(this.translates));
       });
+  }
+
+  async fetchAllTranslates(company, override = false) {
+    if (!company?.id) return;
+    if (!this.translates[this.language]) this.translates[this.language] = {};
+
+    let page = 1;
+    const itemsPerPage = 500;
+    let keepLoading = true;
+
+    while (keepLoading) {
+      const data = await api.fetch("translates", {
+        params: {
+          "language.language": this.language,
+          people: "/people/" + company.id,
+          itemsPerPage,
+          page,
+        },
+      });
+
+      const rows = data?.member || data?.["hydra:member"] || [];
+
+      rows.forEach((element) => {
+        if (!element?.store || !element?.type || !element?.key) return;
+
+        const newMessage = element.translate || this.formatMessage(element.key);
+        const existingMessage =
+          this.translates[this.language]?.[element.store]?.[element.type]?.[
+            element.key
+          ];
+
+        if (!override && existingMessage) return;
+        if (override && existingMessage === newMessage) return;
+
+        this.findMessage(element.store, element.type, element.key, newMessage);
+      });
+
+      keepLoading = rows.length === itemsPerPage;
+      page += 1;
+    }
   }
 
   findMessage(store, type, key, message) {
