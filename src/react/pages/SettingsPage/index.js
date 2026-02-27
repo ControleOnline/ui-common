@@ -36,6 +36,9 @@ const Settings = () => {
   const {currentCompany} = peopleGetters;
   const {isLoading: walletLoading} = walletGetters;
   const {items: companyConfigs, isSaving} = configsGetters;
+  const withdrawWallet =
+    companyConfigs?.['pos-withdrawl-wallet'] ||
+    companyConfigs?.['pos-withdrawal-wallet'];
 
   const [selectedMode, setSelectedMode] = useState(null);
   const [printingMode, setPrintingMode] = useState('order');
@@ -136,6 +139,7 @@ const Settings = () => {
     useCallback(() => {
       setDeviceConfigsLoaded(false);
       setConfigsLoaded(false);
+      setDiscovered(false);
     }, []),
   );
 
@@ -206,8 +210,11 @@ useFocusEffect(
         };
         configActions
           .discoveryMainConfigs(params)
-          .finally(() => {
+          .then(() => {
             setDiscovered(true);
+          })
+          .catch(() => {
+            setDiscovered(false);
           });
       }
     }, [discovered, currentCompany?.id, configActions]),
@@ -437,11 +444,11 @@ useFocusEffect(
               <Text style={styles.Settings.label}>{global.t?.t("settings", "label", "withdrawlWallet")}: </Text>
               <View style={styles.Settings.walletValueContainer}>
                 <Text style={styles.Settings.walletValue}>
-                  {companyConfigs?.['pos-withdrawl-wallet']}
+                  {withdrawWallet}
                 </Text>
                 {walletLoading || isSaving ? (
                   <ActivityIndicator size={22} color={styles.Settings.label} />
-                ) : companyConfigs?.['pos-withdrawl-wallet'] ? (
+                ) : withdrawWallet ? (
                   <Icon name={'check'} size={22} color="green" />
                 ) : (
                   <Icon name={'close'} size={22} color="red" />
