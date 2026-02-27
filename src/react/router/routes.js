@@ -7,7 +7,7 @@ const commonRoutes = [
     options: {
       headerShown: true,
       headerBackVisible: false,
-      tabBarVisible: true,
+      showBottomToolBar: true,
       title: 'Configurações',
     },
     initialParams: {store: 'configs'},
