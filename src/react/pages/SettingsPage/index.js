@@ -199,7 +199,7 @@ useFocusEffect(
 
   useFocusEffect(
     useCallback(() => {
-      if (!discovered) {
+      if (!discovered && currentCompany?.id) {
         const params = {
           people: '/people/' + currentCompany.id,
         };
@@ -209,7 +209,7 @@ useFocusEffect(
             setDiscovered(true);
           });
       }
-    }, [discovered]),
+    }, [discovered, currentCompany?.id, configActions]),
   );
 
   const addDeviceConfigs = () => {
