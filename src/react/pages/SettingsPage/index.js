@@ -56,7 +56,6 @@ const Settings = () => {
   const [selectionType, setSelectionType] = useState('single');
   const [showSound, setShowSound] = useState(false);
   const [showVibration, setShowVibration] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState('pt-BR');
   const [configsLoaded, setConfigsLoaded] = useState(false);
   const [deviceConfigsLoaded, setDeviceConfigsLoaded] = useState(false);
   const pickerMode = Platform.OS === 'android' ? 'dropdown' : undefined;
@@ -98,10 +97,6 @@ const Settings = () => {
     }
     if (!lc['vibration']) {
       lc['vibration'] = '0';
-      needsUpdate = true;
-    }
-    if (!lc['language']) {
-      lc['language'] = 'pt-BR';
       needsUpdate = true;
     }
     if (!lc['config-version']) {
@@ -193,7 +188,6 @@ useFocusEffect(
           device?.configs['vibration'] === true ||
           device?.configs['vibration'] === '1'
         );
-        setSelectedLanguage(device?.configs['language'] || 'pt-BR');
         setSelectedMode(device?.configs['pos-type'] || 'full');
         setPrintingMode(device?.configs['print-mode'] || 'order');
         setSelectedGateway(device?.configs['pos-gateway'] || 'infinite-pay');
@@ -203,7 +197,6 @@ useFocusEffect(
         setSelectionType('single');
         setShowSound(false);
         setShowVibration(false);
-        setSelectedLanguage('pt-BR');
         setSelectedMode('full');
         setPrintingMode('order');
         setSelectedGateway('infinite-pay');
@@ -243,7 +236,6 @@ useFocusEffect(
     lc['selection-type'] = selectionType;
     lc['sound'] = showSound ? '1' : '0';
     lc['vibration'] = showVibration ? '1' : '0';
-    lc['language'] = selectedLanguage;
     
     deviceConfigsActions
       .addDeviceConfigs({

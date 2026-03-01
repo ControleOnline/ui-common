@@ -214,16 +214,33 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
       Object.entries(currentCompany).length > 0 &&
       deviceConfigFetched
     ) {
-      const configuredLanguage =
-        device_config?.configs?.language ||
-        'pt-BR';
       const currentConfig = JSON.parse(localStorage.getItem('config') || '{}');
+      const sessionData = JSON.parse(localStorage.getItem('session') || '{}');
+      const configuredLanguage =
+        currentConfig?.language ||
+        sessionData?.language ||
+        'pt-BR';
+
+      console.log('[language-bootstrap][web]', {
+        id: currentCompany?.id,
+        language: configuredLanguage,
+      });
 
       if (currentConfig.language !== configuredLanguage) {
+        const nextConfig = {...currentConfig, language: configuredLanguage};
         localStorage.setItem(
           'config',
-          JSON.stringify({...currentConfig, language: configuredLanguage}),
+          JSON.stringify(nextConfig),
         );
+        console.log('[localStorage-language][web]', {
+          id: currentCompany?.id,
+          language: nextConfig?.language,
+        });
+      } else {
+        console.log('[localStorage-language][web]', {
+          id: currentCompany?.id,
+          language: currentConfig?.language,
+        });
       }
 
       global.t = new Translate(
@@ -242,7 +259,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
         setTranslateReady(true);
       });
     }
-  }, [currentCompany, defaultCompany, device_config, deviceConfigFetched, isLogged]);
+  }, [currentCompany, defaultCompany, deviceConfigFetched, isLogged]);
 
   useEffect(() => {
     if (!isLogged || translateReady) {
