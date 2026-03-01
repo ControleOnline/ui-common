@@ -5,6 +5,12 @@ import {WebsocketListener} from '@controleonline/ui-common/src/react/components/
 import PrintService from '@controleonline/ui-common/src/react/components/PrintService';
 import {useStore} from '@store';
 import {api} from '@controleonline/ui-common/src/api';
+import {
+  applyPaletteToRuntimeColors,
+  applyThemeCssVariables,
+  resolveThemePalette,
+} from '@controleonline/../../src/styles/branding';
+import {colors as runtimeColors} from '@controleonline/../../src/styles/colors';
 
 const ThemeContext = createContext();
 
@@ -49,6 +55,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
   const [translateReady, setTranslateReady] = useState(false);
   const [deviceConfigFetched, setDeviceConfigFetched] = useState(false);
   const [, setTranslateVersion] = useState(0);
+  const [baseThemeColors, setBaseThemeColors] = useState({});
   const [device, setDevice] = useState(
     JSON.parse(localStorage.getItem('device') || '{}'),
   );
@@ -264,6 +271,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
           parsedColors[cleanKey] = value.trim();
         });
       }
+      setBaseThemeColors(parsedColors);
       actions.setColors(parsedColors);
     };
 
@@ -271,6 +279,23 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
       fetchColors();
     }
   }, [device]);
+
+  useEffect(() => {
+    const companyThemeColors = currentCompany?.theme?.colors || {};
+    const mergedThemeColors = {
+      ...(baseThemeColors || {}),
+      ...(companyThemeColors || {}),
+    };
+
+    const palette = resolveThemePalette(mergedThemeColors, runtimeColors);
+    applyPaletteToRuntimeColors(palette, runtimeColors);
+    applyThemeCssVariables({
+      themeColors: mergedThemeColors,
+      palette,
+    });
+
+    actions.setColors(mergedThemeColors);
+  }, [actions, baseThemeColors, currentCompany?.id, currentCompany?.theme?.colors]);
 
   if (!translateReady && isLogged) {
     return (

@@ -12,6 +12,7 @@ export const MessageProvider = ({children}) => {
     message: '',
     duration: 4000,
     position: 'center', // top, center, bottom
+    offsetTop: 50,
   });
 
   const [dialog, setDialog] = useState({
@@ -23,9 +24,22 @@ export const MessageProvider = ({children}) => {
   });
 
   const showToast = (message, options = {}) => {
-    const {duration = 4000, position = 'center'} = options;
-    setSnackbar({visible: true, message, duration, position});
+    const {duration = 4000, position = 'center', offsetTop = 50} = options;
+    setSnackbar({visible: true, message, duration, position, offsetTop});
   };
+
+  // Backward-compatible aliases used by older module code
+  const showSuccess = (message, options = {}) =>
+    showToast(message, {position: 'top', offsetTop: 86, ...options});
+
+  const showError = (message, options = {}) =>
+    showToast(message, {position: 'top', offsetTop: 86, ...options});
+
+  const showWarning = (message, options = {}) =>
+    showToast(message, {position: 'top', offsetTop: 86, ...options});
+
+  const showInfo = (message, options = {}) =>
+    showToast(message, {position: 'top', offsetTop: 86, ...options});
 
   const showDialog = ({title, message, onConfirm, onCancel}) => {
     setDialog({
@@ -41,7 +55,15 @@ export const MessageProvider = ({children}) => {
   const hideDialog = () => setDialog(d => ({...d, visible: false}));
 
   return (
-    <MessageContext.Provider value={{showToast, showDialog}}>
+    <MessageContext.Provider
+      value={{
+        showToast,
+        showDialog,
+        showSuccess,
+        showError,
+        showWarning,
+        showInfo,
+      }}>
       {children}
 
       <Portal>
@@ -51,7 +73,7 @@ export const MessageProvider = ({children}) => {
             position: 'absolute',
             top:
               snackbar.position === 'top'
-                ? 50
+                ? snackbar.offsetTop
                 : snackbar.position === 'center'
                 ? '45%'
                 : undefined,
