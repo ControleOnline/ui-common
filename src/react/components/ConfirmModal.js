@@ -10,10 +10,10 @@ export const ConfirmModal = ({ visible, title, message, onConfirm, onCancel }) =
           <Text style={{ fontSize: 14, marginBottom: 20 }}>{message}</Text>
           <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 10 }}>
             <TouchableOpacity onPress={onCancel} style={{ padding: 10 }}>
-              <Text>Cancelar</Text>
+              <Text>{global.t?.t('confirmModal', 'button', 'cancel')}</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={onConfirm} style={{ padding: 10, backgroundColor: '#007AFF', borderRadius: 5 }}>
-              <Text style={{ color: '#fff' }}>Confirmar</Text>
+              <Text style={{ color: '#fff' }}>{global.t?.t('confirmModal', 'button', 'confirm')}</Text>
             </TouchableOpacity>
           </View>
         </View>

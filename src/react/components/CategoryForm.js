@@ -52,10 +52,12 @@ const CategoryForm = ({ category, onClose }) => {
     return (
         <View>
             <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 15 }}>
-                {category ? 'Editar Categoria' : 'Nova Categoria'}
+                {category
+                    ? global.t?.t('categoryForm', 'title', 'editCategory') || 'Editar Categoria'
+                    : global.t?.t('categoryForm', 'title', 'newCategory') || 'Nova Categoria'}
             </Text>
 
-            <Text>Nome</Text>
+            <Text>{global.t?.t('categoryForm', 'label', 'name') || 'Nome'}</Text>
             <TextInput
                 value={name}
                 onChangeText={setName}
@@ -68,7 +70,7 @@ const CategoryForm = ({ category, onClose }) => {
                 }}
             />
 
-            <Text>Cor (hex)</Text>
+            <Text>{global.t?.t('categoryForm', 'label', 'colorHex') || 'Cor (hex)'}</Text>
             <TextInput
                 value={color}
                 onChangeText={setColor}
@@ -81,7 +83,7 @@ const CategoryForm = ({ category, onClose }) => {
                 }}
             />
 
-            <Text>Ícone</Text>
+            <Text>{global.t?.t('categoryForm', 'label', 'icon') || 'Ícone'}</Text>
             <TextInput
                 value={icon}
                 onChangeText={setIcon}
@@ -94,7 +96,7 @@ const CategoryForm = ({ category, onClose }) => {
                 }}
             />
 
-            <Text>Categoria Pai (ID)</Text>
+            <Text>{global.t?.t('categoryForm', 'label', 'parentCategoryId') || 'Categoria Pai (ID)'}</Text>
             <TextInput
                 value={parent ? String(parent) : ''}
                 onChangeText={(value) => setParent(value)}
@@ -119,13 +121,15 @@ const CategoryForm = ({ category, onClose }) => {
                 }}
             >
                 <Text style={{ color: '#fff', fontWeight: 'bold' }}>
-                    {category ? 'Salvar Alterações' : 'Criar'}
+                    {category
+                        ? global.t?.t('categoryForm', 'button', 'saveChanges') || 'Salvar Alterações'
+                        : global.t?.t('categoryForm', 'button', 'create') || 'Criar'}
                 </Text>
             </TouchableOpacity>
 
             <TouchableOpacity onPress={onClose}>
                 <Text style={{ textAlign: 'center', color: 'red' }}>
-                    Cancelar
+                    {global.t?.t('categoryForm', 'button', 'cancel') || 'Cancelar'}
                 </Text>
             </TouchableOpacity>
         </View>
