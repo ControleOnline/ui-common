@@ -1,20 +1,20 @@
 import React, {createContext, useContext, useState} from 'react';
-import {Portal, Snackbar, Dialog, Paragraph, Button} from 'react-native-paper';
-import {View} from 'react-native';
+import {Dimensions} from 'react-native';
+import {Portal, Dialog, Paragraph, Button} from 'react-native-paper';
+import {toast, ToastPosition} from '@backpackapp-io/react-native-toast';
+import {
+  TOAST_DEFAULT_BOTTOM_OFFSET,
+  TOAST_DEFAULT_DURATION,
+  TOAST_DEFAULT_TOP_OFFSET,
+  TOAST_MODAL_COUNT_KEY,
+  TOAST_PROVIDER_KEYS,
+} from './toastConfig';
 
 const MessageContext = createContext();
 
 export const useMessage = () => useContext(MessageContext);
 
 export const MessageProvider = ({children}) => {
-  const [snackbar, setSnackbar] = useState({
-    visible: false,
-    message: '',
-    duration: 4000,
-    position: 'center', // top, center, bottom
-    offsetTop: 50,
-  });
-
   const [dialog, setDialog] = useState({
     visible: false,
     title: '',
@@ -23,23 +23,126 @@ export const MessageProvider = ({children}) => {
     onCancel: null,
   });
 
+  const normalizeMessage = message => {
+    if (message === undefined || message === null) return '';
+    return message;
+  };
+
+  const getDefaultProviderKey = () => {
+    const modalDepth = Number(global?.[TOAST_MODAL_COUNT_KEY] || 0);
+    if (modalDepth > 0) {
+      return TOAST_PROVIDER_KEYS.PERSIST;
+    }
+
+    return TOAST_PROVIDER_KEYS.ROOT;
+  };
+
+  const normalizeOptions = (options = {}, fallbackPosition = 'top') => {
+    const {
+      duration = TOAST_DEFAULT_DURATION,
+      position = fallbackPosition,
+      offsetTop,
+      offsetBottom,
+      providerKey,
+      styles: stylesOverride,
+      ...rest
+    } = options;
+
+    const pressableAdjustments = {};
+
+    if (position === 'center') {
+      const screenCenterOffset = Math.max(
+        0,
+        Math.round(Dimensions.get('window').height * 0.45) -
+          TOAST_DEFAULT_TOP_OFFSET,
+      );
+      if (screenCenterOffset > 0) {
+        pressableAdjustments.marginTop = screenCenterOffset;
+      }
+    }
+
+    if (position !== 'bottom' && typeof offsetTop === 'number') {
+      const topDiff = offsetTop - TOAST_DEFAULT_TOP_OFFSET;
+      if (topDiff !== 0) {
+        pressableAdjustments.marginTop =
+          (pressableAdjustments.marginTop || 0) + topDiff;
+      }
+    }
+
+    if (position === 'bottom' && typeof offsetBottom === 'number') {
+      const bottomDiff = offsetBottom - TOAST_DEFAULT_BOTTOM_OFFSET;
+      if (bottomDiff !== 0) {
+        pressableAdjustments.marginBottom = bottomDiff;
+      }
+    }
+
+    const mergedStyles =
+      Object.keys(pressableAdjustments).length > 0
+        ? {
+            ...(stylesOverride || {}),
+            pressable: {
+              ...(stylesOverride?.pressable || {}),
+              ...pressableAdjustments,
+            },
+          }
+        : stylesOverride;
+
+    return {
+      duration,
+      position: position === 'bottom' ? ToastPosition.BOTTOM : ToastPosition.TOP,
+      providerKey: providerKey || getDefaultProviderKey(),
+      ...rest,
+      ...(mergedStyles ? {styles: mergedStyles} : {}),
+    };
+  };
+
   const showToast = (message, options = {}) => {
-    const {duration = 4000, position = 'center', offsetTop = 50} = options;
-    setSnackbar({visible: true, message, duration, position, offsetTop});
+    return toast(normalizeMessage(message), normalizeOptions(options, 'center'));
   };
 
   // Backward-compatible aliases used by older module code
-  const showSuccess = (message, options = {}) =>
-    showToast(message, {position: 'top', offsetTop: 86, ...options});
+  const showSuccess = (message, options = {}) => {
+    return toast.success(
+      normalizeMessage(message),
+      normalizeOptions(
+        {position: 'top', offsetTop: TOAST_DEFAULT_TOP_OFFSET, ...options},
+        'top',
+      ),
+    );
+  };
 
-  const showError = (message, options = {}) =>
-    showToast(message, {position: 'top', offsetTop: 86, ...options});
+  const showError = (message, options = {}) => {
+    return toast.error(
+      normalizeMessage(message),
+      normalizeOptions(
+        {position: 'top', offsetTop: TOAST_DEFAULT_TOP_OFFSET, ...options},
+        'top',
+      ),
+    );
+  };
 
-  const showWarning = (message, options = {}) =>
-    showToast(message, {position: 'top', offsetTop: 86, ...options});
+  const showWarning = (message, options = {}) => {
+    return showToast(message, {
+      position: 'top',
+      offsetTop: TOAST_DEFAULT_TOP_OFFSET,
+      ...options,
+      styles: {
+        ...(options?.styles || {}),
+        indicator: {
+          ...(options?.styles?.indicator || {}),
+          backgroundColor: '#F59E0B',
+        },
+      },
+    });
+  };
 
-  const showInfo = (message, options = {}) =>
-    showToast(message, {position: 'top', offsetTop: 86, ...options});
+  const showInfo = (message, options = {}) => {
+    return showToast(message, {
+      position: 'top',
+      offsetTop: TOAST_DEFAULT_TOP_OFFSET,
+      ...options,
+    });
+  };
 
   const showDialog = ({title, message, onConfirm, onCancel}) => {
     setDialog({
@@ -51,7 +154,6 @@ export const MessageProvider = ({children}) => {
     });
   };
 
-  const hideToast = () => setSnackbar(s => ({...s, visible: false}));
   const hideDialog = () => setDialog(d => ({...d, visible: false}));
 
   return (
@@ -67,34 +169,6 @@ export const MessageProvider = ({children}) => {
       {children}
 
       <Portal>
-        <View
-          pointerEvents="box-none"
-          style={{
-            position: 'absolute',
-            top:
-              snackbar.position === 'top'
-                ? snackbar.offsetTop
-                : snackbar.position === 'center'
-                ? '45%'
-                : undefined,
-            bottom: snackbar.position === 'bottom' ? 30 : undefined,
-            left: 20,
-            right: 20,
-            alignItems: 'center',
-          }}>
-          <Snackbar
-            visible={snackbar.visible}
-            duration={snackbar.duration}
-            onDismiss={hideToast}
-            action={{
-              label: 'Fechar',
-              onPress: hideToast,
-            }}
-            style={{width: '100%'}}>
-            {snackbar.message}
-          </Snackbar>
-        </View>
-
         <Dialog visible={dialog.visible} onDismiss={hideDialog}>
           <Dialog.Title>{dialog.title}</Dialog.Title>
           <Dialog.Content>
