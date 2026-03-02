@@ -51,6 +51,8 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
   const {currentCompany, defaultCompany} = peopleGetters;
   const {item: device_config} = deviceConfigsGetters;
   const {isLogged} = authGetters;
+  const hasCurrentCompany =
+    !!currentCompany && Object.entries(currentCompany).length > 0;
 
   const [translateReady, setTranslateReady] = useState(false);
   const [deviceConfigFetched, setDeviceConfigFetched] = useState(false);
@@ -248,10 +250,10 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
   }, [currentCompany, defaultCompany, deviceConfigFetched, isLogged]);
 
   useEffect(() => {
-    if (!isLogged || translateReady) {
+    if (!isLogged || translateReady || !hasCurrentCompany) {
       onBootstrapReady?.();
     }
-  }, [isLogged, translateReady, onBootstrapReady]);
+  }, [isLogged, translateReady, hasCurrentCompany, onBootstrapReady]);
 
   useEffect(() => {
     if (device && device.id && isLogged) {
@@ -300,7 +302,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
     actions.setColors(mergedThemeColors);
   }, [actions, baseThemeColors, currentCompany?.id, currentCompany?.theme?.colors]);
 
-  if (!translateReady && isLogged) {
+  if (!translateReady && isLogged && hasCurrentCompany) {
     return (
       <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
         <ActivityIndicator size="large" color="#1B5587" />
