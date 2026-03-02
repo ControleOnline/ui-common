@@ -28,7 +28,7 @@ const IdInput = () => {
 
       <TextInput
         style={styles.input}
-        placeholder="Digite o ID"
+        placeholder={global.t?.t("idInput", "label", "Insert id")}
         value={inputValue}
         onChangeText={handleTextChange}
         onBlur={handleBlur}
