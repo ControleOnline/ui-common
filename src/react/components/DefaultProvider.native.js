@@ -218,26 +218,12 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
         sessionData?.language ||
         'pt-BR';
 
-      console.log('[language-bootstrap][native]', {
-        id: currentCompany?.id,
-        language: configuredLanguage,
-      });
-
       if (currentConfig.language !== configuredLanguage) {
         const nextConfig = {...currentConfig, language: configuredLanguage};
         localStorage.setItem(
           'config',
           JSON.stringify(nextConfig),
         );
-        console.log('[localStorage-language][native]', {
-          id: currentCompany?.id,
-          language: nextConfig?.language,
-        });
-      } else {
-        console.log('[localStorage-language][native]', {
-          id: currentCompany?.id,
-          language: currentConfig?.language,
-        });
       }
 
       global.t = new Translate(
