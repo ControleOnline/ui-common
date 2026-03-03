@@ -53,11 +53,11 @@ const CategoryForm = ({ category, onClose }) => {
         <View>
             <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 15 }}>
                 {category
-                    ? global.t?.t('categoryForm', 'title', 'editCategory') || 'Editar Categoria'
-                    : global.t?.t('categoryForm', 'title', 'newCategory') || 'Nova Categoria'}
+                    ? global.t?.t('categoryForm', 'title', 'editCategory')
+                    : global.t?.t('categoryForm', 'title', 'newCategory')}
             </Text>
 
-            <Text>{global.t?.t('categoryForm', 'label', 'name') || 'Nome'}</Text>
+            <Text>{global.t?.t('categoryForm', 'label', 'name')}</Text>
             <TextInput
                 value={name}
                 onChangeText={setName}
@@ -83,7 +83,7 @@ const CategoryForm = ({ category, onClose }) => {
                 }}
             />
 
-            <Text>{global.t?.t('categoryForm', 'label', 'icon') || 'Ícone'}</Text>
+            <Text>{global.t?.t('categoryForm', 'label', 'icon')}</Text>
             <TextInput
                 value={icon}
                 onChangeText={setIcon}
@@ -122,14 +122,14 @@ const CategoryForm = ({ category, onClose }) => {
             >
                 <Text style={{ color: '#fff', fontWeight: 'bold' }}>
                     {category
-                        ? global.t?.t('categoryForm', 'button', 'saveChanges') || 'Salvar Alterações'
-                        : global.t?.t('categoryForm', 'button', 'create') || 'Criar'}
+                        ? global.t?.t('categoryForm', 'button', 'saveChanges')
+                        : global.t?.t('categoryForm', 'button', 'create')}
                 </Text>
             </TouchableOpacity>
 
             <TouchableOpacity onPress={onClose}>
                 <Text style={{ textAlign: 'center', color: 'red' }}>
-                    {global.t?.t('categoryForm', 'button', 'cancel') || 'Cancelar'}
+                    {global.t?.t('categoryForm', 'button', 'cancel')}
                 </Text>
             </TouchableOpacity>
         </View>
