@@ -11,7 +11,7 @@ import {
   resolveThemePalette,
 } from '@controleonline/../../src/styles/branding';
 import {colors as runtimeColors} from '@controleonline/../../src/styles/colors';
-
+import stores from '@stores';
 const ThemeContext = createContext();
 
 export const DefaultProvider = ({children, onBootstrapReady}) => {
@@ -234,14 +234,9 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
       global.t = new Translate(
         defaultCompany,
         currentCompany,
-        [],
+        Object.keys(stores),
         translateActions,
       );
-
-      if (global.t.hasCache()) {
-        setTranslateReady(true);
-        return;
-      }
 
       global.t.discoveryAll().then(() => {
         setTranslateReady(true);

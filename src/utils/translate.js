@@ -1,174 +1,65 @@
-import { api } from "@controleonline/ui-common/src/api";
-
 export default class Translate {
-  constructor(defaultCompany, currentCompany, stores = [], translateActions) {
+  constructor(defaultCompany, currentCompany, stores, translateActions) {
+    this.translates = JSON.parse(localStorage.getItem("translates") || "{}");
+    this.language =
+      JSON.parse(localStorage.getItem("config") || "{}").language || "pt-br";
     this.defaultCompany = defaultCompany;
     this.currentCompany = currentCompany;
-    this.language = this.getLanguageFromConfig();
-    this.translates = this.readFromStorage();
     this.translateActions = translateActions;
     this.stores = stores;
-    this.persistedMessages = {};
-    this.languageIri = null;
   }
 
-  getLanguageFromConfig() {
-    try {
-      return JSON.parse(localStorage.getItem("config") || "{}").language || "pt-BR";
-    } catch (e) {
-      return "pt-BR";
-    }
-  }
+  persistMissingTranslate(store, type, key, translate) {
+    if (!store || !type || !key || !this.defaultCompany?.id) return;
 
-  normalizeLanguageCode(value) {
-    return String(value || "")
-      .trim()
-      .replace("_", "-")
-      .toLowerCase();
-  }
+    return;
 
-  getStorageKey() {
-    return [
-      "translates",
-      this.language,
-      this.defaultCompany?.id || "default",
-      this.currentCompany?.id || "current",
-    ].join(":");
-  }
-
-  readFromStorage() {
-    try {
-      const value =
-        localStorage.getItem(this.getStorageKey?.() || "translates") ||
-        localStorage.getItem("translates") ||
-        "{}";
-      const parsed = JSON.parse(value);
-      return parsed && typeof parsed === "object" ? parsed : {};
-    } catch (e) {
-      return {};
-    }
-  }
-
-  writeToStorage() {
-    const payload = JSON.stringify(this.translates || {});
-    localStorage.setItem(this.getStorageKey(), payload);
-    localStorage.setItem("translates", payload);
-  }
-
-  hasCache() {
-    return (
-      !!this.translates?.[this.language] &&
-      Object.keys(this.translates[this.language]).length > 0
-    );
+    return this.translateActions.save({
+      key,
+      language: "/language/1",
+      people: "/people/" + this.defaultCompany.id,
+      store,
+      translate: translate,
+      type,
+    }).then(() => {
+      if (!this.translates[this.language]) this.translates[this.language] = {};
+    });
   }
 
   t(store, type, key) {
-    const currentMessage = this.translates[this.language]?.[store]?.[type]?.[key];
+    
+    let translate = this.translates[this.language]?.[store]?.[type]?.[key];
 
-    if (!currentMessage) {
-      this.persistMissingTranslate(store, type, key);
+    if (!translate) {
+      translate = this.formatMessage(key);
+      this.persistMissingTranslate(store, type, key, translate);
     }
 
-    return (
-      currentMessage ||
-      this.formatMessage(key)
-    );
-
-  }
-
-  getPersistKey(store, type, key) {
-    return [this.language, store, type, key].join("::");
-  }
-
-  async getLanguageIri() {
-    if (this.languageIri) return this.languageIri;
-
-    const normalized = this.normalizeLanguageCode(this.language);
-    const fallbackLanguageByCode = {
-      "pt-br": "/languages/1",
-      "en-us": "/languages/2",
-    };
-
-    try {
-      const languages = await api.fetch("languages", {
-        params: { itemsPerPage: 500 },
-      });
-      const rows = languages?.member || languages?.["hydra:member"] || [];
-      const language = rows.find((item) => {
-        const candidate = this.normalizeLanguageCode(item?.language);
-        return candidate === normalized;
-      });
-
-      if (language?.id) {
-        this.languageIri = "/languages/" + language.id;
-      } else if (language?.["@id"]) {
-        this.languageIri = language["@id"];
-      } else {
-        this.languageIri = fallbackLanguageByCode[normalized] || "/languages/1";
-      }
-    } catch (e) {
-      this.languageIri = fallbackLanguageByCode[normalized] || "/languages/1";
-    }
-
-    return this.languageIri;
-  }
-
-  persistMissingTranslate(store, type, key) {
-    if (!store || !type || !key || !this.defaultCompany?.id) return;
-
-    const persistKey = this.getPersistKey(store, type, key);
-    if (this.persistedMessages[persistKey]) return;
-    this.persistedMessages[persistKey] = true;
-
-    // ALEMAC // 16/02/2026 // atualização da tradução
-    this.getLanguageIri()
-      .then((languageIri) =>
-        this.translateActions
-          .getItems({
-            store,
-            type,
-            key,
-            "language.language": this.language,
-            people: "/people/" + this.defaultCompany.id,
-            itemsPerPage: 1,
-          })
-          .then((items) => {
-            if (Array.isArray(items) && items.length > 0) return;
-
-            return this.translateActions.save({
-              key,
-              language: languageIri,
-              people: "/people/" + this.defaultCompany.id,
-              store,
-              translate: this.formatMessage(key),
-              type,
-            });
-          })
-      )
-      .catch(() => {});
+    return translate;
   }
 
   reload() {
-    this.language = this.getLanguageFromConfig();
     this.clear();
-    return this.discoveryAll();
+    this.discoveryAll();
   }
 
   clear() {
     this.translates = {};
-    localStorage.removeItem(this.getStorageKey());
     localStorage.setItem("translates", "{}");
   }
 
   async discoveryAll() {
-    await this.fetchAllTranslates(this.defaultCompany, false);
-    await this.fetchAllTranslates(this.currentCompany, true);
-    this.writeToStorage();
+    if (!this.translates || !this.translates[this.language])
+      await Promise.all(
+        this.stores.map((store) => this.discoveryStoreTranslate(store)),
+      );
+
     return this.translates;
   }
 
   async discoveryStoreTranslate(store) {
     if (!this.translates[this.language]) this.translates[this.language] = {};
+    if (this.translates[this.language][store]) return this.translates;
 
     await this.fetchTranslates(store, this.defaultCompany);
     await this.fetchTranslates(store, this.currentCompany);
@@ -199,7 +90,7 @@ export default class Translate {
           storeTranslates.forEach((element) => {
             const existingMessage =
               currentTranslates[this.language]?.[store]?.[element.type]?.[
-                element.key
+              element.key
               ];
             const newMessage =
               element.translate || this.formatMessage(element.key);
@@ -216,46 +107,6 @@ export default class Translate {
 
         localStorage.setItem("translates", JSON.stringify(this.translates));
       });
-  }
-
-  async fetchAllTranslates(company, override = false) {
-    if (!company?.id) return;
-    if (!this.translates[this.language]) this.translates[this.language] = {};
-
-    let page = 1;
-    const itemsPerPage = 500;
-    let keepLoading = true;
-
-    while (keepLoading) {
-      const data = await api.fetch("translates", {
-        params: {
-          "language.language": this.language,
-          people: "/people/" + company.id,
-          itemsPerPage,
-          page,
-        },
-      });
-
-      const rows = data?.member || data?.["hydra:member"] || [];
-
-      rows.forEach((element) => {
-        if (!element?.store || !element?.type || !element?.key) return;
-
-        const newMessage = element.translate || this.formatMessage(element.key);
-        const existingMessage =
-          this.translates[this.language]?.[element.store]?.[element.type]?.[
-            element.key
-          ];
-
-        if (!override && existingMessage) return;
-        if (override && existingMessage === newMessage) return;
-
-        this.findMessage(element.store, element.type, element.key, newMessage);
-      });
-
-      keepLoading = rows.length === itemsPerPage;
-      page += 1;
-    }
   }
 
   findMessage(store, type, key, message) {

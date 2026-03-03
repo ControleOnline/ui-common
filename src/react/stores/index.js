@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { useSyncExternalStore } from 'react';
-import stores from '../../../../../../src/store/stores';
+import stores from '@stores';
 
 const storeState = {};
 

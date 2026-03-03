@@ -420,17 +420,17 @@ useFocusEffect(
               <Text style={styles.Settings.value}>{appVersion}</Text>
             </View>
             <View style={styles.Settings.row}>
-              <Text style={styles.Settings.label}>{global.t?.t("settings", "label", "machineId")}: </Text>
+              <Text style={styles.Settings.label}>{global.t?.t("configs", "label", "machineId")}: </Text>
               <Text style={styles.Settings.value}>{storagedDevice.id}</Text>
             </View>
             <View style={styles.Settings.row}>
-              <Text style={styles.Settings.label}>{global.t?.t("settings", "label", "manufacturer")}: </Text>
+              <Text style={styles.Settings.label}>{global.t?.t("configs", "label", "manufacturer")}: </Text>
               <Text style={styles.Settings.value}>
                 {storagedDevice?.manufacturer}
               </Text>
             </View>
             <View style={styles.Settings.row}>
-              <Text style={styles.Settings.label}>{global.t?.t("settings", "label", "systemVersion")}: </Text>
+              <Text style={styles.Settings.label}>{global.t?.t("configs", "label", "systemVersion")}: </Text>
               <Text style={styles.Settings.value}>
                 {storagedDevice?.systemName}
                 {Platform.OS !== 'web' &&
@@ -443,7 +443,7 @@ useFocusEffect(
             </View>
 
             <View style={styles.Settings.walletRow}>
-              <Text style={styles.Settings.label}>{global.t?.t("settings", "label", "cashWallet")}: </Text>
+              <Text style={styles.Settings.label}>{global.t?.t("configs", "label", "cashWallet")}: </Text>
               <View style={styles.Settings.walletValueContainer}>
                 <Text style={styles.Settings.walletValue}>
                   {companyConfigs?.['pos-cash-wallet']}
@@ -458,7 +458,7 @@ useFocusEffect(
               </View>
             </View>
             <View style={styles.Settings.walletRow}>
-              <Text style={styles.Settings.label}>{global.t?.t("settings", "label", "withdrawlWallet")}: </Text>
+              <Text style={styles.Settings.label}>{global.t?.t("configs", "label", "withdrawlWallet")}: </Text>
               <View style={styles.Settings.walletValueContainer}>
                 <Text style={styles.Settings.walletValue}>
                   {withdrawWallet}
@@ -476,43 +476,43 @@ useFocusEffect(
 
           {/* // // // // // TIPO DE COMANDA */}
           <View style={{marginTop: 12, marginBottom: 10}}>
-            <Text style={styles.Settings.label}>{global.t?.t("settings", "label", "tab type")}</Text>
+            <Text style={styles.Settings.label}>{global.t?.t("configs", "label", "tab type")}</Text>
             <Picker
               selectedValue={checkType}
               onValueChange={handleCheckTypeChange}
               mode={pickerMode}
               style={styles.Settings.picker}>
 
-              <Picker.Item label={global.t?.t("settings", "option", "manual")} value="manual" />
-              <Picker.Item label={global.t?.t("settings", "option", "barcode")} value="barcode" />
-              <Picker.Item label={global.t?.t("settings", "option", "rfid")} value="rfid" />                            
+              <Picker.Item label={global.t?.t("configs", "option", "manual")} value="manual" />
+              <Picker.Item label={global.t?.t("configs", "option", "barcode")} value="barcode" />
+              <Picker.Item label={global.t?.t("configs", "option", "rfid")} value="rfid" />                            
               
             </Picker>
           </View>
 
           {/* // // // // // TIPO DE LEITURA DE PRODUTO */}
           <View style={{marginTop: 6, marginBottom: 10}}>
-            <Text style={styles.Settings.label}>{global.t?.t("settings", "label", "product read method")}</Text>
+            <Text style={styles.Settings.label}>{global.t?.t("configs", "label", "product read method")}</Text>
             <Picker
               selectedValue={productInputType}
               onValueChange={handleProductInputTypeChange}
               mode={pickerMode}
               style={styles.Settings.picker}>
-              <Picker.Item label={global.t?.t("settings", "option", "manual")} value="manual" />
-              <Picker.Item label={global.t?.t("settings", "option", "barcode")} value="barcode" />
-              <Picker.Item label={global.t?.t("settings", "option", "rfid")} value="rfid" />                            
+              <Picker.Item label={global.t?.t("configs", "option", "manual")} value="manual" />
+              <Picker.Item label={global.t?.t("configs", "option", "barcode")} value="barcode" />
+              <Picker.Item label={global.t?.t("configs", "option", "rfid")} value="rfid" />                            
             </Picker>
           </View>
 
           <View style={{marginTop: 6, marginBottom: 10}}>
-            <Text style={styles.Settings.label}>{global.t?.t("settings", "label", "selection type")}</Text>
+            <Text style={styles.Settings.label}>{global.t?.t("configs", "label", "selection type")}</Text>
             <Picker
               selectedValue={selectionType}
               onValueChange={handleSelectionTypeChange}
               mode={pickerMode}
               style={styles.Settings.picker}>
-              <Picker.Item label={global.t?.t("settings", "option", "single")}  value="single" />
-              <Picker.Item label={global.t?.t("settings", "option", "multiple")}  value="multiple" />
+              <Picker.Item label={global.t?.t("configs", "option", "single")}  value="single" />
+              <Picker.Item label={global.t?.t("configs", "option", "multiple")}  value="multiple" />
             </Picker>
           </View>
 
@@ -523,7 +523,7 @@ useFocusEffect(
               justifyContent: 'space-between',
               marginTop: 12,
             }}>
-            <Text style={styles.Settings.label}>{global.t?.t("settings", "label", "sound")}</Text>
+            <Text style={styles.Settings.label}>{global.t?.t("configs", "label", "sound")}</Text>
 
             <Switch
               value={showSound}
@@ -538,7 +538,7 @@ useFocusEffect(
               justifyContent: 'space-between',
               marginTop: 12,
             }}>
-            <Text style={styles.Settings.label}>{global.t?.t("settings", "label", "vibration")}</Text>
+            <Text style={styles.Settings.label}>{global.t?.t("configs", "label", "vibration")}</Text>
 
             <Switch
               value={showVibration}
@@ -552,8 +552,8 @@ useFocusEffect(
               onValueChange={handlePosTypeChange}
               mode={pickerMode}
               style={styles.Settings.picker}>
-              <Picker.Item label={global.t?.t("settings", "option", "simple order")} value="simple" />
-              <Picker.Item label={global.t?.t("settings", "option", "full order")} value="full" />
+              <Picker.Item label={global.t?.t("configs", "option", "simple order")} value="simple" />
+              <Picker.Item label={global.t?.t("configs", "option", "full order")} value="full" />
             </Picker>
           </View>
           <View style={{marginTop: 6, marginBottom: 10}}>
@@ -562,8 +562,8 @@ useFocusEffect(
               onValueChange={handlePrintModeChange}
               mode={pickerMode}
               style={styles.Settings.picker}>
-              <Picker.Item label={global.t?.t("settings", "option", "printSingleOrder")} value="order" />
-              <Picker.Item label={global.t?.t("settings", "option", "printFullOrder")} value="form" />
+              <Picker.Item label={global.t?.t("configs", "option", "printSingleOrder")} value="order" />
+              <Picker.Item label={global.t?.t("configs", "option", "printFullOrder")} value="form" />
             </Picker>
           </View>
           {(!cieloDevices.includes(storagedDevice?.manufacturer) ||
@@ -603,7 +603,7 @@ useFocusEffect(
                 },
               ]}>
               <Icon name="add-circle" size={24} color="#fff" />
-              <Text style={{color: '#fff', marginLeft: 8}}>{global.t?.t("settings", "label", "resync translations")}</Text>
+              <Text style={{color: '#fff', marginLeft: 8}}>{global.t?.t("configs", "label", "resync translations")}</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -620,7 +620,7 @@ useFocusEffect(
                 },
               ]}>
               <Icon name="add-circle" size={24} color="#fff" />
-              <Text style={{color: '#fff', marginLeft: 8}}>{global.t?.t("settings", "label", "resync products")}</Text>
+              <Text style={{color: '#fff', marginLeft: 8}}>{global.t?.t("configs", "label", "resync products")}</Text>
             </TouchableOpacity>
           </View>
         </View>
