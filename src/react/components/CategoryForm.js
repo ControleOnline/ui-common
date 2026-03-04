@@ -4,10 +4,11 @@ import {
     Text,
     TextInput,
     TouchableOpacity,
+    Switch,
 } from 'react-native';
 import { useStore } from '@store';
 
-const CategoryForm = ({ category, onClose }) => {
+const CategoryForm = ({ category, onClose, onSaved }) => {
     const categoriesStore = useStore('categories');
     const categoryActions = categoriesStore.actions;
     const categories = categoriesStore.getters.items;
@@ -18,6 +19,9 @@ const CategoryForm = ({ category, onClose }) => {
     const [color, setColor] = useState('#000000');
     const [icon, setIcon] = useState('');
     const [parent, setParent] = useState(null);
+    const [active, setActive] = useState(true);
+    const [sortOrder, setSortOrder] = useState('');
+    const [channel, setChannel] = useState('');
 
     useEffect(() => {
         if (category) {
@@ -25,26 +29,38 @@ const CategoryForm = ({ category, onClose }) => {
             setColor(category.color || '#000000');
             setIcon(category.icon || '');
             setParent(category.parent?.id || null);
+            setActive(category.active !== false);
+            setSortOrder(String(category?.extraData?.sortOrder || ''));
+            setChannel(String(category?.extraData?.channel || ''));
         }
     }, [category]);
 
     const handleSubmit = async () => {
         const payload = {
+            ...(category?.id ? { id: category.id } : {}),
             name,
             color,
             icon,
             context: 'products',
             company: currentCompany.id,
             parent: parent ? `/categories/${parent}` : null,
+            active,
+            extraData: {
+                ...(category?.extraData || {}),
+                sortOrder: sortOrder ? parseInt(String(sortOrder).replace(/\D/g, ''), 10) || 0 : 0,
+                channel: channel || 'default',
+            },
         };
 
-        await categoryActions.save(payload);
+        const saved = await categoryActions.save(payload);
 
         await categoryActions.getItems({
             context: 'products',
             'order[name]': 'ASC',
             company: currentCompany.id,
         });
+
+        if (onSaved) onSaved(saved);
 
         onClose();
     };
@@ -109,6 +125,39 @@ const CategoryForm = ({ category, onClose }) => {
                     borderRadius: 6,
                 }}
             />
+
+            <Text>{global.t?.t('categoryForm', 'label', 'sortOrder') || 'Ordem'}</Text>
+            <TextInput
+                value={sortOrder}
+                onChangeText={setSortOrder}
+                keyboardType="numeric"
+                style={{
+                    borderWidth: 1,
+                    borderColor: '#ccc',
+                    padding: 10,
+                    marginBottom: 15,
+                    borderRadius: 6,
+                }}
+            />
+
+            <Text>{global.t?.t('categoryForm', 'label', 'channel') || 'Canal'}</Text>
+            <TextInput
+                value={channel}
+                onChangeText={setChannel}
+                style={{
+                    borderWidth: 1,
+                    borderColor: '#ccc',
+                    padding: 10,
+                    marginBottom: 15,
+                    borderRadius: 6,
+                }}
+                placeholder="default, iFood, delivery..."
+            />
+
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+                <Text style={{ marginRight: 10 }}>{global.t?.t('categoryForm', 'label', 'active') || 'Ativo'}</Text>
+                <Switch value={active} onValueChange={setActive} />
+            </View>
 
             <TouchableOpacity
                 onPress={handleSubmit}
