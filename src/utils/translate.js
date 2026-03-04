@@ -11,12 +11,14 @@ export default class Translate {
 
   persistMissingTranslate(store, type, key, translate) {
     const peopleId = this.defaultCompany?.id || this.currentCompany?.id;
+    const languageId = this.getActiveLanguageId();
     if (!store || !type || !key || !peopleId) return;
 
     // ALEMAC // 2026/03/04 // gravação da tradução das palavras que não existem no banco
     return this.translateActions.save({
       key,
-      language: "/languages/1", // SEMPRE pt-BR!!!
+      // ALEMAC/ 2026/03/04 // de acordo com a linguagem escolhida pelo usuário
+      language: "/languages/" + languageId,
       people: "/people/" + peopleId,
       store,
       translate: translate,
@@ -24,6 +26,38 @@ export default class Translate {
     }).then(() => {
       if (!this.translates[this.language]) this.translates[this.language] = {};
     });
+  }
+
+  parseLanguageId(value) {
+    if (value == null) return null;
+    if (typeof value === "number") return value;
+    if (typeof value === "string") {
+      const match = value.match(/\d+/);
+      return match ? Number(match[0]) : null;
+    }
+    if (typeof value === "object") {
+      return (
+        this.parseLanguageId(value.id) ||
+        this.parseLanguageId(value["@id"]) ||
+        this.parseLanguageId(value.value)
+      );
+    }
+    return null;
+  }
+
+  getActiveLanguageId() {
+    const config = JSON.parse(localStorage.getItem("config") || "{}");
+    const session = JSON.parse(localStorage.getItem("session") || "{}");
+
+    return (
+      this.parseLanguageId(config.languageId) ||
+      this.parseLanguageId(config.language_id) ||
+      this.parseLanguageId(config.language) ||
+      this.parseLanguageId(session.languageId) ||
+      this.parseLanguageId(session.language_id) ||
+      this.parseLanguageId(session.language) ||
+      1
+    );
   }
 
   t(store, type, key) {
