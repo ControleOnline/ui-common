@@ -10,14 +10,14 @@ export default class Translate {
   }
 
   persistMissingTranslate(store, type, key, translate) {
-    if (!store || !type || !key || !this.defaultCompany?.id) return;
+    const peopleId = this.defaultCompany?.id || this.currentCompany?.id;
+    if (!store || !type || !key || !peopleId) return;
 
-    return;
-
+    // ALEMAC // 2026/03/04 // gravação da tradução das palavras que não existem no banco
     return this.translateActions.save({
       key,
-      language: "/language/1",
-      people: "/people/" + this.defaultCompany.id,
+      language: "/languages/1", // SEMPRE pt-BR!!!
+      people: "/people/" + peopleId,
       store,
       translate: translate,
       type,
