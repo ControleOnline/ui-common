@@ -7,6 +7,9 @@ export default class Translate {
     this.currentCompany = currentCompany;
     this.translateActions = translateActions;
     this.stores = stores;
+    this.pendingMissingTranslates = new Map();
+    this.isFlushingMissingTranslates = false;
+    this.missingTranslateFlushTimer = null;
   }
 
   persistMissingTranslate(store, type, key, translate) {
@@ -60,13 +63,68 @@ export default class Translate {
     );
   }
 
+  buildMissingTranslateQueueKey(store, type, key) {
+    return [store, type, key].join("::");
+  }
+
+  queueMissingTranslate(store, type, key, translate) {
+    const queueKey = this.buildMissingTranslateQueueKey(store, type, key);
+    if (!this.pendingMissingTranslates.has(queueKey)) {
+      this.pendingMissingTranslates.set(queueKey, {
+        store,
+        type,
+        key,
+        translate,
+      });
+    }
+
+    this.scheduleMissingTranslateFlush();
+  }
+
+  scheduleMissingTranslateFlush() {
+    if (this.missingTranslateFlushTimer) return;
+
+    // ALEMAC // 2026/03/04 // gravação assíncrona para evitar atualização de estado durante render
+    this.missingTranslateFlushTimer = setTimeout(() => {
+      this.missingTranslateFlushTimer = null;
+      this.flushMissingTranslates();
+    }, 0);
+  }
+
+  async flushMissingTranslates() {
+    if (this.isFlushingMissingTranslates) return;
+    if (this.pendingMissingTranslates.size === 0) return;
+
+    this.isFlushingMissingTranslates = true;
+    const queue = Array.from(this.pendingMissingTranslates.values());
+    this.pendingMissingTranslates.clear();
+
+    try {
+      for (const item of queue) {
+        await this.persistMissingTranslate(
+          item.store,
+          item.type,
+          item.key,
+          item.translate,
+        );
+      }
+    } catch (e) {
+    } finally {
+      this.isFlushingMissingTranslates = false;
+      if (this.pendingMissingTranslates.size > 0) {
+        this.scheduleMissingTranslateFlush();
+      }
+    }
+  }
+
   t(store, type, key) {
     
     let translate = this.translates[this.language]?.[store]?.[type]?.[key];
 
     if (!translate) {
       translate = this.formatMessage(key);
-      this.persistMissingTranslate(store, type, key, translate);
+      // ALEMAC // 2026/03/04 // enfileira para gravar após render
+      this.queueMissingTranslate(store, type, key, translate);
     }
 
     return translate;
