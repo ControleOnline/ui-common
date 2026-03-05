@@ -69,11 +69,11 @@ const CategoryForm = ({ category, onClose, onSaved }) => {
         <View>
             <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 15 }}>
                 {category
-                    ? global.t?.t('categoryForm', 'title', 'editCategory')
-                    : global.t?.t('categoryForm', 'title', 'newCategory')}
+                    ? global.t?.t('categories', 'title', 'editCategory')
+                    : global.t?.t('categories', 'title', 'newCategory')}
             </Text>
 
-            <Text>{global.t?.t('categoryForm', 'label', 'name')}</Text>
+            <Text>{global.t?.t('categories', 'label', 'name')}</Text>
             <TextInput
                 value={name}
                 onChangeText={setName}
@@ -86,7 +86,7 @@ const CategoryForm = ({ category, onClose, onSaved }) => {
                 }}
             />
 
-            <Text>{global.t?.t('categoryForm', 'label', 'colorHex') || 'Cor (hex)'}</Text>
+            <Text>{global.t?.t('categories', 'label', 'colorHex') || 'Cor (hex)'}</Text>
             <TextInput
                 value={color}
                 onChangeText={setColor}
@@ -99,7 +99,7 @@ const CategoryForm = ({ category, onClose, onSaved }) => {
                 }}
             />
 
-            <Text>{global.t?.t('categoryForm', 'label', 'icon')}</Text>
+            <Text>{global.t?.t('categories', 'label', 'icon')}</Text>
             <TextInput
                 value={icon}
                 onChangeText={setIcon}
@@ -112,7 +112,7 @@ const CategoryForm = ({ category, onClose, onSaved }) => {
                 }}
             />
 
-            <Text>{global.t?.t('categoryForm', 'label', 'parentCategoryId') || 'Categoria Pai (ID)'}</Text>
+            <Text>{global.t?.t('categories', 'label', 'parentCategoryId') || 'Categoria Pai (ID)'}</Text>
             <TextInput
                 value={parent ? String(parent) : ''}
                 onChangeText={(value) => setParent(value)}
@@ -126,7 +126,7 @@ const CategoryForm = ({ category, onClose, onSaved }) => {
                 }}
             />
 
-            <Text>{global.t?.t('categoryForm', 'label', 'sortOrder') || 'Ordem'}</Text>
+            <Text>{global.t?.t('categories', 'label', 'sortOrder') || 'Ordem'}</Text>
             <TextInput
                 value={sortOrder}
                 onChangeText={setSortOrder}
@@ -140,7 +140,7 @@ const CategoryForm = ({ category, onClose, onSaved }) => {
                 }}
             />
 
-            <Text>{global.t?.t('categoryForm', 'label', 'channel') || 'Canal'}</Text>
+            <Text>{global.t?.t('categories', 'label', 'channel') || 'Canal'}</Text>
             <TextInput
                 value={channel}
                 onChangeText={setChannel}
@@ -155,7 +155,7 @@ const CategoryForm = ({ category, onClose, onSaved }) => {
             />
 
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-                <Text style={{ marginRight: 10 }}>{global.t?.t('categoryForm', 'label', 'active') || 'Ativo'}</Text>
+                <Text style={{ marginRight: 10 }}>{global.t?.t('categories', 'label', 'active') || 'Ativo'}</Text>
                 <Switch value={active} onValueChange={setActive} />
             </View>
 
@@ -171,14 +171,14 @@ const CategoryForm = ({ category, onClose, onSaved }) => {
             >
                 <Text style={{ color: '#fff', fontWeight: 'bold' }}>
                     {category
-                        ? global.t?.t('categoryForm', 'button', 'saveChanges')
-                        : global.t?.t('categoryForm', 'button', 'create')}
+                        ? global.t?.t('categories', 'button', 'saveChanges')
+                        : global.t?.t('categories', 'button', 'create')}
                 </Text>
             </TouchableOpacity>
 
             <TouchableOpacity onPress={onClose}>
                 <Text style={{ textAlign: 'center', color: 'red' }}>
-                    {global.t?.t('categoryForm', 'button', 'cancel')}
+                    {global.t?.t('categories', 'button', 'cancel')}
                 </Text>
             </TouchableOpacity>
         </View>
