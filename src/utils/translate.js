@@ -7,22 +7,17 @@ export default class Translate {
     this.currentCompany = currentCompany;
     this.translateActions = translateActions;
     this.stores = stores;
-    this.pendingMissingTranslates = new Map();
-    this.isFlushingMissingTranslates = false;
-    this.missingTranslateFlushTimer = null;
   }
 
   persistMissingTranslate(store, type, key, translate) {
-    const peopleId = this.defaultCompany?.id || this.currentCompany?.id;
-    const languageId = this.getActiveLanguageId();
-    if (!store || !type || !key || !peopleId) return;
+    if (!store || !type || !key || !this.defaultCompany?.id) return;
 
-    // ALEMAC // 2026/03/04 // gravação da tradução das palavras que não existem no banco
+    return;
+
     return this.translateActions.save({
       key,
-      // ALEMAC/ 2026/03/04 // de acordo com a linguagem escolhida pelo usuário
-      language: "/languages/" + languageId,
-      people: "/people/" + peopleId,
+      language: "/language/1",
+      people: "/people/" + this.defaultCompany.id,
       store,
       translate: translate,
       type,
@@ -31,100 +26,13 @@ export default class Translate {
     });
   }
 
-  parseLanguageId(value) {
-    if (value == null) return null;
-    if (typeof value === "number") return value;
-    if (typeof value === "string") {
-      const match = value.match(/\d+/);
-      return match ? Number(match[0]) : null;
-    }
-    if (typeof value === "object") {
-      return (
-        this.parseLanguageId(value.id) ||
-        this.parseLanguageId(value["@id"]) ||
-        this.parseLanguageId(value.value)
-      );
-    }
-    return null;
-  }
-
-  getActiveLanguageId() {
-    const config = JSON.parse(localStorage.getItem("config") || "{}");
-    const session = JSON.parse(localStorage.getItem("session") || "{}");
-
-    return (
-      this.parseLanguageId(config.languageId) ||
-      this.parseLanguageId(config.language_id) ||
-      this.parseLanguageId(config.language) ||
-      this.parseLanguageId(session.languageId) ||
-      this.parseLanguageId(session.language_id) ||
-      this.parseLanguageId(session.language) ||
-      1
-    );
-  }
-
-  buildMissingTranslateQueueKey(store, type, key) {
-    return [store, type, key].join("::");
-  }
-
-  queueMissingTranslate(store, type, key, translate) {
-    const queueKey = this.buildMissingTranslateQueueKey(store, type, key);
-    if (!this.pendingMissingTranslates.has(queueKey)) {
-      this.pendingMissingTranslates.set(queueKey, {
-        store,
-        type,
-        key,
-        translate,
-      });
-    }
-
-    this.scheduleMissingTranslateFlush();
-  }
-
-  scheduleMissingTranslateFlush() {
-    if (this.missingTranslateFlushTimer) return;
-
-    // ALEMAC // 2026/03/04 // gravação assíncrona para evitar atualização de estado durante render
-    this.missingTranslateFlushTimer = setTimeout(() => {
-      this.missingTranslateFlushTimer = null;
-      this.flushMissingTranslates();
-    }, 0);
-  }
-
-  async flushMissingTranslates() {
-    if (this.isFlushingMissingTranslates) return;
-    if (this.pendingMissingTranslates.size === 0) return;
-
-    this.isFlushingMissingTranslates = true;
-    const queue = Array.from(this.pendingMissingTranslates.values());
-    this.pendingMissingTranslates.clear();
-
-    try {
-      for (const item of queue) {
-        await this.persistMissingTranslate(
-          item.store,
-          item.type,
-          item.key,
-          item.translate,
-        );
-      }
-    } catch (e) {
-    } finally {
-      this.isFlushingMissingTranslates = false;
-      if (this.pendingMissingTranslates.size > 0) {
-        this.scheduleMissingTranslateFlush();
-      }
-    }
-  }
-
   t(store, type, key) {
-    
+
     let translate = this.translates[this.language]?.[store]?.[type]?.[key];
 
     if (!translate) {
       translate = this.formatMessage(key);
-      // ALEMAC // 2026/03/04 // enfileira para gravar após render
-      this.queueMissingTranslate(store, type, key, translate);
+      this.persistMissingTranslate(store, type, key, translate);
     }
 
     return translate;
@@ -141,10 +49,11 @@ export default class Translate {
   }
 
   async discoveryAll() {
-    if (!this.translates || !this.translates[this.language])
-      await Promise.all(
-        this.stores.map((store) => this.discoveryStoreTranslate(store)),
-      );
+    if (!this.translates || !this.translates[this.language]) {
+      for (const store of this.stores) {
+        await this.discoveryStoreTranslate(store);
+      }
+    }
 
     return this.translates;
   }
