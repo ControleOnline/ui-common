@@ -10,13 +10,15 @@ import {
 
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import * as DocumentPicker from 'expo-document-picker';
-
+import { useStore } from '@store';
 import AnimatedModal from '@controleonline/ui-crm/src/react/components/AnimatedModal';
 import { useMessage } from '@controleonline/ui-common/src/react/components/MessageService';
 
 const AddImportModal = ({ visible, onClose, onSuccess, context = {} }) => {
     const { showError, showSuccess } = useMessage();
-    const { currentCompany } = context;
+    const peopleStore = useStore('people');
+    const getters = peopleStore.getters;
+    const { currentCompany } = getters;
 
     const [file, setFile] = useState(null);
     const [loading, setLoading] = useState(false);
@@ -56,9 +58,9 @@ const AddImportModal = ({ visible, onClose, onSuccess, context = {} }) => {
             const formData = new FormData();
             formData.append('importType', context.context);
 
-            if (currentCompany?.id) {
-                formData.append('people', String(currentCompany.id));
-            }
+
+            formData.append('people', String(currentCompany.id));
+
 
             if (Platform.OS === 'web') {
                 const response = await fetch(file.uri);
