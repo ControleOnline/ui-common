@@ -18,6 +18,8 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import IconAdd from 'react-native-vector-icons/MaterialIcons';
 import AddImportModal from '../components/AddImportModal';
 import * as FileSystem from 'expo-file-system';
+import { Directory, File } from 'expo-file-system';
+import * as Sharing from 'expo-sharing';
 
 const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: '#F8FAFC' },
@@ -313,35 +315,59 @@ const Imports = ({ context = {}, onClose }) => {
         try {
             const response = await api.fetch(`/imports/example/${importType}`, {
                 method: 'GET',
-                responseType: 'text', // força receber como texto CSV
+                responseType: 'text',
             });
 
-            const csvText = await response.text(); // pega o conteúdo CSV
+            const csvText = typeof response === 'string' ? response : await response.text?.();
+            console.log('CSV recebido:', csvText.slice(0, 200));
 
-            const fileUri = `${FileSystem.documentDirectory}modelo_${importType}.csv`;
-            await FileSystem.writeAsStringAsync(fileUri, csvText, { encoding: FileSystem.EncodingType.UTF8 });
+            if (!csvText) throw new Error('CSV vazio');
 
-            showError(`Arquivo baixado em: ${fileUri}`);
-            // Opcional: abrir ou compartilhar
-            // FileSystem.getContentUriAsync(fileUri).then(uri => Share.share({ url: uri }));
+            // mobile: verifica se o diretório está disponível
+            const dirUri = Directory?.cacheDocumentDirectory || Directory?.documentDirectory;
 
+            if (dirUri) {
+                const fileUri = `${dirUri}modelo_${importType}.csv`;
+
+                const file = new File(fileUri, { contents: csvText });
+                await file.create();
+
+                if (await Sharing.isAvailableAsync()) {
+                    await Sharing.shareAsync(fileUri);
+                }
+
+                console.log(`Arquivo CSV criado em: ${fileUri}`);
+                return fileUri;
+            } else if (typeof window !== 'undefined') {
+                // fallback web
+                const blob = new Blob([csvText], { type: 'text/csv' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = `modelo_${importType}.csv`;
+                link.click();
+                URL.revokeObjectURL(link.href);
+                console.log('Download CSV disparado no web');
+                return 'web-download';
+            } else {
+                throw new Error('FileSystem não disponível');
+            }
         } catch (err) {
-            console.error(err);
-            showError('Erro ao baixar o modelo');
+            console.error('Erro detalhado ao baixar CSV:', err);
+            throw new Error('Falha ao baixar o modelo CSV');
         }
     };
 
     return (
         <View style={styles.container}>
 
-            <View style={{ 
-                flexDirection: 'row', 
-                justifyContent: 'space-between', 
+            <View style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
                 alignItems: 'center',
-                padding: 16, 
-                backgroundColor: '#fff', 
-                borderBottomWidth: 1, 
-                borderBottomColor: '#eee' 
+                padding: 16,
+                backgroundColor: '#fff',
+                borderBottomWidth: 1,
+                borderBottomColor: '#eee'
             }}>
                 <Text style={{ fontSize: 18, fontWeight: '700' }}>{title}</Text>
                 <TouchableOpacity onPress={onClose}>
