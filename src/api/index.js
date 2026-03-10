@@ -1,15 +1,31 @@
 import myFetch from '@controleonline/ui-common/src/api/fetch';
 import axios from 'axios';
-import {APP_ENV} from '../../../../../config/env';
+import { APP_ENV } from '../../../../../config/env';
 
 const MIME_TYPE = 'application/ld+json';
 
 export const api = {
   device: JSON.parse(localStorage.getItem('device') || '{}'),
   //masterDevice: JSON.parse(localStorage.getItem('master-device') || '{}'),
+
+
+  upload: async function (uri, formData) {
+    const token = await this.getToken();
+    const entryPoint = APP_ENV.API_ENTRYPOINT + (APP_ENV.API_ENTRYPOINT.endsWith("/") ? "" : "/");
+    const url = new URL(uri.startsWith('/') ? uri.substring(1) : uri, entryPoint).href;
+
+    return axios.post(url, formData, {
+      headers: {
+        'API-TOKEN': token,
+        'App-Domain': APP_ENV.DOMAIN || (typeof location !== 'undefined' ? location.host : ''),
+        'Accept': '*/*',
+        // IMPORTANTE: Deixe vazio para o Axios/Browser definir o boundary do multipart
+      }
+    });
+  },
   fetch: async function (uri, options = {}) {
     if (typeof options.headers === 'undefined')
-      Object.assign(options, {headers: new Headers()});
+      Object.assign(options, { headers: new Headers() });
 
     // Always refresh device from localStorage in case it was set after module load
     try {
@@ -61,7 +77,7 @@ export const api = {
       try {
         const cleanString =
           typeof sessionString == 'string' &&
-          sessionString.startsWith('__q_objt|')
+            sessionString.startsWith('__q_objt|')
             ? sessionString.substring('__q_objt|'.length)
             : sessionString;
         session = JSON.parse(cleanString); // Transforma a string em objeto
