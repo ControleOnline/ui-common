@@ -1,29 +1,43 @@
 export default class Translate {
-  constructor(defaultCompany, currentCompany, stores, translateActions) {
+  constructor(companies, defaultCompany, currentCompany, stores, translateActions) {
     this.translates = JSON.parse(localStorage.getItem("translates") || "{}");
     this.language =
       JSON.parse(localStorage.getItem("config") || "{}").language || "pt-br";
     this.defaultCompany = defaultCompany;
     this.currentCompany = currentCompany;
     this.translateActions = translateActions;
+    this.companies = companies;
     this.stores = stores;
   }
 
   persistMissingTranslate(store, type, key, translate) {
     if (!store || !type || !key || !this.defaultCompany?.id) return;
 
-    return;
+    //Verificar se o defaultCompany existe dentro de companies, isso significa que tenho acesso ao defaultCompany, caso contrário, não persisto a tradução, pois não tenho como garantir que a tradução do defaultCompany
+    if (
+      !Array.isArray(this.companies) ||
+      !this.companies.some((company) => company.id === this.defaultCompany.id)
+    )
+      return;
 
-    return this.translateActions.save({
+    const payload = {
       key,
-      language: "/language/1",
+      language: "/languages/1",
       people: "/people/" + this.defaultCompany.id,
       store,
-      translate: translate,
+      translate,
       type,
-    }).then(() => {
-      if (!this.translates[this.language]) this.translates[this.language] = {};
+    };
+
+    // adiciona na fila
+    this.translateActions.addToQueue(() => {
+      return this.translateActions.save(payload).then(() => {
+        if (!this.translates[this.language]) this.translates[this.language] = {};
+      });
     });
+
+    // inicia processamento da fila
+    this.translateActions.initQueue();
   }
 
   t(store, type, key) {
@@ -49,11 +63,8 @@ export default class Translate {
   }
 
   async discoveryAll() {
-    if (!this.translates || !this.translates[this.language]) {
-      for (const store of this.stores) {
-        await this.discoveryStoreTranslate(store);
-      }
-    }
+    if (!this.translates || !this.translates[this.language])
+      await this.discoveryStoreTranslate(this.stores);
 
     return this.translates;
   }

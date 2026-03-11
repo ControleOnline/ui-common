@@ -44,7 +44,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
   const translateActions = translateStore.actions;
   const {items: companyConfigs} = configsGetters;
   const {colors, menus} = getters;
-  const {currentCompany, defaultCompany} = peopleGetters;
+  const {currentCompany, defaultCompany, companies} = peopleGetters;
   const {item: device_config} = deviceConfigsGetters;
   const {isLogged} = authGetters;
   const hasCurrentCompany =
@@ -230,6 +230,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
       }
 
       global.t = new Translate(
+        companies,
         defaultCompany,
         currentCompany,
         Object.keys(stores),

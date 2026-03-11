@@ -1,20 +1,20 @@
-import React, {createContext, useContext, useEffect, useState} from 'react';
-import {View, ActivityIndicator, Text} from 'react-native';
+import React, { createContext, useContext, useEffect, useState } from 'react';
+import { View, ActivityIndicator, Text } from 'react-native';
 import Translate from '@controleonline/ui-common/src/utils/translate';
-import {WebsocketListener} from '@controleonline/ui-common/src/react/components/WebsocketListener';
+import { WebsocketListener } from '@controleonline/ui-common/src/react/components/WebsocketListener';
 import PrintService from '@controleonline/ui-common/src/react/components/PrintService';
-import {useStore} from '@store';
-import {api} from '@controleonline/ui-common/src/api';
+import { useStore } from '@store';
+import { api } from '@controleonline/ui-common/src/api';
 import {
   applyPaletteToRuntimeColors,
   applyThemeCssVariables,
   resolveThemePalette,
 } from '@controleonline/../../src/styles/branding';
-import {colors as runtimeColors} from '@controleonline/../../src/styles/colors';
+import { colors as runtimeColors } from '@controleonline/../../src/styles/colors';
 import stores from '@stores';
 const ThemeContext = createContext();
 
-export const DefaultProvider = ({children, onBootstrapReady}) => {
+export const DefaultProvider = ({ children, onBootstrapReady }) => {
   const themeStore = useStore('theme');
   const getters = themeStore.getters;
   const actions = themeStore.actions;
@@ -46,11 +46,11 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
   const translateStore = useStore('translate');
   const translateActions = translateStore.actions;
 
-  const {items: companyConfigs} = configsGetters;
-  const {colors, menus} = getters;
-  const {currentCompany, defaultCompany} = peopleGetters;
-  const {item: device_config} = deviceConfigsGetters;
-  const {isLogged} = authGetters;
+  const { items: companyConfigs } = configsGetters;
+  const { colors, menus } = getters;
+  const { currentCompany, defaultCompany, companies } = peopleGetters;
+  const { item: device_config } = deviceConfigsGetters;
+  const { isLogged } = authGetters;
   const hasCurrentCompany =
     !!currentCompany && Object.entries(currentCompany).length > 0;
 
@@ -86,7 +86,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
 
   const fetchDeviceId = async () => {
     const ip = await fetchPublicIP();
-    
+
     let appVersion = null;
     let appName = 'Web App';
     try {
@@ -135,7 +135,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
 
   useEffect(() => {
     if (currentCompany && currentCompany.id) {
-      printerActions.getPrinters({people: currentCompany.id});
+      printerActions.getPrinters({ people: currentCompany.id });
     }
   }, [currentCompany]);
 
@@ -150,12 +150,12 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
 
       if (
         companyConfigs[
-          'pos-' + device_config.configs['pos-gateway'] + '-wallet'
+        'pos-' + device_config.configs['pos-gateway'] + '-wallet'
         ]
       ) {
         wallets.push(
           companyConfigs[
-            'pos-' + device_config.configs['pos-gateway'] + '-wallet'
+          'pos-' + device_config.configs['pos-gateway'] + '-wallet'
           ],
         );
       }
@@ -187,12 +187,12 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
         })
         .then(data => {
           if (data && data.length > 0) {
-            let d = {...data[0]};
+            let d = { ...data[0] };
             d.configs = JSON.parse(d.configs);
             deviceConfigsActions.setItem(d);
           }
         })
-        .catch(() => {})
+        .catch(() => { })
         .finally(() => {
           setDeviceConfigFetched(true);
         });
@@ -224,7 +224,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
         'pt-BR';
 
       if (currentConfig.language !== configuredLanguage) {
-        const nextConfig = {...currentConfig, language: configuredLanguage};
+        const nextConfig = { ...currentConfig, language: configuredLanguage };
         localStorage.setItem(
           'config',
           JSON.stringify(nextConfig),
@@ -232,6 +232,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
       }
 
       global.t = new Translate(
+        companies,
         defaultCompany,
         currentCompany,
         Object.keys(stores),
@@ -299,9 +300,9 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
 
   if (!translateReady && isLogged && hasCurrentCompany) {
     return (
-      <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color="#1B5587" />
-        <Text style={{marginTop: 10}}>Carregando...</Text>
+        <Text style={{ marginTop: 10 }}>Carregando...</Text>
       </View>
     );
   }
@@ -309,7 +310,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
   return (
     device &&
     device.id && (
-      <ThemeContext.Provider value={{colors, menus}}>
+      <ThemeContext.Provider value={{ colors, menus }}>
         {children}
         <WebsocketListener />
         <PrintService />
