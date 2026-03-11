@@ -31,14 +31,13 @@ export default class Translate {
       type,
     };
 
-    // adiciona na fila
     this.translateActions.addToQueue(() => {
       return this.translateActions.save(payload).then(() => {
-        if (!this.translates[this.language]) this.translates[this.language] = {};
+        this.findMessage(store, type, key, translate);
+        localStorage.setItem("translates", JSON.stringify(this.translates));
       });
     });
 
-    // inicia processamento da fila
     this.translateActions.initQueue();
   }
 
@@ -90,7 +89,7 @@ export default class Translate {
         store: store,
         "language.language": this.language,
         people: "/people/" + company.id,
-        itemsPerPage: 500,
+        itemsPerPage: 50000,
       })
       .then((storeTranslates) => {
         const currentTranslates = this.translates;
@@ -108,7 +107,7 @@ export default class Translate {
           storeTranslates.forEach((element) => {
             const existingMessage =
               currentTranslates?.[this.language]?.[store]?.[element.type]?.[
-                element.key
+              element.key
               ];
 
             const newMessage =
