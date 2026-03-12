@@ -34,7 +34,7 @@ export default class Translate {
     this.translateActions.addToQueue(() => {
       return this.translateActions.save(payload).then(() => {
         this.findMessage(store, type, key, translate);
-        localStorage.setItem("translates", JSON.stringify(this.translates));
+        this.persist();
       });
     });
 
@@ -60,7 +60,7 @@ export default class Translate {
 
   clear() {
     this.translates = {};
-    localStorage.setItem("translates", "{}");
+    this.persist();
   }
 
   async discoveryAll() {
@@ -123,9 +123,12 @@ export default class Translate {
             }
           });
         }
-
-        localStorage.setItem("translates", JSON.stringify(this.translates));
+        this.persist();
       });
+  }
+
+  persist() {
+    localStorage.setItem("translates", JSON.stringify(this.translates));
   }
 
   findMessage(store, type, key, message) {
