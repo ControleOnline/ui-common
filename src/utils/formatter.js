@@ -1,5 +1,7 @@
 export default class Formatter {
 
+  /* ================= UTIL ================= */
+
   static onlyNumbers(value) {
     return String(value || '').replace(/\D/g, '');
   }
@@ -7,25 +9,26 @@ export default class Formatter {
   /* ================= DOCUMENTOS ================= */
 
   static formatDocument(value) {
-    if (/^([0-9]{11})$/.test(value))
-      return value.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/g, '$1.$2.$3-$4');
 
-    if (/^([0-9]{14})$/.test(value))
-      return value.replace(
-        /(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/g,
-        '$1.$2.$3/$4-$5',
-      );
+    const numbers = Formatter.onlyNumbers(value);
+
+    if (numbers.length === 11)
+      return Formatter.maskCPF(numbers);
+
+    if (numbers.length === 14)
+      return Formatter.maskCNPJ(numbers);
 
     return value || '';
   }
 
   static formatBRDocument(value) {
-    return Formatter.formatDocument(value);
+    return Formatter.maskBRDocument(value);
   }
 
   /* ================= MÁSCARAS DIGITAÇÃO ================= */
 
   static maskCPF(value) {
+
     value = Formatter.onlyNumbers(value).slice(0, 11);
 
     return value
@@ -35,6 +38,7 @@ export default class Formatter {
   }
 
   static maskCNPJ(value) {
+
     value = Formatter.onlyNumbers(value).slice(0, 14);
 
     return value
@@ -44,36 +48,49 @@ export default class Formatter {
       .replace(/(\d{4})(\d)/, '$1-$2');
   }
 
-  static maskPhoneBR(value) {
-    value = Formatter.onlyNumbers(value).slice(0, 11);
+  static maskBRDocument(value) {
 
-    if (value.length <= 10)
-      return value.replace(/(\d{2})(\d{0,4})(\d{0,4})/, (m, ddd, p1, p2) => {
-        if (!p1) return `(${ddd}`;
-        if (!p2) return `(${ddd}) ${p1}`;
-        return `(${ddd}) ${p1}-${p2}`;
-      });
+    const numbers = Formatter.onlyNumbers(value);
 
-    return value.replace(/(\d{2})(\d{1})(\d{4})(\d{4})/, '($1) $2 $3-$4');
+    if (numbers.length <= 11)
+      return Formatter.maskCPF(numbers);
+
+    return Formatter.maskCNPJ(numbers);
   }
 
   /* ================= TELEFONE ================= */
 
+  static maskPhoneBR(value) {
+
+    value = Formatter.onlyNumbers(value).slice(0, 11);
+
+    if (value.length <= 2)
+      return `(${value}`;
+
+    if (value.length <= 6)
+      return value.replace(/(\d{2})(\d+)/, '($1) $2');
+
+    if (value.length <= 10)
+      return value.replace(/(\d{2})(\d{4})(\d+)/, '($1) $2-$3');
+
+    return value.replace(/(\d{2})(\d{1})(\d{4})(\d+)/, '($1) $2 $3-$4');
+  }
+
   static formatBRPhone(value) {
 
-    value = Formatter.onlyNumbers(value);
+    const numbers = Formatter.onlyNumbers(value);
 
-    if (/^([0-9]{10})$/.test(value))
-      return value.replace(/(\d{2})(\d{4})(\d{4})/g, '($1) $2-$3');
+    if (numbers.length === 10)
+      return numbers.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
 
-    if (/^([0-9]{11})$/.test(value))
-      return value.replace(/(\d{2})(\d{1})(\d{4})(\d{4})/g, '($1) $2 $3-$4');
+    if (numbers.length === 11)
+      return numbers.replace(/(\d{2})(\d{1})(\d{4})(\d{4})/, '($1) $2 $3-$4');
 
     return value || '';
   }
 
   static formatPhone(value) {
-    return Formatter.formatBRPhone(value);
+    return Formatter.maskPhoneBR(value);
   }
 
   /* ================= VALIDAÇÕES ================= */
@@ -126,13 +143,17 @@ export default class Formatter {
     let pos = length - 7;
 
     for (let i = length; i >= 1; i--) {
+
       sum += numbers[length - i] * pos--;
-      if (pos < 2) pos = 9;
+
+      if (pos < 2)
+        pos = 9;
     }
 
     let result = sum % 11 < 2 ? 0 : 11 - sum % 11;
 
-    if (result != digits[0]) return false;
+    if (result != digits[0])
+      return false;
 
     length = length + 1;
     numbers = cnpj.substring(0, length);
@@ -141,8 +162,11 @@ export default class Formatter {
     pos = length - 7;
 
     for (let i = length; i >= 1; i--) {
+
       sum += numbers[length - i] * pos--;
-      if (pos < 2) pos = 9;
+
+      if (pos < 2)
+        pos = 9;
     }
 
     result = sum % 11 < 2 ? 0 : 11 - sum % 11;
@@ -153,54 +177,62 @@ export default class Formatter {
   /* ================= DATAS ================= */
 
   static formatDateToBR(dateInput) {
+
     if (!dateInput) return '';
 
     const dateOnly = String(dateInput).split(' ')[0];
     const parts = dateOnly.split(/[-/]/);
 
-    if (parts.length !== 3) return dateInput;
+    if (parts.length !== 3)
+      return dateInput;
 
     const [part1, part2, part3] = parts;
+
     let day, month, year;
 
     if (part1.length === 4) {
+
       year = part1;
       month = part2;
       day = part3;
+
     } else if (part3.length === 4) {
+
       day = part1;
       month = part2;
       year = part3;
+
     } else {
       return dateInput;
     }
 
-    if (day > 31 || month > 12 || day < 1 || month < 1) {
+    if (day > 31 || month > 12 || day < 1 || month < 1)
       return dateInput;
-    }
 
     return `${String(day).padStart(2, '0')}/${String(month).padStart(2, '0')}/${year}`;
   }
 
   static validateBRDate(value) {
+
     if (!value) return true;
 
     const normalizedValue = value.replace(/[-/]/g, '/');
+
     const regex = /^\d{2}\/\d{2}\/\d{4}$/;
 
     if (!regex.test(normalizedValue))
       return 'Data inválida. Formato esperado: DD/MM/YYYY';
 
     const [day, month, year] = normalizedValue.split('/').map(Number);
+
     const date = new Date(year, month - 1, day);
 
     if (
       date.getFullYear() !== year ||
       date.getMonth() + 1 !== month ||
       date.getDate() !== day
-    ) {
+    )
       return 'Data inválida';
-    }
 
     return true;
   }
@@ -208,15 +240,21 @@ export default class Formatter {
   /* ================= CEP ================= */
 
   static formatCEP(value) {
+
     if (!value) return '';
+
     value = Formatter.onlyNumbers(value);
-    if (value.length === 7) value = `0${value}`;
-    return value.replace(/(\d{5})(\d{3})/g, '$1-$2');
+
+    if (value.length === 7)
+      value = `0${value}`;
+
+    return value.replace(/(\d{5})(\d{3})/, '$1-$2');
   }
 
   /* ================= NUMÉRICOS ================= */
 
   static formatFloat(value) {
+
     const formatedValue = String(value || 0)
       .replace(/[^0-9.,]/g, '')
       .replace('.', '')
@@ -236,7 +274,6 @@ export default class Formatter {
         : value;
 
     const formatter = new Intl.NumberFormat(locale, {
-      style: 'decimal',
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
     });
@@ -251,10 +288,13 @@ export default class Formatter {
     if (!dateString) return null;
 
     const normalizedDate = dateString.replaceAll('/', '-');
+
     const [day, month, year] = normalizedDate.split('-').map(Number);
 
     const date = new Date(year, month - 1, day);
-    if (isNaN(date.getTime())) return null;
+
+    if (isNaN(date.getTime()))
+      return null;
 
     const yyyy = date.getFullYear();
     const mm = String(date.getMonth() + 1).padStart(2, '0');
@@ -284,7 +324,9 @@ export default class Formatter {
       return value;
 
     const clientTimeZoneOffset = new Date().getTimezoneOffset();
+
     const timeZoneDiffMinutes = clientTimeZoneOffset - date.getTimezoneOffset();
+
     date.setMinutes(date.getMinutes() + timeZoneDiffMinutes);
 
     const options = {
@@ -295,6 +337,7 @@ export default class Formatter {
     };
 
     if (withTime) {
+
       options.hour = '2-digit';
       options.minute = '2-digit';
       options.second = '2-digit';
