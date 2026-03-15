@@ -64,11 +64,17 @@ export default class Formatter {
 
     value = Formatter.onlyNumbers(value).slice(0, 11);
 
-    if (value.length <= 2)
-      return `(${value}`;
+    // if (value.length <= 2)
+    //   return `(${value}`;
 
-    if (value.length <= 6)
-      return value.replace(/(\d{2})(\d+)/, '($1) $2');
+    // if (value.length <= 6)
+    //   return value.replace(/(\d{2})(\d+)/, '($1) $2');
+
+    if (value.length <= 8)
+      return value.replace(/(\d{4})(\d+)/, '$1-$2');
+
+    if (value.length <= 9)
+      return value.replace(/(\d{1})(\d{4})(\d+)/, '$1 $2-$3');
 
     if (value.length <= 10)
       return value.replace(/(\d{2})(\d{4})(\d+)/, '($1) $2-$3');
