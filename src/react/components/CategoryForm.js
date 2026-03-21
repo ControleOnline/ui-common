@@ -23,6 +23,12 @@ const CategoryForm = ({ category, onClose, onSaved }) => {
     const [sortOrder, setSortOrder] = useState('');
     const [channel, setChannel] = useState('');
 
+    const companyIri = currentCompany?.['@id']
+        ? String(currentCompany['@id'])
+        : currentCompany?.id
+            ? `/people/${String(currentCompany.id).replace(/\D/g, '')}`
+            : null;
+
     useEffect(() => {
         if (category) {
             setName(category.name || '');
@@ -42,7 +48,7 @@ const CategoryForm = ({ category, onClose, onSaved }) => {
             color,
             icon,
             context: 'products',
-            company: currentCompany.id,
+            company: companyIri,
             parent: parent ? `/categories/${parent}` : null,
             active,
             extraData: {
