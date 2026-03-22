@@ -16,9 +16,7 @@ export const WebsocketListener = () => {
 
   const connect = () => {
     if (websocketRef.current?.readyState === WebSocket.OPEN) return;
-    websocketRef.current = new WebSocket(url, null, {
-      headers: {'X-Device': device.id},
-    });
+    websocketRef.current = new WebSocket(`${url}?device=${device.id}`);
 
     websocketRef.current.onopen = () => {
       console.log('Conected:', url, device.id);
