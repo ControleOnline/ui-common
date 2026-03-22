@@ -81,8 +81,9 @@ export const WebsocketListener = () => {
   };
 
   useEffect(() => {
-    //if (device.id) connect(device.id);
-  }, [device]);
+    if (device?.id) connect()
+    return close
+  }, [device?.id])
 
   return null;
 };
