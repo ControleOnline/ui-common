@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useImperativeHandle, forwardRef } from 'react';
 import {
     View,
     Text,
     TextInput,
-    TouchableOpacity,
     Switch,
+    StyleSheet,
 } from 'react-native';
 import { useStore } from '@store';
 
-const CategoryForm = ({ category, onClose, onSaved }) => {
+const CategoryForm = forwardRef(({ category, onClose, onSaved }, ref) => {
     const categoriesStore = useStore('categories');
     const categoryActions = categoriesStore.actions;
     const categories = categoriesStore.getters.items;
@@ -71,124 +71,86 @@ const CategoryForm = ({ category, onClose, onSaved }) => {
         onClose();
     };
 
+    useImperativeHandle(ref, () => ({ submit: handleSubmit }));
+
     return (
         <View>
-            <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 15 }}>
-                {category
-                    ? global.t?.t('categories', 'title', 'editCategory')
-                    : global.t?.t('categories', 'title', 'newCategory')}
-            </Text>
-
-            <Text>{global.t?.t('categories', 'label', 'name')}</Text>
+            <Text style={styles.label}>{global.t?.t('categories', 'label', 'name') || 'Nome'}</Text>
             <TextInput
                 value={name}
                 onChangeText={setName}
-                style={{
-                    borderWidth: 1,
-                    borderColor: '#ccc',
-                    padding: 10,
-                    marginBottom: 15,
-                    borderRadius: 6,
-                }}
+                style={styles.input}
             />
 
-            <Text>{global.t?.t('categories', 'label', 'colorHex') || 'Cor (hex)'}</Text>
+            <Text style={styles.label}>{global.t?.t('categories', 'label', 'colorHex') || 'Cor (hex)'}</Text>
             <TextInput
                 value={color}
                 onChangeText={setColor}
-                style={{
-                    borderWidth: 1,
-                    borderColor: '#ccc',
-                    padding: 10,
-                    marginBottom: 15,
-                    borderRadius: 6,
-                }}
+                style={styles.input}
             />
 
-            <Text>{global.t?.t('categories', 'label', 'icon')}</Text>
+            <Text style={styles.label}>{global.t?.t('categories', 'label', 'icon') || 'Ícone'}</Text>
             <TextInput
                 value={icon}
                 onChangeText={setIcon}
-                style={{
-                    borderWidth: 1,
-                    borderColor: '#ccc',
-                    padding: 10,
-                    marginBottom: 15,
-                    borderRadius: 6,
-                }}
+                style={styles.input}
             />
 
-            <Text>{global.t?.t('categories', 'label', 'parentCategoryId') || 'Categoria Pai (ID)'}</Text>
+            <Text style={styles.label}>{global.t?.t('categories', 'label', 'parentCategoryId') || 'Categoria Pai (ID)'}</Text>
             <TextInput
                 value={parent ? String(parent) : ''}
                 onChangeText={(value) => setParent(value)}
                 keyboardType="numeric"
-                style={{
-                    borderWidth: 1,
-                    borderColor: '#ccc',
-                    padding: 10,
-                    marginBottom: 20,
-                    borderRadius: 6,
-                }}
+                style={styles.input}
             />
 
-            <Text>{global.t?.t('categories', 'label', 'sortOrder') || 'Ordem'}</Text>
+            <Text style={styles.label}>{global.t?.t('categories', 'label', 'sortOrder') || 'Ordem'}</Text>
             <TextInput
                 value={sortOrder}
                 onChangeText={setSortOrder}
                 keyboardType="numeric"
-                style={{
-                    borderWidth: 1,
-                    borderColor: '#ccc',
-                    padding: 10,
-                    marginBottom: 15,
-                    borderRadius: 6,
-                }}
+                style={styles.input}
             />
 
-            <Text>{global.t?.t('categories', 'label', 'channel') || 'Canal'}</Text>
+            <Text style={styles.label}>{global.t?.t('categories', 'label', 'channel') || 'Canal'}</Text>
             <TextInput
                 value={channel}
                 onChangeText={setChannel}
-                style={{
-                    borderWidth: 1,
-                    borderColor: '#ccc',
-                    padding: 10,
-                    marginBottom: 15,
-                    borderRadius: 6,
-                }}
+                style={styles.input}
                 placeholder="default, iFood, delivery..."
             />
 
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
-                <Text style={{ marginRight: 10 }}>{global.t?.t('categories', 'label', 'active') || 'Ativo'}</Text>
+            <View style={styles.switchRow}>
+                <Text style={styles.label}>{global.t?.t('categories', 'label', 'active') || 'Ativo'}</Text>
                 <Switch value={active} onValueChange={setActive} />
             </View>
-
-            <TouchableOpacity
-                onPress={handleSubmit}
-                style={{
-                    backgroundColor: '#000',
-                    padding: 15,
-                    borderRadius: 8,
-                    alignItems: 'center',
-                    marginBottom: 10,
-                }}
-            >
-                <Text style={{ color: '#fff', fontWeight: 'bold' }}>
-                    {category
-                        ? global.t?.t('categories', 'button', 'saveChanges')
-                        : global.t?.t('categories', 'button', 'create')}
-                </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={onClose}>
-                <Text style={{ textAlign: 'center', color: 'red' }}>
-                    {global.t?.t('categories', 'button', 'cancel')}
-                </Text>
-            </TouchableOpacity>
         </View>
     );
-};
+});
+
+const styles = StyleSheet.create({
+    label: {
+        fontSize: 13,
+        fontWeight: '600',
+        color: '#64748B',
+        marginBottom: 6,
+    },
+    input: {
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        backgroundColor: '#F8FAFC',
+        padding: 12,
+        marginBottom: 16,
+        borderRadius: 10,
+        fontSize: 15,
+        color: '#0F172A',
+    },
+    switchRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 8,
+    },
+});
 
 export default CategoryForm;
