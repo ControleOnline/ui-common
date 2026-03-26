@@ -7,17 +7,18 @@ const SpotifyPlayer = () => {
     const { currentCompany } = peopleStore.getters;
 
     const [token, setToken] = useState(null);
-    const [deviceId, setDeviceId] = useState(null);
     const [isReady, setIsReady] = useState(false);
+    const [track, setTrack] = useState(null);
 
     const playerRef = useRef(null);
 
-    // 🔑 Token
+    // 🔑 TOKEN
     const fetchToken = async () => {
         try {
             const data = await api.fetch('/spotify/token/' + currentCompany?.id);
             if (data.access_token) {
                 setToken(data.access_token);
+                console.log('[Spotify] Token OK');
             }
         } catch (e) {
             console.error('[Spotify] token error', e);
@@ -29,63 +30,24 @@ const SpotifyPlayer = () => {
         fetchToken();
     }, [currentCompany?.id]);
 
-    // 🎧 Função principal: pegar música e tocar
-    const playUserTrack = async (device_id, authToken) => {
-        try {
-            // 🔥 1. pegar 1 música curtida
-            const res = await fetch('https://api.spotify.com/v1/me/tracks?limit=1', {
-                headers: {
-                    'Authorization': `Bearer ${authToken}`,
-                },
-            });
-
-            const data = await res.json();
-
-            if (!data.items?.length) {
-                console.warn('[Spotify] usuário sem músicas curtidas');
-                return;
+    // 🔓 DESBLOQUEAR ÁUDIO (ESSENCIAL)
+    useEffect(() => {
+        const unlockAudio = async () => {
+            try {
+                console.log('[Spotify] desbloqueando áudio...');
+                await playerRef.current?.resume();
+                await playerRef.current?.setVolume(0.8);
+            } catch (e) {
+                console.log('[Spotify] ainda não liberado');
             }
+        };
 
-            const trackUri = data.items[0].track.uri;
+        document.addEventListener('click', unlockAudio, { once: true });
 
-            console.log('[Spotify] Tocando:', trackUri);
-
-            // 🔥 2. transfer playback
-            await fetch('https://api.spotify.com/v1/me/player', {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${authToken}`,
-                },
-                body: JSON.stringify({
-                    device_ids: [device_id],
-                    play: true
-                }),
-            });
-
-            // 🔥 3. tocar música
-            await fetch(`https://api.spotify.com/v1/me/player/play?device_id=${device_id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${authToken}`,
-                },
-                body: JSON.stringify({
-                    uris: [trackUri]
-                }),
-            });
-
-            console.log('[Spotify] ▶️ Playback iniciado');
-
-            // 🔊 volume
-            setTimeout(() => {
-                playerRef.current?.setVolume(0.8);
-            }, 2000);
-
-        } catch (err) {
-            console.error('[Spotify] play error', err);
-        }
-    };
+        return () => {
+            document.removeEventListener('click', unlockAudio);
+        };
+    }, []);
 
     // 🚀 SDK
     useEffect(() => {
@@ -103,32 +65,46 @@ const SpotifyPlayer = () => {
             const player = new window.Spotify.Player({
                 name: 'KDS Player TV',
                 getOAuthToken: cb => cb(token),
-                volume: 0.3,
+                volume: 0.5,
             });
 
             playerRef.current = player;
 
-            player.addListener('ready', async ({ device_id }) => {
-                console.log('[Spotify] READY', device_id);
+            // 🎧 Estado vindo do celular
+            player.addListener('player_state_changed', state => {
+                if (!state) return;
 
-                setDeviceId(device_id);
+                const currentTrack = state.track_window.current_track;
+
+                if (currentTrack) {
+                    console.log('[Spotify] Tocando:', currentTrack.name);
+
+                    setTrack({
+                        name: currentTrack.name,
+                        artist: currentTrack.artists.map(a => a.name).join(', ')
+                    });
+                }
+            });
+
+            // ✅ PLAYER PRONTO
+            player.addListener('ready', async ({ device_id }) => {
+                console.log('[Spotify] READY:', device_id);
                 setIsReady(true);
 
-                try {
-                    // 🔓 destrava autoplay
-                    await player.resume().catch(() => {});
-
-                    // ▶️ toca música do usuário
-                    await playUserTrack(device_id, token);
-
-                } catch (e) {
-                    console.error('[Spotify] autoplay error', e);
-                }
+                // 🔊 garantir volume
+                setTimeout(() => {
+                    player.setVolume(0.8);
+                }, 1000);
             });
 
             player.addListener('not_ready', () => {
                 setIsReady(false);
             });
+
+            player.addListener('initialization_error', e => console.error(e));
+            player.addListener('authentication_error', e => console.error(e));
+            player.addListener('account_error', e => console.error('Premium necessário', e));
+            player.addListener('playback_error', e => console.error(e));
 
             player.connect();
         };
@@ -138,34 +114,10 @@ const SpotifyPlayer = () => {
         };
     }, [token]);
 
-    // 🧠 fallback autoplay (caso falhe)
-    useEffect(() => {
-        if (!deviceId || !token) return;
-
-        const retry = setInterval(() => {
-            playUserTrack(deviceId, token);
-        }, 20000);
-
-        return () => clearInterval(retry);
-    }, [deviceId, token]);
-
-    // 🔓 desbloqueio por interação
-    useEffect(() => {
-        const unlock = () => {
-            playerRef.current?.resume();
-        };
-
-        document.addEventListener('click', unlock, { once: true });
-
-        return () => {
-            document.removeEventListener('click', unlock);
-        };
-    }, []);
-
     if (Platform.OS !== 'web') {
         return (
             <View style={styles.container}>
-                <Text>Spotify só funciona na Web</Text>
+                <Text>Spotify apenas na Web</Text>
             </View>
         );
     }
@@ -173,26 +125,46 @@ const SpotifyPlayer = () => {
     return (
         <View style={styles.footer}>
             <Text style={styles.status}>
-                {isReady ? '🟢 Tocando Spotify' : '🟠 Carregando Spotify...'}
+                {isReady ? '🟢 Aguardando Spotify Connect...' : '🟠 Carregando...'}
             </Text>
+
+            {track && (
+                <View style={styles.trackBox}>
+                    <Text style={styles.trackName}>{track.name}</Text>
+                    <Text style={styles.artist}>{track.artist}</Text>
+                </View>
+            )}
         </View>
     );
 };
 
 const styles = StyleSheet.create({
     footer: {
-        height: 80,
+        height: 100,
         backgroundColor: '#121212',
         justifyContent: 'center',
         alignItems: 'center',
     },
     status: {
         color: '#fff',
-        fontWeight: 'bold'
+        fontWeight: 'bold',
+    },
+    trackBox: {
+        marginTop: 8,
+        alignItems: 'center',
+    },
+    trackName: {
+        color: '#fff',
+        fontSize: 14,
+        fontWeight: 'bold',
+    },
+    artist: {
+        color: '#aaa',
+        fontSize: 12,
     },
     container: {
-        padding: 20
-    }
+        padding: 20,
+    },
 });
 
 export default SpotifyPlayer;
