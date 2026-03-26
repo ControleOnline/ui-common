@@ -23,7 +23,7 @@ export const WebsocketListener = () => {
 
     const storeModule = getStoreByName(data.store);
     if (!storeModule) {
-      console.debug('WebSocket: store nao encontrada para evento', data.store);
+      ////console.debug('WebSocket: store nao encontrada para evento', data.store);
       return;
     }
 
@@ -47,12 +47,12 @@ export const WebsocketListener = () => {
       return;
     }
 
-    console.log('Iniciando conexao WebSocket em:', url);
+    //console.log('Iniciando conexao WebSocket em:', url);
 
     websocketRef.current = new WebSocket(url);
 
     websocketRef.current.onopen = () => {
-      console.log('WebSocket conectado');
+      //console.log('WebSocket conectado');
       reconnectAttempts.current = 0;
       isIdentifyingRef.current = true;
 
@@ -65,7 +65,7 @@ export const WebsocketListener = () => {
         });
 
         websocketRef.current.send(authPayload);
-        console.log('Identify enviado:', authPayload);
+        //console.log('Identify enviado:', authPayload);
       }, 150);
     };
 
@@ -75,13 +75,13 @@ export const WebsocketListener = () => {
         const payload = JSON.parse(event.data);
 
         if (payload.status === 'identified') {
-          console.log('Identificacao confirmada pelo servidor:', payload.device);
+          //console.log('Identificacao confirmada pelo servidor:', payload.device);
           isIdentifyingRef.current = false;
           return;
         }
 
         if (payload.status === 'error') {
-          console.error('Erro do servidor:', payload.message);
+          //console.error('Erro do servidor:', payload.message);
           isIdentifyingRef.current = false;
           return;
         }
@@ -89,16 +89,16 @@ export const WebsocketListener = () => {
         const events = Array.isArray(payload) ? payload : [payload];
         events.forEach(appendMessageToStore);
       } catch (e) {
-        console.error('Erro ao processar mensagem:', e);
+        //console.error('Erro ao processar mensagem:', e);
       }
     };
 
     websocketRef.current.onerror = (error) => {
-      console.error('WebSocket onerror:', error);
+      //console.error('WebSocket onerror:', error);
     };
 
     websocketRef.current.onclose = (event) => {
-      console.log(`Conexao fechada - Code: ${event.code} | Reason: ${event.reason || 'nenhum'}`);
+      //console.log(`Conexao fechada - Code: ${event.code} | Reason: ${event.reason || 'nenhum'}`);
       isIdentifyingRef.current = false;
       scheduleReconnect();
     };
@@ -110,7 +110,7 @@ export const WebsocketListener = () => {
     const delay = Math.min(10000 * Math.pow(2, reconnectAttempts.current), 12000);
     reconnectAttempts.current += 1;
 
-    console.log(`Agendando reconexao em ${delay}ms (tentativa ${reconnectAttempts.current})`);
+    //console.log(`Agendando reconexao em ${delay}ms (tentativa ${reconnectAttempts.current})`);
 
     reconnectTimeoutRef.current = setTimeout(() => {
       reconnectTimeoutRef.current = null;
@@ -119,7 +119,7 @@ export const WebsocketListener = () => {
   };
 
   const close = () => {
-    console.log('Limpando WebSocket...');
+    //console.log('Limpando WebSocket...');
     if (websocketRef.current) {
       websocketRef.current.close();
       websocketRef.current = null;
