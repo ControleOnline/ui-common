@@ -11,6 +11,10 @@ import {
   resolveThemePalette,
 } from '@controleonline/../../src/styles/branding';
 import { colors as runtimeColors } from '@controleonline/../../src/styles/colors';
+import {
+  buildScreenMetrics,
+  hasScreenMetricsChanges,
+} from '@controleonline/ui-common/src/react/utils/screenMetrics';
 import stores from '@stores';
 const ThemeContext = createContext();
 
@@ -198,6 +202,34 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
         });
     }
   }, [currentCompany, isLogged, device]);
+
+  useEffect(() => {
+    if (
+      !deviceConfigFetched ||
+      !isLogged ||
+      !currentCompany?.id ||
+      !device?.id
+    ) {
+      return;
+    }
+
+    const nextMetrics = buildScreenMetrics();
+
+    const currentConfigs = device_config?.configs || {};
+    const hasChanges = hasScreenMetricsChanges(currentConfigs, nextMetrics);
+
+    if (!hasChanges) {
+      return;
+    }
+
+    deviceConfigsActions.addDeviceConfigs({
+      configs: JSON.stringify({
+        ...currentConfigs,
+        ...nextMetrics,
+      }),
+      people: '/people/' + currentCompany.id,
+    });
+  }, [deviceConfigFetched, isLogged, currentCompany, device, device_config, deviceConfigsActions]);
 
   useEffect(() => {
     if (

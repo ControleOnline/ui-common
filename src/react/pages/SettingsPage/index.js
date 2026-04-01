@@ -1,4 +1,4 @@
-import React, {useState, useCallback, useEffect} from 'react';
+import React, {useState, useCallback, useEffect, useMemo} from 'react';
 import {
   Text,
   View,
@@ -17,6 +17,11 @@ import {Picker} from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import StateStore from '@controleonline/ui-layout/src/react/components/StateStore';
 import packageJson from '@package';
+import {
+  appendScreenMetrics,
+  buildScreenMetrics,
+  hasScreenMetricsChanges,
+} from '@controleonline/ui-common/src/react/utils/screenMetrics';
 
 const Settings = () => {
   const navigation = useNavigation();
@@ -62,6 +67,8 @@ const Settings = () => {
 
   const cieloDevices = ['Quantum', 'ingenico'];
 
+  const screenMetrics = useMemo(() => buildScreenMetrics(), []);
+
   const createDefaultConfigs = useCallback(() => {
     
     // ALEMAC //
@@ -69,6 +76,12 @@ const Settings = () => {
 
     let lc = {...(device?.configs || {})};
     let needsUpdate = false;
+
+    const metricsConfigs = appendScreenMetrics(lc);
+    if (hasScreenMetricsChanges(lc, metricsConfigs)) {
+      lc = metricsConfigs;
+      needsUpdate = true;
+    }
 
     // Verifica cada config e cria o padrão se não existir
     if (!lc['pos-type']) {
@@ -135,7 +148,14 @@ const Settings = () => {
     }
 
     setConfigsLoaded(true);
-  }, [device, currentCompany?.id, configsLoaded, storagedDevice, appVersion, deviceConfigsActions]);
+  }, [
+    device,
+    currentCompany?.id,
+    configsLoaded,
+    storagedDevice,
+    appVersion,
+    deviceConfigsActions,
+  ]);
 
   useFocusEffect(
     useCallback(() => {
@@ -223,7 +243,7 @@ useFocusEffect(
   );
 
   const addDeviceConfigs = () => {
-    let lc = {...(device?.configs || {})};
+    let lc = appendScreenMetrics({...device?.configs || {}});
 
     // ALEMAC // pega o appVersion ao invés do buildNumber
     lc['config-version'] = appVersion;
@@ -250,7 +270,7 @@ useFocusEffect(
 
   const handleSelectionTypeChange = (value) => {
     setSelectionType(value);
-    let lc = {...(device?.configs || {})};
+    let lc = appendScreenMetrics({...device?.configs || {}});
     lc['selection-type'] = value;
     lc['config-version'] = appVersion;
     deviceConfigsActions
@@ -266,7 +286,7 @@ useFocusEffect(
 
   const handleCheckTypeChange = (value) => {
     setCheckType(value);
-    let lc = {...(device?.configs || {})};
+    let lc = appendScreenMetrics({...device?.configs || {}});
     lc['check-type'] = value;
     // ===== ALTERAÇÃO: ADICIONAR VERSÃO DO APP =====
     lc['config-version'] = appVersion;
@@ -284,7 +304,7 @@ useFocusEffect(
 
   const handleProductInputTypeChange = (value) => {
     setProductInputType(value);
-    let lc = {...(device?.configs || {})};
+    let lc = appendScreenMetrics({...device?.configs || {}});
     lc['product-input-type'] = value;
     // ===== ALTERAÇÃO: ADICIONAR VERSÃO DO APP =====
     lc['config-version'] = appVersion;
@@ -303,7 +323,7 @@ useFocusEffect(
   const handleSoundChange = (value) => {
     setShowSound(value);
     localStorage.setItem('sound', String(value));
-    let lc = {...(device?.configs || {})};
+    let lc = appendScreenMetrics({...device?.configs || {}});
     lc['sound'] = value ? '1' : '0';
     // ===== ALTERAÇÃO: ADICIONAR VERSÃO DO APP =====
     lc['config-version'] = appVersion;
@@ -322,7 +342,7 @@ useFocusEffect(
   const handleVibrationChange = (value) => {
     setShowVibration(value);
     localStorage.setItem('vibration', String(value));
-    let lc = {...(device?.configs || {})};
+    let lc = appendScreenMetrics({...device?.configs || {}});
     lc['vibration'] = value ? '1' : '0';
     // ===== ALTERAÇÃO: ADICIONAR VERSÃO DO APP =====
     lc['config-version'] = appVersion;
@@ -340,7 +360,7 @@ useFocusEffect(
 
   const handlePosTypeChange = (value) => {
     setSelectedMode(value);
-    let lc = {...(device?.configs || {})};
+    let lc = appendScreenMetrics({...device?.configs || {}});
     lc['pos-type'] = value;
     lc['config-version'] = appVersion;
     deviceConfigsActions
@@ -356,7 +376,7 @@ useFocusEffect(
 
   const handlePrintModeChange = (value) => {
     setPrintingMode(value);
-    let lc = {...(device?.configs || {})};
+    let lc = appendScreenMetrics({...device?.configs || {}});
     lc['print-mode'] = value;
     lc['config-version'] = appVersion;
     deviceConfigsActions
@@ -372,7 +392,7 @@ useFocusEffect(
 
   const handleGatewayChange = (value) => {
     setSelectedGateway(value);
-    let lc = {...(device?.configs || {})};
+    let lc = appendScreenMetrics({...device?.configs || {}});
     lc['pos-gateway'] = value;
     lc['config-version'] = appVersion;
     deviceConfigsActions
@@ -418,6 +438,18 @@ useFocusEffect(
             <View style={styles.Settings.row}>
               <Text style={styles.Settings.value}>{storagedDevice?.appName}:</Text>
               <Text style={styles.Settings.value}>{appVersion}</Text>
+            </View>
+            <View style={styles.Settings.row}>
+              <Text style={styles.Settings.label}>Resolução do monitor: </Text>
+              <Text style={styles.Settings.value}>{screenMetrics?.deviceResolution || '-'}</Text>
+            </View>
+            <View style={styles.Settings.row}>
+              <Text style={styles.Settings.label}>Tamanho atual: </Text>
+              <Text style={styles.Settings.value}>{screenMetrics?.actualSize || '-'}</Text>
+            </View>
+            <View style={styles.Settings.row}>
+              <Text style={styles.Settings.label}>Tamanho da janela: </Text>
+              <Text style={styles.Settings.value}>{screenMetrics?.windosSize || '-'}</Text>
             </View>
             <View style={styles.Settings.row}>
               <Text style={styles.Settings.label}>{global.t?.t("configs", "label", "machineId")}: </Text>
