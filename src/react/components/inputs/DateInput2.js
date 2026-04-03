@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { View, Text, StyleSheet, TextInput } from 'react-native'
 import { useStore } from '@store'
 
-const DateInput = () => {
+const DateInput = ({ onSearch }) => {
   const invoiceStore = useStore('invoice')
   const { actions: invoiceActions, getters: invoiceGetters } = invoiceStore
   const [startValue, setStartValue] = useState('')
@@ -14,7 +14,7 @@ const DateInput = () => {
     const savedRange = invoiceGetters?.filters?.dueDate || {}
     setStartValue(savedRange?.start || '')
     setEndValue(savedRange?.end || '')
-  }, [])
+  }, [invoiceGetters?.filters?.dueDate?.start, invoiceGetters?.filters?.dueDate?.end])
 
   const normalizeDate = (value) => {
     if (!value || value.trim() === '') return null
@@ -71,7 +71,7 @@ const DateInput = () => {
     validateDate(value, setStartError)
     syncRangeToStore(value, endValue)
     if (value.trim() === '' || normalizeDate(value)) {
-      invoiceActions.fetchInvoices()
+      if (typeof onSearch === 'function') onSearch()
     }
   }
 
@@ -80,13 +80,13 @@ const DateInput = () => {
     validateDate(value, setEndError)
     syncRangeToStore(startValue, value)
     if (value.trim() === '' || normalizeDate(value)) {
-      invoiceActions.fetchInvoices()
+      if (typeof onSearch === 'function') onSearch()
     }
   }
 
   const handleBlur = () => {
     if (!startError && !endError) {
-      invoiceActions.fetchInvoices()
+      if (typeof onSearch === 'function') onSearch()
     }
   }
 

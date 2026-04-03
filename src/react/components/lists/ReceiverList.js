@@ -16,7 +16,7 @@ const ReceiverList = ({ context = null }) => {
 
   const receivers = receiverGetters.items || [];
 
-  const selectedValue = receiverGetters.item ? receiverGetters.item.id : null
+  const selectedValue = receiverGetters.item ? receiverGetters.item.id : ''
 
   const handleChange = (value) => {
 
@@ -37,7 +37,7 @@ const ReceiverList = ({ context = null }) => {
           selectedValue={selectedValue}
           onValueChange={handleChange}
         >
-          <Picker.Item label={global.t?.t("invoice", "label", "select")} value={null} />
+          <Picker.Item label={global.t?.t("invoice", "label", "select")} value={''} />
           {receivers.map(receiver => (
             <Picker.Item
               key={receiver.id}

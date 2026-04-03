@@ -1,11 +1,15 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { View, Text, StyleSheet, TextInput } from 'react-native'
 import { useStore } from '@store'
 
-const IdInput = () => {
+const IdInput = ({ onSearch }) => {
   const invoiceStore = useStore('invoice')
-  const { actions: invoiceActions } = invoiceStore
+  const { actions: invoiceActions, getters: invoiceGetters } = invoiceStore
   const [inputValue, setInputValue] = useState('')
+
+  useEffect(() => {
+    setInputValue(invoiceGetters?.filters?.id ? String(invoiceGetters.filters.id) : '')
+  }, [invoiceGetters?.filters?.id])
 
   const handleTextChange = (value) => {
     setInputValue(value)
@@ -13,11 +17,11 @@ const IdInput = () => {
   }
 
   const handleBlur = () => {
-    invoiceActions.fetchInvoices()
+    if (typeof onSearch === 'function') onSearch()
   }
 
   const handleSubmit = () => {
-    invoiceActions.fetchInvoices()
+    if (typeof onSearch === 'function') onSearch()
   }
 
   return (

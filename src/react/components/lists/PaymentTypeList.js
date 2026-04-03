@@ -16,7 +16,7 @@ const PaymentTypeList = ({ context = null }) => {
 
   const paymentMethods = paymentTypeGetters.items || [];
 
-  const selectedValue = paymentTypeGetters.item ? paymentTypeGetters.item.id : null
+  const selectedValue = paymentTypeGetters.item ? paymentTypeGetters.item.id : ''
 
   const handleChange = (value) => {
     const selected = paymentMethods.find(s => s.id == value)
@@ -37,7 +37,7 @@ const PaymentTypeList = ({ context = null }) => {
           selectedValue={selectedValue}
           onValueChange={handleChange}
         >
-          <Picker.Item label={global.t?.t("invoice", "label", "select")} value={null} />
+          <Picker.Item label={global.t?.t("invoice", "label", "select")} value={''} />
           {paymentMethods.map(method => (
             <Picker.Item
               key={method.id}

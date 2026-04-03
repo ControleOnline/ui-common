@@ -17,7 +17,7 @@ const WalletSelect = ({ people_id }) => {
 
     const wallets = walletGetters.items || [];
 
-  const selectedValue = walletGetters.item ? walletGetters.item.id : null
+  const selectedValue = walletGetters.item ? walletGetters.item.id : ''
 
   const handleChange = (value) => {
 
@@ -39,7 +39,7 @@ const WalletSelect = ({ people_id }) => {
           selectedValue={selectedValue}
           onValueChange={handleChange}
         >
-          <Picker.Item label={global.t?.t("invoice", "label", "select")} value={null} />
+          <Picker.Item label={global.t?.t("invoice", "label", "select")} value={''} />
           {wallets.map(wallet => (
             <Picker.Item
               key={wallet.id}

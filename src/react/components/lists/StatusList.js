@@ -14,7 +14,7 @@ const StatusSelect = ({ context = 'null' }) => {
     item => item.context === context
   )
 
-  const selectedValue = statusGetters.item ? statusGetters.item.id : null
+  const selectedValue = statusGetters.item ? statusGetters.item.id : ''
 
   const handleChange = (value) => {
 
@@ -36,7 +36,7 @@ const StatusSelect = ({ context = 'null' }) => {
           selectedValue={selectedValue}
           onValueChange={handleChange}
         >
-          <Picker.Item label={global.t?.t("invoice", "label", "select")} value={null} />
+          <Picker.Item label={global.t?.t("invoice", "label", "select")} value={''} />
           {statuses.map(status => (
             <Picker.Item
               key={status.id}

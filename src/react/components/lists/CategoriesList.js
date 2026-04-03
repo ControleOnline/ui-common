@@ -16,7 +16,7 @@ const CategorySelect = ({ context = null }) => {
 
   const categories = categoryGetters.items || [];
 
-  const selectedValue = categoryGetters.item ? categoryGetters.item.id : null
+  const selectedValue = categoryGetters.item ? categoryGetters.item.id : ''
 
   const handleChange = (value) => {
 
@@ -37,7 +37,7 @@ const CategorySelect = ({ context = null }) => {
           selectedValue={selectedValue}
           onValueChange={handleChange}
         >
-          <Picker.Item label={global.t?.t("invoice", "label", "select")} value={null} />
+          <Picker.Item label={global.t?.t("invoice", "label", "select")} value={''} />
           {categories.map(category => (
             <Picker.Item
               key={category.id}
