@@ -1,4 +1,4 @@
-import * as getters from './getters';
+﻿import * as getters from './getters';
 import mutations from './mutations';
 import * as actions from '@controleonline/ui-default/src/store/default/actions';
 
@@ -8,6 +8,7 @@ export default {
     item: {},
     items: [],
     isLoading: true,
+    summary: {},
     permissions: [],
     disabled: true,
     isAdmin: false,
