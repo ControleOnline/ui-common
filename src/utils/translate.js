@@ -23,12 +23,12 @@ export default class Translate {
       return;
 
     const payload = {
-      key,
-      language: "/languages/1",
       people: "/people/" + this.defaultCompany.id,
+      language: "/languages/1",
       store,
-      translate,
       type,
+      key,
+      translate,
     };
 
     this.translateActions.addToQueue(() => {
@@ -42,6 +42,7 @@ export default class Translate {
   }
 
   t(store, type, key) {
+
     let translate =
       this.translates?.[this.language]?.[store]?.[type]?.[key];
 
