@@ -22,13 +22,15 @@ export default class Translate {
     )
       return;
 
+    // ALEMAC // 04/04/2026
+    // para sempre gravar em lower case no banco
     const payload = {
-      key,
-      language: "/languages/1",
       people: "/people/" + this.defaultCompany.id,
-      store,
+      language: "/languages/1",
+      store: String(store).toLowerCase(),
+      type: String(type).toLowerCase(),
+      key: String(key).toLowerCase(),
       translate,
-      type,
     };
 
     this.translateActions.addToQueue(() => {
@@ -41,7 +43,14 @@ export default class Translate {
     this.translateActions.initQueue();
   }
 
+
   t(store, type, key) {
+    // ALEMAC // 04/04/2026
+    // para ler corretamente mesmo que o usuário passe em maiúsculo
+    store = String(store || "").toLowerCase();
+    type = String(type || "").toLowerCase();
+    key = String(key || "").toLowerCase();
+
     let translate =
       this.translates?.[this.language]?.[store]?.[type]?.[key];
 
