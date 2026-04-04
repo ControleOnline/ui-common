@@ -1,6 +1,7 @@
 import myFetch from '@controleonline/ui-common/src/api/fetch';
 import axios from 'axios';
 import { APP_ENV } from '../../../../../config/env';
+import { resolveAppDomain } from '@controleonline/ui-common/src/utils/appDomain';
 
 const MIME_TYPE = 'application/ld+json';
 
@@ -11,13 +12,14 @@ export const api = {
 
   upload: async function (uri, formData) {
     const token = await this.getToken();
+    const appDomain = resolveAppDomain(APP_ENV.DOMAIN);
     const entryPoint = APP_ENV.API_ENTRYPOINT + (APP_ENV.API_ENTRYPOINT.endsWith("/") ? "" : "/");
     const url = new URL(uri.startsWith('/') ? uri.substring(1) : uri, entryPoint).href;
 
     return axios.post(url, formData, {
       headers: {
         'API-TOKEN': token,
-        'App-Domain': APP_ENV.DOMAIN || (typeof location !== 'undefined' ? location.host : ''),
+        'App-Domain': appDomain,
         'Accept': '*/*',
         // IMPORTANTE: Deixe vazio para o Axios/Browser definir o boundary do multipart
       }
@@ -58,7 +60,7 @@ export const api = {
       options.headers.set('Content-Type', MIME_TYPE);
       options.headers.set('Accept', MIME_TYPE);
     }
-    options.headers.set('App-Domain', APP_ENV.DOMAIN || location.host);
+    options.headers.set('App-Domain', resolveAppDomain(APP_ENV.DOMAIN));
 
     if (options.body && typeof options.body != 'string') {
       options.body = JSON.stringify(options.body);

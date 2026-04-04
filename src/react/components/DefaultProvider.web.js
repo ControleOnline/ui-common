@@ -5,11 +5,13 @@ import { WebsocketListener } from '@controleonline/ui-common/src/react/component
 import PrintService from '@controleonline/ui-common/src/react/components/PrintService';
 import { useStore } from '@store';
 import { api } from '@controleonline/ui-common/src/api';
+import { env as APP_ENV } from '@env';
 import {
   applyPaletteToRuntimeColors,
   applyThemeCssVariables,
   resolveThemePalette,
 } from '@controleonline/../../src/styles/branding';
+import { resolveAppDomain } from '@controleonline/ui-common/src/utils/appDomain';
 import { colors as runtimeColors } from '@controleonline/../../src/styles/colors';
 import {
   buildScreenMetrics,
@@ -17,6 +19,24 @@ import {
 } from '@controleonline/ui-common/src/react/utils/screenMetrics';
 import stores from '@stores';
 const ThemeContext = createContext();
+
+const parseThemeCss = cssText => {
+  const parsedColors = {};
+  const matches = String(cssText || '').match(/--([\w-]+)\s*:\s*([^;}{]+)\s*;/g) || [];
+
+  matches.forEach(match => {
+    const clean = match.trim().replace(/^--/, '').replace(/;$/, '');
+    const splitIndex = clean.indexOf(':');
+    if (splitIndex <= 0) return;
+
+    const key = clean.slice(0, splitIndex).trim();
+    const value = clean.slice(splitIndex + 1).trim();
+    if (!key || !value) return;
+    parsedColors[key] = value;
+  });
+
+  return parsedColors;
+};
 
 export const DefaultProvider = ({ children, onBootstrapReady }) => {
   const themeStore = useStore('theme');
@@ -291,30 +311,30 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
 
   useEffect(() => {
     const fetchColors = async () => {
-      const cssText = await api.fetch('themes-colors.css', {
-        responseType: 'text',
-      });
+      const appDomain = resolveAppDomain(APP_ENV.DOMAIN);
+      const params = appDomain ? { 'app-domain': appDomain } : undefined;
 
-      const parsedColors = {};
-      const matches = cssText.match(/--[\w-]+:\s*#[0-9a-fA-F]+/g);
-      if (matches) {
-        matches.forEach(match => {
-          const [key, value] = match.split(':');
-          const cleanKey = key.replace('--', '').trim();
-          parsedColors[cleanKey] = value.trim();
+      try {
+        const cssText = await api.fetch('themes-colors.css', {
+          responseType: 'text',
+          params,
         });
+        const parsedColors = parseThemeCss(cssText);
+        setBaseThemeColors(parsedColors);
+        actions.setColors(parsedColors);
+      } catch (error) {
+        setBaseThemeColors({});
       }
-      setBaseThemeColors(parsedColors);
-      actions.setColors(parsedColors);
     };
 
-    if (device && device.id) {
+    if (device?.id) {
       fetchColors();
     }
-  }, [device]);
+  }, [actions, currentCompany?.id, defaultCompany?.id, device?.id]);
 
   useEffect(() => {
-    const companyThemeColors = currentCompany?.theme?.colors || {};
+    const companyThemeColors =
+      currentCompany?.theme?.colors || defaultCompany?.theme?.colors || {};
     const mergedThemeColors = {
       ...(baseThemeColors || {}),
       ...(companyThemeColors || {}),
