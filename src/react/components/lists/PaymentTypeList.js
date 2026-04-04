@@ -41,7 +41,7 @@ const PaymentTypeList = ({ context = null }) => {
           {paymentMethods.map(method => (
             <Picker.Item
               key={method.id}
-              label={method.paymentType} // TO DO // traduzir
+              label={global.t?.t("invoice", "label", method.paymentType)}
               value={method.id}
             />
           ))}
