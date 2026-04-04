@@ -82,50 +82,68 @@ export default class Translate {
     return this.translates;
   }
 
-  fetchTranslates(store, company) {
+  async fetchTranslates(store, company) {
     if (!company?.id) return Promise.resolve();
 
-    return this.translateActions
-      .getItems({
-        store: store,
-        "language.language": this.language,
-        people: "/people/" + company.id,
-        itemsPerPage: 50000,
-      })
-      .then((storeTranslates) => {
-        const currentTranslates = this.translates;
+    const params = {
+      store: store,
+      "language.language": this.language,
+      people: "/people/" + company.id,
+    };
 
-        if (company === this.defaultCompany) {
-          storeTranslates.forEach((element) => {
-            this.findMessage(
-              element.store,
-              element.type,
-              element.key,
-              element.translate || this.formatMessage(element.key)
-            );
-          });
-        } else if (company === this.currentCompany) {
-          storeTranslates.forEach((element) => {
-            const existingMessage =
-              currentTranslates?.[this.language]?.[store]?.[element.type]?.[
-              element.key
-              ];
+    const storeTranslates = [];
+    let page = 1;
+    let firstPageSize = null;
+    const maxPages = 1000;
 
-            const newMessage =
-              element.translate || this.formatMessage(element.key);
-
-            if (existingMessage !== newMessage) {
-              this.findMessage(
-                element.store,
-                element.type,
-                element.key,
-                newMessage
-              );
-            }
-          });
-        }
-        this.persist();
+    while (page <= maxPages) {
+      const pageItems = await this.translateActions.getItems({
+        ...params,
+        page,
       });
+
+      if (!Array.isArray(pageItems) || pageItems.length === 0) break;
+
+      storeTranslates.push(...pageItems);
+      if (firstPageSize == null) firstPageSize = pageItems.length;
+      if (pageItems.length < firstPageSize) break;
+
+      page += 1;
+    }
+
+    const currentTranslates = this.translates;
+
+    if (company === this.defaultCompany) {
+      storeTranslates.forEach((element) => {
+        this.findMessage(
+          element.store,
+          element.type,
+          element.key,
+          element.translate || this.formatMessage(element.key)
+        );
+      });
+    } else if (company === this.currentCompany) {
+      storeTranslates.forEach((element) => {
+        const existingMessage =
+          currentTranslates?.[this.language]?.[store]?.[element.type]?.[
+          element.key
+          ];
+
+        const newMessage =
+          element.translate || this.formatMessage(element.key);
+
+        if (existingMessage !== newMessage) {
+          this.findMessage(
+            element.store,
+            element.type,
+            element.key,
+            newMessage
+          );
+        }
+      });
+    }
+
+    this.persist();
   }
 
   persist() {
