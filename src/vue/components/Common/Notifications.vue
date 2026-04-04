@@ -36,6 +36,7 @@
 
 <script>
 import { api } from "app/modules/controleonline/ui-common/src/api";
+import { env } from "@env";
 import { mapActions, mapGetters } from "vuex";
 
 export default {
@@ -77,7 +78,7 @@ export default {
     ...mapActions({}),
     socketInit() {
       // Conectar ao servidor WebSocket
-      this.socket = new WebSocket("wss://ws.controleonline.com");
+      this.socket = new WebSocket(env.SOCKET);
 
       // Evento de conexão aberta
       this.socket.onopen = () => {
