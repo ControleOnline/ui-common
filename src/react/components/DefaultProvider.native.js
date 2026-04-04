@@ -17,6 +17,11 @@ import {
   buildScreenMetrics,
   hasScreenMetricsChanges,
 } from '@controleonline/ui-common/src/react/utils/screenMetrics';
+import {
+  buildDefaultDeviceConfigs,
+  parseConfigsObject,
+} from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
+import packageJson from '@package';
 
 import {useStore} from '@store';
 import stores from '@stores';
@@ -75,11 +80,16 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
     !!currentCompany && Object.entries(currentCompany).length > 0;
   const [translateReady, setTranslateReady] = useState(false);
   const [deviceConfigFetched, setDeviceConfigFetched] = useState(false);
+  const [mainConfigsDiscovered, setMainConfigsDiscovered] = useState(false);
+  const [deviceDefaultsInitialized, setDeviceDefaultsInitialized] =
+    useState(false);
   const [, setTranslateVersion] = useState(0);
   const [baseThemeColors, setBaseThemeColors] = useState({});
   const [device, setDevice] = useState(
     JSON.parse(localStorage.getItem('device') || '{}'),
   );
+  const packageVersion = packageJson?.version || packageJson?.default?.version;
+  const appVersion = packageVersion || device?.appVersion;
 
   useEffect(() => {
     global.refreshTranslationsUI = () => {
@@ -153,13 +163,13 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
     if (device && device.id) {
       peopleActions.defaultCompany();
     }
-  }, [device]);
+  }, [device?.id]);
 
   useEffect(() => {
     if (currentCompany && currentCompany.id) {
       printerActions.getPrinters({people: currentCompany.id});
     }
-  }, [currentCompany]);
+  }, [currentCompany?.id]);
 
   useEffect(() => {
     if (
@@ -191,7 +201,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
         wallet: wallets,
       });
     }
-  }, [currentCompany, companyConfigs, device_config]);
+  }, [currentCompany?.id, companyConfigs, device_config?.configs]);
 
   useEffect(() => {
     if (
@@ -202,27 +212,34 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
       Object.entries(currentCompany).length > 0
     ) {
       setDeviceConfigFetched(false);
+      setDeviceDefaultsInitialized(false);
       deviceConfigsActions
         .getItems({
           'device.device': device.id,
           people: '/people/' + currentCompany.id,
         })
         .then(data => {
-          if (data && data.length > 0) {
-            let d = {...data[0]};
-            d.configs = JSON.parse(d.configs);
-            deviceConfigsActions.setItem(d);
+          if (Array.isArray(data) && data.length > 0) {
+            const nextItem = {
+              ...data[0],
+              configs: parseConfigsObject(data[0]?.configs),
+            };
+            deviceConfigsActions.setItem(nextItem);
+            return;
           }
+
+          deviceConfigsActions.setItem({});
         })
         .catch(() => {})
         .finally(() => {
           setDeviceConfigFetched(true);
         });
     }
-  }, [currentCompany, isLogged, device]);
+  }, [currentCompany?.id, isLogged, device?.id]);
 
   useEffect(() => {
     if (
+      !deviceDefaultsInitialized ||
       !deviceConfigFetched ||
       !isLogged ||
       !currentCompany?.id ||
@@ -247,17 +264,98 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
       }),
       people: '/people/' + currentCompany.id,
     });
-  }, [deviceConfigFetched, isLogged, currentCompany, device, device_config, deviceConfigsActions]);
+  }, [
+    deviceDefaultsInitialized,
+    deviceConfigFetched,
+    isLogged,
+    currentCompany?.id,
+    device?.id,
+    device_config?.configs,
+    deviceConfigsActions,
+  ]);
+
+  useEffect(() => {
+    if (!isLogged || !currentCompany?.id || !device?.id) {
+      return;
+    }
+
+    setMainConfigsDiscovered(false);
+  }, [isLogged, currentCompany?.id, device?.id]);
+
+  useEffect(() => {
+    if (
+      !isLogged ||
+      !currentCompany?.id ||
+      !device?.id ||
+      mainConfigsDiscovered
+    ) {
+      return;
+    }
+
+    configActions
+      .discoveryMainConfigs({
+        people: '/people/' + currentCompany.id,
+      })
+      .catch(() => {})
+      .finally(() => {
+        setMainConfigsDiscovered(true);
+      });
+  }, [configActions, currentCompany?.id, device?.id, isLogged, mainConfigsDiscovered]);
+
+  useEffect(() => {
+    if (
+      !deviceConfigFetched ||
+      !isLogged ||
+      !currentCompany?.id ||
+      !device?.id ||
+      deviceDefaultsInitialized
+    ) {
+      return;
+    }
+
+    const {nextConfigs, needsUpdate} = buildDefaultDeviceConfigs({
+      configs: device_config?.configs,
+      appVersion,
+      deviceInfo: device,
+    });
+
+    if (!needsUpdate) {
+      setDeviceDefaultsInitialized(true);
+      return;
+    }
+
+    deviceConfigsActions
+      .addDeviceConfigs({
+        configs: JSON.stringify(nextConfigs),
+        people: '/people/' + currentCompany.id,
+      })
+      .catch(() => {})
+      .finally(() => {
+        setDeviceDefaultsInitialized(true);
+      });
+  }, [
+    appVersion,
+    currentCompany?.id,
+    device?.id,
+    device?.manufacturer,
+    device?.isEmulator,
+    deviceConfigFetched,
+    deviceDefaultsInitialized,
+    deviceConfigsActions,
+    device_config?.configs,
+    isLogged,
+  ]);
 
   useEffect(() => {
     if (
       isLogged &&
       currentCompany &&
-      Object.entries(currentCompany).length > 0
+      Object.entries(currentCompany).length > 0 &&
+      !mainConfigsDiscovered
     ) {
       configActions.setItems(currentCompany.configs);
     }
-  }, [currentCompany, isLogged]);
+  }, [currentCompany, isLogged, mainConfigsDiscovered]);
 
   useEffect(() => {
     if (
@@ -311,7 +409,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
     ) {
       peopleActions.myCompanies();
     }
-  }, [isLogged, device]);
+  }, [isLogged, device?.id]);
 
   useEffect(() => {
     const fetchColors = async () => {

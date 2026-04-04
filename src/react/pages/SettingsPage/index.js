@@ -1,4 +1,4 @@
-import React, {useState, useCallback, useEffect, useMemo} from 'react';
+import React, {useState, useCallback, useMemo} from 'react';
 import {
   Text,
   View,
@@ -22,6 +22,11 @@ import {
   buildScreenMetrics,
   hasScreenMetricsChanges,
 } from '@controleonline/ui-common/src/react/utils/screenMetrics';
+import {
+  CIELO_DEVICES,
+  isTruthyValue,
+  resolveDefaultGateway,
+} from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
 
 const Settings = () => {
   const navigation = useNavigation();
@@ -65,7 +70,12 @@ const Settings = () => {
   const [deviceConfigsLoaded, setDeviceConfigsLoaded] = useState(false);
   const pickerMode = Platform.OS === 'android' ? 'dropdown' : undefined;
 
-  const cieloDevices = ['Quantum', 'ingenico'];
+  const defaultGateway = resolveDefaultGateway(storagedDevice);
+  const deviceManufacturer = String(storagedDevice?.manufacturer || '').toLowerCase();
+  const isEmulatorDevice = isTruthyValue(storagedDevice?.isEmulator);
+  const isCieloDevice = CIELO_DEVICES.includes(deviceManufacturer);
+  const showGatewayPicker = !isCieloDevice || isEmulatorDevice;
+  const allowCieloOption = isCieloDevice || isEmulatorDevice;
 
   const screenMetrics = useMemo(() => buildScreenMetrics(), []);
 
@@ -118,14 +128,7 @@ const Settings = () => {
       needsUpdate = true;
     }
     if (!lc['pos-gateway']) {
-      if (
-        cieloDevices.includes(storagedDevice?.manufacturer) &&
-        !storagedDevice?.isEmulator
-      ) {
-        lc['pos-gateway'] = 'cielo';
-      } else {
-        lc['pos-gateway'] = 'infinite-pay';
-      }
+      lc['pos-gateway'] = defaultGateway;
       needsUpdate = true;
     }
 
@@ -153,6 +156,7 @@ const Settings = () => {
     currentCompany?.id,
     configsLoaded,
     storagedDevice,
+    defaultGateway,
     appVersion,
     deviceConfigsActions,
   ]);
@@ -165,25 +169,48 @@ const Settings = () => {
     }, []),
   );
 
-  // ALEMAC // ===== ALTERAÇÃO: CORRIGIDO PARA VERIFICAR device AO INVÉS DE device.configs =====
-// useFocusEffect(
-//   useCallback(() => {
-//     if (device?.configs !== undefined) {
-//       setDeviceConfigsLoaded(true);
-//     }
-//   }, [device?.configs]),
-// );
+  useFocusEffect(
+    useCallback(() => {
+      if (!currentCompany?.id || !storagedDevice?.id) {
+        return;
+      }
 
-useFocusEffect(
-  useCallback(() => {
-    if (device !== undefined) {
-      setDeviceConfigsLoaded(true);
-    }
-  }, [device]),
-);
+      deviceConfigsActions
+        .getItems({
+          'device.device': storagedDevice.id,
+          people: '/people/' + currentCompany.id,
+        })
+        .then(data => {
+          if (Array.isArray(data) && data.length > 0) {
+            let parsedConfigs = {};
 
+            if (typeof data[0]?.configs === 'string') {
+              try {
+                parsedConfigs = JSON.parse(data[0].configs);
+              } catch (e) {
+                parsedConfigs = {};
+              }
+            } else if (typeof data[0]?.configs === 'object') {
+              parsedConfigs = data[0].configs || {};
+            }
 
+            deviceConfigsActions.setItem({
+              ...data[0],
+              configs: parsedConfigs,
+            });
+            return;
+          }
 
+          deviceConfigsActions.setItem({});
+        })
+        .catch(() => {
+          deviceConfigsActions.setItem({});
+        })
+        .finally(() => {
+          setDeviceConfigsLoaded(true);
+        });
+    }, [currentCompany?.id, storagedDevice?.id, deviceConfigsActions]),
+  );
 
 
   useFocusEffect(
@@ -598,8 +625,7 @@ useFocusEffect(
               <Picker.Item label={global.t?.t("configs", "option", "printFullOrder")} value="form" />
             </Picker>
           </View>
-          {(!cieloDevices.includes(storagedDevice?.manufacturer) ||
-            storagedDevice?.isEmulator) && (
+          {showGatewayPicker && (
             <View style={{marginTop: 10}}>
               <Picker
                 selectedValue={selectedGateway}
@@ -607,8 +633,7 @@ useFocusEffect(
                 mode={pickerMode}
                 style={styles.Settings.picker}>
                 <Picker.Item label="Infinite Pay" value="infinite-pay" />
-                {(cieloDevices.includes(storagedDevice?.manufacturer) ||
-                  storagedDevice?.isEmulator) && (
+                {allowCieloOption && (
                   <Picker.Item label="Cielo" value="cielo" />
                 )}
               </Picker>
