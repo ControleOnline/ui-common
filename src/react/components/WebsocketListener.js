@@ -7,6 +7,7 @@ export const WebsocketListener = () => {
   const reconnectTimeoutRef = useRef(null);
   const reconnectAttempts = useRef(0);
   const isIdentifyingRef = useRef(false);
+  const manualCloseRef = useRef(false);
 
   const url = env.SOCKET;
 
@@ -46,6 +47,8 @@ export const WebsocketListener = () => {
     ) {
       return;
     }
+
+    manualCloseRef.current = false;
 
     //console.log('Iniciando conexao WebSocket em:', url);
 
@@ -105,7 +108,7 @@ export const WebsocketListener = () => {
   };
 
   const scheduleReconnect = () => {
-    if (reconnectTimeoutRef.current) return;
+    if (manualCloseRef.current || reconnectTimeoutRef.current) return;
 
     const delay = Math.min(10000 * Math.pow(2, reconnectAttempts.current), 12000);
     reconnectAttempts.current += 1;
@@ -120,6 +123,7 @@ export const WebsocketListener = () => {
 
   const close = () => {
     //console.log('Limpando WebSocket...');
+    manualCloseRef.current = true;
     if (websocketRef.current) {
       websocketRef.current.close();
       websocketRef.current = null;
@@ -133,6 +137,7 @@ export const WebsocketListener = () => {
 
   useEffect(() => {
     if (device?.id) {
+      manualCloseRef.current = false;
       connect();
     } else {
       close();
