@@ -106,7 +106,7 @@ export const addDeviceConfigs = ({commit, getters}, params) => {
 };
 
 // ===== ALTERAÇÃO: NOVA ACTION PARA GRAVAR CONFIGS PREENCHIDAS AUTOMATICAMENTE =====
-export const initializeDeviceConfigs = ({commit, getters, dispatch}, people) => {
+export const initializeDeviceConfigs = ({commit, getters}, people) => {
   const defaultConfigs = {
     'check-type': 'manual',
     'pos-type': 'full',
@@ -125,6 +125,6 @@ export const initializeDeviceConfigs = ({commit, getters, dispatch}, people) => 
     people: people,
   };
 
-  return dispatch('addDeviceConfigs', params);
+  return addDeviceConfigs({commit, getters}, params);
 };
 // ===== FIM DA ALTERAÇÃO =====
