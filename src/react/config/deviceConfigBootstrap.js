@@ -3,7 +3,7 @@ import {
   hasScreenMetricsChanges,
 } from '@controleonline/ui-common/src/react/utils/screenMetrics';
 
-export const CIELO_DEVICES = ['quantum', 'ingenico'];
+export const CIELO_DEVICES = ['quantum', 'ingenico', 'positivo'];
 
 export const DEFAULT_DEVICE_CONFIGS = {
   'pos-type': 'full',

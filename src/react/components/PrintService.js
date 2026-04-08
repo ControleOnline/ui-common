@@ -93,31 +93,33 @@ const PrintService = () => {
     }
   }, [messages, message])
 
+  const resolveTargetDevice = printJob => printJob?.device || storagedDevice.id
+
   const getData = async print => {
     if (print.printType == 'order') await printOrder(print)
-    if (print.printType == 'cash-register') await printCashRegister()
+    if (print.printType == 'cash-register') await printCashRegister(print)
     if (print.printType == 'purchasing-suggestion')
-      await printPurchasingSuggestion()
-    if (print.printType == 'inventory') await printInventory()
+      await printPurchasingSuggestion(print)
+    if (print.printType == 'inventory') await printInventory(print)
   }
 
-  const printInventory = async () => {
+  const printInventory = async printJob => {
     return await printActions.printInventory({
-      device: storagedDevice.id,
+      device: resolveTargetDevice(printJob),
       people: currentCompany.id,
     })
   }
 
-  const printPurchasingSuggestion = async () => {
+  const printPurchasingSuggestion = async printJob => {
     return await printActions.printPurchasingSuggestion({
-      device: storagedDevice.id,
+      device: resolveTargetDevice(printJob),
       people: currentCompany.id,
     })
   }
 
-  const printCashRegister = async () => {
+  const printCashRegister = async printJob => {
     return await printActions.getCashRegisterPrint({
-      device: storagedDevice.id,
+      device: resolveTargetDevice(printJob),
       people: currentCompany.id,
     })
   }
@@ -125,7 +127,7 @@ const PrintService = () => {
   const printOrder = async order => {
     return await printActions.printOrder({
       id: order.id,
-      device: storagedDevice.id,
+      device: resolveTargetDevice(order),
     })
   }
 
