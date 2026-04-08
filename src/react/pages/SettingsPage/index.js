@@ -41,8 +41,6 @@ const Settings = () => {
   const device_configStore = useStore('device_config');
   const deviceConfigGetters = device_configStore.getters;
   const deviceConfigsActions = device_configStore.actions;
-  const categoriesStore = useStore('categories');
-  const categoryActions = categoriesStore.actions;
   const {item: device} = deviceConfigGetters;
   const {currentCompany} = peopleGetters;
   const {isLoading: walletLoading} = walletGetters;
@@ -433,11 +431,6 @@ const Settings = () => {
       });
   };
 
-  const handleClearProducts = () => {
-    localStorage.setItem('categories', JSON.stringify([]));
-    categoryActions.setItems([]);
-  };
-
   const handleClearTranslate = () => {
     Promise.resolve(global.t?.reload?.())
       .then(() => {
@@ -640,46 +633,21 @@ const Settings = () => {
             </View>
           )}
 
-          <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'stretch',
-              marginTop: 6,
-            }}>
-            <TouchableOpacity
-              onPress={handleClearTranslate}
-              style={[
-                globalStyles.button,
-                {
-                  flex: 1,
-                  flexDirection: 'row',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  height: 50,
-                  marginTop: 0,
-                },
-              ]}>
-              <Icon name="add-circle" size={24} color="#fff" />
-              <Text style={{color: '#fff', marginLeft: 8}}>{global.t?.t("configs", "label", "resync translations")}</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={handleClearProducts}
-              style={[
-                globalStyles.button,
-                {
-                  flex: 1,
-                  flexDirection: 'row',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  height: 50,
-                  marginTop: 0,
-                },
-              ]}>
-              <Icon name="add-circle" size={24} color="#fff" />
-              <Text style={{color: '#fff', marginLeft: 8}}>{global.t?.t("configs", "label", "resync products")}</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            onPress={handleClearTranslate}
+            style={[
+              globalStyles.button,
+              {
+                flexDirection: 'row',
+                justifyContent: 'center',
+                alignItems: 'center',
+                height: 50,
+                marginTop: 6,
+              },
+            ]}>
+            <Icon name="add-circle" size={24} color="#fff" />
+            <Text style={{color: '#fff', marginLeft: 8}}>{global.t?.t("configs", "label", "resync translations")}</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>

@@ -4,6 +4,7 @@ import Translate from '@controleonline/ui-common/src/utils/translate';
 import { WebsocketListener } from '@controleonline/ui-common/src/react/components/WebsocketListener';
 import PrintService from '@controleonline/ui-common/src/react/components/PrintService';
 import RemoteCheckoutService from '@controleonline/ui-common/src/react/components/RemoteCheckoutService';
+import ProductCatalogCacheService from '@controleonline/ui-common/src/react/components/ProductCatalogCacheService';
 import { useStore } from '@store';
 import { api } from '@controleonline/ui-common/src/api';
 import { env as APP_ENV } from '@env';
@@ -80,7 +81,7 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
   const { colors, menus } = getters;
   const { currentCompany, defaultCompany, companies } = peopleGetters;
   const { item: device_config } = deviceConfigsGetters;
-  const { isLogged } = authGetters;
+  const { isLogged, user } = authGetters;
   const hasCurrentCompany =
     !!currentCompany && Object.entries(currentCompany).length > 0;
 
@@ -109,58 +110,77 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
     };
   }, []);
 
-  const fetchPublicIP = async () => {
-    try {
-      const res = await fetch('https://api64.ipify.org?format=json');
-      const data = await res.json();
-      return data.ip || 'unknow';
-    } catch (e) {
-      return 'unknow';
-    }
+  const resolveWebUserId = () => {
+    const sessionData = JSON.parse(localStorage.getItem('session') || '{}');
+    return (
+      user?.id ||
+      sessionData?.id ||
+      null
+    );
   };
 
-  const fetchDeviceId = async () => {
-    const ip = await fetchPublicIP();
-
-    let appVersion = null;
-    let appName = 'Web App';
-    try {
-      const response = await fetch('/package.json');
-      if (response.ok) {
-        const packageJsonData = await response.json();
-        appVersion = packageJsonData.version;
-        appName = packageJsonData.displayName || packageJsonData.name || appName;
-      }
-    } catch (e) {
-      console.warn('Não foi possível carregar package.json:', e);
+  const buildWebDevice = userId => {
+    if (!userId) {
+      return null;
     }
 
-    const ld = {
-      id: ip,
-      appName: appName,
+    const nextAppName =
+      packageJson?.displayName ||
+      packageJson?.default?.displayName ||
+      packageJson?.name ||
+      packageJson?.default?.name ||
+      'Web App';
+
+    return {
+      id: `web-${userId}`,
+      appName: nextAppName,
       deviceType: 'web',
       systemName: 'web',
-      systemVersion: 'unknow',
-      manufacturer: 'unknow',
-      model: 'unknow',
+      systemVersion: 'web',
+      manufacturer: 'web',
+      model: 'browser',
       batteryLevel: 'unknow',
-      isEmulator: 'unknow',
-      appVersion: appVersion,
-      buildNumber: appVersion,
+      isEmulator: false,
+      appVersion: packageVersion || '1.0.0',
+      buildNumber: packageVersion || '1.0.0',
     };
-
-
-    setDevice(ld);
-    localStorage.setItem('device', JSON.stringify(ld));
   };
 
   useEffect(() => {
-    if (!device || !device.id || !device.appName) {
-      fetchDeviceId();
-    } else {
-      deviceActions.setItem(device);
+    const resolvedUserId = resolveWebUserId();
+
+    if (!isLogged && (!device || !device.id)) {
+      return;
     }
-  }, [device]);
+
+    if (!resolvedUserId) {
+      if (device && device.id) {
+        deviceActions.setItem(device);
+      }
+      return;
+    }
+
+    const nextDevice = buildWebDevice(resolvedUserId);
+    if (!nextDevice) {
+      return;
+    }
+
+    const shouldRefreshDevice =
+      !device?.id ||
+      device.id !== nextDevice.id ||
+      device.appVersion !== nextDevice.appVersion ||
+      device.appName !== nextDevice.appName;
+
+    if (shouldRefreshDevice) {
+      setDevice(nextDevice);
+      localStorage.setItem('device', JSON.stringify(nextDevice));
+      deviceActions.setItem(nextDevice);
+      localStorage.removeItem('master-device');
+      return;
+    }
+
+    deviceActions.setItem(device);
+  }, [device, deviceActions, isLogged, packageVersion, user?.id]);
 
   useEffect(() => {
     if (device && device.id) {
@@ -459,15 +479,17 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
   }
 
   return (
-    device &&
-    device.id && (
-      <ThemeContext.Provider value={{ colors, menus }}>
-        {children}
-        <WebsocketListener />
-        <RemoteCheckoutService />
-        <PrintService />
-      </ThemeContext.Provider>
-    )
+    <ThemeContext.Provider value={{ colors, menus }}>
+      {children}
+      {device?.id && isLogged && (
+        <>
+          <WebsocketListener />
+          <ProductCatalogCacheService />
+          <RemoteCheckoutService />
+          <PrintService />
+        </>
+      )}
+    </ThemeContext.Provider>
   );
 };
 

@@ -59,10 +59,40 @@ export const useStores = create((set, get) => {
       }));
     };
 
+    const dispatch = (actionName, ...args) => {
+      if (typeof actionName !== 'string' || !actionName) {
+        console.error(
+          `Dispatch received an invalid action name in store "${storeName}"`,
+        );
+        return undefined;
+      }
+
+      let targetStoreName = storeName;
+      let targetActionName = actionName;
+
+      if (actionName.includes('/')) {
+        const [parsedStoreName, parsedActionName] = actionName.split('/');
+        targetStoreName = parsedStoreName || storeName;
+        targetActionName = parsedActionName || actionName;
+      }
+
+      const targetStore = get()[targetStoreName];
+      const targetAction = targetStore?.actions?.[targetActionName];
+
+      if (typeof targetAction !== 'function') {
+        console.error(
+          `Action "${targetActionName}" not found in store "${targetStoreName}"`,
+        );
+        return undefined;
+      }
+
+      return targetAction(...args);
+    };
+
     Object.keys(storeModule.actions).forEach(actionName => {
       storeState[storeName].actions[actionName] = (...args) =>
         storeModule.actions[actionName](
-          { commit, getters: storeState[storeName].getters },
+          {commit, getters: storeState[storeName].getters, dispatch},
           ...args,
         );
     });

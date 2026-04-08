@@ -21,6 +21,10 @@ const parseJsonValue = (value, fallback) => {
 };
 
 export const normalizeDeviceId = value => String(value || '').trim();
+export const normalizeEntityId = value =>
+  String(value?.id || value || '')
+    .replace(/\D/g, '')
+    .trim();
 
 export const normalizeDeviceIds = value => {
   const parsed = parseJsonValue(value, []);
@@ -33,10 +37,79 @@ export const normalizeDeviceIds = value => {
   return singleId ? [singleId] : [];
 };
 
-export const getPaymentGateway = deviceConfig =>
-  String(deviceConfig?.configs?.['pos-gateway'] || '')
+const parseConfigsObject = value => {
+  if (!value) {
+    return {};
+  }
+
+  if (typeof value === 'string') {
+    try {
+      const parsed = JSON.parse(value);
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch (e) {
+      return {};
+    }
+  }
+
+  return typeof value === 'object' ? value : {};
+};
+
+const normalizeGatewayValue = value => {
+  const rawGateway = String(value || '')
     .trim()
     .toLowerCase();
+
+  if (!rawGateway) {
+    return '';
+  }
+
+  const compactGateway = rawGateway.replace(/[\s_]/g, '-');
+  if (compactGateway === 'infinitepay') {
+    return 'infinite-pay';
+  }
+  if (compactGateway === 'infinite-pay') {
+    return 'infinite-pay';
+  }
+  if (compactGateway === 'cielo') {
+    return 'cielo';
+  }
+
+  return compactGateway;
+};
+
+const resolveDeviceConfigDevice = deviceConfig => {
+  const nestedDevice = deviceConfig?.device;
+  if (nestedDevice && typeof nestedDevice === 'object') {
+    return nestedDevice;
+  }
+  if (typeof nestedDevice === 'string') {
+    return {device: nestedDevice};
+  }
+  return {};
+};
+
+const getDeviceConfigDeviceId = deviceConfig => {
+  const device = resolveDeviceConfigDevice(deviceConfig);
+  return normalizeDeviceId(
+    device?.device || deviceConfig?.deviceId || deviceConfig?.device_id || '',
+  );
+};
+
+export const filterDeviceConfigsByCompany = (deviceConfigs, companyId) => {
+  const normalizedCompanyId = normalizeEntityId(companyId);
+
+  return (Array.isArray(deviceConfigs) ? deviceConfigs : []).filter(
+    deviceConfig =>
+      !normalizedCompanyId ||
+      normalizeEntityId(deviceConfig?.people?.id || deviceConfig?.people) ===
+        normalizedCompanyId,
+  );
+};
+
+export const getPaymentGateway = deviceConfig => {
+  const configs = parseConfigsObject(deviceConfig?.configs);
+  return normalizeGatewayValue(configs?.['pos-gateway']);
+};
 
 export const isPaymentGateway = gateway => PAYMENT_GATEWAYS.includes(gateway);
 
@@ -44,9 +117,9 @@ export const isPaymentCapableDeviceConfig = deviceConfig =>
   isPaymentGateway(getPaymentGateway(deviceConfig));
 
 export const getPaymentDeviceLabel = deviceConfig =>
-  deviceConfig?.device?.alias ||
-  deviceConfig?.device?.name ||
-  deviceConfig?.device?.device ||
+  resolveDeviceConfigDevice(deviceConfig)?.alias ||
+  resolveDeviceConfigDevice(deviceConfig)?.name ||
+  resolveDeviceConfigDevice(deviceConfig)?.device ||
   'Device sem nome';
 
 export const getPaymentGatewayLabel = gateway => {
@@ -60,7 +133,7 @@ export const getCompanyPaymentDeviceOptions = deviceConfigs =>
     .filter(isPaymentCapableDeviceConfig)
     .map(deviceConfig => ({
       alias: getPaymentDeviceLabel(deviceConfig),
-      deviceId: normalizeDeviceId(deviceConfig?.device?.device),
+      deviceId: getDeviceConfigDeviceId(deviceConfig),
       gateway: getPaymentGateway(deviceConfig),
       gatewayLabel: getPaymentGatewayLabel(getPaymentGateway(deviceConfig)),
       config: deviceConfig,
@@ -71,8 +144,9 @@ export const resolveConfiguredRemotePaymentDeviceIds = ({
   deviceConfig,
   companyConfigs,
 }) => {
+  const configs = parseConfigsObject(deviceConfig?.configs);
   const preferredDeviceId = normalizeDeviceId(
-    deviceConfig?.configs?.[ORDER_PAYMENT_DEVICE_CONFIG_KEY],
+    configs?.[ORDER_PAYMENT_DEVICE_CONFIG_KEY],
   );
 
   if (preferredDeviceId) {

@@ -5,6 +5,7 @@ import Translate from '@controleonline/ui-common/src/utils/translate';
 import {WebsocketListener} from '@controleonline/ui-common/src/react/components/WebsocketListener';
 import PrintService from '@controleonline/ui-common/src/react/components/PrintService';
 import RemoteCheckoutService from '@controleonline/ui-common/src/react/components/RemoteCheckoutService';
+import ProductCatalogCacheService from '@controleonline/ui-common/src/react/components/ProductCatalogCacheService';
 import {api} from '@controleonline/ui-common/src/api';
 import {env as APP_ENV} from '@env';
 import {
@@ -466,6 +467,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
       <ThemeContext.Provider value={{colors, menus}}>
         {children}
         <WebsocketListener />
+        <ProductCatalogCacheService />
         <RemoteCheckoutService />
         <PrintService />
       </ThemeContext.Provider>

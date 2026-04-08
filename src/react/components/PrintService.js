@@ -1,5 +1,4 @@
-import React, {useEffect, useRef} from 'react'
-import {Audio} from 'expo-audio'
+import React, {useEffect} from 'react'
 import {CieloPrint} from '@controleonline/ui-orders/src/react/services/Cielo/Print'
 import {useStore} from '@store'
 
@@ -12,28 +11,12 @@ const PrintService = () => {
   const deviceStore = useStore('device')
   const deviceGetters = deviceStore.getters
 
-  const soundRef = useRef(null)
   const {item: storagedDevice} = deviceGetters
   const {reload, print, items: spool, message, messages} = printGetters
   const {currentCompany} = peopleGetters
 
-  const playSound = async file => {
-    try {
-      if (soundRef.current) {
-        await soundRef.current.unloadAsync?.()
-        soundRef.current = null
-      }
-
-      const sound = new Audio.Sound()
-      await sound.loadAsync(require('../assets/tap.mp3'))
-      soundRef.current = sound
-      await sound.playAsync()
-    } catch (e) {}
-  }
-
   useEffect(() => {
     printActions.setReload(true)
-    if (message?.sound) playSound(message.sound)
   }, [message])
 
   useEffect(() => {
