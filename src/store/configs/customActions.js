@@ -23,6 +23,28 @@ export const addConfigs = ({commit, getters}, params) => {
     });
 };
 
+export const addManyConfigs = ({commit, getters}, params) => {
+  const options = {
+    method: 'POST',
+    body: params,
+  };
+
+  commit(types.SET_ISSAVING, true);
+
+  return api
+    .fetch(getters.resourceEndpoint + '/add-many-configs', options)
+    .then(data => {
+      return data;
+    })
+    .catch(e => {
+      commit(types.SET_ERROR, e.message);
+      throw e;
+    })
+    .finally(() => {
+      commit(types.SET_ISSAVING, false);
+    });
+};
+
 
 
 export const discoveryMainConfigs = ({commit, getters}, params) => {
