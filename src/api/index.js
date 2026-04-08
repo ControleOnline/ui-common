@@ -7,7 +7,7 @@ const MIME_TYPE = 'application/ld+json';
 
 export const api = {
   device: JSON.parse(localStorage.getItem('device') || '{}'),
-  //masterDevice: JSON.parse(localStorage.getItem('master-device') || '{}'),
+  masterDevice: JSON.parse(localStorage.getItem('master-device') || '{}'),
 
 
   upload: async function (uri, formData) {
@@ -34,6 +34,14 @@ export const api = {
       this.device = JSON.parse(localStorage.getItem('device') || '{}');
     } catch (e) {
       this.device = {};
+    }
+
+    try {
+      this.masterDevice = JSON.parse(
+        localStorage.getItem('master-device') || '{}',
+      );
+    } catch (e) {
+      this.masterDevice = {};
     }
 
     let token = await this.getToken();

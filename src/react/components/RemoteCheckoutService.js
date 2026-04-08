@@ -1,5 +1,5 @@
-import React, {useState, useCallback, useEffect} from 'react';
-import {useNavigation, useFocusEffect} from '@react-navigation/native';
+import React, {useState, useEffect} from 'react';
+//import {useNavigation} from '@react-navigation/native';
 
 import CieloCheckout from '@controleonline/ui-orders/src/react/services/Cielo/Checkout';
 import InfinitePay from '@controleonline/ui-orders/src/react/services/InfinitePay/Checkout';
@@ -24,30 +24,28 @@ const Checkout = () => {
   const {currentCompany, defaultCompany} = peopleGetters;
   const {item: order} = ordersGetters;
   const {messages, message} = invoiceGetters;
-  const navigation = useNavigation();
+  //const navigation = useNavigation();
   const [paymentType, setPaymentType] = useState(null);
   const [paymentValue, setPaymentValue] = useState(null);
 
-  useFocusEffect(
-    useCallback(() => {
-      if (message?.action == 'pay') {
-        localStorage.setItem(
-          'master-device',
-          JSON.stringify({id: message['master-device']}),
-        );
-        ordersActions.get(message.order).then(data => {
-          setPaymentType(message.wallet_payment_type);
-          setPaymentValue(message.total);
-        });
-      }
-    }, [message]),
-  );
+  useEffect(() => {
+    if (message?.action == 'pay') {
+      localStorage.setItem(
+        'master-device',
+        JSON.stringify({id: message['master-device']}),
+      );
+      ordersActions.get(message.order).then(() => {
+        setPaymentType(message.wallet_payment_type);
+        setPaymentValue(message.total);
+      });
+    }
+  }, [message, ordersActions]);
 
   useEffect(() => {
     if (
       messages &&
       messages.length > 0 &&
-      (!message || Object.keys(message) == 0)
+      (!message || Object.keys(message).length === 0)
     ) {
       const m = [...messages];
       invoiceActions.setMessage(m.pop());
@@ -67,7 +65,7 @@ const Checkout = () => {
     ordersActions.setItem(null);
     invoiceActions.setItems([]);
     ordersActions.setPayable(0);
-    navigation.reset('HomePage');
+    //navigation.reset('HomePage');
   };
   const createInvoice = (selectedPayment, total) => {
     const payload = {
