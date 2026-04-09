@@ -42,23 +42,93 @@ const PrintService = () => {
     if (spool && spool.length > 0) goPrint(spool[0])
   }, [spool])
 
+  const normalizePrintPayload = (content) => {
+    if (content === null || content === undefined) {
+      return ''
+    }
+
+    if (typeof content !== 'string') {
+      return JSON.stringify(content)
+    }
+
+    const tryNormalizeJson = rawContent => {
+      const trimmed = String(rawContent || '').trim()
+      if (!trimmed) return null
+
+      try {
+        const parsed = JSON.parse(trimmed)
+
+        if (
+          parsed &&
+          typeof parsed === 'object' &&
+          Array.isArray(parsed.styles) &&
+          parsed.styles.length > 0 &&
+          Array.isArray(parsed.styles[0])
+        ) {
+          parsed.styles = parsed.styles.map(() => ({}))
+        }
+
+        return JSON.stringify(parsed)
+      } catch (e) {
+        return null
+      }
+    }
+
+    const normalizedJson = tryNormalizeJson(content)
+    if (normalizedJson) {
+      return normalizedJson
+    }
+
+    if (typeof atob === 'function') {
+      try {
+        const decodedContent = atob(content)
+        const normalizedDecodedJson = tryNormalizeJson(decodedContent)
+        if (normalizedDecodedJson) {
+          return normalizedDecodedJson
+        }
+      } catch (e) {
+        return content
+      }
+    }
+
+    return content
+  }
+
   const goPrint = async p => {
     let s = [...spool]
     const cielo = new CieloPrint()
 
-    if (p['@id'])
-      printActions.get(p['@id'].replace(/\D/g, '')).then(data => {
-        if (data?.file?.content)
-          printActions
-            .makePrintDone(data['@id'].replace(/\D/g, ''))
-            .then(() => {
-              cielo.print(data.file.content)
-              s.shift()
-              printActions.setItems(s)
-              printActions.setMessage(null)
-            })
+    if (p['@id']) {
+      printActions.get(p['@id'].replace(/\D/g, '')).then(async data => {
+        if (data?.file?.content) {
+          try {
+            const payload = normalizePrintPayload(data.file.content)
+            const response = await cielo.print(payload)
+
+            if (!response?.success) {
+              throw new Error(
+                response?.result ||
+                  global.t?.t('orders', 'message', 'printProcessingError'),
+              )
+            }
+
+            await printActions.makePrintDone(data['@id'].replace(/\D/g, ''))
+          } catch (e) {
+            printActions.setError(
+              e?.message || global.t?.t('orders', 'message', 'printProcessingError'),
+            )
+          } finally {
+            s.shift()
+            printActions.setItems(s)
+            printActions.setMessage(null)
+          }
+        } else {
+          s.shift()
+          printActions.setItems(s)
+          printActions.setMessage(null)
+        }
       })
-    else {
+    } else {
       printActions.setItems(s.shift() || [])
       printActions.setMessage(null)
     }
