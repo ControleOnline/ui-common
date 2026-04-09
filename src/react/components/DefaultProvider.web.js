@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { View, ActivityIndicator, Text } from 'react-native';
 import Translate from '@controleonline/ui-common/src/utils/translate';
 import { WebsocketListener } from '@controleonline/ui-common/src/react/components/WebsocketListener';
+import DeviceAlertSoundService from '@controleonline/ui-common/src/react/components/DeviceAlertSoundService';
 import PrintService from '@controleonline/ui-common/src/react/components/PrintService';
 import RemoteCheckoutService from '@controleonline/ui-common/src/react/components/RemoteCheckoutService';
 import ProductCatalogCacheService from '@controleonline/ui-common/src/react/components/ProductCatalogCacheService';
@@ -484,6 +485,7 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
       {device?.id && isLogged && (
         <>
           <WebsocketListener />
+          <DeviceAlertSoundService />
           <ProductCatalogCacheService />
           <RemoteCheckoutService />
           <PrintService />

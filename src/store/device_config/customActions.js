@@ -1,6 +1,10 @@
 import {api} from '@controleonline/ui-common/src/api';
 import * as types from '@controleonline/ui-default/src/store/default/mutation_types';
 import packageJson from '@package';
+import {
+  DEVICE_ALERT_SOUND_ENABLED_KEY,
+  DEVICE_ALERT_SOUND_URL_KEY,
+} from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
 
 const getAppVersion = () => {
   const packageVersion = packageJson?.version || packageJson?.default?.version;
@@ -114,6 +118,8 @@ export const initializeDeviceConfigs = ({commit, getters}, people) => {
     'product-input-type': 'rfid',
     'sound': '0',
     'vibration': '0',
+    [DEVICE_ALERT_SOUND_ENABLED_KEY]: '0',
+    [DEVICE_ALERT_SOUND_URL_KEY]: '',
     'config-version': getAppVersion(),
     'pos-gateway': 'infinite-pay',
     'cash-wallet-closed-id': 0,

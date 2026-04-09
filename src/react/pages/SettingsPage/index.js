@@ -8,6 +8,7 @@ import {
   Switch,
   Alert,
   Platform,
+  TextInput,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import css from '@controleonline/ui-orders/src/react/css/orders';
@@ -24,6 +25,8 @@ import {
 } from '@controleonline/ui-common/src/react/utils/screenMetrics';
 import {
   CIELO_DEVICES,
+  DEVICE_ALERT_SOUND_ENABLED_KEY,
+  DEVICE_ALERT_SOUND_URL_KEY,
   isTruthyValue,
   resolveDefaultGateway,
 } from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
@@ -64,6 +67,8 @@ const Settings = () => {
   const [selectionType, setSelectionType] = useState('single');
   const [showSound, setShowSound] = useState(false);
   const [showVibration, setShowVibration] = useState(false);
+  const [alertSoundEnabled, setAlertSoundEnabled] = useState(false);
+  const [alertSoundUrl, setAlertSoundUrl] = useState('');
   const [configsLoaded, setConfigsLoaded] = useState(false);
   const [deviceConfigsLoaded, setDeviceConfigsLoaded] = useState(false);
   const pickerMode = Platform.OS === 'android' ? 'dropdown' : undefined;
@@ -118,6 +123,14 @@ const Settings = () => {
     }
     if (!lc['vibration']) {
       lc['vibration'] = '0';
+      needsUpdate = true;
+    }
+    if (lc[DEVICE_ALERT_SOUND_ENABLED_KEY] === undefined || lc[DEVICE_ALERT_SOUND_ENABLED_KEY] === null) {
+      lc[DEVICE_ALERT_SOUND_ENABLED_KEY] = '0';
+      needsUpdate = true;
+    }
+    if (lc[DEVICE_ALERT_SOUND_URL_KEY] === undefined || lc[DEVICE_ALERT_SOUND_URL_KEY] === null) {
+      lc[DEVICE_ALERT_SOUND_URL_KEY] = '';
       needsUpdate = true;
     }
     if (!lc['config-version']) {
@@ -233,6 +246,8 @@ const Settings = () => {
           device?.configs['vibration'] === true ||
           device?.configs['vibration'] === '1'
         );
+        setAlertSoundEnabled(isTruthyValue(device?.configs[DEVICE_ALERT_SOUND_ENABLED_KEY]));
+        setAlertSoundUrl(String(device?.configs[DEVICE_ALERT_SOUND_URL_KEY] || ''));
         setSelectedMode(device?.configs['pos-type'] || 'full');
         setPrintingMode(device?.configs['print-mode'] || 'order');
         setSelectedGateway(device?.configs['pos-gateway'] || 'infinite-pay');
@@ -242,6 +257,8 @@ const Settings = () => {
         setSelectionType('single');
         setShowSound(false);
         setShowVibration(false);
+        setAlertSoundEnabled(false);
+        setAlertSoundUrl('');
         setSelectedMode('full');
         setPrintingMode('order');
         setSelectedGateway('infinite-pay');
@@ -281,6 +298,8 @@ const Settings = () => {
     lc['selection-type'] = selectionType;
     lc['sound'] = showSound ? '1' : '0';
     lc['vibration'] = showVibration ? '1' : '0';
+    lc[DEVICE_ALERT_SOUND_ENABLED_KEY] = alertSoundEnabled ? '1' : '0';
+    lc[DEVICE_ALERT_SOUND_URL_KEY] = alertSoundUrl.trim();
     
     deviceConfigsActions
       .addDeviceConfigs({
@@ -379,6 +398,39 @@ const Settings = () => {
       })
       .catch(err => {
         console.error('addDeviceConfigs (vibration) failed:', err);
+        Alert.alert('Erro ao gravar configurações', err.message || JSON.stringify(err));
+      });
+  };
+
+  const handleAlertSoundEnabledChange = value => {
+    setAlertSoundEnabled(value);
+    let lc = appendScreenMetrics({...device?.configs || {}});
+    lc[DEVICE_ALERT_SOUND_ENABLED_KEY] = value ? '1' : '0';
+    lc[DEVICE_ALERT_SOUND_URL_KEY] = alertSoundUrl.trim();
+    lc['config-version'] = appVersion;
+    deviceConfigsActions
+      .addDeviceConfigs({
+        configs: JSON.stringify(lc),
+        people: '/people/' + currentCompany.id,
+      })
+      .catch(err => {
+        console.error('addDeviceConfigs (notification sound enabled) failed:', err);
+        Alert.alert('Erro ao gravar configurações', err.message || JSON.stringify(err));
+      });
+  };
+
+  const handleAlertSoundUrlSubmit = () => {
+    let lc = appendScreenMetrics({...device?.configs || {}});
+    lc[DEVICE_ALERT_SOUND_ENABLED_KEY] = alertSoundEnabled ? '1' : '0';
+    lc[DEVICE_ALERT_SOUND_URL_KEY] = alertSoundUrl.trim();
+    lc['config-version'] = appVersion;
+    deviceConfigsActions
+      .addDeviceConfigs({
+        configs: JSON.stringify(lc),
+        people: '/people/' + currentCompany.id,
+      })
+      .catch(err => {
+        console.error('addDeviceConfigs (notification sound url) failed:', err);
         Alert.alert('Erro ao gravar configurações', err.message || JSON.stringify(err));
       });
   };
@@ -595,6 +647,65 @@ const Settings = () => {
             <Switch
               value={showVibration}
               onValueChange={handleVibrationChange}
+            />
+          </View>
+
+          <View
+            style={{
+              marginTop: 16,
+              padding: 14,
+              backgroundColor: '#F8FAFC',
+              borderRadius: 12,
+            }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}>
+              <Text style={styles.Settings.label}>Aviso sonoro via websocket</Text>
+              <Switch
+                value={alertSoundEnabled}
+                onValueChange={handleAlertSoundEnabledChange}
+              />
+            </View>
+
+            <Text
+              style={{
+                fontSize: 12,
+                lineHeight: 18,
+                color: '#64748B',
+                marginTop: 8,
+              }}>
+              Toca ao receber novo pedido, impressao ou order_product_queue neste
+              device via websocket.
+            </Text>
+
+            <Text style={[styles.Settings.label, {marginTop: 12, marginBottom: 6, flex: 0}]}>
+              URL do aviso sonoro
+            </Text>
+            <TextInput
+              value={alertSoundUrl}
+              onChangeText={setAlertSoundUrl}
+              onBlur={handleAlertSoundUrlSubmit}
+              onSubmitEditing={handleAlertSoundUrlSubmit}
+              placeholder="https://exemplo.com/alerta.mp3"
+              placeholderTextColor="#94A3B8"
+              autoCapitalize="none"
+              autoCorrect={false}
+              keyboardType="url"
+              returnKeyType="done"
+              style={{
+                minHeight: 46,
+                borderWidth: 1,
+                borderColor: '#E2E8F0',
+                borderRadius: 10,
+                backgroundColor: '#fff',
+                color: '#0F172A',
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                outlineStyle: 'none',
+              }}
             />
           </View>
 

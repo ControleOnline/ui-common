@@ -4,6 +4,8 @@ import {
 } from '@controleonline/ui-common/src/react/utils/screenMetrics';
 
 export const CIELO_DEVICES = ['quantum', 'ingenico', 'positivo'];
+export const DEVICE_ALERT_SOUND_ENABLED_KEY = 'notification-sound-enabled';
+export const DEVICE_ALERT_SOUND_URL_KEY = 'notification-sound-url';
 
 export const DEFAULT_DEVICE_CONFIGS = {
   'pos-type': 'full',
@@ -13,6 +15,8 @@ export const DEFAULT_DEVICE_CONFIGS = {
   'selection-type': 'single',
   sound: '0',
   vibration: '0',
+  [DEVICE_ALERT_SOUND_ENABLED_KEY]: '0',
+  [DEVICE_ALERT_SOUND_URL_KEY]: '',
 };
 
 export const isTruthyValue = value =>
