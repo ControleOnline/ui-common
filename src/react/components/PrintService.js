@@ -42,7 +42,7 @@ const PrintService = () => {
     if (spool && spool.length > 0) goPrint(spool[0])
   }, [spool])
 
-  const normalizePrintPayload = (content) => {
+  const getPrintPayload = content => {
     if (content === null || content === undefined) {
       return ''
     }
@@ -51,41 +51,9 @@ const PrintService = () => {
       return JSON.stringify(content)
     }
 
-    const tryNormalizeJson = rawContent => {
-      const trimmed = String(rawContent || '').trim()
-      if (!trimmed) return null
-
-      try {
-        const parsed = JSON.parse(trimmed)
-
-        if (
-          parsed &&
-          typeof parsed === 'object' &&
-          Array.isArray(parsed.styles) &&
-          parsed.styles.length > 0 &&
-          Array.isArray(parsed.styles[0])
-        ) {
-          parsed.styles = parsed.styles.map(() => ({}))
-        }
-
-        return JSON.stringify(parsed)
-      } catch (e) {
-        return null
-      }
-    }
-
-    const normalizedJson = tryNormalizeJson(content)
-    if (normalizedJson) {
-      return normalizedJson
-    }
-
     if (typeof atob === 'function') {
       try {
-        const decodedContent = atob(content)
-        const normalizedDecodedJson = tryNormalizeJson(decodedContent)
-        if (normalizedDecodedJson) {
-          return normalizedDecodedJson
-        }
+        return atob(content)
       } catch (e) {
         return content
       }
@@ -102,7 +70,7 @@ const PrintService = () => {
       printActions.get(p['@id'].replace(/\D/g, '')).then(async data => {
         if (data?.file?.content) {
           try {
-            const payload = normalizePrintPayload(data.file.content)
+            const payload = getPrintPayload(data.file.content)
             const response = await cielo.print(payload)
 
             if (!response?.success) {
