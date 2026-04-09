@@ -12,10 +12,22 @@ export const WebsocketListener = () => {
   const url = env.SOCKET;
 
   const deviceStore = useStore('device');
+  const websocketStore = useStore('websocket');
   const { item: device } = deviceStore.getters;
+  const websocketActions = websocketStore.actions;
 
   const stores = getAllStores();
   const getStoreByName = (name) => stores[name];
+  const updateConnectionState = (state = {}) => {
+    websocketActions.setSummary({
+      connected: false,
+      identified: false,
+      status: 'idle',
+      attempts: reconnectAttempts.current,
+      updatedAt: new Date().toISOString(),
+      ...state,
+    });
+  };
 
   const appendMessageToStore = (data) => {
     if (!data?.store) {
@@ -49,6 +61,12 @@ export const WebsocketListener = () => {
     }
 
     manualCloseRef.current = false;
+    updateConnectionState({
+      status: 'connecting',
+      connected: false,
+      identified: false,
+      error: null,
+    });
 
     //console.log('Iniciando conexao WebSocket em:', url);
 
@@ -58,6 +76,12 @@ export const WebsocketListener = () => {
       //console.log('WebSocket conectado');
       reconnectAttempts.current = 0;
       isIdentifyingRef.current = true;
+      updateConnectionState({
+        status: 'open',
+        connected: false,
+        identified: false,
+        error: null,
+      });
 
       setTimeout(() => {
         if (!device?.id || !websocketRef.current) return;
@@ -80,12 +104,25 @@ export const WebsocketListener = () => {
         if (payload.status === 'identified') {
           //console.log('Identificacao confirmada pelo servidor:', payload.device);
           isIdentifyingRef.current = false;
+          updateConnectionState({
+            status: 'connected',
+            connected: true,
+            identified: true,
+            device: payload.device || device?.id,
+            error: null,
+          });
           return;
         }
 
         if (payload.status === 'error') {
           //console.error('Erro do servidor:', payload.message);
           isIdentifyingRef.current = false;
+          updateConnectionState({
+            status: 'error',
+            connected: false,
+            identified: false,
+            error: payload.message || 'WebSocket identify failed',
+          });
           return;
         }
 
@@ -98,11 +135,23 @@ export const WebsocketListener = () => {
 
     websocketRef.current.onerror = (error) => {
       //console.error('WebSocket onerror:', error);
+      updateConnectionState({
+        status: 'error',
+        connected: false,
+        identified: false,
+      });
     };
 
     websocketRef.current.onclose = (event) => {
       //console.log(`Conexao fechada - Code: ${event.code} | Reason: ${event.reason || 'nenhum'}`);
       isIdentifyingRef.current = false;
+      updateConnectionState({
+        status: manualCloseRef.current ? 'closed' : 'disconnected',
+        connected: false,
+        identified: false,
+        code: event.code,
+        reason: event.reason || '',
+      });
       scheduleReconnect();
     };
   };
@@ -112,6 +161,12 @@ export const WebsocketListener = () => {
 
     const delay = Math.min(10000 * Math.pow(2, reconnectAttempts.current), 12000);
     reconnectAttempts.current += 1;
+    updateConnectionState({
+      status: 'reconnecting',
+      connected: false,
+      identified: false,
+      attempts: reconnectAttempts.current,
+    });
 
     //console.log(`Agendando reconexao em ${delay}ms (tentativa ${reconnectAttempts.current})`);
 
@@ -133,6 +188,12 @@ export const WebsocketListener = () => {
       reconnectTimeoutRef.current = null;
     }
     isIdentifyingRef.current = false;
+    updateConnectionState({
+      status: device?.id ? 'closed' : 'idle',
+      connected: false,
+      identified: false,
+      device: device?.id || null,
+    });
   };
 
   useEffect(() => {
