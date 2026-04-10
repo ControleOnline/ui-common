@@ -5,6 +5,7 @@ import {
   DEVICE_ALERT_SOUND_ENABLED_KEY,
   DEVICE_ALERT_SOUND_URL_KEY,
 } from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
+import {isWebRuntimeDevice} from '@controleonline/ui-common/src/react/utils/deviceRuntime';
 
 const getAppVersion = () => {
   const packageVersion = packageJson?.version || packageJson?.default?.version;
@@ -37,18 +38,25 @@ const getAppVersion = () => {
 };
 
 const getDeviceId = () => {
-  if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-    try {
-      const device = JSON.parse(localStorage.getItem('device') || '{}');
-      if (device && device.id) {
-        return device.id;
-      }
-    } catch (e) {
-      console.warn('Erro ao ler id do device do localStorage:', e);
-    }
+  const storedDevice = getStoredDevice();
+  if (storedDevice?.id) {
+    return storedDevice.id;
   }
 
   return null;
+};
+
+const getStoredDevice = () => {
+  if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
+    try {
+      const device = JSON.parse(localStorage.getItem('device') || '{}');
+      return device || {};
+    } catch (e) {
+      console.warn('Erro ao ler device do localStorage:', e);
+    }
+  }
+
+  return {};
 };
 
 export const addDeviceConfigs = ({commit, getters}, params) => {
@@ -74,6 +82,31 @@ export const addDeviceConfigs = ({commit, getters}, params) => {
     device: params.device || getDeviceId(),
     configs: JSON.stringify(configsObj),
   };
+
+  const storedDevice = getStoredDevice();
+  const isRuntimeWebDevice =
+    isWebRuntimeDevice(storedDevice) &&
+    updatedParams.device &&
+    updatedParams.device === storedDevice?.id;
+
+  if (isRuntimeWebDevice) {
+    const nextItem = {
+      ...(getters.item || {}),
+      device:
+        getters.item?.device || {
+          id: storedDevice.id,
+          device: storedDevice.id,
+        },
+      people: params.people || getters.item?.people,
+      configs: {
+        ...(getters.item?.configs || {}),
+        ...configsObj,
+      },
+    };
+
+    commit(types.SET_ITEM, nextItem);
+    return Promise.resolve(nextItem);
+  }
 
   let options = {
     method: 'POST',

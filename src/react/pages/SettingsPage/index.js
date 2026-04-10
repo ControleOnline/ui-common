@@ -1,4 +1,4 @@
-import React, {useState, useCallback, useMemo} from 'react';
+import React, {useEffect, useState, useCallback, useMemo} from 'react';
 import {
   Text,
   View,
@@ -28,8 +28,10 @@ import {
   DEVICE_ALERT_SOUND_ENABLED_KEY,
   DEVICE_ALERT_SOUND_URL_KEY,
   isTruthyValue,
+  parseConfigsObject,
   resolveDefaultGateway,
 } from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
+import {isWebRuntimeDevice as resolveIsWebRuntimeDevice} from '@controleonline/ui-common/src/react/utils/deviceRuntime';
 
 const Settings = () => {
   const navigation = useNavigation();
@@ -79,13 +81,88 @@ const Settings = () => {
   const isCieloDevice = CIELO_DEVICES.includes(deviceManufacturer);
   const showGatewayPicker = !isCieloDevice || isEmulatorDevice;
   const allowCieloOption = isCieloDevice || isEmulatorDevice;
+  const isWebRuntimeDevice = resolveIsWebRuntimeDevice(storagedDevice);
 
   const screenMetrics = useMemo(() => buildScreenMetrics(), []);
+  const runtimeCompanyConfigs = useMemo(
+    () =>
+      parseConfigsObject(
+        companyConfigs && Object.keys(companyConfigs).length > 0
+          ? companyConfigs
+          : currentCompany?.configs,
+      ),
+    [companyConfigs, currentCompany?.configs],
+  );
+
+  const applyRuntimeCompanyConfigs = useCallback(() => {
+    const nextItem = {
+      ...(device || {}),
+      device: {
+        id: storagedDevice?.id,
+        device: storagedDevice?.id,
+      },
+      people: currentCompany?.id ? '/people/' + currentCompany.id : device?.people,
+      configs: runtimeCompanyConfigs,
+    };
+
+    deviceConfigsActions.setItem(nextItem);
+    return nextItem;
+  }, [
+    currentCompany?.id,
+    device,
+    deviceConfigsActions,
+    runtimeCompanyConfigs,
+    storagedDevice?.id,
+  ]);
+
+  const persistDeviceConfigs = useCallback(
+    nextConfigs => {
+      if (!currentCompany?.id) {
+        return Promise.resolve(null);
+      }
+
+      if (isWebRuntimeDevice) {
+        const nextItem = {
+          ...(device || {}),
+          device: {
+            id: storagedDevice?.id,
+            device: storagedDevice?.id,
+          },
+          people: '/people/' + currentCompany.id,
+          configs: {
+            ...runtimeCompanyConfigs,
+            ...parseConfigsObject(nextConfigs),
+          },
+        };
+        deviceConfigsActions.setItem(nextItem);
+        return Promise.resolve(nextItem);
+      }
+
+      return deviceConfigsActions.addDeviceConfigs({
+        configs: JSON.stringify(nextConfigs),
+        people: '/people/' + currentCompany.id,
+      });
+    },
+    [
+      currentCompany?.id,
+      device,
+      deviceConfigsActions,
+      isWebRuntimeDevice,
+      runtimeCompanyConfigs,
+      storagedDevice?.id,
+    ],
+  );
 
   const createDefaultConfigs = useCallback(() => {
-    
+
     // ALEMAC //
     if (!currentCompany?.id || configsLoaded || device === undefined || device === null) return;
+
+    if (isWebRuntimeDevice) {
+      applyRuntimeCompanyConfigs();
+      setConfigsLoaded(true);
+      return;
+    }
 
     let lc = {...(device?.configs || {})};
     let needsUpdate = false;
@@ -145,11 +222,7 @@ const Settings = () => {
 
     // Se faltava alguma coisa, grava tudo no banco
     if (needsUpdate && currentCompany?.id) {
-      deviceConfigsActions
-        .addDeviceConfigs({
-          configs: JSON.stringify(lc),
-          people: '/people/' + currentCompany.id,
-        })
+      persistDeviceConfigs(lc)
         .then(() => {
           setConfigsLoaded(true);
         })
@@ -169,7 +242,10 @@ const Settings = () => {
     storagedDevice,
     defaultGateway,
     appVersion,
+    applyRuntimeCompanyConfigs,
     deviceConfigsActions,
+    isWebRuntimeDevice,
+    persistDeviceConfigs,
   ]);
 
   useFocusEffect(
@@ -183,6 +259,12 @@ const Settings = () => {
   useFocusEffect(
     useCallback(() => {
       if (!currentCompany?.id || !storagedDevice?.id) {
+        return;
+      }
+
+      if (isWebRuntimeDevice) {
+        applyRuntimeCompanyConfigs();
+        setDeviceConfigsLoaded(true);
         return;
       }
 
@@ -220,7 +302,13 @@ const Settings = () => {
         .finally(() => {
           setDeviceConfigsLoaded(true);
         });
-    }, [currentCompany?.id, storagedDevice?.id, deviceConfigsActions]),
+    }, [
+      applyRuntimeCompanyConfigs,
+      currentCompany?.id,
+      deviceConfigsActions,
+      isWebRuntimeDevice,
+      storagedDevice?.id,
+    ]),
   );
 
 
@@ -231,6 +319,18 @@ const Settings = () => {
       }
     }, [deviceConfigsLoaded, createDefaultConfigs]),
   );
+
+  useEffect(() => {
+    if (isWebRuntimeDevice && deviceConfigsLoaded && currentCompany?.id) {
+      applyRuntimeCompanyConfigs();
+    }
+  }, [
+    applyRuntimeCompanyConfigs,
+    currentCompany?.id,
+    deviceConfigsLoaded,
+    isWebRuntimeDevice,
+    runtimeCompanyConfigs,
+  ]);
 
   useFocusEffect(
     useCallback(() => {
@@ -284,44 +384,12 @@ const Settings = () => {
     }, [discovered, currentCompany?.id, configActions]),
   );
 
-  const addDeviceConfigs = () => {
-    let lc = appendScreenMetrics({...device?.configs || {}});
-
-    // ALEMAC // pega o appVersion ao invés do buildNumber
-    lc['config-version'] = appVersion;
-
-    lc['pos-type'] = selectedMode;
-    lc['pos-gateway'] = selectedGateway;
-    lc['print-mode'] = printingMode;
-    lc['check-type'] = checkType;
-    lc['product-input-type'] = productInputType;
-    lc['selection-type'] = selectionType;
-    lc['sound'] = showSound ? '1' : '0';
-    lc['vibration'] = showVibration ? '1' : '0';
-    lc[DEVICE_ALERT_SOUND_ENABLED_KEY] = alertSoundEnabled ? '1' : '0';
-    lc[DEVICE_ALERT_SOUND_URL_KEY] = alertSoundUrl.trim();
-    
-    deviceConfigsActions
-      .addDeviceConfigs({
-        configs: JSON.stringify(lc),
-        people: '/people/' + currentCompany.id,
-      })
-      .catch(err => {
-        console.error('addDeviceConfigs failed:', err);
-        Alert.alert('Erro ao gravar ', err.message || JSON.stringify(err));
-      });
-  };
-
   const handleSelectionTypeChange = (value) => {
     setSelectionType(value);
     let lc = appendScreenMetrics({...device?.configs || {}});
     lc['selection-type'] = value;
     lc['config-version'] = appVersion;
-    deviceConfigsActions
-      .addDeviceConfigs({
-        configs: JSON.stringify(lc),
-        people: '/people/' + currentCompany.id,
-      })
+    persistDeviceConfigs(lc)
       .catch(err => {
         console.error('addDeviceConfigs (selection-type) failed:', err);
         Alert.alert('Erro ao gravar configurações', err.message || JSON.stringify(err));
@@ -335,11 +403,7 @@ const Settings = () => {
     // ===== ALTERAÇÃO: ADICIONAR VERSÃO DO APP =====
     lc['config-version'] = appVersion;
     // ===== FIM DA ALTERAÇÃO =====
-    deviceConfigsActions
-      .addDeviceConfigs({
-        configs: JSON.stringify(lc),
-        people: '/people/' + currentCompany.id,
-      })
+    persistDeviceConfigs(lc)
       .catch(err => {
         console.error('addDeviceConfigs (check-type) failed:', err);
         Alert.alert('Erro ao gravar configurações', err.message || JSON.stringify(err));
@@ -353,11 +417,7 @@ const Settings = () => {
     // ===== ALTERAÇÃO: ADICIONAR VERSÃO DO APP =====
     lc['config-version'] = appVersion;
     // ===== FIM DA ALTERAÇÃO =====
-    deviceConfigsActions
-      .addDeviceConfigs({
-        configs: JSON.stringify(lc),
-        people: '/people/' + currentCompany.id,
-      })
+    persistDeviceConfigs(lc)
       .catch(err => {
         console.error('addDeviceConfigs (product-input-type) failed:', err);
         Alert.alert('Erro ao gravar configurações', err.message || JSON.stringify(err));
@@ -372,11 +432,7 @@ const Settings = () => {
     // ===== ALTERAÇÃO: ADICIONAR VERSÃO DO APP =====
     lc['config-version'] = appVersion;
     // ===== FIM DA ALTERAÇÃO =====
-    deviceConfigsActions
-      .addDeviceConfigs({
-        configs: JSON.stringify(lc),
-        people: '/people/' + currentCompany.id,
-      })
+    persistDeviceConfigs(lc)
       .catch(err => {
         console.error('addDeviceConfigs (sound) failed:', err);
         Alert.alert('Erro ao gravar configurações', err.message || JSON.stringify(err));
@@ -391,11 +447,7 @@ const Settings = () => {
     // ===== ALTERAÇÃO: ADICIONAR VERSÃO DO APP =====
     lc['config-version'] = appVersion;
     // ===== FIM DA ALTERAÇÃO =====
-    deviceConfigsActions
-      .addDeviceConfigs({
-        configs: JSON.stringify(lc),
-        people: '/people/' + currentCompany.id,
-      })
+    persistDeviceConfigs(lc)
       .catch(err => {
         console.error('addDeviceConfigs (vibration) failed:', err);
         Alert.alert('Erro ao gravar configurações', err.message || JSON.stringify(err));
@@ -408,11 +460,7 @@ const Settings = () => {
     lc[DEVICE_ALERT_SOUND_ENABLED_KEY] = value ? '1' : '0';
     lc[DEVICE_ALERT_SOUND_URL_KEY] = alertSoundUrl.trim();
     lc['config-version'] = appVersion;
-    deviceConfigsActions
-      .addDeviceConfigs({
-        configs: JSON.stringify(lc),
-        people: '/people/' + currentCompany.id,
-      })
+    persistDeviceConfigs(lc)
       .catch(err => {
         console.error('addDeviceConfigs (notification sound enabled) failed:', err);
         Alert.alert('Erro ao gravar configurações', err.message || JSON.stringify(err));
@@ -424,11 +472,7 @@ const Settings = () => {
     lc[DEVICE_ALERT_SOUND_ENABLED_KEY] = alertSoundEnabled ? '1' : '0';
     lc[DEVICE_ALERT_SOUND_URL_KEY] = alertSoundUrl.trim();
     lc['config-version'] = appVersion;
-    deviceConfigsActions
-      .addDeviceConfigs({
-        configs: JSON.stringify(lc),
-        people: '/people/' + currentCompany.id,
-      })
+    persistDeviceConfigs(lc)
       .catch(err => {
         console.error('addDeviceConfigs (notification sound url) failed:', err);
         Alert.alert('Erro ao gravar configurações', err.message || JSON.stringify(err));
@@ -440,11 +484,7 @@ const Settings = () => {
     let lc = appendScreenMetrics({...device?.configs || {}});
     lc['pos-type'] = value;
     lc['config-version'] = appVersion;
-    deviceConfigsActions
-      .addDeviceConfigs({
-        configs: JSON.stringify(lc),
-        people: '/people/' + currentCompany.id,
-      })
+    persistDeviceConfigs(lc)
       .catch(err => {
         console.error('addDeviceConfigs (pos-type) failed:', err);
         Alert.alert('Erro ao gravar configurações', err.message || JSON.stringify(err));
@@ -456,11 +496,7 @@ const Settings = () => {
     let lc = appendScreenMetrics({...device?.configs || {}});
     lc['print-mode'] = value;
     lc['config-version'] = appVersion;
-    deviceConfigsActions
-      .addDeviceConfigs({
-        configs: JSON.stringify(lc),
-        people: '/people/' + currentCompany.id,
-      })
+    persistDeviceConfigs(lc)
       .catch(err => {
         console.error('addDeviceConfigs (print-mode) failed:', err);
         Alert.alert('Erro ao gravar configurações', err.message || JSON.stringify(err));
@@ -472,11 +508,7 @@ const Settings = () => {
     let lc = appendScreenMetrics({...device?.configs || {}});
     lc['pos-gateway'] = value;
     lc['config-version'] = appVersion;
-    deviceConfigsActions
-      .addDeviceConfigs({
-        configs: JSON.stringify(lc),
-        people: '/people/' + currentCompany.id,
-      })
+    persistDeviceConfigs(lc)
       .catch(err => {
         console.error('addDeviceConfigs (pos-gateway) failed:', err);
         Alert.alert('Erro ao gravar configurações', err.message || JSON.stringify(err));
@@ -578,12 +610,33 @@ const Settings = () => {
             </View>
           </View>
 
+          {isWebRuntimeDevice && (
+            <View
+              style={{
+                marginTop: 16,
+                padding: 14,
+                backgroundColor: '#EFF6FF',
+                borderRadius: 12,
+                borderWidth: 1,
+                borderColor: '#BFDBFE',
+              }}>
+              <Text style={[styles.Settings.label, {marginBottom: 4}]}>
+                Configuração somente leitura
+              </Text>
+              <Text style={{fontSize: 12, lineHeight: 18, color: '#1D4ED8'}}>
+                No navegador este device nao grava `device_config`. As opcoes abaixo
+                seguem sempre as configuracoes da empresa.
+              </Text>
+            </View>
+          )}
+
           {/* // // // // // TIPO DE COMANDA */}
           <View style={{marginTop: 12, marginBottom: 10}}>
             <Text style={styles.Settings.label}>{global.t?.t("configs", "label", "tab type")}</Text>
             <Picker
               selectedValue={checkType}
               onValueChange={handleCheckTypeChange}
+              enabled={!isWebRuntimeDevice}
               mode={pickerMode}
               style={styles.Settings.picker}>
 
@@ -600,6 +653,7 @@ const Settings = () => {
             <Picker
               selectedValue={productInputType}
               onValueChange={handleProductInputTypeChange}
+              enabled={!isWebRuntimeDevice}
               mode={pickerMode}
               style={styles.Settings.picker}>
               <Picker.Item label={global.t?.t("configs", "option", "manual")} value="manual" />
@@ -613,6 +667,7 @@ const Settings = () => {
             <Picker
               selectedValue={selectionType}
               onValueChange={handleSelectionTypeChange}
+              enabled={!isWebRuntimeDevice}
               mode={pickerMode}
               style={styles.Settings.picker}>
               <Picker.Item label={global.t?.t("configs", "option", "single")}  value="single" />
@@ -631,6 +686,7 @@ const Settings = () => {
 
             <Switch
               value={showSound}
+              disabled={isWebRuntimeDevice}
               onValueChange={handleSoundChange}
             />
           </View>
@@ -646,6 +702,7 @@ const Settings = () => {
 
             <Switch
               value={showVibration}
+              disabled={isWebRuntimeDevice}
               onValueChange={handleVibrationChange}
             />
           </View>
@@ -666,6 +723,7 @@ const Settings = () => {
               <Text style={styles.Settings.label}>Aviso sonoro via websocket</Text>
               <Switch
                 value={alertSoundEnabled}
+                disabled={isWebRuntimeDevice}
                 onValueChange={handleAlertSoundEnabledChange}
               />
             </View>
@@ -689,6 +747,7 @@ const Settings = () => {
               onChangeText={setAlertSoundUrl}
               onBlur={handleAlertSoundUrlSubmit}
               onSubmitEditing={handleAlertSoundUrlSubmit}
+              editable={!isWebRuntimeDevice}
               placeholder="https://exemplo.com/alerta.mp3"
               placeholderTextColor="#94A3B8"
               autoCapitalize="none"
@@ -713,6 +772,7 @@ const Settings = () => {
             <Picker
               selectedValue={selectedMode}
               onValueChange={handlePosTypeChange}
+              enabled={!isWebRuntimeDevice}
               mode={pickerMode}
               style={styles.Settings.picker}>
               <Picker.Item label={global.t?.t("configs", "option", "simple order")} value="simple" />
@@ -723,6 +783,7 @@ const Settings = () => {
             <Picker
               selectedValue={printingMode}
               onValueChange={handlePrintModeChange}
+              enabled={!isWebRuntimeDevice}
               mode={pickerMode}
               style={styles.Settings.picker}>
               <Picker.Item label={global.t?.t("configs", "option", "printSingleOrder")} value="order" />
@@ -734,6 +795,7 @@ const Settings = () => {
               <Picker
                 selectedValue={selectedGateway}
                 onValueChange={handleGatewayChange}
+                enabled={!isWebRuntimeDevice}
                 mode={pickerMode}
                 style={styles.Settings.picker}>
                 <Picker.Item label="Infinite Pay" value="infinite-pay" />

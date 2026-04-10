@@ -24,6 +24,11 @@ import {
   buildDefaultDeviceConfigs,
   parseConfigsObject,
 } from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
+import {
+  buildDeviceRegistrationPayload,
+  buildLocalRuntimeDevice,
+  hasDeviceRecordChanges,
+} from '@controleonline/ui-common/src/react/utils/deviceRuntime';
 import packageJson from '@package';
 
 import {useStore} from '@store';
@@ -120,19 +125,22 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
     const buildNumber = await DeviceInfo.getBuildNumber();
     let ld = null;
     if (uniqueId) {
-      ld = {
-        id: uniqueId,
-        appName: appName,
-        deviceType: deviceId,
-        systemName: systemName,
-        systemVersion: systemVersion,
-        manufacturer: manufacturer,
-        model: model,
-        batteryLevel: batteryLevel,
-        isEmulator: isEmulator,
-        appVersion: appVersion,
-        buildNumber: buildNumber,
-      };
+      ld = buildLocalRuntimeDevice({
+        appType: APP_ENV.APP_TYPE,
+        deviceInfo: {
+          id: uniqueId,
+          appName: appName,
+          deviceType: deviceId,
+          systemName: systemName,
+          systemVersion: systemVersion,
+          manufacturer: manufacturer,
+          model: model,
+          batteryLevel: batteryLevel,
+          isEmulator: isEmulator,
+          appVersion: appVersion,
+          buildNumber: buildNumber,
+        },
+      });
       setDevice(ld);
       localStorage.setItem('device', JSON.stringify(ld));
     } else {
@@ -167,6 +175,83 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
       peopleActions.defaultCompany();
     }
   }, [device?.id]);
+
+  useEffect(() => {
+    if (!isLogged || !device?.id) {
+      return;
+    }
+
+    let cancelled = false;
+
+    const syncDeviceRegistration = async () => {
+      const items = await deviceActions.getItems({
+        device: device.id,
+        itemsPerPage: 1,
+      });
+
+      if (cancelled) {
+        return;
+      }
+
+      const existingDevice =
+        Array.isArray(items) && items.length > 0 ? items[0] : null;
+      const nextDevice = buildDeviceRegistrationPayload({
+        deviceInfo: device,
+        appType: APP_ENV.APP_TYPE,
+        existingDevice,
+      });
+
+      if (!hasDeviceRecordChanges({existingDevice, nextDevice})) {
+        const nextLocalDevice = {
+          ...device,
+          alias: existingDevice?.alias || nextDevice.alias,
+          type: existingDevice?.type || nextDevice.type,
+          metadata: existingDevice?.metadata || nextDevice.metadata,
+        };
+
+        if (JSON.stringify(nextLocalDevice) !== JSON.stringify(device)) {
+          setDevice(nextLocalDevice);
+          localStorage.setItem('device', JSON.stringify(nextLocalDevice));
+          deviceActions.setItem(nextLocalDevice);
+        }
+        return;
+      }
+
+      const savedDevice = await deviceActions.save(nextDevice);
+      if (cancelled || !savedDevice) {
+        return;
+      }
+
+      const nextLocalDevice = {
+        ...device,
+        alias: savedDevice.alias || nextDevice.alias,
+        type: savedDevice.type || nextDevice.type,
+        metadata: savedDevice.metadata || nextDevice.metadata,
+      };
+
+      if (JSON.stringify(nextLocalDevice) !== JSON.stringify(device)) {
+        setDevice(nextLocalDevice);
+        localStorage.setItem('device', JSON.stringify(nextLocalDevice));
+        deviceActions.setItem(nextLocalDevice);
+      }
+    };
+
+    syncDeviceRegistration().catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    device?.appVersion,
+    device?.batteryLevel,
+    device?.buildNumber,
+    device?.deviceType,
+    device?.id,
+    device?.manufacturer,
+    device?.model,
+    device?.systemVersion,
+    isLogged,
+  ]);
 
   useEffect(() => {
     if (currentCompany && currentCompany.id) {
