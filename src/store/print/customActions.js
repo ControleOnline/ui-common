@@ -82,11 +82,11 @@ export function makePrintDone({commit}, id = {}) {
   return api
     .fetch('/print/'+id+'/done', options)
     .then(data => {
-      commit(types.SET_ISSAVING, false);
+      commit(types.SET_ISLOADING, false);
       return data;
     })
     .catch(e => {
-      commit(types.SET_ISSAVING, false);
+      commit(types.SET_ISLOADING, false);
 
       commit(types.SET_ERROR, e.message);
       throw e;

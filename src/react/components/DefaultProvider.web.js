@@ -230,6 +230,11 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
       if (!hasDeviceRecordChanges({existingDevice, nextDevice})) {
         const nextLocalDevice = {
           ...device,
+          entityId: existingDevice?.id || device?.entityId || null,
+          entityIri:
+            existingDevice?.['@id'] ||
+            device?.entityIri ||
+            (existingDevice?.id ? `/devices/${existingDevice.id}` : null),
           alias: existingDevice?.alias || nextDevice.alias,
           type: existingDevice?.type || nextDevice.type,
           metadata: existingDevice?.metadata || nextDevice.metadata,
@@ -250,6 +255,11 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
 
       const nextLocalDevice = {
         ...device,
+        entityId: savedDevice?.id || device?.entityId || null,
+        entityIri:
+          savedDevice?.['@id'] ||
+          device?.entityIri ||
+          (savedDevice?.id ? `/devices/${savedDevice.id}` : null),
         alias: savedDevice.alias || nextDevice.alias,
         type: savedDevice.type || nextDevice.type,
         metadata: savedDevice.metadata || nextDevice.metadata,
