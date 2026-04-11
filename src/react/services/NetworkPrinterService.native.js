@@ -23,9 +23,61 @@ const isLikelyBase64 = value => {
   return BASE64_REGEX.test(normalizedValue);
 };
 
+const extractPrintTextPayload = payload => {
+  const resolvePrintableObject = value => {
+    if (!value || typeof value !== 'object') {
+      return null;
+    }
+
+    const operation = String(value?.operation || '').trim().toUpperCase();
+    if (operation !== 'PRINT_TEXT') {
+      return null;
+    }
+
+    return value;
+  };
+
+  if (typeof payload === 'string') {
+    const trimmedPayload = payload.trim();
+    if (trimmedPayload.startsWith('{') || trimmedPayload.startsWith('[')) {
+      try {
+        const parsedPayload = JSON.parse(trimmedPayload);
+        const printableObject = resolvePrintableObject(parsedPayload);
+        if (printableObject) {
+          const values = Array.isArray(printableObject?.value)
+            ? printableObject.value
+            : [printableObject?.value];
+
+          return values.map(item => String(item ?? '')).join('');
+        }
+      } catch (e) {
+        // keep the raw payload fallback below
+      }
+    }
+
+    return '';
+  }
+
+  const printableObject = resolvePrintableObject(payload);
+  if (!printableObject) {
+    return '';
+  }
+
+  const values = Array.isArray(printableObject?.value)
+    ? printableObject.value
+    : [printableObject?.value];
+
+  return values.map(item => String(item ?? '')).join('');
+};
+
 const toPrintBuffer = payload => {
   if (payload === null || payload === undefined) {
     return Buffer.alloc(0);
+  }
+
+  const printableTextPayload = extractPrintTextPayload(payload);
+  if (printableTextPayload) {
+    return Buffer.from(printableTextPayload, 'latin1');
   }
 
   if (Buffer.isBuffer(payload)) {

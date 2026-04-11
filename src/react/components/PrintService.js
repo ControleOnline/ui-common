@@ -289,11 +289,32 @@ const PrintService = () => {
   );
 
   const printOrder = useCallback(
-    async order =>
-      await printActions.printOrder({
+    async order => {
+      const normalizedQueueIds = (Array.isArray(order?.queueIds)
+        ? order.queueIds
+        : []
+      )
+        .map(item => String(item || '').replace(/\D+/g, '').trim())
+        .filter(Boolean);
+      const normalizedOrderProductQueueIds = (
+        Array.isArray(order?.orderProductQueueIds)
+          ? order.orderProductQueueIds
+          : []
+      )
+        .map(item => String(item || '').replace(/\D+/g, '').trim())
+        .filter(Boolean);
+
+      return await printActions.printOrder({
         id: order.id,
         device: resolveTargetDevice(order),
-      }),
+        ...(normalizedQueueIds.length > 0
+          ? {queueIds: normalizedQueueIds}
+          : {}),
+        ...(normalizedOrderProductQueueIds.length > 0
+          ? {orderProductQueueIds: normalizedOrderProductQueueIds}
+          : {}),
+      });
+    },
     [printActions, resolveTargetDevice],
   );
 
