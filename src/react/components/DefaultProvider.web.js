@@ -1,11 +1,12 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { View, ActivityIndicator, Text } from 'react-native';
+import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
 import Translate from '@controleonline/ui-common/src/utils/translate';
 import { WebsocketListener } from '@controleonline/ui-common/src/react/components/WebsocketListener';
 import DeviceAlertSoundService from '@controleonline/ui-common/src/react/components/DeviceAlertSoundService';
 import PrintService from '@controleonline/ui-common/src/react/components/PrintService';
 import RemoteCheckoutService from '@controleonline/ui-common/src/react/components/RemoteCheckoutService';
 import ProductCatalogCacheService from '@controleonline/ui-common/src/react/components/ProductCatalogCacheService';
+import RuntimeInfoFooter from '@controleonline/ui-common/src/react/components/RuntimeInfoFooter';
 import { useStore } from '@store';
 import { api } from '@controleonline/ui-common/src/api';
 import { env as APP_ENV } from '@env';
@@ -614,7 +615,21 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
 
   return (
     <ThemeContext.Provider value={{ colors, menus }}>
-      {children}
+      <View
+        style={[
+          providerStyles.shell,
+          {
+            backgroundColor: colors?.background || runtimeColors.background,
+          },
+        ]}>
+        <View style={providerStyles.content}>{children}</View>
+        <RuntimeInfoFooter
+          appVersion={appVersion}
+          defaultCompany={defaultCompany}
+          device={device}
+          colors={colors}
+        />
+      </View>
       {device?.id && isLogged && (
         <>
           <WebsocketListener />
@@ -629,3 +644,13 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
 };
 
 export const useTheme = () => useContext(ThemeContext);
+
+const providerStyles = StyleSheet.create({
+  shell: {
+    flex: 1,
+  },
+  content: {
+    flex: 1,
+    minHeight: 0,
+  },
+});
