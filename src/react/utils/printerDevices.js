@@ -80,6 +80,14 @@ export const normalizePrinterPort = value =>
 export const normalizePrinterColumns = value =>
   normalizePositiveIntegerString(value, DEFAULT_NETWORK_PRINTER_COLUMNS);
 
+export const getPrinterHost = printer => {
+  const parsedMetadata = getPrinterMetadata(printer?.metadata);
+  return (
+    normalizePrinterHost(printer?.device) ||
+    normalizePrinterHost(parsedMetadata?.printer?.host)
+  );
+};
+
 export const getPrinterMetadata = metadata => parseMetadataObject(metadata);
 
 export const getPrinterMetadataField = (metadata, field) => {
@@ -240,3 +248,28 @@ export const getPrinterOptions = ({
     getPrinterLabel(left).localeCompare(getPrinterLabel(right)),
   );
 };
+
+export const getManagedPrinterDevices = ({
+  deviceConfigs = [],
+  companyId = null,
+  managerDeviceId = null,
+}) =>
+  filterDeviceConfigsByCompany(deviceConfigs, companyId)
+    .filter(deviceConfig => {
+      if (!isPrinterDeviceType(deviceConfig?.device?.type)) {
+        return false;
+      }
+
+      const configs = parseConfigsObject(deviceConfig?.configs);
+      return (
+        normalizeDeviceId(configs?.[NETWORK_PRINTER_MANAGER_DEVICE_CONFIG_KEY]) ===
+        normalizeDeviceId(managerDeviceId)
+      );
+    })
+    .map(deviceConfig => ({
+      ...(deviceConfig?.device || {}),
+      configs: parseConfigsObject(deviceConfig?.configs),
+    }))
+    .sort((left, right) =>
+      getPrinterLabel(left).localeCompare(getPrinterLabel(right)),
+    );

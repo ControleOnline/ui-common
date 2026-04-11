@@ -1,8 +1,34 @@
-import React, {useCallback, useEffect, useRef} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef} from 'react';
+import {api} from '@controleonline/ui-common/src/api';
+import {printOnNetworkPrinter} from '@controleonline/ui-common/src/react/services/NetworkPrinterService';
+import {
+  DEFAULT_NETWORK_PRINTER_PORT,
+  getManagedPrinterDevices,
+  getPrinterHost,
+  NETWORK_PRINTER_PORT_CONFIG_KEY,
+  normalizePrinterPort,
+} from '@controleonline/ui-common/src/react/utils/printerDevices';
+import {normalizeDeviceId} from '@controleonline/ui-common/src/react/utils/paymentDevices';
 import {CieloPrint} from '@controleonline/ui-orders/src/react/services/Cielo/Print';
 import {useStore} from '@store';
 
 const SOCKET_PRINT_POLL_INTERVAL = 60000;
+
+const extractCollectionMembers = data => {
+  if (Array.isArray(data)) {
+    return data;
+  }
+
+  if (Array.isArray(data?.member)) {
+    return data.member;
+  }
+
+  if (Array.isArray(data?.['hydra:member'])) {
+    return data['hydra:member'];
+  }
+
+  return [];
+};
 
 const PrintService = () => {
   const peopleStore = useStore('people');
@@ -12,12 +38,16 @@ const PrintService = () => {
   const printActions = printStore.actions;
   const deviceStore = useStore('device');
   const deviceGetters = deviceStore.getters;
+  const deviceConfigStore = useStore('device_config');
+  const deviceConfigGetters = deviceConfigStore.getters;
+  const deviceConfigActions = deviceConfigStore.actions;
   const websocketStore = useStore('websocket');
   const websocketGetters = websocketStore.getters;
 
   const {item: storagedDevice} = deviceGetters;
   const {reload, print, items: spool, message, messages} = printGetters;
   const {currentCompany} = peopleGetters;
+  const {items: companyDeviceConfigs = []} = deviceConfigGetters;
   const {summary: websocketSummary} = websocketGetters;
 
   const isPrintingRef = useRef(false);
@@ -44,11 +74,14 @@ const PrintService = () => {
   }, []);
 
   const resolveTargetDevice = useCallback(
-    printJob => printJob?.device || storagedDevice?.id,
+    printJob =>
+      normalizeDeviceId(
+        printJob?.device?.device || printJob?.device || storagedDevice?.id,
+      ),
     [storagedDevice?.id],
   );
 
-  const getPrintPayload = useCallback(content => {
+  const getLocalPrintPayload = useCallback(content => {
     if (content === null || content === undefined) {
       return '';
     }
@@ -68,22 +101,106 @@ const PrintService = () => {
     return content;
   }, []);
 
-  const loadOpenSpools = useCallback(() => {
-    if (!storagedDevice?.id) {
-      printActions.setReload(false);
-      return Promise.resolve([]);
+  const managedPrinters = useMemo(
+    () =>
+      getManagedPrinterDevices({
+        deviceConfigs: companyDeviceConfigs,
+        companyId: currentCompany?.id,
+        managerDeviceId: storagedDevice?.id,
+      }),
+    [companyDeviceConfigs, currentCompany?.id, storagedDevice?.id],
+  );
+
+  const managedPrinterDeviceIds = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          managedPrinters
+            .map(printer => normalizeDeviceId(printer?.device))
+            .filter(Boolean),
+        ),
+      ),
+    [managedPrinters],
+  );
+
+  const resolveManagedPrinter = useCallback(
+    printJob => {
+      const targetDeviceId = resolveTargetDevice(printJob);
+      return (
+        managedPrinters.find(
+          printer => normalizeDeviceId(printer?.device) === targetDeviceId,
+        ) || null
+      );
+    },
+    [managedPrinters, resolveTargetDevice],
+  );
+
+  useEffect(() => {
+    if (!currentCompany?.id || !storagedDevice?.id) {
+      return;
     }
 
-    return printActions
-      .getItems({
-        'device.device': storagedDevice.id,
-        'status.realStatus': 'open',
-      })
-      .catch(() => [])
-      .finally(() => {
-        printActions.setReload(false);
+    deviceConfigActions
+      .getItems({people: `/people/${currentCompany.id}`})
+      .catch(() => {});
+  }, [currentCompany?.id, deviceConfigActions, storagedDevice?.id]);
+
+  const loadOpenSpools = useCallback(async () => {
+    if (!storagedDevice?.id) {
+      printActions.setReload(false);
+      return [];
+    }
+
+    const deviceIds = Array.from(
+      new Set([storagedDevice.id, ...managedPrinterDeviceIds].filter(Boolean)),
+    );
+
+    if (deviceIds.length === 0) {
+      printActions.setItems([]);
+      printActions.setReload(false);
+      return [];
+    }
+
+    try {
+      const spoolCollections = await Promise.all(
+        deviceIds.map(deviceId =>
+          api
+            .fetch('spools', {
+              params: {
+                'device.device': deviceId,
+                'status.realStatus': 'open',
+              },
+            })
+            .then(extractCollectionMembers)
+            .catch(() => []),
+        ),
+      );
+
+      const mergedSpools = [];
+      const spoolIds = new Set();
+
+      spoolCollections.flat().forEach(item => {
+        const spoolId = resolveSpoolId(item);
+        const spoolKey = spoolId ? String(spoolId) : JSON.stringify(item);
+
+        if (!spoolIds.has(spoolKey)) {
+          spoolIds.add(spoolKey);
+          mergedSpools.push(item);
+        }
       });
-  }, [printActions, storagedDevice?.id]);
+
+      mergedSpools.sort((left, right) => {
+        const leftId = resolveSpoolId(left) || 0;
+        const rightId = resolveSpoolId(right) || 0;
+        return leftId - rightId;
+      });
+
+      printActions.setItems(mergedSpools);
+      return mergedSpools;
+    } finally {
+      printActions.setReload(false);
+    }
+  }, [managedPrinterDeviceIds, printActions, resolveSpoolId, storagedDevice?.id]);
 
   const removeSpoolFromQueue = useCallback(
     spoolId => {
@@ -120,6 +237,80 @@ const PrintService = () => {
     [printActions, resolveSpoolId],
   );
 
+  const printManagedSpool = useCallback(
+    async (printJob, spoolData) => {
+      const managedPrinter = resolveManagedPrinter(spoolData || printJob);
+      if (!managedPrinter) {
+        return false;
+      }
+
+      const printerHost = getPrinterHost(managedPrinter);
+      const printerPort = normalizePrinterPort(
+        managedPrinter?.configs?.[NETWORK_PRINTER_PORT_CONFIG_KEY] ||
+          DEFAULT_NETWORK_PRINTER_PORT,
+      );
+
+      await printOnNetworkPrinter({
+        host: printerHost,
+        port: printerPort,
+        payload: spoolData?.file?.content,
+      });
+
+      return true;
+    },
+    [resolveManagedPrinter],
+  );
+
+  const printInventory = useCallback(
+    async printJob =>
+      await printActions.printInventory({
+        device: resolveTargetDevice(printJob),
+        people: currentCompany.id,
+      }),
+    [currentCompany?.id, printActions, resolveTargetDevice],
+  );
+
+  const printPurchasingSuggestion = useCallback(
+    async printJob =>
+      await printActions.printPurchasingSuggestion({
+        device: resolveTargetDevice(printJob),
+        people: currentCompany.id,
+      }),
+    [currentCompany?.id, printActions, resolveTargetDevice],
+  );
+
+  const printCashRegister = useCallback(
+    async printJob =>
+      await printActions.getCashRegisterPrint({
+        device: resolveTargetDevice(printJob),
+        people: currentCompany.id,
+      }),
+    [currentCompany?.id, printActions, resolveTargetDevice],
+  );
+
+  const printOrder = useCallback(
+    async order =>
+      await printActions.printOrder({
+        id: order.id,
+        device: resolveTargetDevice(order),
+      }),
+    [printActions, resolveTargetDevice],
+  );
+
+  const getData = useCallback(
+    async printJob => {
+      if (printJob.printType === 'order') await printOrder(printJob);
+      if (printJob.printType === 'cash-register') {
+        await printCashRegister(printJob);
+      }
+      if (printJob.printType === 'purchasing-suggestion') {
+        await printPurchasingSuggestion(printJob);
+      }
+      if (printJob.printType === 'inventory') await printInventory(printJob);
+    },
+    [printCashRegister, printInventory, printOrder, printPurchasingSuggestion],
+  );
+
   const goPrint = useCallback(
     async printJob => {
       if (isPrintingRef.current) {
@@ -142,14 +333,18 @@ const PrintService = () => {
           return;
         }
 
-        const payload = getPrintPayload(data.file.content);
-        const response = await cielo.print(payload);
+        const managedPrinterPrinted = await printManagedSpool(printJob, data);
 
-        if (response?.success === false) {
-          throw new Error(
-            response?.result ||
-              global.t?.t('orders', 'message', 'printProcessingError'),
-          );
+        if (!managedPrinterPrinted) {
+          const payload = getLocalPrintPayload(data.file.content);
+          const response = await cielo.print(payload);
+
+          if (response?.success === false) {
+            throw new Error(
+              response?.result ||
+                global.t?.t('orders', 'message', 'printProcessingError'),
+            );
+          }
         }
 
         await printActions.makePrintDone(spoolId);
@@ -163,14 +358,21 @@ const PrintService = () => {
         isPrintingRef.current = false;
       }
     },
-    [getPrintPayload, getSpoolData, printActions, removeSpoolFromQueue, resolveSpoolId],
+    [
+      getLocalPrintPayload,
+      getSpoolData,
+      printActions,
+      printManagedSpool,
+      removeSpoolFromQueue,
+      resolveSpoolId,
+    ],
   );
 
   useEffect(() => {
     if (storagedDevice?.id) {
       printActions.setReload(true);
     }
-  }, [printActions, storagedDevice?.id]);
+  }, [managedPrinterDeviceIds, printActions, storagedDevice?.id]);
 
   useEffect(() => {
     if (!reload) {
@@ -200,7 +402,11 @@ const PrintService = () => {
       for (const p of print) {
         printActions.addToQueue(() =>
           getData(p).finally(() => {
-            if (resolveTargetDevice(p) === storagedDevice?.id) {
+            const targetDeviceId = resolveTargetDevice(p);
+            if (
+              targetDeviceId === normalizeDeviceId(storagedDevice?.id) ||
+              managedPrinterDeviceIds.includes(targetDeviceId)
+            ) {
               printActions.setReload(true);
             }
           }),
@@ -210,7 +416,14 @@ const PrintService = () => {
         printActions.setPrint([]);
       });
     }
-  }, [print, printActions, resolveTargetDevice, storagedDevice?.id]);
+  }, [
+    getData,
+    managedPrinterDeviceIds,
+    print,
+    printActions,
+    resolveTargetDevice,
+    storagedDevice?.id,
+  ]);
 
   useEffect(() => {
     if (!spoolRef.current?.length || isPrintingRef.current) {
@@ -243,43 +456,6 @@ const PrintService = () => {
       printActions.setMessages(queuedMessages);
     }
   }, [messages, message, printActions]);
-
-  const getData = async printJob => {
-    if (printJob.printType == 'order') await printOrder(printJob);
-    if (printJob.printType == 'cash-register') await printCashRegister(printJob);
-    if (printJob.printType == 'purchasing-suggestion') {
-      await printPurchasingSuggestion(printJob);
-    }
-    if (printJob.printType == 'inventory') await printInventory(printJob);
-  };
-
-  const printInventory = async printJob => {
-    return await printActions.printInventory({
-      device: resolveTargetDevice(printJob),
-      people: currentCompany.id,
-    });
-  };
-
-  const printPurchasingSuggestion = async printJob => {
-    return await printActions.printPurchasingSuggestion({
-      device: resolveTargetDevice(printJob),
-      people: currentCompany.id,
-    });
-  };
-
-  const printCashRegister = async printJob => {
-    return await printActions.getCashRegisterPrint({
-      device: resolveTargetDevice(printJob),
-      people: currentCompany.id,
-    });
-  };
-
-  const printOrder = async order => {
-    return await printActions.printOrder({
-      id: order.id,
-      device: resolveTargetDevice(order),
-    });
-  };
 
   return null;
 };
