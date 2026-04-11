@@ -6,6 +6,9 @@ import {
 export const CIELO_DEVICES = ['quantum', 'ingenico', 'positivo'];
 export const DEVICE_ALERT_SOUND_ENABLED_KEY = 'notification-sound-enabled';
 export const DEVICE_ALERT_SOUND_URL_KEY = 'notification-sound-url';
+export const DEVICE_ORDER_VISIBILITY_KEY = 'pos-order-visibility';
+export const DEVICE_ORDER_VISIBILITY_DEVICE = 'device';
+export const DEVICE_ORDER_VISIBILITY_COMPANY = 'company';
 
 export const DEFAULT_DEVICE_CONFIGS = {
   'pos-type': 'full',
@@ -15,6 +18,7 @@ export const DEFAULT_DEVICE_CONFIGS = {
   'selection-type': 'single',
   sound: '0',
   vibration: '0',
+  [DEVICE_ORDER_VISIBILITY_KEY]: DEVICE_ORDER_VISIBILITY_DEVICE,
   [DEVICE_ALERT_SOUND_ENABLED_KEY]: '0',
   [DEVICE_ALERT_SOUND_URL_KEY]: '',
 };
@@ -39,6 +43,20 @@ export const parseConfigsObject = configs => {
 
   return typeof configs === 'object' ? {...configs} : {};
 };
+
+export const resolveDeviceOrderVisibility = configs => {
+  const parsedConfigs = parseConfigsObject(configs);
+  const value = String(parsedConfigs?.[DEVICE_ORDER_VISIBILITY_KEY] || '')
+    .trim()
+    .toLowerCase();
+
+  return value === DEVICE_ORDER_VISIBILITY_COMPANY
+    ? DEVICE_ORDER_VISIBILITY_COMPANY
+    : DEVICE_ORDER_VISIBILITY_DEVICE;
+};
+
+export const canDeviceViewCompanyOrders = configs =>
+  resolveDeviceOrderVisibility(configs) === DEVICE_ORDER_VISIBILITY_COMPANY;
 
 export const resolveDefaultGateway = deviceInfo => {
   const manufacturer = String(deviceInfo?.manufacturer || '').toLowerCase();

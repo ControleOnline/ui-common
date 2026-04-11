@@ -27,9 +27,13 @@ import {
   CIELO_DEVICES,
   DEVICE_ALERT_SOUND_ENABLED_KEY,
   DEVICE_ALERT_SOUND_URL_KEY,
+  DEVICE_ORDER_VISIBILITY_COMPANY,
+  DEVICE_ORDER_VISIBILITY_DEVICE,
+  DEVICE_ORDER_VISIBILITY_KEY,
   isTruthyValue,
   parseConfigsObject,
   resolveDefaultGateway,
+  resolveDeviceOrderVisibility,
 } from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
 import {isWebRuntimeDevice as resolveIsWebRuntimeDevice} from '@controleonline/ui-common/src/react/utils/deviceRuntime';
 
@@ -69,6 +73,7 @@ const Settings = () => {
   const [selectionType, setSelectionType] = useState('single');
   const [showSound, setShowSound] = useState(false);
   const [showVibration, setShowVibration] = useState(false);
+  const [orderVisibility, setOrderVisibility] = useState(DEVICE_ORDER_VISIBILITY_DEVICE);
   const [alertSoundEnabled, setAlertSoundEnabled] = useState(false);
   const [alertSoundUrl, setAlertSoundUrl] = useState('');
   const [configsLoaded, setConfigsLoaded] = useState(false);
@@ -200,6 +205,10 @@ const Settings = () => {
     }
     if (!lc['vibration']) {
       lc['vibration'] = '0';
+      needsUpdate = true;
+    }
+    if (!lc[DEVICE_ORDER_VISIBILITY_KEY]) {
+      lc[DEVICE_ORDER_VISIBILITY_KEY] = DEVICE_ORDER_VISIBILITY_DEVICE;
       needsUpdate = true;
     }
     if (lc[DEVICE_ALERT_SOUND_ENABLED_KEY] === undefined || lc[DEVICE_ALERT_SOUND_ENABLED_KEY] === null) {
@@ -346,6 +355,7 @@ const Settings = () => {
           device?.configs['vibration'] === true ||
           device?.configs['vibration'] === '1'
         );
+        setOrderVisibility(resolveDeviceOrderVisibility(device?.configs));
         setAlertSoundEnabled(isTruthyValue(device?.configs[DEVICE_ALERT_SOUND_ENABLED_KEY]));
         setAlertSoundUrl(String(device?.configs[DEVICE_ALERT_SOUND_URL_KEY] || ''));
         setSelectedMode(device?.configs['pos-type'] || 'full');
@@ -357,6 +367,7 @@ const Settings = () => {
         setSelectionType('single');
         setShowSound(false);
         setShowVibration(false);
+        setOrderVisibility(DEVICE_ORDER_VISIBILITY_DEVICE);
         setAlertSoundEnabled(false);
         setAlertSoundUrl('');
         setSelectedMode('full');
@@ -450,6 +461,18 @@ const Settings = () => {
     persistDeviceConfigs(lc)
       .catch(err => {
         console.error('addDeviceConfigs (vibration) failed:', err);
+        Alert.alert('Erro ao gravar configurações', err.message || JSON.stringify(err));
+      });
+  };
+
+  const handleOrderVisibilityChange = value => {
+    setOrderVisibility(value);
+    let lc = appendScreenMetrics({...device?.configs || {}});
+    lc[DEVICE_ORDER_VISIBILITY_KEY] = value || DEVICE_ORDER_VISIBILITY_DEVICE;
+    lc['config-version'] = appVersion;
+    persistDeviceConfigs(lc)
+      .catch(err => {
+        console.error('addDeviceConfigs (order visibility) failed:', err);
         Alert.alert('Erro ao gravar configurações', err.message || JSON.stringify(err));
       });
   };
@@ -788,6 +811,24 @@ const Settings = () => {
               style={styles.Settings.picker}>
               <Picker.Item label={global.t?.t("configs", "option", "printSingleOrder")} value="order" />
               <Picker.Item label={global.t?.t("configs", "option", "printFullOrder")} value="form" />
+            </Picker>
+          </View>
+          <View style={{marginTop: 6, marginBottom: 10}}>
+            <Text style={styles.Settings.label}>Pedidos visíveis no PDV</Text>
+            <Picker
+              selectedValue={orderVisibility}
+              onValueChange={handleOrderVisibilityChange}
+              enabled={!isWebRuntimeDevice}
+              mode={pickerMode}
+              style={styles.Settings.picker}>
+              <Picker.Item
+                label="Somente pedidos deste device"
+                value={DEVICE_ORDER_VISIBILITY_DEVICE}
+              />
+              <Picker.Item
+                label="Todos os pedidos da empresa"
+                value={DEVICE_ORDER_VISIBILITY_COMPANY}
+              />
             </Picker>
           </View>
           {showGatewayPicker && (

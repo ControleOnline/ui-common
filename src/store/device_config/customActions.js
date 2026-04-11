@@ -4,6 +4,8 @@ import packageJson from '@package';
 import {
   DEVICE_ALERT_SOUND_ENABLED_KEY,
   DEVICE_ALERT_SOUND_URL_KEY,
+  DEVICE_ORDER_VISIBILITY_DEVICE,
+  DEVICE_ORDER_VISIBILITY_KEY,
 } from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
 import {isWebRuntimeDevice} from '@controleonline/ui-common/src/react/utils/deviceRuntime';
 
@@ -151,6 +153,7 @@ export const initializeDeviceConfigs = ({commit, getters}, people) => {
     'product-input-type': 'rfid',
     'sound': '0',
     'vibration': '0',
+    [DEVICE_ORDER_VISIBILITY_KEY]: DEVICE_ORDER_VISIBILITY_DEVICE,
     [DEVICE_ALERT_SOUND_ENABLED_KEY]: '0',
     [DEVICE_ALERT_SOUND_URL_KEY]: '',
     'config-version': getAppVersion(),
