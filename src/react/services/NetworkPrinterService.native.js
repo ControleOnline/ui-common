@@ -101,6 +101,85 @@ const toPrintBuffer = payload => {
 
 export const isNetworkPrinterRuntimeSupported = true;
 
+export const decodeNetworkPrinterPayload = payload => toPrintBuffer(payload);
+
+export const checkNetworkPrinterConnection = ({
+  host,
+  port,
+  connectTimeout = DEFAULT_CONNECT_TIMEOUT,
+}) => {
+  const normalizedHost = normalizeHost(host);
+  if (!normalizedHost) {
+    return Promise.reject(
+      new Error('Endereco de rede da impressora nao informado.'),
+    );
+  }
+
+  const normalizedPort = normalizePort(port);
+
+  return new Promise((resolve, reject) => {
+    let settled = false;
+    let socket = null;
+
+    const finish = (error = null) => {
+      if (settled) {
+        return;
+      }
+
+      settled = true;
+
+      try {
+        socket?.removeAllListeners?.();
+      } catch (e) {
+        // noop
+      }
+
+      try {
+        socket?.end?.();
+      } catch (e) {
+        // noop
+      }
+
+      try {
+        socket?.destroy?.();
+      } catch (e) {
+        // noop
+      }
+
+      if (error) {
+        reject(error);
+        return;
+      }
+
+      resolve({
+        success: true,
+        host: normalizedHost,
+        port: normalizedPort,
+      });
+    };
+
+    socket = TcpSocket.createConnection(
+      {
+        host: normalizedHost,
+        port: normalizedPort,
+        reuseAddress: true,
+        connectTimeout,
+      },
+      () => {
+        finish();
+      },
+    );
+
+    socket.on('error', error => {
+      finish(error);
+    });
+
+    socket.setTimeout(connectTimeout, () => {
+      finish(new Error('Tempo esgotado ao conectar na impressora de rede.'));
+    });
+  });
+};
+
 export const printOnNetworkPrinter = ({
   host,
   port,

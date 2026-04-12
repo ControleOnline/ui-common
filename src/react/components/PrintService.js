@@ -1,6 +1,9 @@
 import React, {useCallback, useEffect, useMemo, useRef} from 'react';
 import {api} from '@controleonline/ui-common/src/api';
-import {printOnNetworkPrinter} from '@controleonline/ui-common/src/react/services/NetworkPrinterService';
+import {
+  decodeNetworkPrinterPayload,
+  printOnNetworkPrinter,
+} from '@controleonline/ui-common/src/react/services/NetworkPrinterService';
 import {
   DEFAULT_NETWORK_PRINTER_PORT,
   getManagedPrinterDevices,
@@ -253,7 +256,7 @@ const PrintService = () => {
       await printOnNetworkPrinter({
         host: printerHost,
         port: printerPort,
-        payload: spoolData?.file?.content,
+        payload: decodeNetworkPrinterPayload(spoolData?.file?.content),
       });
 
       return true;
