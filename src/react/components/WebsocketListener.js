@@ -5,6 +5,8 @@ import { env } from '@env';
 export const WebsocketListener = () => {
   const websocketRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
+  const pendingMessagesRef = useRef({});
+  const flushMessagesPromiseRef = useRef(null);
   const reconnectAttempts = useRef(0);
   const isIdentifyingRef = useRef(false);
   const manualCloseRef = useRef(false);
@@ -29,27 +31,70 @@ export const WebsocketListener = () => {
     });
   };
 
+  const flushPendingMessages = () => {
+    flushMessagesPromiseRef.current = null;
+    const pendingMessages = pendingMessagesRef.current;
+    pendingMessagesRef.current = {};
+
+    let deliveredMessages = 0;
+    Object.entries(pendingMessages).forEach(([storeName, messages]) => {
+      if (!Array.isArray(messages) || messages.length === 0) {
+        return;
+      }
+
+      const storeModule = getStoreByName(storeName);
+      if (!storeModule) {
+        return;
+      }
+
+      const messageGetters = storeModule?.getters || {};
+      const messageActions = storeModule?.actions || {};
+      if (typeof messageActions?.setMessages !== 'function') {
+        return;
+      }
+
+      const currentMessages = Array.isArray(messageGetters?.messages)
+        ? messageGetters.messages
+        : [];
+
+      messageActions.setMessages([...currentMessages, ...messages]);
+      deliveredMessages += messages.length;
+    });
+
+    if (deliveredMessages > 0) {
+      updateConnectionState({
+        status: 'connected',
+        connected: true,
+        identified: true,
+        device: device?.id || null,
+        error: null,
+        lastEventAt: new Date().toISOString(),
+        lastEventCount: deliveredMessages,
+      });
+    }
+  };
+
   const appendMessageToStore = (data) => {
     if (!data?.store) {
       return;
     }
 
     const storeModule = getStoreByName(data.store);
-    if (!storeModule) {
-      ////console.debug('WebSocket: store nao encontrada para evento', data.store);
+    if (!storeModule?.actions || typeof storeModule.actions.setMessages !== 'function') {
       return;
     }
 
-    const messageGetters = storeModule?.getters || {};
-    const messageActions = storeModule?.actions || {};
-    if (typeof messageActions?.setMessages !== 'function') {
-      return;
+    if (!Array.isArray(pendingMessagesRef.current[data.store])) {
+      pendingMessagesRef.current[data.store] = [];
     }
 
-    const currentMessages = Array.isArray(messageGetters?.messages)
-      ? messageGetters.messages
-      : [];
-    messageActions.setMessages([...currentMessages, data]);
+    pendingMessagesRef.current[data.store].push(data);
+
+    if (!flushMessagesPromiseRef.current) {
+      flushMessagesPromiseRef.current = Promise.resolve().then(() => {
+        flushPendingMessages();
+      });
+    }
   };
 
   const connect = () => {
@@ -187,6 +232,8 @@ export const WebsocketListener = () => {
       clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = null;
     }
+    pendingMessagesRef.current = {};
+    flushMessagesPromiseRef.current = null;
     isIdentifyingRef.current = false;
     updateConnectionState({
       status: device?.id ? 'closed' : 'idle',
