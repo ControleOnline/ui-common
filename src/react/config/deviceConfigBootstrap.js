@@ -9,6 +9,8 @@ export const DEVICE_ALERT_SOUND_URL_KEY = 'notification-sound-url';
 export const DEVICE_ORDER_VISIBILITY_KEY = 'pos-order-visibility';
 export const DEVICE_ORDER_VISIBILITY_DEVICE = 'device';
 export const DEVICE_ORDER_VISIBILITY_COMPANY = 'company';
+export const DISPLAY_AUTO_PRINT_PRODUCT_CONFIG_KEY =
+  'display-auto-print-product';
 
 export const DEFAULT_DEVICE_CONFIGS = {
   'pos-type': 'full',

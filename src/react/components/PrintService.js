@@ -318,9 +318,45 @@ const PrintService = () => {
     [printActions, resolveTargetDevice],
   );
 
+  const printOrderProduct = useCallback(
+    async orderProductPrint => {
+      const normalizedOrderProductQueueIds = (
+        Array.isArray(orderProductPrint?.orderProductQueueIds)
+          ? orderProductPrint.orderProductQueueIds
+          : []
+      )
+        .map(item => String(item || '').replace(/\D+/g, '').trim())
+        .filter(Boolean);
+
+      const orderProductId = String(
+        orderProductPrint?.orderProductId || orderProductPrint?.id || '',
+      )
+        .replace(/\D+/g, '')
+        .trim();
+
+      if (!orderProductId) {
+        throw new Error(
+          global.t?.t('orders', 'message', 'printProcessingError'),
+        );
+      }
+
+      return await printActions.printOrderProduct({
+        id: orderProductId,
+        device: resolveTargetDevice(orderProductPrint),
+        ...(normalizedOrderProductQueueIds.length > 0
+          ? {orderProductQueueIds: normalizedOrderProductQueueIds}
+          : {}),
+      });
+    },
+    [printActions, resolveTargetDevice],
+  );
+
   const getData = useCallback(
     async printJob => {
       if (printJob.printType === 'order') await printOrder(printJob);
+      if (printJob.printType === 'order-product') {
+        await printOrderProduct(printJob);
+      }
       if (printJob.printType === 'cash-register') {
         await printCashRegister(printJob);
       }
@@ -329,7 +365,13 @@ const PrintService = () => {
       }
       if (printJob.printType === 'inventory') await printInventory(printJob);
     },
-    [printCashRegister, printInventory, printOrder, printPurchasingSuggestion],
+    [
+      printCashRegister,
+      printInventory,
+      printOrder,
+      printOrderProduct,
+      printPurchasingSuggestion,
+    ],
   );
 
   const goPrint = useCallback(
