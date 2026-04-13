@@ -41,6 +41,8 @@ export const WebsocketListener = () => {
     flushMessagesPromiseRef.current = null;
     const pendingMessages = pendingMessagesRef.current;
     pendingMessagesRef.current = {};
+    const deliveredStores = [];
+    const deliveredCompanies = new Set();
 
     let deliveredMessages = 0;
     Object.entries(pendingMessages).forEach(([storeName, messages]) => {
@@ -65,6 +67,15 @@ export const WebsocketListener = () => {
 
       messageActions.setMessages([...currentMessages, ...messages]);
       deliveredMessages += messages.length;
+      deliveredStores.push(storeName);
+      messages.forEach(message => {
+        const companyId = String(
+          message?.company?.id || message?.companyId || message?.company || '',
+        ).trim();
+        if (companyId) {
+          deliveredCompanies.add(companyId);
+        }
+      });
     });
 
     if (deliveredMessages > 0) {
@@ -76,6 +87,8 @@ export const WebsocketListener = () => {
         error: null,
         lastEventAt: new Date().toISOString(),
         lastEventCount: deliveredMessages,
+        lastStores: deliveredStores,
+        lastCompanies: Array.from(deliveredCompanies),
       });
     }
   };

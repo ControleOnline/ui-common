@@ -11,6 +11,8 @@ const APP_TYPE_DEVICE_MAP = {
   TOTEM: 'DISPLAY',
 };
 
+export const WEB_DEVICE_INSTANCE_STORAGE_KEY = 'web-device-instance-id';
+
 const safeTrim = value => String(value || '').trim();
 
 const safeStringify = value => {
@@ -18,6 +20,45 @@ const safeStringify = value => {
     return JSON.stringify(value || {});
   } catch (e) {
     return '{}';
+  }
+};
+
+const createWebDeviceInstanceId = () => {
+  try {
+    if (
+      typeof globalThis !== 'undefined' &&
+      globalThis.crypto &&
+      typeof globalThis.crypto.randomUUID === 'function'
+    ) {
+      return String(globalThis.crypto.randomUUID()).replace(/[^a-zA-Z0-9-]/g, '');
+    }
+  } catch (e) {
+    // continua para o fallback abaixo
+  }
+
+  return `web-${Date.now().toString(36)}-${Math.random()
+    .toString(36)
+    .slice(2, 10)}`;
+};
+
+export const getOrCreateWebDeviceInstanceId = () => {
+  if (typeof localStorage === 'undefined') {
+    return createWebDeviceInstanceId();
+  }
+
+  try {
+    const storedId = String(
+      localStorage.getItem(WEB_DEVICE_INSTANCE_STORAGE_KEY) || '',
+    ).trim();
+    if (storedId) {
+      return storedId;
+    }
+
+    const nextId = createWebDeviceInstanceId();
+    localStorage.setItem(WEB_DEVICE_INSTANCE_STORAGE_KEY, nextId);
+    return nextId;
+  } catch (e) {
+    return createWebDeviceInstanceId();
   }
 };
 

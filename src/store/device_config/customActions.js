@@ -90,24 +90,30 @@ export const addDeviceConfigs = ({commit, getters}, params) => {
     isWebRuntimeDevice(storedDevice) &&
     updatedParams.device &&
     updatedParams.device === storedDevice?.id;
+  const canPersistRuntimeWebDevice =
+    isRuntimeWebDevice &&
+    !!updatedParams.device &&
+    !!updatedParams.people;
+
+  const nextItem = {
+    ...(getters.item || {}),
+    device:
+      getters.item?.device || {
+        id: storedDevice.id,
+        device: storedDevice.id,
+      },
+    people: params.people || getters.item?.people,
+    configs: {
+      ...(getters.item?.configs || {}),
+      ...configsObj,
+    },
+  };
 
   if (isRuntimeWebDevice) {
-    const nextItem = {
-      ...(getters.item || {}),
-      device:
-        getters.item?.device || {
-          id: storedDevice.id,
-          device: storedDevice.id,
-        },
-      people: params.people || getters.item?.people,
-      configs: {
-        ...(getters.item?.configs || {}),
-        ...configsObj,
-      },
-    };
-
     commit(types.SET_ITEM, nextItem);
-    return Promise.resolve(nextItem);
+    if (!canPersistRuntimeWebDevice) {
+      return Promise.resolve(nextItem);
+    }
   }
 
   let options = {
@@ -131,8 +137,17 @@ export const addDeviceConfigs = ({commit, getters}, params) => {
           parsedConfigs = data.configs;
         }
       }
-      const d = {...getters.item, configs: parsedConfigs};
+      const hasParsedConfigs =
+        parsedConfigs && Object.keys(parsedConfigs).length > 0;
+      const d = {
+        ...getters.item,
+        ...data,
+        configs: hasParsedConfigs
+          ? parsedConfigs
+          : nextItem.configs || getters.item?.configs || {},
+      };
       commit(types.SET_ITEM, d);
+      return d;
     })
     .catch(e => {
       console.error('addDeviceConfigs API error:', e);

@@ -28,6 +28,7 @@ import {
 import {
   buildDeviceRegistrationPayload,
   buildLocalRuntimeDevice,
+  getOrCreateWebDeviceInstanceId,
   hasDeviceRecordChanges,
   isWebRuntimeDevice as resolveIsWebRuntimeDevice,
 } from '@controleonline/ui-common/src/react/utils/deviceRuntime';
@@ -133,6 +134,11 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
       return null;
     }
 
+    const webDeviceInstanceId = getOrCreateWebDeviceInstanceId();
+    if (!webDeviceInstanceId) {
+      return null;
+    }
+
     const nextAppName =
       packageJson?.displayName ||
       packageJson?.default?.displayName ||
@@ -143,7 +149,7 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
     return buildLocalRuntimeDevice({
       appType: APP_ENV.APP_TYPE,
       deviceInfo: {
-        id: `web-${userId}`,
+        id: `web-${String(userId).trim()}-${webDeviceInstanceId}`,
         appName: nextAppName,
         deviceType: 'web',
         systemName: 'web',
@@ -345,6 +351,11 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
             ? companyConfigs
             : currentCompany?.configs,
         );
+        const {nextConfigs} = buildDefaultDeviceConfigs({
+          configs: runtimeCompanyConfigs,
+          appVersion,
+          deviceInfo: device,
+        });
 
         deviceConfigsActions.setItem({
           device: {
@@ -352,10 +363,19 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
             device: device.id,
           },
           people: `/people/${currentCompany.id}`,
-          configs: runtimeCompanyConfigs,
+          configs: nextConfigs,
         });
-        setDeviceConfigFetched(true);
-        setDeviceDefaultsInitialized(true);
+
+        deviceConfigsActions
+          .addDeviceConfigs({
+            configs: JSON.stringify(nextConfigs),
+            people: `/people/${currentCompany.id}`,
+          })
+          .catch(() => {})
+          .finally(() => {
+            setDeviceConfigFetched(true);
+            setDeviceDefaultsInitialized(true);
+          });
         return;
       }
 
@@ -382,6 +402,7 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
         });
     }
   }, [
+    appVersion,
     companyConfigs,
     currentCompany?.configs,
     currentCompany?.id,
