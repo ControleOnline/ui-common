@@ -5,11 +5,13 @@ import { env } from '@env';
 export const WebsocketListener = () => {
   const websocketRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
+  const connectTimeoutRef = useRef(null);
   const pendingMessagesRef = useRef({});
   const flushMessagesPromiseRef = useRef(null);
   const reconnectAttempts = useRef(0);
   const isIdentifyingRef = useRef(false);
   const manualCloseRef = useRef(false);
+  const connectionTokenRef = useRef(0);
 
   const url = env.SOCKET;
 
@@ -30,6 +32,10 @@ export const WebsocketListener = () => {
       ...state,
     });
   };
+
+  const isActiveSocket = (socket, connectionToken) =>
+    websocketRef.current === socket &&
+    connectionTokenRef.current === connectionToken;
 
   const flushPendingMessages = () => {
     flushMessagesPromiseRef.current = null;
@@ -99,6 +105,7 @@ export const WebsocketListener = () => {
 
   const connect = () => {
     if (
+      connectTimeoutRef.current ||
       websocketRef.current?.readyState === WebSocket.OPEN ||
       websocketRef.current?.readyState === WebSocket.CONNECTING
     ) {
@@ -113,96 +120,147 @@ export const WebsocketListener = () => {
       error: null,
     });
 
-    //console.log('Iniciando conexao WebSocket em:', url);
+    const connectionToken = connectionTokenRef.current + 1;
+    connectionTokenRef.current = connectionToken;
 
-    websocketRef.current = new WebSocket(url);
+    // Atraso curto evita socket fantasma no remount do React web em dev.
+    connectTimeoutRef.current = setTimeout(() => {
+      connectTimeoutRef.current = null;
 
-    websocketRef.current.onopen = () => {
-      //console.log('WebSocket conectado');
-      reconnectAttempts.current = 0;
-      isIdentifyingRef.current = true;
-      updateConnectionState({
-        status: 'open',
-        connected: false,
-        identified: false,
-        error: null,
-      });
+      if (manualCloseRef.current || !device?.id) {
+        return;
+      }
 
-      setTimeout(() => {
-        if (!device?.id || !websocketRef.current) return;
+      if (
+        websocketRef.current?.readyState === WebSocket.OPEN ||
+        websocketRef.current?.readyState === WebSocket.CONNECTING
+      ) {
+        return;
+      }
 
-        const authPayload = JSON.stringify({
-          command: 'identify',
-          device: device.id,
+      const socket = new WebSocket(url);
+      websocketRef.current = socket;
+
+      socket.onopen = () => {
+        if (!isActiveSocket(socket, connectionToken)) {
+          return;
+        }
+
+        reconnectAttempts.current = 0;
+        isIdentifyingRef.current = true;
+        updateConnectionState({
+          status: 'open',
+          connected: false,
+          identified: false,
+          error: null,
         });
 
-        websocketRef.current.send(authPayload);
-        //console.log('Identify enviado:', authPayload);
-      }, 150);
-    };
+        setTimeout(() => {
+          if (
+            !device?.id ||
+            !isActiveSocket(socket, connectionToken) ||
+            socket.readyState !== WebSocket.OPEN
+          ) {
+            return;
+          }
 
-    websocketRef.current.onmessage = (event) => {
-      try {
-        if (!event.data) return;
-        const payload = JSON.parse(event.data);
-
-        if (payload.status === 'identified') {
-          //console.log('Identificacao confirmada pelo servidor:', payload.device);
-          isIdentifyingRef.current = false;
-          updateConnectionState({
-            status: 'connected',
-            connected: true,
-            identified: true,
-            device: payload.device || device?.id,
-            error: null,
+          const authPayload = JSON.stringify({
+            command: 'identify',
+            device: device.id,
           });
+
+          socket.send(authPayload);
+        }, 150);
+      };
+
+      socket.onmessage = (event) => {
+        if (!isActiveSocket(socket, connectionToken)) {
           return;
         }
 
-        if (payload.status === 'error') {
-          //console.error('Erro do servidor:', payload.message);
-          isIdentifyingRef.current = false;
-          updateConnectionState({
-            status: 'error',
-            connected: false,
-            identified: false,
-            error: payload.message || 'WebSocket identify failed',
-          });
+        try {
+          if (!event.data) return;
+          const payload = JSON.parse(event.data);
+
+          if (payload.status === 'identified') {
+            isIdentifyingRef.current = false;
+            updateConnectionState({
+              status: 'connected',
+              connected: true,
+              identified: true,
+              device: payload.device || device?.id,
+              error: null,
+            });
+            return;
+          }
+
+          if (payload.status === 'error') {
+            isIdentifyingRef.current = false;
+            updateConnectionState({
+              status: 'error',
+              connected: false,
+              identified: false,
+              error: payload.message || 'WebSocket identify failed',
+            });
+            return;
+          }
+
+          const events = Array.isArray(payload) ? payload : [payload];
+          events.forEach(appendMessageToStore);
+        } catch (e) {
+          //console.error('Erro ao processar mensagem:', e);
+        }
+      };
+
+      socket.onerror = () => {
+        if (!isActiveSocket(socket, connectionToken) || manualCloseRef.current) {
           return;
         }
 
-        const events = Array.isArray(payload) ? payload : [payload];
-        events.forEach(appendMessageToStore);
-      } catch (e) {
-        //console.error('Erro ao processar mensagem:', e);
-      }
-    };
+        updateConnectionState({
+          status: 'error',
+          connected: false,
+          identified: false,
+        });
+      };
 
-    websocketRef.current.onerror = (error) => {
-      //console.error('WebSocket onerror:', error);
-      updateConnectionState({
-        status: 'error',
-        connected: false,
-        identified: false,
-      });
-    };
+      socket.onclose = (event) => {
+        const isCurrentSocket = isActiveSocket(socket, connectionToken);
 
-    websocketRef.current.onclose = (event) => {
-      //console.log(`Conexao fechada - Code: ${event.code} | Reason: ${event.reason || 'nenhum'}`);
-      isIdentifyingRef.current = false;
-      updateConnectionState({
-        status: manualCloseRef.current ? 'closed' : 'disconnected',
-        connected: false,
-        identified: false,
-        code: event.code,
-        reason: event.reason || '',
-      });
-      scheduleReconnect();
-    };
+        if (isCurrentSocket) {
+          websocketRef.current = null;
+        }
+
+        if (!isCurrentSocket) {
+          return;
+        }
+
+        isIdentifyingRef.current = false;
+        updateConnectionState({
+          status: manualCloseRef.current ? 'closed' : 'disconnected',
+          connected: false,
+          identified: false,
+          code: event.code,
+          reason: event.reason || '',
+        });
+
+        if (!manualCloseRef.current) {
+          scheduleReconnect();
+        }
+      };
+    }, 80);
   };
 
   const scheduleReconnect = () => {
-    if (manualCloseRef.current || reconnectTimeoutRef.current) return;
+    if (
+      manualCloseRef.current ||
+      reconnectTimeoutRef.current ||
+      connectTimeoutRef.current ||
+      websocketRef.current?.readyState === WebSocket.OPEN ||
+      websocketRef.current?.readyState === WebSocket.CONNECTING
+    ) {
+      return;
+    }
 
     const delay = Math.min(10000 * Math.pow(2, reconnectAttempts.current), 12000);
     reconnectAttempts.current += 1;
@@ -224,10 +282,23 @@ export const WebsocketListener = () => {
   const close = () => {
     //console.log('Limpando WebSocket...');
     manualCloseRef.current = true;
-    if (websocketRef.current) {
-      websocketRef.current.close();
-      websocketRef.current = null;
+    connectionTokenRef.current += 1;
+
+    if (connectTimeoutRef.current) {
+      clearTimeout(connectTimeoutRef.current);
+      connectTimeoutRef.current = null;
     }
+
+    const activeSocket = websocketRef.current;
+    websocketRef.current = null;
+    if (activeSocket) {
+      activeSocket.onopen = null;
+      activeSocket.onmessage = null;
+      activeSocket.onerror = null;
+      activeSocket.onclose = null;
+      activeSocket.close();
+    }
+
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
       reconnectTimeoutRef.current = null;
