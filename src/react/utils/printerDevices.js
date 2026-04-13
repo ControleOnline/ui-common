@@ -56,6 +56,33 @@ const normalizePositiveIntegerString = (value, fallback) => {
 export const normalizeDeviceType = value => safeTrim(value).toUpperCase();
 export const getDeviceConfigType = deviceConfig =>
   normalizeDeviceType(deviceConfig?.type || deviceConfig?.device?.type);
+export const buildDeviceConfigIri = deviceConfig => {
+  const directIri = safeTrim(deviceConfig?.['@id']);
+  if (directIri) {
+    return directIri;
+  }
+
+  const configId = safeTrim(deviceConfig?.id);
+  return configId ? `/device_configs/${configId}` : '';
+};
+export const getPrinterOptionValue = printer =>
+  safeTrim(printer?.configIri) ||
+  safeTrim(printer?.selectionValue) ||
+  safeTrim(printer?.device);
+export const findPrinterOptionByValue = (printerOptions = [], value = '') => {
+  const normalizedValue = safeTrim(value);
+  if (!normalizedValue) {
+    return null;
+  }
+
+  const options = Array.isArray(printerOptions) ? printerOptions : [];
+
+  return (
+    options.find(option => getPrinterOptionValue(option) === normalizedValue) ||
+    options.find(option => normalizeDeviceId(option?.device) === normalizedValue) ||
+    null
+  );
+};
 
 export const isNetworkPrinterDeviceType = type =>
   [PRINT_DEVICE_TYPE, PRINTER_DEVICE_TYPE].includes(normalizeDeviceType(type));
@@ -212,16 +239,17 @@ export const getPrinterOptions = ({
 }) => {
   const printerMap = new Map();
 
-  const assignPrinter = printer => {
+  const assignPrinter = (mapKey, printer, currentValue = {}) => {
     const deviceId = normalizeDeviceId(printer?.device || printer?.deviceId);
     if (!deviceId) {
       return;
     }
 
-    const currentValue = printerMap.get(deviceId) || {};
     const nextMetadata = getPrinterMetadata(printer?.metadata);
+    const currentConfigs = parseConfigsObject(currentValue?.configs);
+    const nextConfigs = parseConfigsObject(printer?.configs);
 
-    printerMap.set(deviceId, {
+    printerMap.set(mapKey, {
       ...currentValue,
       ...printer,
       device: deviceId,
@@ -234,28 +262,65 @@ export const getPrinterOptions = ({
       type:
         normalizeDeviceType(printer?.type || printer?.deviceType) ||
         normalizeDeviceType(currentValue?.type || currentValue?.deviceType),
+      configId: safeTrim(printer?.configId || currentValue?.configId),
+      configIri: safeTrim(printer?.configIri || currentValue?.configIri),
+      config: printer?.config || currentValue?.config,
       metadata:
         Object.keys(nextMetadata).length > 0
           ? nextMetadata
           : getPrinterMetadata(currentValue?.metadata),
-      configs: parseConfigsObject(printer?.configs || currentValue?.configs),
+      configs:
+        Object.keys(nextConfigs).length > 0 ? nextConfigs : currentConfigs,
     });
   };
-
-  (Array.isArray(printers) ? printers : []).forEach(assignPrinter);
 
   filterDeviceConfigsByCompany(deviceConfigs, companyId)
     .filter(deviceConfig => isPrintCapableDeviceType(getDeviceConfigType(deviceConfig)))
     .forEach(deviceConfig => {
-      assignPrinter({
+      const deviceId = normalizeDeviceId(
+        deviceConfig?.device?.device || deviceConfig?.device?.id,
+      );
+      const configIri = buildDeviceConfigIri(deviceConfig);
+      const mapKey =
+        configIri ||
+        `${deviceId}::${getDeviceConfigType(deviceConfig) || 'DEVICE'}`;
+
+      assignPrinter(mapKey, {
         ...(deviceConfig?.device || {}),
         type: getDeviceConfigType(deviceConfig),
+        configId: safeTrim(deviceConfig?.id),
+        configIri,
+        config: deviceConfig,
         configs: parseConfigsObject(deviceConfig?.configs),
       });
     });
 
+  (Array.isArray(printers) ? printers : []).forEach(printer => {
+    const deviceId = normalizeDeviceId(printer?.device || printer?.deviceId);
+    if (!deviceId) {
+      return;
+    }
+
+    const matchingEntries = Array.from(printerMap.entries()).filter(
+      ([, option]) => normalizeDeviceId(option?.device) === deviceId,
+    );
+
+    if (matchingEntries.length > 0) {
+      matchingEntries.forEach(([mapKey, currentValue]) => {
+        assignPrinter(mapKey, printer, currentValue);
+      });
+      return;
+    }
+
+    const fallbackType = normalizeDeviceType(printer?.type || printer?.deviceType);
+    const fallbackKey = fallbackType ? `${deviceId}::${fallbackType}` : deviceId;
+    assignPrinter(fallbackKey, printer, printerMap.get(fallbackKey) || {});
+  });
+
   return Array.from(printerMap.values()).sort((left, right) =>
-    getPrinterLabel(left).localeCompare(getPrinterLabel(right)),
+    `${getPrinterLabel(left)} ${getDeviceTypeLabel(left?.type)}`.localeCompare(
+      `${getPrinterLabel(right)} ${getDeviceTypeLabel(right?.type)}`,
+    ),
   );
 };
 
@@ -273,12 +338,18 @@ export const getManagedPrinterDevices = ({
 
   const assignManagedPrinter = printer => {
     const printerDeviceId = normalizeDeviceId(printer?.device);
-    if (!printerDeviceId) {
+    const printerOptionValue =
+      getPrinterOptionValue(printer) ||
+      (printerDeviceId
+        ? `${printerDeviceId}::${normalizeDeviceType(printer?.type) || 'DEVICE'}`
+        : '');
+
+    if (!printerDeviceId || !printerOptionValue) {
       return;
     }
 
-    managedPrinterMap.set(printerDeviceId, {
-      ...(managedPrinterMap.get(printerDeviceId) || {}),
+    managedPrinterMap.set(printerOptionValue, {
+      ...(managedPrinterMap.get(printerOptionValue) || {}),
       ...printer,
       device: printerDeviceId,
       configs: parseConfigsObject(printer?.configs),
@@ -301,6 +372,9 @@ export const getManagedPrinterDevices = ({
       assignManagedPrinter({
         ...(deviceConfig?.device || {}),
         type: getDeviceConfigType(deviceConfig),
+        configId: safeTrim(deviceConfig?.id),
+        configIri: buildDeviceConfigIri(deviceConfig),
+        config: deviceConfig,
         configs: parseConfigsObject(deviceConfig?.configs),
       });
     });
@@ -313,16 +387,20 @@ export const getManagedPrinterDevices = ({
     )
     .forEach(displayDeviceConfig => {
       const displayConfigs = parseConfigsObject(displayDeviceConfig?.configs);
-      const attachedPrinterDeviceId = normalizeDeviceId(displayConfigs?.printer);
+      const attachedPrinterReference = normalizeDeviceId(displayConfigs?.printer);
 
-      if (!attachedPrinterDeviceId) {
+      if (!attachedPrinterReference) {
         return;
       }
 
       const printerDeviceConfig = scopedDeviceConfigs.find(
         deviceConfig =>
+          buildDeviceConfigIri(deviceConfig) === attachedPrinterReference &&
+          isPrinterDeviceType(getDeviceConfigType(deviceConfig)),
+      ) || scopedDeviceConfigs.find(
+        deviceConfig =>
           normalizeDeviceId(deviceConfig?.device?.device) ===
-            attachedPrinterDeviceId &&
+            attachedPrinterReference &&
           isPrinterDeviceType(getDeviceConfigType(deviceConfig)),
       );
 
@@ -333,6 +411,9 @@ export const getManagedPrinterDevices = ({
       assignManagedPrinter({
         ...(printerDeviceConfig?.device || {}),
         type: getDeviceConfigType(printerDeviceConfig),
+        configId: safeTrim(printerDeviceConfig?.id),
+        configIri: buildDeviceConfigIri(printerDeviceConfig),
+        config: printerDeviceConfig,
         configs: parseConfigsObject(printerDeviceConfig?.configs),
       });
     });
