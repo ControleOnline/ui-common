@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useMemo, useRef} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {api} from '@controleonline/ui-common/src/api';
 import {
   decodeNetworkPrinterPayload,
@@ -6,16 +6,22 @@ import {
 } from '@controleonline/ui-common/src/react/services/NetworkPrinterService';
 import {
   DEFAULT_NETWORK_PRINTER_PORT,
+  DISPLAY_DEVICE_TYPE,
+  PDV_DEVICE_TYPE,
   getManagedPrinterDevices,
   getPrinterHost,
   NETWORK_PRINTER_PORT_CONFIG_KEY,
   normalizePrinterPort,
 } from '@controleonline/ui-common/src/react/utils/printerDevices';
+import {isWebRuntimeDevice} from '@controleonline/ui-common/src/react/utils/deviceRuntime';
 import {normalizeDeviceId} from '@controleonline/ui-common/src/react/utils/paymentDevices';
 import {CieloPrint} from '@controleonline/ui-orders/src/react/services/Cielo/Print';
 import {useStore} from '@store';
 
-const SOCKET_PRINT_POLL_INTERVAL = 60000;
+const SOCKET_PRINT_POLL_INTERVAL_DISCONNECTED = 10000;
+const SOCKET_PRINT_POLL_DELAY_CONNECTED = 60000;
+
+const normalizeDeviceType = value => String(value || '').trim().toUpperCase();
 
 const extractCollectionMembers = data => {
   if (Array.isArray(data)) {
@@ -55,6 +61,12 @@ const PrintService = () => {
 
   const isPrintingRef = useRef(false);
   const spoolRef = useRef([]);
+  const connectedPollTimeoutRef = useRef(null);
+  const [lastPrintCommandAt, setLastPrintCommandAt] = useState(null);
+
+  const markPrintCommand = useCallback(() => {
+    setLastPrintCommandAt(Date.now());
+  }, []);
 
   useEffect(() => {
     spoolRef.current = Array.isArray(spool) ? spool : [];
@@ -115,6 +127,16 @@ const PrintService = () => {
     ],
   );
 
+  const runtimeDeviceType = useMemo(
+    () =>
+      normalizeDeviceType(
+        runtimeDeviceConfig?.type ||
+          runtimeDeviceConfig?.device?.type ||
+          storagedDevice?.type,
+      ),
+    [runtimeDeviceConfig?.device?.type, runtimeDeviceConfig?.type, storagedDevice?.type],
+  );
+
   const getLocalPrintPayload = useCallback(content => {
     if (content === null || content === undefined) {
       return '';
@@ -157,6 +179,42 @@ const PrintService = () => {
     [managedPrinters],
   );
 
+  const isWebDevice = useMemo(
+    () => isWebRuntimeDevice(storagedDevice),
+    [storagedDevice],
+  );
+
+  const spoolDeviceIds = useMemo(() => {
+    if (!storagedDevice?.id) {
+      return [];
+    }
+
+    if (isWebDevice) {
+      return [];
+    }
+
+    if (runtimeDeviceType === PDV_DEVICE_TYPE) {
+      const deviceId = normalizeDeviceId(storagedDevice.id);
+      return deviceId ? [deviceId] : [];
+    }
+
+    if (runtimeDeviceType === DISPLAY_DEVICE_TYPE) {
+      return managedPrinterDeviceIds;
+    }
+
+    return [];
+  }, [
+    isWebDevice,
+    managedPrinterDeviceIds,
+    runtimeDeviceType,
+    storagedDevice?.id,
+  ]);
+
+  const shouldHandleSpool = useMemo(
+    () => spoolDeviceIds.length > 0,
+    [spoolDeviceIds],
+  );
+
   const resolveManagedPrinter = useCallback(
     printJob => {
       const targetDeviceId = resolveTargetDevice(printJob);
@@ -180,14 +238,13 @@ const PrintService = () => {
   }, [currentCompany?.id, deviceConfigActions, storagedDevice?.id]);
 
   const loadOpenSpools = useCallback(async () => {
-    if (!storagedDevice?.id) {
+    if (!shouldHandleSpool) {
+      printActions.setItems([]);
       printActions.setReload(false);
       return [];
     }
 
-    const deviceIds = Array.from(
-      new Set([storagedDevice.id, ...managedPrinterDeviceIds].filter(Boolean)),
-    );
+    const deviceIds = Array.from(new Set(spoolDeviceIds.filter(Boolean)));
 
     if (deviceIds.length === 0) {
       printActions.setItems([]);
@@ -234,7 +291,7 @@ const PrintService = () => {
     } finally {
       printActions.setReload(false);
     }
-  }, [managedPrinterDeviceIds, printActions, resolveSpoolId, storagedDevice?.id]);
+  }, [printActions, resolveSpoolId, shouldHandleSpool, spoolDeviceIds]);
 
   const removeSpoolFromQueue = useCallback(
     spoolId => {
@@ -471,10 +528,14 @@ const PrintService = () => {
   );
 
   useEffect(() => {
-    if (storagedDevice?.id) {
+    if (shouldHandleSpool) {
       printActions.setReload(true);
+      return;
     }
-  }, [managedPrinterDeviceIds, printActions, storagedDevice?.id]);
+
+    printActions.setItems([]);
+    printActions.setReload(false);
+  }, [printActions, shouldHandleSpool]);
 
   useEffect(() => {
     if (!reload) {
@@ -485,29 +546,63 @@ const PrintService = () => {
   }, [loadOpenSpools, reload]);
 
   useEffect(() => {
-    if (!storagedDevice?.id || websocketSummary?.connected === true) {
+    if (!shouldHandleSpool || websocketSummary?.connected === true) {
       return;
     }
 
     printActions.setReload(true);
     const intervalId = setInterval(() => {
       printActions.setReload(true);
-    }, SOCKET_PRINT_POLL_INTERVAL);
+    }, SOCKET_PRINT_POLL_INTERVAL_DISCONNECTED);
 
     return () => {
       clearInterval(intervalId);
     };
-  }, [printActions, storagedDevice?.id, websocketSummary?.connected]);
+  }, [printActions, shouldHandleSpool, websocketSummary?.connected]);
+
+  useEffect(() => {
+    if (connectedPollTimeoutRef.current) {
+      clearTimeout(connectedPollTimeoutRef.current);
+      connectedPollTimeoutRef.current = null;
+    }
+
+    if (!shouldHandleSpool || !websocketSummary?.connected || !lastPrintCommandAt) {
+      return;
+    }
+
+    const elapsed = Date.now() - lastPrintCommandAt;
+    const delay = Math.max(SOCKET_PRINT_POLL_DELAY_CONNECTED - elapsed, 0);
+
+    connectedPollTimeoutRef.current = setTimeout(() => {
+      printActions.setReload(true);
+    }, delay);
+
+    return () => {
+      if (connectedPollTimeoutRef.current) {
+        clearTimeout(connectedPollTimeoutRef.current);
+        connectedPollTimeoutRef.current = null;
+      }
+    };
+  }, [
+    lastPrintCommandAt,
+    printActions,
+    shouldHandleSpool,
+    websocketSummary?.connected,
+  ]);
 
   useEffect(() => {
     if (print && print.length > 0) {
+      if (shouldHandleSpool) {
+        markPrintCommand();
+      }
       for (const p of print) {
         printActions.addToQueue(() =>
           getData(p).finally(() => {
             const targetDeviceId = resolveTargetDevice(p);
             if (
-              targetDeviceId === normalizeDeviceId(storagedDevice?.id) ||
-              managedPrinterDeviceIds.includes(targetDeviceId)
+              shouldHandleSpool &&
+              (targetDeviceId === normalizeDeviceId(storagedDevice?.id) ||
+                managedPrinterDeviceIds.includes(targetDeviceId))
             ) {
               printActions.setReload(true);
             }
@@ -523,7 +618,9 @@ const PrintService = () => {
     managedPrinterDeviceIds,
     print,
     printActions,
+    markPrintCommand,
     resolveTargetDevice,
+    shouldHandleSpool,
     storagedDevice?.id,
   ]);
 
@@ -541,11 +638,14 @@ const PrintService = () => {
     }
 
     if (message?.action === 'print' || message?.store === 'print') {
-      printActions.setReload(true);
+      if (shouldHandleSpool) {
+        markPrintCommand();
+        printActions.setReload(true);
+      }
     }
 
     printActions.setMessage(null);
-  }, [message, printActions]);
+  }, [markPrintCommand, message, printActions, shouldHandleSpool]);
 
   useEffect(() => {
     if (
