@@ -18,17 +18,14 @@ import {
 import {resolveAppDomain} from '@controleonline/ui-common/src/utils/appDomain';
 import {colors as runtimeColors} from '@controleonline/../../src/styles/colors';
 import {
-  buildScreenMetrics,
-  hasScreenMetricsChanges,
-} from '@controleonline/ui-common/src/react/utils/screenMetrics';
-import {
-  buildDefaultDeviceConfigs,
+  buildProviderManagedDeviceConfigs,
   parseConfigsObject,
 } from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
 import {
   buildDeviceRegistrationPayload,
   buildLocalRuntimeDevice,
   hasDeviceRecordChanges,
+  resolveOperationalDeviceType,
 } from '@controleonline/ui-common/src/react/utils/deviceRuntime';
 import packageJson from '@package';
 
@@ -90,7 +87,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
   const [translateReady, setTranslateReady] = useState(false);
   const [deviceConfigFetched, setDeviceConfigFetched] = useState(false);
   const [mainConfigsDiscovered, setMainConfigsDiscovered] = useState(false);
-  const [deviceDefaultsInitialized, setDeviceDefaultsInitialized] =
+  const [deviceRuntimeConfigSynced, setDeviceRuntimeConfigSynced] =
     useState(false);
   const [, setTranslateVersion] = useState(0);
   const [baseThemeColors, setBaseThemeColors] = useState({});
@@ -99,6 +96,10 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
   );
   const packageVersion = packageJson?.version || packageJson?.default?.version;
   const appVersion = packageVersion || device?.appVersion;
+  const runtimeDeviceType = resolveOperationalDeviceType({
+    appType: APP_ENV.APP_TYPE,
+    deviceInfo: device || {},
+  });
 
   useEffect(() => {
     global.refreshTranslationsUI = () => {
@@ -211,7 +212,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
             device?.entityIri ||
             (existingDevice?.id ? `/devices/${existingDevice.id}` : null),
           alias: existingDevice?.alias || nextDevice.alias,
-          type: existingDevice?.type || nextDevice.type,
+          type: device?.type || runtimeDeviceType,
           metadata: existingDevice?.metadata || nextDevice.metadata,
         };
 
@@ -236,7 +237,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
           device?.entityIri ||
           (savedDevice?.id ? `/devices/${savedDevice.id}` : null),
         alias: savedDevice.alias || nextDevice.alias,
-        type: savedDevice.type || nextDevice.type,
+        type: device?.type || runtimeDeviceType,
         metadata: savedDevice.metadata || nextDevice.metadata,
       };
 
@@ -262,6 +263,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
     device?.model,
     device?.systemVersion,
     isLogged,
+    runtimeDeviceType,
   ]);
 
   useEffect(() => {
@@ -311,11 +313,12 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
       Object.entries(currentCompany).length > 0
     ) {
       setDeviceConfigFetched(false);
-      setDeviceDefaultsInitialized(false);
+      setDeviceRuntimeConfigSynced(false);
       deviceConfigsActions
         .getItems({
           'device.device': device.id,
           people: '/people/' + currentCompany.id,
+          type: runtimeDeviceType,
         })
         .then(data => {
           if (Array.isArray(data) && data.length > 0) {
@@ -334,43 +337,53 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
           setDeviceConfigFetched(true);
         });
     }
-  }, [currentCompany?.id, isLogged, device?.id]);
+  }, [currentCompany?.id, isLogged, device?.id, runtimeDeviceType]);
 
   useEffect(() => {
     if (
-      !deviceDefaultsInitialized ||
       !deviceConfigFetched ||
       !isLogged ||
       !currentCompany?.id ||
-      !device?.id
+      !device?.id ||
+      deviceRuntimeConfigSynced
     ) {
       return;
     }
 
-    const nextMetrics = buildScreenMetrics();
+    const {nextConfigs, needsUpdate} = buildProviderManagedDeviceConfigs({
+      configs: device_config?.configs,
+      appVersion,
+      deviceInfo: device,
+    });
 
-    const currentConfigs = device_config?.configs || {};
-    const hasChanges = hasScreenMetricsChanges(currentConfigs, nextMetrics);
-
-    if (!hasChanges) {
+    if (!needsUpdate) {
+      setDeviceRuntimeConfigSynced(true);
       return;
     }
 
-    deviceConfigsActions.addDeviceConfigs({
-      configs: JSON.stringify({
-        ...currentConfigs,
-        ...nextMetrics,
-      }),
-      people: '/people/' + currentCompany.id,
-    });
+    deviceConfigsActions
+      .addDeviceConfigs({
+        device: device.id,
+        configs: JSON.stringify(nextConfigs),
+        people: '/people/' + currentCompany.id,
+        type: runtimeDeviceType,
+      })
+      .catch(() => {})
+      .finally(() => {
+        setDeviceRuntimeConfigSynced(true);
+      });
   }, [
-    deviceDefaultsInitialized,
-    deviceConfigFetched,
-    isLogged,
+    appVersion,
     currentCompany?.id,
     device?.id,
-    device_config?.configs,
+    device?.manufacturer,
+    device?.isEmulator,
+    deviceConfigFetched,
+    deviceRuntimeConfigSynced,
     deviceConfigsActions,
+    device_config?.configs,
+    isLogged,
+    runtimeDeviceType,
   ]);
 
   useEffect(() => {
@@ -400,50 +413,6 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
         setMainConfigsDiscovered(true);
       });
   }, [configActions, currentCompany?.id, device?.id, isLogged, mainConfigsDiscovered]);
-
-  useEffect(() => {
-    if (
-      !deviceConfigFetched ||
-      !isLogged ||
-      !currentCompany?.id ||
-      !device?.id ||
-      deviceDefaultsInitialized
-    ) {
-      return;
-    }
-
-    const {nextConfigs, needsUpdate} = buildDefaultDeviceConfigs({
-      configs: device_config?.configs,
-      appVersion,
-      deviceInfo: device,
-    });
-
-    if (!needsUpdate) {
-      setDeviceDefaultsInitialized(true);
-      return;
-    }
-
-    deviceConfigsActions
-      .addDeviceConfigs({
-        configs: JSON.stringify(nextConfigs),
-        people: '/people/' + currentCompany.id,
-      })
-      .catch(() => {})
-      .finally(() => {
-        setDeviceDefaultsInitialized(true);
-      });
-  }, [
-    appVersion,
-    currentCompany?.id,
-    device?.id,
-    device?.manufacturer,
-    device?.isEmulator,
-    deviceConfigFetched,
-    deviceDefaultsInitialized,
-    deviceConfigsActions,
-    device_config?.configs,
-    isLogged,
-  ]);
 
   useEffect(() => {
     if (

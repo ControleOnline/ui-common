@@ -50,7 +50,7 @@ const PrintService = () => {
   const {item: storagedDevice} = deviceGetters;
   const {reload, print, items: spool, message, messages} = printGetters;
   const {currentCompany} = peopleGetters;
-  const {items: companyDeviceConfigs = []} = deviceConfigGetters;
+  const {item: runtimeDeviceConfig, items: companyDeviceConfigs = []} = deviceConfigGetters;
   const {summary: websocketSummary} = websocketGetters;
 
   const isPrintingRef = useRef(false);
@@ -82,6 +82,37 @@ const PrintService = () => {
         printJob?.device?.device || printJob?.device || storagedDevice?.id,
       ),
     [storagedDevice?.id],
+  );
+  const resolveTargetDeviceType = useCallback(
+    printJob => {
+      const explicitType = String(printJob?.deviceType || printJob?.type || '')
+        .trim()
+        .toUpperCase();
+      if (explicitType) {
+        return explicitType;
+      }
+
+      const targetDeviceId = resolveTargetDevice(printJob);
+      const matchingDeviceConfig = (companyDeviceConfigs || []).find(
+        deviceConfig =>
+          normalizeDeviceId(deviceConfig?.device?.device) === targetDeviceId,
+      );
+
+      return String(
+        matchingDeviceConfig?.type ||
+          runtimeDeviceConfig?.type ||
+          storagedDevice?.type ||
+          '',
+      )
+        .trim()
+        .toUpperCase();
+    },
+    [
+      companyDeviceConfigs,
+      resolveTargetDevice,
+      runtimeDeviceConfig?.type,
+      storagedDevice?.type,
+    ],
   );
 
   const getLocalPrintPayload = useCallback(content => {
@@ -268,27 +299,30 @@ const PrintService = () => {
     async printJob =>
       await printActions.printInventory({
         device: resolveTargetDevice(printJob),
+        type: resolveTargetDeviceType(printJob),
         people: currentCompany.id,
       }),
-    [currentCompany?.id, printActions, resolveTargetDevice],
+    [currentCompany?.id, printActions, resolveTargetDevice, resolveTargetDeviceType],
   );
 
   const printPurchasingSuggestion = useCallback(
     async printJob =>
       await printActions.printPurchasingSuggestion({
         device: resolveTargetDevice(printJob),
+        type: resolveTargetDeviceType(printJob),
         people: currentCompany.id,
       }),
-    [currentCompany?.id, printActions, resolveTargetDevice],
+    [currentCompany?.id, printActions, resolveTargetDevice, resolveTargetDeviceType],
   );
 
   const printCashRegister = useCallback(
     async printJob =>
       await printActions.getCashRegisterPrint({
         device: resolveTargetDevice(printJob),
+        type: resolveTargetDeviceType(printJob),
         people: currentCompany.id,
       }),
-    [currentCompany?.id, printActions, resolveTargetDevice],
+    [currentCompany?.id, printActions, resolveTargetDevice, resolveTargetDeviceType],
   );
 
   const printOrder = useCallback(
@@ -310,6 +344,7 @@ const PrintService = () => {
       return await printActions.printOrder({
         id: order.id,
         device: resolveTargetDevice(order),
+        type: resolveTargetDeviceType(order),
         ...(normalizedQueueIds.length > 0
           ? {queueIds: normalizedQueueIds}
           : {}),
@@ -318,7 +353,7 @@ const PrintService = () => {
           : {}),
       });
     },
-    [printActions, resolveTargetDevice],
+    [printActions, resolveTargetDevice, resolveTargetDeviceType],
   );
 
   const printOrderProduct = useCallback(
@@ -346,12 +381,13 @@ const PrintService = () => {
       return await printActions.printOrderProduct({
         id: orderProductId,
         device: resolveTargetDevice(orderProductPrint),
+        type: resolveTargetDeviceType(orderProductPrint),
         ...(normalizedOrderProductQueueIds.length > 0
           ? {orderProductQueueIds: normalizedOrderProductQueueIds}
           : {}),
       });
     },
-    [printActions, resolveTargetDevice],
+    [printActions, resolveTargetDevice, resolveTargetDeviceType],
   );
 
   const getData = useCallback(

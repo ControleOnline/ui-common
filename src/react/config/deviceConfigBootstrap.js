@@ -9,6 +9,8 @@ export const DEVICE_ALERT_SOUND_URL_KEY = 'notification-sound-url';
 export const DEVICE_ORDER_VISIBILITY_KEY = 'pos-order-visibility';
 export const DEVICE_ORDER_VISIBILITY_DEVICE = 'device';
 export const DEVICE_ORDER_VISIBILITY_COMPANY = 'company';
+export const DEVICE_RUNTIME_DEBUG_INFO_ENABLED_KEY =
+  'device-runtime-debug-info-enabled';
 export const DISPLAY_AUTO_PRINT_PRODUCT_CONFIG_KEY =
   'display-auto-print-product';
 
@@ -23,6 +25,7 @@ export const DEFAULT_DEVICE_CONFIGS = {
   [DEVICE_ORDER_VISIBILITY_KEY]: DEVICE_ORDER_VISIBILITY_DEVICE,
   [DEVICE_ALERT_SOUND_ENABLED_KEY]: '0',
   [DEVICE_ALERT_SOUND_URL_KEY]: '',
+  [DEVICE_RUNTIME_DEBUG_INFO_ENABLED_KEY]: '0',
 };
 
 export const isTruthyValue = value =>
@@ -60,6 +63,11 @@ export const resolveDeviceOrderVisibility = configs => {
 export const canDeviceViewCompanyOrders = configs =>
   resolveDeviceOrderVisibility(configs) === DEVICE_ORDER_VISIBILITY_COMPANY;
 
+export const isDeviceRuntimeDebugInfoEnabled = configs =>
+  isTruthyValue(
+    parseConfigsObject(configs)?.[DEVICE_RUNTIME_DEBUG_INFO_ENABLED_KEY],
+  );
+
 export const resolveDefaultGateway = deviceInfo => {
   const manufacturer = String(deviceInfo?.manufacturer || '').toLowerCase();
   const isEmulator = isTruthyValue(deviceInfo?.isEmulator);
@@ -93,6 +101,35 @@ export const buildDefaultDeviceConfigs = ({configs, appVersion, deviceInfo}) => 
 
   if (isMissingConfigValue(nextConfigs['pos-gateway'])) {
     nextConfigs['pos-gateway'] = resolveDefaultGateway(deviceInfo);
+    needsUpdate = true;
+  }
+
+  return {nextConfigs, needsUpdate};
+};
+
+export const buildProviderManagedDeviceConfigs = ({
+  configs,
+  appVersion,
+  deviceInfo,
+}) => {
+  let nextConfigs = parseConfigsObject(configs);
+  let needsUpdate = false;
+
+  const metricsConfigs = appendScreenMetrics(nextConfigs);
+  if (hasScreenMetricsChanges(nextConfigs, metricsConfigs)) {
+    nextConfigs = metricsConfigs;
+    needsUpdate = true;
+  }
+
+  const nextVersion = appVersion || deviceInfo?.appVersion || '1.0.0';
+  if (nextVersion && nextConfigs['config-version'] !== nextVersion) {
+    nextConfigs['config-version'] = nextVersion;
+    needsUpdate = true;
+  }
+
+  const nextGateway = resolveDefaultGateway(deviceInfo);
+  if (nextGateway && nextConfigs['pos-gateway'] !== nextGateway) {
+    nextConfigs['pos-gateway'] = nextGateway;
     needsUpdate = true;
   }
 

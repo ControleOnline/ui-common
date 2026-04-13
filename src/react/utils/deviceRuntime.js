@@ -1,5 +1,6 @@
 import {Platform} from 'react-native';
 import {buildScreenMetrics} from '@controleonline/ui-common/src/react/utils/screenMetrics';
+import {getAllStores} from '@store';
 
 const APP_TYPE_DEVICE_MAP = {
   POS: 'PDV',
@@ -14,6 +15,30 @@ const APP_TYPE_DEVICE_MAP = {
 export const WEB_DEVICE_INSTANCE_STORAGE_KEY = 'web-device-instance-id';
 
 const safeTrim = value => String(value || '').trim();
+const normalizeWebUserId = userId => safeTrim(userId).replace(/^web-/, '');
+
+const resolveStoredWebUserId = () => {
+  try {
+    const authStore = getAllStores()?.auth;
+    const storeUserId = authStore?.getters?.user?.id;
+    if (storeUserId) {
+      return normalizeWebUserId(storeUserId);
+    }
+  } catch (e) {
+    // segue para o fallback em localStorage
+  }
+
+  if (typeof localStorage === 'undefined') {
+    return '';
+  }
+
+  try {
+    const sessionData = JSON.parse(localStorage.getItem('session') || '{}');
+    return normalizeWebUserId(sessionData?.id || '');
+  } catch (e) {
+    return '';
+  }
+};
 
 const safeStringify = value => {
   try {
@@ -24,41 +49,29 @@ const safeStringify = value => {
 };
 
 const createWebDeviceInstanceId = () => {
-  try {
-    if (
-      typeof globalThis !== 'undefined' &&
-      globalThis.crypto &&
-      typeof globalThis.crypto.randomUUID === 'function'
-    ) {
-      return String(globalThis.crypto.randomUUID()).replace(/[^a-zA-Z0-9-]/g, '');
-    }
-  } catch (e) {
-    // continua para o fallback abaixo
+  const normalizedUserId = resolveStoredWebUserId();
+  if (!normalizedUserId) {
+    return '';
   }
 
-  return `web-${Date.now().toString(36)}-${Math.random()
-    .toString(36)
-    .slice(2, 10)}`;
+  return `web-${normalizedUserId}`;
 };
 
 export const getOrCreateWebDeviceInstanceId = () => {
+  const nextId = createWebDeviceInstanceId();
+  if (!nextId) {
+    return '';
+  }
+
   if (typeof localStorage === 'undefined') {
-    return createWebDeviceInstanceId();
+    return nextId;
   }
 
   try {
-    const storedId = String(
-      localStorage.getItem(WEB_DEVICE_INSTANCE_STORAGE_KEY) || '',
-    ).trim();
-    if (storedId) {
-      return storedId;
-    }
-
-    const nextId = createWebDeviceInstanceId();
     localStorage.setItem(WEB_DEVICE_INSTANCE_STORAGE_KEY, nextId);
     return nextId;
   } catch (e) {
-    return createWebDeviceInstanceId();
+    return nextId;
   }
 };
 
@@ -160,7 +173,6 @@ export const buildDeviceRegistrationPayload = ({
     id: existingDevice?.id,
     device: localDevice.id,
     alias: existingDevice?.alias || buildDeviceAlias({deviceInfo: localDevice, appType}),
-    type: localDevice.type,
     metadata: localDevice.metadata,
   };
 };
@@ -173,7 +185,6 @@ export const hasDeviceRecordChanges = ({existingDevice, nextDevice}) => {
   return (
     safeTrim(existingDevice.device) !== safeTrim(nextDevice.device) ||
     safeTrim(existingDevice.alias) !== safeTrim(nextDevice.alias) ||
-    safeTrim(existingDevice.type) !== safeTrim(nextDevice.type) ||
     safeStringify(existingDevice.metadata) !== safeStringify(nextDevice.metadata)
   );
 };

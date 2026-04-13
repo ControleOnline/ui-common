@@ -1,43 +1,6 @@
 import {api} from '@controleonline/ui-common/src/api';
 import * as types from '@controleonline/ui-default/src/store/default/mutation_types';
-import packageJson from '@package';
-import {
-  DEVICE_ALERT_SOUND_ENABLED_KEY,
-  DEVICE_ALERT_SOUND_URL_KEY,
-  DEVICE_ORDER_VISIBILITY_DEVICE,
-  DEVICE_ORDER_VISIBILITY_KEY,
-} from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
 import {isWebRuntimeDevice} from '@controleonline/ui-common/src/react/utils/deviceRuntime';
-
-const getAppVersion = () => {
-  const packageVersion = packageJson?.version || packageJson?.default?.version;
-  if (packageVersion) {
-    return packageVersion;
-  }
-
-  if (typeof window !== 'undefined' && typeof localStorage !== 'undefined') {
-    try {
-      const device = JSON.parse(localStorage.getItem('device') || '{}');
-      if (device && device.appVersion) {
-        return device.appVersion;
-      }
-    } catch (e) {
-      console.warn('Erro ao ler device do localStorage:', e);
-    }
-  }
-
-  try {
-    const deviceInfoModule = require('react-native-device-info');
-    const deviceInfo = deviceInfoModule?.default || deviceInfoModule;
-    if (deviceInfo && typeof deviceInfo.getVersion === 'function') {
-      return deviceInfo.getVersion();
-    }
-  } catch (e) {
-    console.warn('Erro ao ler versao do app:', e);
-  }
-
-  return null;
-};
 
 const getDeviceId = () => {
   const storedDevice = getStoredDevice();
@@ -75,17 +38,13 @@ export const addDeviceConfigs = ({commit, getters}, params) => {
     }
   }
 
-  // Sobrescrever a versao com a versao atual do app
-  configsObj['config-version'] = getAppVersion();
-
-  // Remontar o params com a versão atualizada
+  const storedDevice = getStoredDevice();
   const updatedParams = {
     ...params,
     device: params.device || getDeviceId(),
+    type: params.type || getters.item?.type || storedDevice?.type,
     configs: JSON.stringify(configsObj),
   };
-
-  const storedDevice = getStoredDevice();
   const isRuntimeWebDevice =
     isWebRuntimeDevice(storedDevice) &&
     updatedParams.device &&
@@ -97,6 +56,7 @@ export const addDeviceConfigs = ({commit, getters}, params) => {
 
   const nextItem = {
     ...(getters.item || {}),
+    type: updatedParams.type || getters.item?.type,
     device:
       getters.item?.device || {
         id: storedDevice.id,
@@ -142,6 +102,7 @@ export const addDeviceConfigs = ({commit, getters}, params) => {
       const d = {
         ...getters.item,
         ...data,
+        type: data?.type || nextItem.type || getters.item?.type,
         configs: hasParsedConfigs
           ? parsedConfigs
           : nextItem.configs || getters.item?.configs || {},
@@ -159,29 +120,3 @@ export const addDeviceConfigs = ({commit, getters}, params) => {
     });
 };
 
-// ===== ALTERAÇÃO: NOVA ACTION PARA GRAVAR CONFIGS PREENCHIDAS AUTOMATICAMENTE =====
-export const initializeDeviceConfigs = ({commit, getters}, people) => {
-  const defaultConfigs = {
-    'check-type': 'manual',
-    'pos-type': 'full',
-    'print-mode': 'order',
-    'product-input-type': 'rfid',
-    'sound': '0',
-    'vibration': '0',
-    [DEVICE_ORDER_VISIBILITY_KEY]: DEVICE_ORDER_VISIBILITY_DEVICE,
-    [DEVICE_ALERT_SOUND_ENABLED_KEY]: '0',
-    [DEVICE_ALERT_SOUND_URL_KEY]: '',
-    'config-version': getAppVersion(),
-    'pos-gateway': 'infinite-pay',
-    'cash-wallet-closed-id': 0,
-    'cash-wallet-open-id': 0,
-  };
-
-  const params = {
-    configs: JSON.stringify(defaultConfigs),
-    people: people,
-  };
-
-  return addDeviceConfigs({commit, getters}, params);
-};
-// ===== FIM DA ALTERAÇÃO =====

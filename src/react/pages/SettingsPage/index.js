@@ -30,6 +30,7 @@ import {
   DEVICE_ORDER_VISIBILITY_COMPANY,
   DEVICE_ORDER_VISIBILITY_DEVICE,
   DEVICE_ORDER_VISIBILITY_KEY,
+  DEVICE_RUNTIME_DEBUG_INFO_ENABLED_KEY,
   isTruthyValue,
   parseConfigsObject,
   resolveDefaultGateway,
@@ -76,6 +77,7 @@ const Settings = () => {
   const [orderVisibility, setOrderVisibility] = useState(DEVICE_ORDER_VISIBILITY_DEVICE);
   const [alertSoundEnabled, setAlertSoundEnabled] = useState(false);
   const [alertSoundUrl, setAlertSoundUrl] = useState('');
+  const [showRuntimeDebugInfo, setShowRuntimeDebugInfo] = useState(false);
   const [configsLoaded, setConfigsLoaded] = useState(false);
   const [deviceConfigsLoaded, setDeviceConfigsLoaded] = useState(false);
   const pickerMode = Platform.OS === 'android' ? 'dropdown' : undefined;
@@ -126,23 +128,6 @@ const Settings = () => {
         return Promise.resolve(null);
       }
 
-      if (isWebRuntimeDevice) {
-        const nextItem = {
-          ...(device || {}),
-          device: {
-            id: storagedDevice?.id,
-            device: storagedDevice?.id,
-          },
-          people: '/people/' + currentCompany.id,
-          configs: {
-            ...runtimeCompanyConfigs,
-            ...parseConfigsObject(nextConfigs),
-          },
-        };
-        deviceConfigsActions.setItem(nextItem);
-        return Promise.resolve(nextItem);
-      }
-
       return deviceConfigsActions.addDeviceConfigs({
         configs: JSON.stringify(nextConfigs),
         people: '/people/' + currentCompany.id,
@@ -150,11 +135,7 @@ const Settings = () => {
     },
     [
       currentCompany?.id,
-      device,
       deviceConfigsActions,
-      isWebRuntimeDevice,
-      runtimeCompanyConfigs,
-      storagedDevice?.id,
     ],
   );
 
@@ -217,6 +198,10 @@ const Settings = () => {
     }
     if (lc[DEVICE_ALERT_SOUND_URL_KEY] === undefined || lc[DEVICE_ALERT_SOUND_URL_KEY] === null) {
       lc[DEVICE_ALERT_SOUND_URL_KEY] = '';
+      needsUpdate = true;
+    }
+    if (lc[DEVICE_RUNTIME_DEBUG_INFO_ENABLED_KEY] === undefined || lc[DEVICE_RUNTIME_DEBUG_INFO_ENABLED_KEY] === null) {
+      lc[DEVICE_RUNTIME_DEBUG_INFO_ENABLED_KEY] = '0';
       needsUpdate = true;
     }
     if (!lc['config-version']) {
@@ -358,6 +343,9 @@ const Settings = () => {
         setOrderVisibility(resolveDeviceOrderVisibility(device?.configs));
         setAlertSoundEnabled(isTruthyValue(device?.configs[DEVICE_ALERT_SOUND_ENABLED_KEY]));
         setAlertSoundUrl(String(device?.configs[DEVICE_ALERT_SOUND_URL_KEY] || ''));
+        setShowRuntimeDebugInfo(
+          isTruthyValue(device?.configs[DEVICE_RUNTIME_DEBUG_INFO_ENABLED_KEY]),
+        );
         setSelectedMode(device?.configs['pos-type'] || 'full');
         setPrintingMode(device?.configs['print-mode'] || 'order');
         setSelectedGateway(device?.configs['pos-gateway'] || 'infinite-pay');
@@ -370,6 +358,7 @@ const Settings = () => {
         setOrderVisibility(DEVICE_ORDER_VISIBILITY_DEVICE);
         setAlertSoundEnabled(false);
         setAlertSoundUrl('');
+        setShowRuntimeDebugInfo(false);
         setSelectedMode('full');
         setPrintingMode('order');
         setSelectedGateway('infinite-pay');
@@ -498,6 +487,18 @@ const Settings = () => {
     persistDeviceConfigs(lc)
       .catch(err => {
         console.error('addDeviceConfigs (notification sound url) failed:', err);
+        Alert.alert('Erro ao gravar configurações', err.message || JSON.stringify(err));
+      });
+  };
+
+  const handleRuntimeDebugInfoChange = value => {
+    setShowRuntimeDebugInfo(value);
+    let lc = appendScreenMetrics({...device?.configs || {}});
+    lc[DEVICE_RUNTIME_DEBUG_INFO_ENABLED_KEY] = value ? '1' : '0';
+    lc['config-version'] = appVersion;
+    persistDeviceConfigs(lc)
+      .catch(err => {
+        console.error('addDeviceConfigs (runtime debug info) failed:', err);
         Alert.alert('Erro ao gravar configurações', err.message || JSON.stringify(err));
       });
   };
@@ -644,11 +645,12 @@ const Settings = () => {
                 borderColor: '#BFDBFE',
               }}>
               <Text style={[styles.Settings.label, {marginBottom: 4}]}>
-                Configuração somente leitura
+                Configuração sincronizada
               </Text>
               <Text style={{fontSize: 12, lineHeight: 18, color: '#1D4ED8'}}>
-                No navegador este device nao grava `device_config`. As opcoes abaixo
-                seguem sempre as configuracoes da empresa.
+                No navegador este runtime usa configurações sincronizadas do
+                device web e da empresa. Ajustes compatíveis ficam refletidos no
+                rodapé e nos recursos em tempo real.
               </Text>
             </View>
           )}
@@ -789,6 +791,39 @@ const Settings = () => {
                 outlineStyle: 'none',
               }}
             />
+          </View>
+
+          <View
+            style={{
+              marginTop: 16,
+              padding: 14,
+              backgroundColor: '#F8FAFC',
+              borderRadius: 12,
+            }}>
+            <View
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              }}>
+              <Text style={styles.Settings.label}>Debug do socket no rodapé</Text>
+              <Switch
+                value={showRuntimeDebugInfo}
+                onValueChange={handleRuntimeDebugInfoChange}
+              />
+            </View>
+
+            <Text
+              style={{
+                fontSize: 12,
+                lineHeight: 18,
+                color: '#64748B',
+                marginTop: 8,
+              }}>
+              Quando desligado, o rodapé mostra só um indicador discreto do
+              socket. Quando ligado, exibe os detalhes completos de realtime e
+              refresh em qualquer tela do sistema.
+            </Text>
           </View>
 
           <View style={{marginTop: 6}}>

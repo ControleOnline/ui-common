@@ -2,6 +2,38 @@
 import { useStore, getAllStores } from '@store';
 import { env } from '@env';
 
+const normalizeText = value => String(value || '').trim();
+
+const formatClock = value => {
+  const normalized = normalizeText(value);
+  if (!normalized) {
+    return '--';
+  }
+
+  try {
+    const date = new Date(normalized);
+    if (Number.isNaN(date.getTime())) {
+      return '--';
+    }
+
+    const pad = entry => String(entry).padStart(2, '0');
+    return `${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(
+      date.getSeconds(),
+    )}`;
+  } catch (e) {
+    return '--';
+  }
+};
+
+const truncateText = (value, max = 44) => {
+  const normalized = normalizeText(value);
+  if (!normalized || normalized.length <= max) {
+    return normalized || '--';
+  }
+
+  return `${normalized.slice(0, max - 3)}...`;
+};
+
 export const WebsocketListener = () => {
   const websocketRef = useRef(null);
   const reconnectTimeoutRef = useRef(null);
@@ -16,21 +48,69 @@ export const WebsocketListener = () => {
   const url = env.SOCKET;
 
   const deviceStore = useStore('device');
+  const peopleStore = useStore('people');
   const websocketStore = useStore('websocket');
+  const runtimeDebugStore = useStore('runtime_debug');
   const { item: device } = deviceStore.getters;
+  const { currentCompany } = peopleStore.getters;
   const websocketActions = websocketStore.actions;
+  const runtimeDebugActions = runtimeDebugStore.actions;
 
   const stores = getAllStores();
   const getStoreByName = (name) => stores[name];
+  const publishSocketFooterEntry = (state = {}) => {
+    const socketConnected = Boolean(state?.connected);
+    const socketIdentified = Boolean(state?.identified);
+    const normalizedStatus = normalizeText(state?.status).toLowerCase();
+    const stateLabel = socketConnected
+      ? socketIdentified
+        ? 'socket:on'
+        : 'socket:open'
+      : `socket:${normalizedStatus || 'off'}`;
+
+    const indicatorColor =
+      socketConnected && socketIdentified
+        ? '#22C55E'
+        : (socketConnected || ['connecting', 'identifying', 'open', 'reconnecting'].includes(normalizedStatus))
+          ? '#F59E0B'
+          : '#EF4444';
+    const lastSocketStores = Array.isArray(state?.lastStores)
+      ? state.lastStores.filter(Boolean).join(', ')
+      : '';
+    const lastSocketCompanies = Array.isArray(state?.lastCompanies)
+      ? state.lastCompanies.filter(Boolean).join(', ')
+      : '';
+
+    runtimeDebugActions.setFooterEntry({
+      key: 'socket',
+      order: 10,
+      indicatorColor,
+      updatedAt: state?.updatedAt || new Date().toISOString(),
+      lines: [
+        `Realtime ${stateLabel} | empresa: ${normalizeText(
+          currentCompany?.id,
+        ) || '--'} | device: ${truncateText(state?.device || device?.id || '--', 34)}`,
+        `ultimo socket: ${formatClock(state?.lastEventAt)} | eventos: ${Number(
+          state?.lastEventCount || 0,
+        )} | stores: ${truncateText(lastSocketStores || '--', 28)} | empresas: ${truncateText(
+          lastSocketCompanies || '--',
+          18,
+        )}`,
+      ],
+    });
+  };
   const updateConnectionState = (state = {}) => {
-    websocketActions.setSummary({
+    const nextState = {
       connected: false,
       identified: false,
       status: 'idle',
       attempts: reconnectAttempts.current,
       updatedAt: new Date().toISOString(),
       ...state,
-    });
+    };
+
+    websocketActions.setSummary(nextState);
+    publishSocketFooterEntry(nextState);
   };
 
   const isActiveSocket = (socket, connectionToken) =>
