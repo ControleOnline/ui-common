@@ -50,6 +50,51 @@ const parseThemeCss = cssText => {
   return parsedColors;
 };
 
+const normalizeDeviceId = value =>
+  String(value?.device || value?.id || value || '').trim();
+
+const normalizeEntityId = value =>
+  String(value?.id || value || '')
+    .replace(/\D/g, '')
+    .trim();
+
+const selectRuntimeDeviceConfig = ({
+  items = [],
+  deviceId,
+  companyId,
+  runtimeDeviceType,
+}) => {
+  const normalizedDeviceId = normalizeDeviceId(deviceId);
+  const normalizedCompanyId = normalizeEntityId(companyId);
+  const normalizedType = String(runtimeDeviceType || '')
+    .trim()
+    .toUpperCase();
+
+  return (Array.isArray(items) ? items : [])
+    .filter(item => {
+      const itemDeviceId = normalizeDeviceId(item?.device);
+      const itemCompanyId = normalizeEntityId(item?.people);
+      const itemType = String(item?.type || item?.device?.type || '')
+        .trim()
+        .toUpperCase();
+
+      if (normalizedDeviceId && itemDeviceId !== normalizedDeviceId) {
+        return false;
+      }
+
+      if (normalizedCompanyId && itemCompanyId !== normalizedCompanyId) {
+        return false;
+      }
+
+      if (normalizedType && itemType && itemType !== normalizedType) {
+        return false;
+      }
+
+      return true;
+    })
+    .sort((left, right) => Number(right?.id || 0) - Number(left?.id || 0))[0] || null;
+};
+
 export const DefaultProvider = ({ children, onBootstrapReady }) => {
   const themeStore = useStore('theme');
   const getters = themeStore.getters;
@@ -325,6 +370,7 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
     ) {
       setDeviceConfigFetched(false);
       setDeviceRuntimeConfigSynced(false);
+      deviceConfigsActions.setItem({});
 
       deviceConfigsActions
         .getItems({
@@ -333,10 +379,17 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
           type: runtimeDeviceType,
         })
         .then(data => {
-          if (Array.isArray(data) && data.length > 0) {
+          const selectedConfig = selectRuntimeDeviceConfig({
+            items: data,
+            deviceId: device.id,
+            companyId: currentCompany.id,
+            runtimeDeviceType,
+          });
+
+          if (selectedConfig) {
             const nextItem = {
-              ...data[0],
-              configs: parseConfigsObject(data[0]?.configs),
+              ...selectedConfig,
+              configs: parseConfigsObject(selectedConfig?.configs),
             };
             deviceConfigsActions.setItem(nextItem);
             return;
