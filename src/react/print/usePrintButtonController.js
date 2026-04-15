@@ -1,5 +1,8 @@
 import {useCallback, useEffect, useMemo, useRef} from 'react';
 import {useStore} from '@store';
+import {
+  canDisplayChangePrinter,
+} from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
 import {isWebRuntimeDevice} from '@controleonline/ui-common/src/react/utils/deviceRuntime';
 import {
   getDeviceTypeLabel,
@@ -165,6 +168,12 @@ export const usePrintButtonController = ({
     () => resolveConfiguredPrinterValue(effectiveDeviceConfig),
     [effectiveDeviceConfig],
   );
+  const allowDisplayPrinterChange = useMemo(
+    () =>
+      contextType !== PRINT_CONTEXT_DISPLAY ||
+      canDisplayChangePrinter(effectiveDeviceConfig?.configs),
+    [contextType, effectiveDeviceConfig?.configs],
+  );
 
   const selectionKey = useMemo(
     () =>
@@ -190,7 +199,9 @@ export const usePrintButtonController = ({
   const selectedPrinterValue = useMemo(
     () =>
       resolvePrintSelectionValue({
-        transientPrinterValue,
+        transientPrinterValue: allowDisplayPrinterChange
+          ? transientPrinterValue
+          : '',
         configuredPrinterValue,
         printerOptions,
         currentDeviceId,
@@ -202,6 +213,7 @@ export const usePrintButtonController = ({
       printerOptions,
       runtimeDeviceType,
       transientPrinterValue,
+      allowDisplayPrinterChange,
     ],
   );
 
@@ -239,6 +251,7 @@ export const usePrintButtonController = ({
   const isRequestLoading = activeRequestKey === requestKey && requestKey !== '';
   const canSelectPrinter =
     printerSelection?.enabled === true &&
+    allowDisplayPrinterChange &&
     normalizedJob?.type !== PRINT_JOB_TYPE_SPOOL &&
     printerOptions.length >= 2;
   const isModalVisible =

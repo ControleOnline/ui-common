@@ -13,6 +13,8 @@ export const DEVICE_RUNTIME_DEBUG_INFO_ENABLED_KEY =
   'device-runtime-debug-info-enabled';
 export const DISPLAY_AUTO_PRINT_PRODUCT_CONFIG_KEY =
   'display-auto-print-product';
+export const DISPLAY_ALLOW_PRINTER_CHANGE_CONFIG_KEY =
+  'display-allow-printer-change';
 
 export const DEFAULT_DEVICE_CONFIGS = {
   'pos-type': 'full',
@@ -26,6 +28,7 @@ export const DEFAULT_DEVICE_CONFIGS = {
   [DEVICE_ALERT_SOUND_ENABLED_KEY]: '0',
   [DEVICE_ALERT_SOUND_URL_KEY]: '',
   [DEVICE_RUNTIME_DEBUG_INFO_ENABLED_KEY]: '0',
+  [DISPLAY_ALLOW_PRINTER_CHANGE_CONFIG_KEY]: '0',
 };
 
 export const isTruthyValue = value =>
@@ -66,6 +69,11 @@ export const canDeviceViewCompanyOrders = configs =>
 export const isDeviceRuntimeDebugInfoEnabled = configs =>
   isTruthyValue(
     parseConfigsObject(configs)?.[DEVICE_RUNTIME_DEBUG_INFO_ENABLED_KEY],
+  );
+
+export const canDisplayChangePrinter = configs =>
+  isTruthyValue(
+    parseConfigsObject(configs)?.[DISPLAY_ALLOW_PRINTER_CHANGE_CONFIG_KEY],
   );
 
 export const resolveDefaultGateway = deviceInfo => {
