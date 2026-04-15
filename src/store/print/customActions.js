@@ -144,3 +144,30 @@ export const addToPrint = ({commit, getters}, print) => {
   spool.push(print);
   commit(types.SET_PRINT, spool);
 };
+
+export const requestPrint = ({commit, getters}, printRequest) => {
+  let queue = [...(getters.print || [])];
+  queue.push(printRequest);
+  commit(types.SET_PRINT, queue);
+};
+
+export const setSelection = ({commit, getters}, {key, value} = {}) => {
+  if (!key) {
+    return;
+  }
+
+  commit(types.SET_SELECTIONS, {
+    ...(getters.selections || {}),
+    [key]: value || '',
+  });
+};
+
+export const clearSelection = ({commit, getters}, key) => {
+  if (!key) {
+    return;
+  }
+
+  const nextSelections = {...(getters.selections || {})};
+  delete nextSelections[key];
+  commit(types.SET_SELECTIONS, nextSelections);
+};

@@ -15,7 +15,9 @@ import {
 } from '@controleonline/ui-common/src/react/utils/printerDevices';
 import {isWebRuntimeDevice} from '@controleonline/ui-common/src/react/utils/deviceRuntime';
 import {normalizeDeviceId} from '@controleonline/ui-common/src/react/utils/paymentDevices';
-import {CieloPrint} from '@controleonline/ui-orders/src/react/services/Cielo/Print';
+import {PRINT_JOB_TYPE_SPOOL} from '@controleonline/ui-common/src/react/print/jobs';
+import {printOnLocalCielo} from '@controleonline/ui-common/src/react/print/providers/local';
+import {executeRemotePrintRequest} from '@controleonline/ui-common/src/react/print/providers/remote';
 import {useStore} from '@store';
 
 const SOCKET_PRINT_POLL_INTERVAL_DISCONNECTED = 10000;
@@ -95,37 +97,6 @@ const PrintService = () => {
       ),
     [storagedDevice?.id],
   );
-  const resolveTargetDeviceType = useCallback(
-    printJob => {
-      const explicitType = String(printJob?.deviceType || printJob?.type || '')
-        .trim()
-        .toUpperCase();
-      if (explicitType) {
-        return explicitType;
-      }
-
-      const targetDeviceId = resolveTargetDevice(printJob);
-      const matchingDeviceConfig = (companyDeviceConfigs || []).find(
-        deviceConfig =>
-          normalizeDeviceId(deviceConfig?.device?.device) === targetDeviceId,
-      );
-
-      return String(
-        matchingDeviceConfig?.type ||
-          runtimeDeviceConfig?.type ||
-          storagedDevice?.type ||
-          '',
-      )
-        .trim()
-        .toUpperCase();
-    },
-    [
-      companyDeviceConfigs,
-      resolveTargetDevice,
-      runtimeDeviceConfig?.type,
-      storagedDevice?.type,
-    ],
-  );
 
   const runtimeDeviceType = useMemo(
     () =>
@@ -136,26 +107,6 @@ const PrintService = () => {
       ),
     [runtimeDeviceConfig?.device?.type, runtimeDeviceConfig?.type, storagedDevice?.type],
   );
-
-  const getLocalPrintPayload = useCallback(content => {
-    if (content === null || content === undefined) {
-      return '';
-    }
-
-    if (typeof content !== 'string') {
-      return JSON.stringify(content);
-    }
-
-    if (typeof atob === 'function') {
-      try {
-        return atob(content);
-      } catch (e) {
-        return content;
-      }
-    }
-
-    return content;
-  }, []);
 
   const managedPrinters = useMemo(
     () =>
@@ -195,7 +146,9 @@ const PrintService = () => {
 
     if (runtimeDeviceType === PDV_DEVICE_TYPE) {
       const deviceId = normalizeDeviceId(storagedDevice.id);
-      return deviceId ? [deviceId] : [];
+      return Array.from(
+        new Set([deviceId, ...managedPrinterDeviceIds].filter(Boolean)),
+      );
     }
 
     if (runtimeDeviceType === DISPLAY_DEVICE_TYPE) {
@@ -352,124 +305,57 @@ const PrintService = () => {
     [resolveManagedPrinter],
   );
 
-  const printInventory = useCallback(
-    async printJob =>
-      await printActions.printInventory({
-        device: resolveTargetDevice(printJob),
-        type: resolveTargetDeviceType(printJob),
-        people: currentCompany.id,
-      }),
-    [currentCompany?.id, printActions, resolveTargetDevice, resolveTargetDeviceType],
-  );
+  const processResolvedSpool = useCallback(
+    async ({printJob, spoolData, removeFromQueue = false}) => {
+      const spoolId = resolveSpoolId(spoolData || printJob);
+      if (!spoolData?.file?.content) {
+        if (removeFromQueue) {
+          removeSpoolFromQueue(spoolId);
+        }
+        return {spoolId, printed: false};
+      }
 
-  const printPurchasingSuggestion = useCallback(
-    async printJob =>
-      await printActions.printPurchasingSuggestion({
-        device: resolveTargetDevice(printJob),
-        type: resolveTargetDeviceType(printJob),
-        people: currentCompany.id,
-      }),
-    [currentCompany?.id, printActions, resolveTargetDevice, resolveTargetDeviceType],
-  );
+      const managedPrinterPrinted = await printManagedSpool(printJob, spoolData);
 
-  const printCashRegister = useCallback(
-    async printJob =>
-      await printActions.getCashRegisterPrint({
-        device: resolveTargetDevice(printJob),
-        type: resolveTargetDeviceType(printJob),
-        people: currentCompany.id,
-      }),
-    [currentCompany?.id, printActions, resolveTargetDevice, resolveTargetDeviceType],
-  );
+      if (!managedPrinterPrinted) {
+        await printOnLocalCielo(spoolData.file.content);
+      }
 
-  const printOrder = useCallback(
-    async order => {
-      const normalizedQueueIds = (Array.isArray(order?.queueIds)
-        ? order.queueIds
-        : []
-      )
-        .map(item => String(item || '').replace(/\D+/g, '').trim())
-        .filter(Boolean);
-      const normalizedOrderProductQueueIds = (
-        Array.isArray(order?.orderProductQueueIds)
-          ? order.orderProductQueueIds
-          : []
-      )
-        .map(item => String(item || '').replace(/\D+/g, '').trim())
-        .filter(Boolean);
+      if (spoolId) {
+        await printActions.makePrintDone(spoolId);
+      }
 
-      return await printActions.printOrder({
-        id: order.id,
-        device: resolveTargetDevice(order),
-        type: resolveTargetDeviceType(order),
-        ...(normalizedQueueIds.length > 0
-          ? {queueIds: normalizedQueueIds}
-          : {}),
-        ...(normalizedOrderProductQueueIds.length > 0
-          ? {orderProductQueueIds: normalizedOrderProductQueueIds}
-          : {}),
-      });
+      if (removeFromQueue) {
+        removeSpoolFromQueue(spoolId);
+      }
+
+      return {spoolId, printed: true};
     },
-    [printActions, resolveTargetDevice, resolveTargetDeviceType],
+    [printActions, printManagedSpool, removeSpoolFromQueue, resolveSpoolId],
   );
 
-  const printOrderProduct = useCallback(
-    async orderProductPrint => {
-      const normalizedOrderProductQueueIds = (
-        Array.isArray(orderProductPrint?.orderProductQueueIds)
-          ? orderProductPrint.orderProductQueueIds
-          : []
-      )
-        .map(item => String(item || '').replace(/\D+/g, '').trim())
-        .filter(Boolean);
-
-      const orderProductId = String(
-        orderProductPrint?.orderProductId || orderProductPrint?.id || '',
-      )
-        .replace(/\D+/g, '')
-        .trim();
-
-      if (!orderProductId) {
-        throw new Error(
-          global.t?.t('orders', 'message', 'printProcessingError'),
-        );
-      }
-
-      return await printActions.printOrderProduct({
-        id: orderProductId,
-        device: resolveTargetDevice(orderProductPrint),
-        type: resolveTargetDeviceType(orderProductPrint),
-        ...(normalizedOrderProductQueueIds.length > 0
-          ? {orderProductQueueIds: normalizedOrderProductQueueIds}
-          : {}),
-      });
-    },
-    [printActions, resolveTargetDevice, resolveTargetDeviceType],
+  const resolveRequestedTargetDevice = useCallback(
+    printJob =>
+      normalizeDeviceId(
+        printJob?.targetPrinterDevice ||
+          printJob?.device?.device ||
+          printJob?.device ||
+          storagedDevice?.id,
+      ),
+    [storagedDevice?.id],
   );
 
-  const getData = useCallback(
-    async printJob => {
-      if (printJob.printType === 'order') await printOrder(printJob);
-      if (printJob.printType === 'order-product') {
-        await printOrderProduct(printJob);
-      }
-      if (printJob.printType === 'cash-register') {
-        await printCashRegister(printJob);
-      }
-      if (printJob.printType === 'purchasing-suggestion') {
-        await printPurchasingSuggestion(printJob);
-      }
-      if (printJob.printType === 'inventory') await printInventory(printJob);
-    },
-    [
-      printCashRegister,
-      printInventory,
-      printOrder,
-      printOrderProduct,
-      printPurchasingSuggestion,
-    ],
+  const resolveRequestedTargetDeviceType = useCallback(
+    printJob =>
+      normalizeDeviceType(
+        printJob?.targetPrinterType ||
+          printJob?.deviceType ||
+          printJob?.type ||
+          storagedDevice?.type,
+      ),
+    [storagedDevice?.type],
   );
-
+	
   const goPrint = useCallback(
     async printJob => {
       if (isPrintingRef.current) {
@@ -483,31 +369,14 @@ const PrintService = () => {
       }
 
       isPrintingRef.current = true;
-      const cielo = new CieloPrint();
 
       try {
         const data = await getSpoolData(printJob);
-        if (!data?.file?.content) {
-          removeSpoolFromQueue(spoolId);
-          return;
-        }
-
-        const managedPrinterPrinted = await printManagedSpool(printJob, data);
-
-        if (!managedPrinterPrinted) {
-          const payload = getLocalPrintPayload(data.file.content);
-          const response = await cielo.print(payload);
-
-          if (response?.success === false) {
-            throw new Error(
-              response?.result ||
-                global.t?.t('orders', 'message', 'printProcessingError'),
-            );
-          }
-        }
-
-        await printActions.makePrintDone(spoolId);
-        removeSpoolFromQueue(spoolId);
+        await processResolvedSpool({
+          printJob,
+          spoolData: data,
+          removeFromQueue: true,
+        });
       } catch (e) {
         printActions.setError(
           e?.message || global.t?.t('orders', 'message', 'printProcessingError'),
@@ -518,12 +387,112 @@ const PrintService = () => {
       }
     },
     [
-      getLocalPrintPayload,
       getSpoolData,
       printActions,
-      printManagedSpool,
+      processResolvedSpool,
       removeSpoolFromQueue,
       resolveSpoolId,
+    ],
+  );
+
+  const executePrintRequest = useCallback(
+    async printJob => {
+      const requestKey = String(printJob?.requestKey || '').trim();
+      const normalizedPrintType = String(
+        printJob?.type || printJob?.printType || '',
+      )
+        .trim()
+        .toLowerCase();
+
+      if (requestKey) {
+        printActions.setActiveRequestKey(requestKey);
+      }
+
+      printActions.setLastCompletedRequest(null);
+
+      try {
+        if (normalizedPrintType === PRINT_JOB_TYPE_SPOOL) {
+          const spoolData = await getSpoolData({
+            spoolId: printJob?.spoolId,
+            id: printJob?.spoolId,
+          });
+          const result = await processResolvedSpool({
+            printJob,
+            spoolData,
+            removeFromQueue: false,
+          });
+
+          printActions.setLastCompletedRequest({
+            requestKey,
+            status: 'success',
+            completedAt: Date.now(),
+            spoolId: result?.spoolId || null,
+            targetDeviceId: normalizeDeviceId(spoolData?.device?.device),
+          });
+          return;
+        }
+
+        const targetDeviceId = resolveRequestedTargetDevice(printJob);
+        const targetDeviceType = resolveRequestedTargetDeviceType(printJob);
+
+        if (!targetDeviceId) {
+          throw new Error(
+            global.t?.t('orders', 'title', 'selectPrinter') ||
+              'Selecione a impressora.',
+          );
+        }
+
+        await executeRemotePrintRequest({
+          printActions,
+          printJob: {
+            ...printJob,
+            type: normalizedPrintType,
+          },
+          targetDeviceId,
+          targetDeviceType,
+          currentCompanyId: printJob?.companyId || currentCompany?.id,
+        });
+
+        if (
+          shouldHandleSpool &&
+          spoolDeviceIds.includes(normalizeDeviceId(targetDeviceId))
+        ) {
+          markPrintCommand();
+          printActions.setReload(true);
+        }
+
+        printActions.setLastCompletedRequest({
+          requestKey,
+          status: 'success',
+          completedAt: Date.now(),
+          targetDeviceId,
+        });
+      } catch (e) {
+        const errorMessage =
+          e?.message || global.t?.t('orders', 'message', 'printProcessingError');
+        printActions.setError(errorMessage);
+        printActions.setLastCompletedRequest({
+          requestKey,
+          status: 'error',
+          completedAt: Date.now(),
+          error: errorMessage,
+        });
+      } finally {
+        if (requestKey) {
+          printActions.setActiveRequestKey('');
+        }
+      }
+    },
+    [
+      currentCompany?.id,
+      getSpoolData,
+      markPrintCommand,
+      printActions,
+      processResolvedSpool,
+      resolveRequestedTargetDevice,
+      resolveRequestedTargetDeviceType,
+      shouldHandleSpool,
+      spoolDeviceIds,
     ],
   );
 
@@ -592,36 +561,17 @@ const PrintService = () => {
 
   useEffect(() => {
     if (print && print.length > 0) {
-      if (shouldHandleSpool) {
-        markPrintCommand();
-      }
       for (const p of print) {
-        printActions.addToQueue(() =>
-          getData(p).finally(() => {
-            const targetDeviceId = resolveTargetDevice(p);
-            if (
-              shouldHandleSpool &&
-              (targetDeviceId === normalizeDeviceId(storagedDevice?.id) ||
-                managedPrinterDeviceIds.includes(targetDeviceId))
-            ) {
-              printActions.setReload(true);
-            }
-          }),
-        );
+        printActions.addToQueue(() => executePrintRequest(p));
       }
       printActions.initQueue(() => {
         printActions.setPrint([]);
       });
     }
   }, [
-    getData,
-    managedPrinterDeviceIds,
+    executePrintRequest,
     print,
     printActions,
-    markPrintCommand,
-    resolveTargetDevice,
-    shouldHandleSpool,
-    storagedDevice?.id,
   ]);
 
   useEffect(() => {
