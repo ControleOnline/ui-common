@@ -9,9 +9,7 @@ import {
 } from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
 
 const MAX_PROCESSED_EVENTS = 200;
-const EMPTY_OPTIONAL_STORE = {getters: {}, actions: {}};
-const useOptionalStore = storeName =>
-  useStores(state => state?.[storeName] || EMPTY_OPTIONAL_STORE);
+const ORDER_CREATED_EVENT = 'order.created';
 
 const normalizeEntityId = value => {
   if (value === null || value === undefined || value === '') {
@@ -76,21 +74,14 @@ const buildMessageFingerprint = message => {
 const isRelevantAlertMessage = message => {
   const store = normalizeText(message?.store);
   const event = normalizeText(message?.event);
-  const action = normalizeText(message?.action);
-  const command = normalizeText(message?.command);
+  const realStatus = normalizeText(message?.realStatus).toLowerCase();
 
-  if (store === 'orders' && event === 'order.created') {
-    return true;
-  }
-
-  if (
-    (store === 'queues' || store === 'order_products_queue') &&
-    event === 'order_product_queue.created'
-  ) {
-    return true;
-  }
-
-  return store === 'print' && (action === 'print' || command === 'print' || event === 'print');
+  return (
+    store === 'orders' &&
+    event === ORDER_CREATED_EVENT &&
+    realStatus === 'open' &&
+    isTruthyValue(message?.alertSound)
+  );
 };
 
 const isMessageForCurrentCompany = (message, currentCompanyId) => {
@@ -108,10 +99,7 @@ const isMessageForCurrentCompany = (message, currentCompanyId) => {
 const DeviceAlertSoundService = () => {
   const peopleStore = useStore('people');
   const deviceConfigStore = useStore('device_config');
-  const ordersStore = useOptionalStore('orders');
-  const queueStore = useOptionalStore('queues');
-  const orderProductsQueueStore = useOptionalStore('order_products_queue');
-  const printStore = useOptionalStore('print');
+  const ordersStore = useStores(state => state?.orders || {getters: {}, actions: {}});
 
   const processedEventsRef = useRef(new Map());
   const playerRef = useRef(null);
@@ -206,19 +194,10 @@ const DeviceAlertSoundService = () => {
 
   const orderMessages = ordersStore.getters?.messages;
   const orderMessage = ordersStore.getters?.message;
-  const queueMessages = queueStore.getters?.messages;
-  const queueMessage = queueStore.getters?.message;
-  const orderProductsQueueMessages = orderProductsQueueStore.getters?.messages;
-  const orderProductsQueueMessage = orderProductsQueueStore.getters?.message;
-  const printMessages = printStore.getters?.messages;
-  const printMessage = printStore.getters?.message;
 
   useEffect(() => {
     const incomingMessages = [
       ...collectMessages(orderMessages, orderMessage),
-      ...collectMessages(queueMessages, queueMessage),
-      ...collectMessages(orderProductsQueueMessages, orderProductsQueueMessage),
-      ...collectMessages(printMessages, printMessage),
     ].filter(
       message =>
         isRelevantAlertMessage(message) &&
@@ -253,13 +232,7 @@ const DeviceAlertSoundService = () => {
     markProcessedKeys,
     orderMessage,
     orderMessages,
-    orderProductsQueueMessage,
-    orderProductsQueueMessages,
     playAlertSound,
-    printMessage,
-    printMessages,
-    queueMessage,
-    queueMessages,
   ]);
 
   return null;

@@ -760,8 +760,9 @@ const Settings = () => {
                 color: '#64748B',
                 marginTop: 8,
               }}>
-              Toca ao receber novo pedido, impressao ou order_product_queue neste
-              device via websocket.
+              Toca quando este device recebe o evento
+              order.created de um novo pedido em preparo via
+              websocket.
             </Text>
 
             <Text style={[styles.Settings.label, {marginTop: 12, marginBottom: 6, flex: 0}]}>
