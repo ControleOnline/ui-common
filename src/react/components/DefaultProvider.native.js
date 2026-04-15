@@ -268,9 +268,9 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
 
   useEffect(() => {
     if (currentCompany && currentCompany.id) {
-      printerActions.getPrinters({people: currentCompany.id});
+      printerActions.ensureCompanyPrintersLoaded({people: currentCompany.id});
     }
-  }, [currentCompany?.id]);
+  }, [currentCompany?.id, printerActions]);
 
   useEffect(() => {
     if (
