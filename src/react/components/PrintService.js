@@ -51,7 +51,6 @@ const PrintService = () => {
   const deviceGetters = deviceStore.getters;
   const deviceConfigStore = useStore('device_config');
   const deviceConfigGetters = deviceConfigStore.getters;
-  const deviceConfigActions = deviceConfigStore.actions;
   const websocketStore = useStore('websocket');
   const websocketGetters = websocketStore.getters;
 
@@ -181,14 +180,16 @@ const PrintService = () => {
   );
 
   useEffect(() => {
-    if (!currentCompany?.id || !storagedDevice?.id) {
+    if (!currentCompany?.id) {
       return;
     }
 
-    deviceConfigActions
-      .getItems({people: `/people/${currentCompany.id}`})
+    printActions
+      .ensurePrintDependenciesLoaded({
+        companyId: currentCompany.id,
+      })
       .catch(() => {});
-  }, [currentCompany?.id, deviceConfigActions, storagedDevice?.id]);
+  }, [currentCompany?.id, printActions]);
 
   const loadOpenSpools = useCallback(async () => {
     if (!shouldHandleSpool) {

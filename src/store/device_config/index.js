@@ -14,6 +14,8 @@ export default {
     error: '',
     totalItems: 0,messages:[], message:{},
     summary: {},
+    loadedKey: '',
+    loadedAt: 0,
     filters: {},
     columns: [],
   },

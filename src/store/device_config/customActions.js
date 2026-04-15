@@ -2,6 +2,16 @@ import {api} from '@controleonline/ui-common/src/api';
 import * as types from '@controleonline/ui-default/src/store/default/mutation_types';
 import {isWebRuntimeDevice} from '@controleonline/ui-common/src/react/utils/deviceRuntime';
 
+const normalizePeopleKey = value =>
+  String(value || '')
+    .replace(/\D+/g, '')
+    .trim();
+
+const buildPeopleIri = value => {
+  const peopleKey = normalizePeopleKey(value);
+  return peopleKey ? `/people/${peopleKey}` : '';
+};
+
 const getDeviceId = () => {
   const storedDevice = getStoredDevice();
   if (storedDevice?.id) {
@@ -118,5 +128,63 @@ export const addDeviceConfigs = ({commit, getters}, params) => {
     .finally(() => {
       commit(types.SET_ISSAVING, false);
     });
+};
+
+export const getCompanyDeviceConfigs = ({commit, getters}, params = {}) => {
+  const peopleKey = normalizePeopleKey(params?.people);
+  const people = buildPeopleIri(params?.people);
+
+  if (!peopleKey || !people) {
+    return Promise.resolve([]);
+  }
+
+  commit(types.SET_ISLOADING, true);
+  if (getters.items != null) commit(types.SET_ITEMS, []);
+  commit(types.SET_TOTALITEMS, 0);
+  commit(types.SET_SUMMARY, {});
+
+  return api
+    .fetch(getters.resourceEndpoint, {
+      params: {
+        ...params,
+        people,
+      },
+    })
+    .then(data => {
+      const items = data?.member || data?.['hydra:member'] || [];
+      commit(types.SET_ITEMS, items);
+      commit(types.SET_TOTALITEMS, data?.totalItems || items.length || 0);
+      commit(types.SET_SUMMARY, data?.summary || {});
+      commit(types.SET_LOADED_KEY, peopleKey);
+      commit(types.SET_LOADED_AT, Date.now());
+      return items;
+    })
+    .catch(e => {
+      commit(types.SET_ERROR, e.message);
+      throw e;
+    })
+    .finally(() => {
+      commit(types.SET_ISLOADING, false);
+    });
+};
+
+export const ensureCompanyDeviceConfigsLoaded = (context, params = {}) => {
+  const peopleKey = normalizePeopleKey(params?.people);
+  if (!peopleKey) {
+    return Promise.resolve([]);
+  }
+
+  if (
+    context.getters.loadedKey === peopleKey &&
+    Array.isArray(context.getters.items)
+  ) {
+    return Promise.resolve(context.getters.items);
+  }
+
+  if (context.getters.isLoading) {
+    return Promise.resolve(context.getters.items || []);
+  }
+
+  return getCompanyDeviceConfigs(context, params);
 };
 

@@ -73,8 +73,6 @@ export const usePrintButtonController = ({
     lastCompletedRequest = null,
   } = printStore.getters;
   const printActions = printStore.actions;
-  const printerActions = printerStore.actions;
-  const deviceConfigActions = deviceConfigStore.actions;
 
   const completionRef = useRef('');
   const currentItemId = useMemo(
@@ -257,22 +255,6 @@ export const usePrintButtonController = ({
       selectedPrinter?.type,
     )}`;
   }, [selectedPrinter]);
-
-  useEffect(() => {
-    if (!currentCompany?.id || normalizedJob?.type === PRINT_JOB_TYPE_SPOOL) {
-      return;
-    }
-
-    printerActions.getPrinters({people: currentCompany.id}).catch(() => {});
-    deviceConfigActions
-      .getItems({people: `/people/${currentCompany.id}`})
-      .catch(() => {});
-  }, [
-    currentCompany?.id,
-    deviceConfigActions,
-    normalizedJob?.type,
-    printerActions,
-  ]);
 
   useEffect(() => {
     if (!lastCompletedRequest?.requestKey || lastCompletedRequest.requestKey !== requestKey) {

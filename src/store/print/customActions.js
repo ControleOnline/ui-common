@@ -1,6 +1,11 @@
 import {api} from '@controleonline/ui-common/src/api';
 import * as types from '@controleonline/ui-default/src/store/default/mutation_types';
 
+const normalizePeopleKey = value =>
+  String(value || '')
+    .replace(/\D+/g, '')
+    .trim();
+
 export function printOrder({commit}, params = {}) {
   commit(types.SET_ISLOADING);
 
@@ -170,4 +175,31 @@ export const clearSelection = ({commit, getters}, key) => {
   const nextSelections = {...(getters.selections || {})};
   delete nextSelections[key];
   commit(types.SET_SELECTIONS, nextSelections);
+};
+
+export const ensurePrintDependenciesLoaded = async (
+  {dispatch},
+  {companyId = null} = {},
+) => {
+  const peopleKey = normalizePeopleKey(companyId);
+  if (!peopleKey) {
+    return {
+      printers: [],
+      deviceConfigs: [],
+    };
+  }
+
+  const [printers, deviceConfigs] = await Promise.all([
+    dispatch('printer/ensureCompanyPrintersLoaded', {
+      people: peopleKey,
+    }),
+    dispatch('device_config/ensureCompanyDeviceConfigsLoaded', {
+      people: peopleKey,
+    }),
+  ]);
+
+  return {
+    printers,
+    deviceConfigs,
+  };
 };
