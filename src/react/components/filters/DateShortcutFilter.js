@@ -8,7 +8,7 @@ import {
   resolveDateFilterTitle,
   resolveDateRangeSummary,
   validateCustomDateRange,
-} from '@controleonline/ui-common/src/react/utils/dateRangeFilter';
+} from '../../utils/dateRangeFilter';
 
 const createDefaultColors = colors => ({
   accent: colors?.accent || '#0EA5E9',

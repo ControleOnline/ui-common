@@ -1,4 +1,5 @@
-const DATE_INPUT_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+const DATE_INPUT_PATTERN_YMD = /^\d{4}-\d{2}-\d{2}$/;
+const DATE_INPUT_PATTERN_DMY = /^\d{2}\/\d{2}\/\d{4}$/;
 
 const DATE_FILTER_LABEL_KEYS = {
   all: 'period_all',
@@ -24,6 +25,20 @@ const createDayEnd = date =>
   new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
 
 const formatDateLabel = date => date.toLocaleDateString('pt-BR');
+const buildNormalizedDate = (year, month, day) => {
+  const parsedDate = new Date(year, month - 1, day, 0, 0, 0, 0);
+
+  if (
+    Number.isNaN(parsedDate.getTime()) ||
+    parsedDate.getFullYear() !== year ||
+    parsedDate.getMonth() !== month - 1 ||
+    parsedDate.getDate() !== day
+  ) {
+    return null;
+  }
+
+  return parsedDate;
+};
 
 const createRangeEnd = (baseDate, useCurrentMoment = false) =>
   useCurrentMoment ? new Date(baseDate) : createDayEnd(baseDate);
@@ -40,18 +55,31 @@ const resolveRelativeStart = (baseDate, days, relativeMode = 'calendar') => {
   return startDate;
 };
 
-// Shared parser for screens that accept direct YYYY-MM-DD input.
+// Shared parser for screens that accept YYYY-MM-DD or DD/MM/YYYY input.
 export const parseDateInput = value => {
   const normalizedValue = String(value || '').trim();
 
-  if (!DATE_INPUT_PATTERN.test(normalizedValue)) {
+  if (DATE_INPUT_PATTERN_YMD.test(normalizedValue)) {
+    const [year, month, day] = normalizedValue.split('-').map(Number);
+    return buildNormalizedDate(year, month, day);
+  }
+
+  if (DATE_INPUT_PATTERN_DMY.test(normalizedValue)) {
+    const [day, month, year] = normalizedValue.split('/').map(Number);
+    return buildNormalizedDate(year, month, day);
+  }
+
+  return null;
+};
+
+export const normalizeDateInputToYmd = value => {
+  const parsedDate = parseDateInput(value);
+
+  if (!parsedDate) {
     return null;
   }
 
-  const [year, month, day] = normalizedValue.split('-').map(Number);
-  const parsedDate = new Date(year, month - 1, day, 0, 0, 0, 0);
-
-  return Number.isNaN(parsedDate.getTime()) ? null : parsedDate;
+  return `${parsedDate.getFullYear()}-${pad2(parsedDate.getMonth() + 1)}-${pad2(parsedDate.getDate())}`;
 };
 
 // Validation stays centralized so every screen uses the same rules and messages.
