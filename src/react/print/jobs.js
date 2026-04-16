@@ -2,6 +2,7 @@ import {normalizeDeviceId} from '@controleonline/ui-common/src/react/utils/payme
 
 export const PRINT_JOB_TYPE_ORDER = 'order';
 export const PRINT_JOB_TYPE_ORDER_PRODUCT = 'order-product';
+export const PRINT_JOB_TYPE_ORDER_PRODUCT_QUEUE = 'order-product-queue';
 export const PRINT_JOB_TYPE_CASH_REGISTER = 'cash-register';
 export const PRINT_JOB_TYPE_PURCHASING_SUGGESTION = 'purchasing-suggestion';
 export const PRINT_JOB_TYPE_INVENTORY = 'inventory';
@@ -41,6 +42,7 @@ export const buildPrintRequestKey = ({
   id = '',
   orderId = '',
   orderProductId = '',
+  orderProductQueueId = '',
   spoolId = '',
   selectionKey = '',
 } = {}) =>
@@ -49,6 +51,7 @@ export const buildPrintRequestKey = ({
     normalizeEntityId(id),
     normalizeEntityId(orderId),
     normalizeEntityId(orderProductId),
+    normalizeEntityId(orderProductQueueId),
     normalizeEntityId(spoolId),
     String(selectionKey || '').trim(),
   ]
@@ -85,6 +88,20 @@ export const normalizePrintJob = ({
       type,
       orderProductId,
       orderProductQueueIds: normalizeIds(job?.orderProductQueueIds),
+    };
+  }
+
+  if (type === PRINT_JOB_TYPE_ORDER_PRODUCT_QUEUE) {
+    const orderProductQueueId = normalizeEntityId(
+      job?.orderProductQueueId || job?.id || fallbackId,
+    );
+    if (!orderProductQueueId) {
+      return null;
+    }
+
+    return {
+      type,
+      orderProductQueueId,
     };
   }
 

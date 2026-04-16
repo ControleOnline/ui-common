@@ -3,6 +3,7 @@ import {
   PRINT_JOB_TYPE_INVENTORY,
   PRINT_JOB_TYPE_ORDER,
   PRINT_JOB_TYPE_ORDER_PRODUCT,
+  PRINT_JOB_TYPE_ORDER_PRODUCT_QUEUE,
   PRINT_JOB_TYPE_PURCHASING_SUGGESTION,
 } from '@controleonline/ui-common/src/react/print/jobs';
 
@@ -41,6 +42,13 @@ export const executeRemotePrintRequest = async ({
       printJob.orderProductQueueIds.length > 0
         ? {orderProductQueueIds: printJob.orderProductQueueIds}
         : {}),
+    });
+  }
+
+  if (printJob.type === PRINT_JOB_TYPE_ORDER_PRODUCT_QUEUE) {
+    return await printActions.printOrderProductQueue({
+      id: printJob.orderProductQueueId,
+      ...commonParams,
     });
   }
 
