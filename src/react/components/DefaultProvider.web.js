@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, Text } from 'react-native';
 import Translate from '@controleonline/ui-common/src/utils/translate';
 import { WebsocketListener } from '@controleonline/ui-common/src/react/components/WebsocketListener';
 import DeviceAlertSoundService from '@controleonline/ui-common/src/react/components/DeviceAlertSoundService';
@@ -30,6 +30,7 @@ import {
 } from '@controleonline/ui-common/src/react/utils/deviceRuntime';
 import stores from '@stores';
 import packageJson from '@package';
+import providerStyles from './DefaultProvider.styles';
 const ThemeContext = createContext();
 
 const parseThemeCss = cssText => {
@@ -557,7 +558,7 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
         const parsedColors = parseThemeCss(cssText);
         setBaseThemeColors(parsedColors);
         actions.setColors(parsedColors);
-      } catch (error) {
+      } catch {
         setBaseThemeColors({});
       }
     };
@@ -587,9 +588,9 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
 
   if (!translateReady && isLogged && hasCurrentCompany) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={providerStyles.loadingContainer}>
         <ActivityIndicator size="large" color="#1B5587" />
-        <Text style={{ marginTop: 10 }}>Carregando...</Text>
+        <Text style={providerStyles.loadingText}>Carregando...</Text>
       </View>
     );
   }
@@ -625,13 +626,3 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
 };
 
 export const useTheme = () => useContext(ThemeContext);
-
-const providerStyles = StyleSheet.create({
-  shell: {
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    minHeight: 0,
-  },
-});

@@ -1,4 +1,5 @@
 import React, {useEffect, useState, useCallback, useMemo} from 'react';
+
 import {
   Text,
   View,
@@ -10,6 +11,7 @@ import {
   Platform,
   TextInput,
 } from 'react-native';
+
 import {SafeAreaView} from 'react-native-safe-area-context';
 import css from '@controleonline/ui-orders/src/react/css/orders';
 import {useStore} from '@store';
@@ -18,11 +20,13 @@ import {Picker} from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import StateStore from '@controleonline/ui-layout/src/react/components/StateStore';
 import packageJson from '@package';
+
 import {
   appendScreenMetrics,
   buildScreenMetrics,
   hasScreenMetricsChanges,
 } from '@controleonline/ui-common/src/react/utils/screenMetrics';
+
 import {
   CIELO_DEVICES,
   DEVICE_ALERT_SOUND_ENABLED_KEY,
@@ -36,7 +40,31 @@ import {
   resolveDefaultGateway,
   resolveDeviceOrderVisibility,
 } from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
+
 import {isWebRuntimeDevice as resolveIsWebRuntimeDevice} from '@controleonline/ui-common/src/react/utils/deviceRuntime';
+
+import {
+  inlineStyle_565_16,
+  inlineStyle_639_14,
+  inlineStyle_650_20,
+  inlineStyle_659_16,
+  inlineStyle_676_16,
+  inlineStyle_690_16,
+  inlineStyle_704_12,
+  inlineStyle_720_12,
+  inlineStyle_736_12,
+  inlineStyle_743_14,
+  inlineStyle_757_14,
+  inlineStyle_783_14,
+  inlineStyle_798_12,
+  inlineStyle_805_14,
+  inlineStyle_818_14,
+  inlineStyle_830_16,
+  inlineStyle_841_16,
+  inlineStyle_852_16,
+  inlineStyle_871_18,
+  inlineStyle_899_18,
+} from './index.styles';
 
 const Settings = () => {
   const navigation = useNavigation();
@@ -386,7 +414,7 @@ const Settings = () => {
 
   const handleSelectionTypeChange = (value) => {
     setSelectionType(value);
-    let lc = appendScreenMetrics({...device?.configs || {}});
+    let lc = appendScreenMetrics({...(device?.configs || {})});
     lc['selection-type'] = value;
     lc['config-version'] = appVersion;
     persistDeviceConfigs(lc)
@@ -398,7 +426,7 @@ const Settings = () => {
 
   const handleCheckTypeChange = (value) => {
     setCheckType(value);
-    let lc = appendScreenMetrics({...device?.configs || {}});
+    let lc = appendScreenMetrics({...(device?.configs || {})});
     lc['check-type'] = value;
     // ===== ALTERAÇÃO: ADICIONAR VERSÃO DO APP =====
     lc['config-version'] = appVersion;
@@ -412,7 +440,7 @@ const Settings = () => {
 
   const handleProductInputTypeChange = (value) => {
     setProductInputType(value);
-    let lc = appendScreenMetrics({...device?.configs || {}});
+    let lc = appendScreenMetrics({...(device?.configs || {})});
     lc['product-input-type'] = value;
     // ===== ALTERAÇÃO: ADICIONAR VERSÃO DO APP =====
     lc['config-version'] = appVersion;
@@ -427,7 +455,7 @@ const Settings = () => {
   const handleSoundChange = (value) => {
     setShowSound(value);
     localStorage.setItem('sound', String(value));
-    let lc = appendScreenMetrics({...device?.configs || {}});
+    let lc = appendScreenMetrics({...(device?.configs || {})});
     lc['sound'] = value ? '1' : '0';
     // ===== ALTERAÇÃO: ADICIONAR VERSÃO DO APP =====
     lc['config-version'] = appVersion;
@@ -442,7 +470,7 @@ const Settings = () => {
   const handleVibrationChange = (value) => {
     setShowVibration(value);
     localStorage.setItem('vibration', String(value));
-    let lc = appendScreenMetrics({...device?.configs || {}});
+    let lc = appendScreenMetrics({...(device?.configs || {})});
     lc['vibration'] = value ? '1' : '0';
     // ===== ALTERAÇÃO: ADICIONAR VERSÃO DO APP =====
     lc['config-version'] = appVersion;
@@ -456,7 +484,7 @@ const Settings = () => {
 
   const handleOrderVisibilityChange = value => {
     setOrderVisibility(value);
-    let lc = appendScreenMetrics({...device?.configs || {}});
+    let lc = appendScreenMetrics({...(device?.configs || {})});
     lc[DEVICE_ORDER_VISIBILITY_KEY] = value || DEVICE_ORDER_VISIBILITY_DEVICE;
     lc['config-version'] = appVersion;
     persistDeviceConfigs(lc)
@@ -468,7 +496,7 @@ const Settings = () => {
 
   const handleAlertSoundEnabledChange = value => {
     setAlertSoundEnabled(value);
-    let lc = appendScreenMetrics({...device?.configs || {}});
+    let lc = appendScreenMetrics({...(device?.configs || {})});
     lc[DEVICE_ALERT_SOUND_ENABLED_KEY] = value ? '1' : '0';
     lc[DEVICE_ALERT_SOUND_URL_KEY] = alertSoundUrl.trim();
     lc['config-version'] = appVersion;
@@ -480,7 +508,7 @@ const Settings = () => {
   };
 
   const handleAlertSoundUrlSubmit = () => {
-    let lc = appendScreenMetrics({...device?.configs || {}});
+    let lc = appendScreenMetrics({...(device?.configs || {})});
     lc[DEVICE_ALERT_SOUND_ENABLED_KEY] = alertSoundEnabled ? '1' : '0';
     lc[DEVICE_ALERT_SOUND_URL_KEY] = alertSoundUrl.trim();
     lc['config-version'] = appVersion;
@@ -493,7 +521,7 @@ const Settings = () => {
 
   const handleRuntimeDebugInfoChange = value => {
     setShowRuntimeDebugInfo(value);
-    let lc = appendScreenMetrics({...device?.configs || {}});
+    let lc = appendScreenMetrics({...(device?.configs || {})});
     lc[DEVICE_RUNTIME_DEBUG_INFO_ENABLED_KEY] = value ? '1' : '0';
     lc['config-version'] = appVersion;
     persistDeviceConfigs(lc)
@@ -505,7 +533,7 @@ const Settings = () => {
 
   const handlePosTypeChange = (value) => {
     setSelectedMode(value);
-    let lc = appendScreenMetrics({...device?.configs || {}});
+    let lc = appendScreenMetrics({...(device?.configs || {})});
     lc['pos-type'] = value;
     lc['config-version'] = appVersion;
     persistDeviceConfigs(lc)
@@ -517,7 +545,7 @@ const Settings = () => {
 
   const handlePrintModeChange = (value) => {
     setPrintingMode(value);
-    let lc = appendScreenMetrics({...device?.configs || {}});
+    let lc = appendScreenMetrics({...(device?.configs || {})});
     lc['print-mode'] = value;
     lc['config-version'] = appVersion;
     persistDeviceConfigs(lc)
@@ -529,7 +557,7 @@ const Settings = () => {
 
   const handleGatewayChange = (value) => {
     setSelectedGateway(value);
-    let lc = appendScreenMetrics({...device?.configs || {}});
+    let lc = appendScreenMetrics({...(device?.configs || {})});
     lc['pos-gateway'] = value;
     lc['config-version'] = appVersion;
     persistDeviceConfigs(lc)
@@ -562,7 +590,7 @@ const Settings = () => {
       <StateStore store="device_config" />
       <ScrollView contentContainerStyle={styles.Settings.scrollContent}>
         <View style={styles.Settings.mainContainer}>
-          <View style={{marginTop: 20}}>
+          <View style={inlineStyle_565_16}>
             <View style={styles.Settings.row}>
               <Text style={styles.Settings.value}>{storagedDevice?.appName}:</Text>
               <Text style={styles.Settings.value}>{appVersion}</Text>
@@ -636,18 +664,11 @@ const Settings = () => {
 
           {isWebRuntimeDevice && (
             <View
-              style={{
-                marginTop: 16,
-                padding: 14,
-                backgroundColor: '#EFF6FF',
-                borderRadius: 12,
-                borderWidth: 1,
-                borderColor: '#BFDBFE',
-              }}>
+              style={inlineStyle_639_14}>
               <Text style={[styles.Settings.label, {marginBottom: 4}]}>
                 Configuração sincronizada
               </Text>
-              <Text style={{fontSize: 12, lineHeight: 18, color: '#1D4ED8'}}>
+              <Text style={inlineStyle_650_20}>
                 No navegador este runtime usa configurações sincronizadas do
                 device web e da empresa. Ajustes compatíveis ficam refletidos no
                 rodapé e nos recursos em tempo real.
@@ -656,7 +677,7 @@ const Settings = () => {
           )}
 
           {/* // // // // // TIPO DE COMANDA */}
-          <View style={{marginTop: 12, marginBottom: 10}}>
+          <View style={inlineStyle_659_16}>
             <Text style={styles.Settings.label}>{global.t?.t("configs", "label", "tab type")}</Text>
             <Picker
               selectedValue={checkType}
@@ -673,7 +694,7 @@ const Settings = () => {
           </View>
 
           {/* // // // // // TIPO DE LEITURA DE PRODUTO */}
-          <View style={{marginTop: 6, marginBottom: 10}}>
+          <View style={inlineStyle_676_16}>
             <Text style={styles.Settings.label}>{global.t?.t("configs", "label", "product read method")}</Text>
             <Picker
               selectedValue={productInputType}
@@ -687,7 +708,7 @@ const Settings = () => {
             </Picker>
           </View>
 
-          <View style={{marginTop: 6, marginBottom: 10}}>
+          <View style={inlineStyle_690_16}>
             <Text style={styles.Settings.label}>{global.t?.t("configs", "label", "selection type")}</Text>
             <Picker
               selectedValue={selectionType}
@@ -701,12 +722,7 @@ const Settings = () => {
           </View>
 
           <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginTop: 12,
-            }}>
+            style={inlineStyle_704_12}>
             <Text style={styles.Settings.label}>{global.t?.t("configs", "label", "sound")}</Text>
 
             <Switch
@@ -717,12 +733,7 @@ const Settings = () => {
           </View>
 
           <View
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              marginTop: 12,
-            }}>
+            style={inlineStyle_720_12}>
             <Text style={styles.Settings.label}>{global.t?.t("configs", "label", "vibration")}</Text>
 
             <Switch
@@ -733,18 +744,9 @@ const Settings = () => {
           </View>
 
           <View
-            style={{
-              marginTop: 16,
-              padding: 14,
-              backgroundColor: '#F8FAFC',
-              borderRadius: 12,
-            }}>
+            style={inlineStyle_736_12}>
             <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}>
+              style={inlineStyle_743_14}>
               <Text style={styles.Settings.label}>Aviso sonoro via websocket</Text>
               <Switch
                 value={alertSoundEnabled}
@@ -754,12 +756,7 @@ const Settings = () => {
             </View>
 
             <Text
-              style={{
-                fontSize: 12,
-                lineHeight: 18,
-                color: '#64748B',
-                marginTop: 8,
-              }}>
+              style={inlineStyle_757_14}>
               Toca quando este device recebe o evento
               order.created de um novo pedido em preparo via
               websocket.
@@ -780,33 +777,14 @@ const Settings = () => {
               autoCorrect={false}
               keyboardType="url"
               returnKeyType="done"
-              style={{
-                minHeight: 46,
-                borderWidth: 1,
-                borderColor: '#E2E8F0',
-                borderRadius: 10,
-                backgroundColor: '#fff',
-                color: '#0F172A',
-                paddingHorizontal: 12,
-                paddingVertical: 10,
-                outlineStyle: 'none',
-              }}
+              style={inlineStyle_783_14}
             />
           </View>
 
           <View
-            style={{
-              marginTop: 16,
-              padding: 14,
-              backgroundColor: '#F8FAFC',
-              borderRadius: 12,
-            }}>
+            style={inlineStyle_798_12}>
             <View
-              style={{
-                flexDirection: 'row',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-              }}>
+              style={inlineStyle_805_14}>
               <Text style={styles.Settings.label}>Debug do socket no rodapé</Text>
               <Switch
                 value={showRuntimeDebugInfo}
@@ -815,19 +793,14 @@ const Settings = () => {
             </View>
 
             <Text
-              style={{
-                fontSize: 12,
-                lineHeight: 18,
-                color: '#64748B',
-                marginTop: 8,
-              }}>
+              style={inlineStyle_818_14}>
               Quando desligado, o rodapé mostra só um indicador discreto do
               socket. Quando ligado, exibe os detalhes completos de realtime e
               refresh em qualquer tela do sistema.
             </Text>
           </View>
 
-          <View style={{marginTop: 6}}>
+          <View style={inlineStyle_830_16}>
             <Picker
               selectedValue={selectedMode}
               onValueChange={handlePosTypeChange}
@@ -838,7 +811,7 @@ const Settings = () => {
               <Picker.Item label={global.t?.t("configs", "option", "full order")} value="full" />
             </Picker>
           </View>
-          <View style={{marginTop: 6, marginBottom: 10}}>
+          <View style={inlineStyle_841_16}>
             <Picker
               selectedValue={printingMode}
               onValueChange={handlePrintModeChange}
@@ -849,7 +822,7 @@ const Settings = () => {
               <Picker.Item label={global.t?.t("configs", "option", "printFullOrder")} value="form" />
             </Picker>
           </View>
-          <View style={{marginTop: 6, marginBottom: 10}}>
+          <View style={inlineStyle_852_16}>
             <Text style={styles.Settings.label}>Pedidos visíveis no PDV</Text>
             <Picker
               selectedValue={orderVisibility}
@@ -868,7 +841,7 @@ const Settings = () => {
             </Picker>
           </View>
           {showGatewayPicker && (
-            <View style={{marginTop: 10}}>
+            <View style={inlineStyle_871_18}>
               <Picker
                 selectedValue={selectedGateway}
                 onValueChange={handleGatewayChange}
@@ -896,7 +869,7 @@ const Settings = () => {
               },
             ]}>
             <Icon name="add-circle" size={24} color="#fff" />
-            <Text style={{color: '#fff', marginLeft: 8}}>{global.t?.t("configs", "label", "resync translations")}</Text>
+            <Text style={inlineStyle_899_18}>{global.t?.t("configs", "label", "resync translations")}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>

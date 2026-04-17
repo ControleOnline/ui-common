@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
-import { View, Text, StyleSheet, TextInput } from 'react-native'
+import { View, Text, TextInput } from 'react-native'
 import { useStore } from '@store'
+import styles from './IdInput.styles'
 
 const IdInput = ({ onSearch }) => {
   const invoiceStore = useStore('invoice')
@@ -44,28 +45,5 @@ const IdInput = ({ onSearch }) => {
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    marginVertical: 10,
-    marginHorizontal: 8,
-    flex: 1,
-  },
-  label: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 5,
-    color: '#333',
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    fontSize: 14,
-    backgroundColor: '#fff',
-  },
-})
 
 export default IdInput

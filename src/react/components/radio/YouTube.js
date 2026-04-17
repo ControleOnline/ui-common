@@ -1,7 +1,8 @@
 // components/YouTube.js
 import React, { useRef, useEffect } from 'react';
-import { View, StyleSheet, Platform } from 'react-native';
+import { View, Platform } from 'react-native';
 import { WebView } from 'react-native-webview';
+import styles from './YouTube.styles';
 
 const YouTube = ({
   playlistId = 'PLbpi6ZahtOH7DrxWUmkwvsXnFeCfB5LUp',
@@ -77,18 +78,5 @@ const YouTube = ({
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: '#000',
-  },
-  webview: {
-    flex: 1,
-  },
-});
 
 export default YouTube;

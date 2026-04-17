@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, Platform, StyleSheet } from 'react-native';
+import { View, Text, Platform } from 'react-native';
 import { useStore } from '@store';
+import { api } from '@controleonline/ui-common/src/api';
+import styles from './Spotify.styles';
 
 const SpotifyPlayer = () => {
     const peopleStore = useStore('people');
@@ -37,9 +39,9 @@ const SpotifyPlayer = () => {
                 console.log('[Spotify] desbloqueando áudio...');
                 await playerRef.current?.resume();
                 await playerRef.current?.setVolume(0.8);
-            } catch (e) {
-                console.log('[Spotify] ainda não liberado');
-            }
+        } catch {
+            console.log('[Spotify] ainda não liberado');
+        }
         };
 
         document.addEventListener('click', unlockAudio, { once: true });
@@ -137,34 +139,5 @@ const SpotifyPlayer = () => {
         </View>
     );
 };
-
-const styles = StyleSheet.create({
-    footer: {
-        height: 100,
-        backgroundColor: '#121212',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    status: {
-        color: '#fff',
-        fontWeight: 'bold',
-    },
-    trackBox: {
-        marginTop: 8,
-        alignItems: 'center',
-    },
-    trackName: {
-        color: '#fff',
-        fontSize: 14,
-        fontWeight: 'bold',
-    },
-    artist: {
-        color: '#aaa',
-        fontSize: 12,
-    },
-    container: {
-        padding: 20,
-    },
-});
 
 export default SpotifyPlayer;

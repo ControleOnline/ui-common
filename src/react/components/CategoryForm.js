@@ -1,17 +1,19 @@
 import React, { useState, useEffect, useImperativeHandle, forwardRef, useMemo } from 'react';
+
 import {
   View,
   Text,
   TextInput,
-  Switch,
-  StyleSheet,
   TouchableOpacity,
   ScrollView,
   FlatList,
   Modal,
 } from 'react-native';
+
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useStore } from '@store';
+import styles from './CategoryForm.styles';
+import { inlineStyle_240_75 } from './CategoryForm.styles';
 
 /* ─── Paleta de cores predefinidas ─── */
 const PRESET_COLORS = [
@@ -235,10 +237,9 @@ const IconPicker = ({ value, onChange }) => {
         </Text>
         <MaterialCommunityIcons name="chevron-down" size={18} color="#94A3B8" />
       </TouchableOpacity>
-
       <BottomModal visible={open} onClose={() => { setOpen(false); setSearch(''); }} title="Selecionar ícone">
         <View style={styles.iconSearchWrap}>
-          <MaterialCommunityIcons name="magnify" size={18} color="#94A3B8" style={{ marginRight: 8 }} />
+          <MaterialCommunityIcons name="magnify" size={18} color="#94A3B8" style={inlineStyle_240_75} />
           <TextInput
             value={search}
             onChangeText={setSearch}
@@ -270,7 +271,7 @@ const IconPicker = ({ value, onChange }) => {
           data={filtered}
           keyExtractor={item => item.name}
           numColumns={5}
-          style={{ maxHeight: 340 }}
+          style={styles.iconList}
           contentContainerStyle={styles.iconGrid}
           showsVerticalScrollIndicator={false}
           keyboardShouldPersistTaps="handled"
@@ -287,7 +288,7 @@ const IconPicker = ({ value, onChange }) => {
                   size={24}
                   color={selected ? '#3B82F6' : '#334155'}
                 />
-                <Text style={[styles.iconCellLabel, selected && { color: '#3B82F6' }]} numberOfLines={1}>
+                <Text style={[styles.iconCellLabel, selected && styles.iconCellLabelSelected]} numberOfLines={1}>
                   {item.label}
                 </Text>
               </TouchableOpacity>
@@ -325,7 +326,7 @@ const ParentCategoryPicker = ({ value, onChange, categories, currentId }) => {
         {selected?.color && (
           <View style={[styles.parentColorDot, { backgroundColor: selected.color }]} />
         )}
-        <Text style={[styles.iconButtonText, !selected && { color: '#CBD5E1' }]}>
+        <Text style={[styles.iconButtonText, !selected && styles.emptyPickerText]}>
           {selected ? selected.name : 'Nenhuma'}
         </Text>
         <MaterialCommunityIcons name="chevron-down" size={18} color="#94A3B8" />
@@ -333,7 +334,7 @@ const ParentCategoryPicker = ({ value, onChange, categories, currentId }) => {
 
       <BottomModal visible={open} onClose={() => { setOpen(false); setSearch(''); }} title="Categoria pai">
         <View style={styles.iconSearchWrap}>
-          <MaterialCommunityIcons name="magnify" size={18} color="#94A3B8" style={{ marginRight: 8 }} />
+          <MaterialCommunityIcons name="magnify" size={18} color="#94A3B8" style={styles.searchIcon} />
           <TextInput
             value={search}
             onChangeText={setSearch}
@@ -348,15 +349,15 @@ const ParentCategoryPicker = ({ value, onChange, categories, currentId }) => {
           )}
         </View>
 
-        <ScrollView style={{ maxHeight: 380 }} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        <ScrollView style={styles.parentSearchList} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
           {/* Opção nenhuma */}
           <TouchableOpacity
             style={styles.parentRow}
             onPress={() => { onChange(null); setOpen(false); setSearch(''); }}
             activeOpacity={0.7}
           >
-            <MaterialCommunityIcons name="close-circle-outline" size={18} color="#94A3B8" style={{ marginRight: 10 }} />
-            <Text style={[styles.parentRowText, { color: '#94A3B8' }]}>Nenhuma</Text>
+            <MaterialCommunityIcons name="close-circle-outline" size={18} color="#94A3B8" style={styles.parentLeadingIcon} />
+            <Text style={[styles.parentRowText, styles.parentRowTextMuted]}>Nenhuma</Text>
             {!value && <MaterialCommunityIcons name="check-circle" size={18} color="#22C55E" />}
           </TouchableOpacity>
 
@@ -369,14 +370,14 @@ const ParentCategoryPicker = ({ value, onChange, categories, currentId }) => {
                 onPress={() => { onChange(cat.id); setOpen(false); setSearch(''); }}
                 activeOpacity={0.7}
               >
-                <View style={[styles.parentColorDot, { backgroundColor: cat.color || '#CBD5E1', marginRight: 10 }]} />
+                <View style={[styles.parentColorDot, styles.parentColorDotSpacing, { backgroundColor: cat.color || '#CBD5E1' }]} />
                 {!!cat.icon && (
-                  <MaterialCommunityIcons name={cat.icon} size={16} color="#475569" style={{ marginRight: 6 }} />
+                  <MaterialCommunityIcons name={cat.icon} size={16} color="#475569" style={styles.parentIconSpacing} />
                 )}
-                <Text style={[styles.parentRowText, isSelected && { color: '#3B82F6', fontWeight: '700' }]} numberOfLines={1}>
+                <Text style={[styles.parentRowText, isSelected && styles.parentRowTextSelected]} numberOfLines={1}>
                   {cat.name}
                 </Text>
-                {isSelected && <MaterialCommunityIcons name="check-circle" size={18} color="#3B82F6" style={{ marginLeft: 'auto' }} />}
+                {isSelected && <MaterialCommunityIcons name="check-circle" size={18} color="#3B82F6" style={styles.parentSelectedIcon} />}
               </TouchableOpacity>
             );
           })}
@@ -422,7 +423,7 @@ const ChannelPicker = ({ value, onChange }) => {
               name={ch.icon}
               size={14}
               color={active ? '#fff' : '#64748B'}
-              style={{ marginRight: 5 }}
+              style={styles.channelIcon}
             />
             <Text style={[styles.channelChipText, active && styles.channelChipTextActive]}>
               {ch.label}
@@ -562,305 +563,6 @@ const CategoryForm = forwardRef(({ category, onClose, onSaved }, ref) => {
 
     </View>
   );
-});
-
-const styles = StyleSheet.create({
-  form: {
-    paddingBottom: 8,
-  },
-  field: {
-    marginBottom: 16,
-  },
-  label: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#94A3B8',
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: 8,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#F8FAFC',
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    borderRadius: 10,
-    fontSize: 15,
-    color: '#0F172A',
-  },
-
-  /* ── Color picker ── */
-  colorButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    gap: 10,
-  },
-  colorSwatch: {
-    width: 24,
-    height: 24,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.12)',
-  },
-  colorButtonText: {
-    flex: 1,
-    fontSize: 15,
-    color: '#0F172A',
-    fontFamily: 'monospace',
-  },
-  colorGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    padding: 16,
-    gap: 10,
-    justifyContent: 'center',
-  },
-  colorCell: {
-    padding: 2,
-  },
-  colorCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.08)',
-  },
-  colorCircleWhite: {
-    borderColor: '#E2E8F0',
-    borderWidth: 2,
-  },
-  colorCircleSelected: {
-    borderWidth: 3,
-    borderColor: '#3B82F6',
-  },
-  hexInputRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 24,
-    borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
-  },
-  hexInput: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 15,
-    color: '#0F172A',
-    fontFamily: 'monospace',
-  },
-  hexApplyBtn: {
-    backgroundColor: '#3B82F6',
-    borderRadius: 10,
-    paddingHorizontal: 18,
-    paddingVertical: 11,
-  },
-  hexApplyText: {
-    color: '#fff',
-    fontWeight: '700',
-    fontSize: 15,
-  },
-
-  /* ── Icon picker ── */
-  iconButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#F8FAFC',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 13,
-    gap: 10,
-  },
-  iconButtonText: {
-    flex: 1,
-    fontSize: 15,
-    color: '#0F172A',
-  },
-  iconSearchWrap: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginHorizontal: 16,
-    marginBottom: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  iconSearchInput: {
-    flex: 1,
-    fontSize: 15,
-    color: '#0F172A',
-    padding: 0,
-  },
-  iconNoneRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-    marginBottom: 4,
-  },
-  iconNoneCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 8,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  iconNoneText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#64748B',
-  },
-  iconGrid: {
-    paddingHorizontal: 12,
-    paddingBottom: 24,
-  },
-  iconCell: {
-    flex: 1,
-    alignItems: 'center',
-    paddingVertical: 12,
-    marginHorizontal: 2,
-    borderRadius: 10,
-    backgroundColor: '#F8FAFC',
-    marginBottom: 6,
-  },
-  iconCellSelected: {
-    backgroundColor: '#EFF6FF',
-    borderWidth: 1,
-    borderColor: '#BFDBFE',
-  },
-  iconCellLabel: {
-    fontSize: 9,
-    color: '#64748B',
-    marginTop: 4,
-    textAlign: 'center',
-  },
-
-  /* ── Parent category picker ── */
-  parentColorDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(0,0,0,0.1)',
-  },
-  parentRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F8FAFC',
-  },
-  parentRowText: {
-    flex: 1,
-    fontSize: 15,
-    color: '#0F172A',
-  },
-  parentEmpty: {
-    paddingVertical: 32,
-    alignItems: 'center',
-  },
-  parentEmptyText: {
-    fontSize: 14,
-    color: '#94A3B8',
-  },
-
-  /* ── Channel chips ── */
-  channelWrap: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-  },
-  channelChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    borderColor: '#E2E8F0',
-    backgroundColor: '#F8FAFC',
-  },
-  channelChipActive: {
-    backgroundColor: '#0F172A',
-    borderColor: '#0F172A',
-  },
-  channelChipText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#475569',
-  },
-  channelChipTextActive: {
-    color: '#fff',
-  },
-
-  /* ── Modal ── */
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-  },
-  modalSheet: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    maxHeight: '80%',
-    paddingBottom: 0,
-  },
-  modalHandle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#E2E8F0',
-    alignSelf: 'center',
-    marginTop: 10,
-    marginBottom: 4,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F1F5F9',
-  },
-  modalTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-  modalClose: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F8FAFC',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
 });
 
 export default CategoryForm;

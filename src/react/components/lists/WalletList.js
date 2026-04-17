@@ -1,13 +1,10 @@
 import React, { useEffect } from 'react'
-import { View, Text, StyleSheet } from 'react-native'
+import { View, Text } from 'react-native'
 import { Picker } from '@react-native-picker/picker'
 import { useStore } from '@store';
+import styles from './SelectList.styles';
 
 const WalletSelect = ({ people_id }) => {
-    const peopleStore = useStore('people');
-      const { getters: peopleGetters } = peopleStore;
-      const { currentCompany } = peopleGetters;
-      
   const { getters: walletGetters, actions: walletActions } = useStore('wallet')
 
   useEffect(() => {
@@ -53,20 +50,5 @@ const WalletSelect = ({ people_id }) => {
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    marginVertical: 10
-  },
-  label: {
-    fontSize: 16,
-    marginBottom: 5
-  },
-  pickerWrapper: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 6
-  }
-})
 
 export default WalletSelect

@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react'
-import { View, Text, StyleSheet } from 'react-native'
+import { View, Text } from 'react-native'
 import { Picker } from '@react-native-picker/picker'
 import { useStore } from '@store';
+import styles from './SelectList.styles';
 
 const CategorySelect = ({ context = null }) => {
   const peopleStore = useStore('people');
@@ -51,20 +52,5 @@ const CategorySelect = ({ context = null }) => {
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    marginVertical: 10
-  },
-  label: {
-    fontSize: 16,
-    marginBottom: 5
-  },
-  pickerWrapper: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 6
-  }
-})
 
 export default CategorySelect
