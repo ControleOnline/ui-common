@@ -54,7 +54,7 @@ const parseThemeCss = cssText => {
 
 export const DefaultProvider = ({children, onBootstrapReady}) => {
   const appType = String(APP_ENV.APP_TYPE || '').toUpperCase();
-  const isShopClientApp = appType === 'SHOP' || appType === 'DELIVERY';
+  const isShopClientApp = appType === 'SHOP';
   const themeStore = useStore('theme');
   const getters = themeStore.getters;
   const actions = themeStore.actions;
