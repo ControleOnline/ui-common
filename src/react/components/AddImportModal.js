@@ -12,7 +12,9 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import * as DocumentPicker from 'expo-document-picker';
 import { useStore } from '@store';
 import AnimatedModal from '@controleonline/ui-crm/src/react/components/AnimatedModal';
+import { api } from '@controleonline/ui-common/src/api';
 import { useMessage } from '@controleonline/ui-common/src/react/components/MessageService';
+import styles from './AddImportModal.styles';
 
 const AddImportModal = ({ visible, onClose, onSuccess, context = {} }) => {
     const { showError, showSuccess } = useMessage();
@@ -22,6 +24,16 @@ const AddImportModal = ({ visible, onClose, onSuccess, context = {} }) => {
 
     const [file, setFile] = useState(null);
     const [loading, setLoading] = useState(false);
+    const modalTitle = global.t?.t('imports', 'title', 'new_import');
+    const csvLabel = global.t?.t('imports', 'label', 'csv_file');
+    const selectFileLabel = global.t?.t('imports', 'button', 'select_file');
+    const cancelLabel = global.t?.t('imports', 'button', 'cancel');
+    const importLabel = global.t?.t('imports', 'button', 'import');
+    const csvOnlyLabel = global.t?.t('imports', 'message', 'only_csv_files_are_allowed');
+    const pickFileErrorLabel = global.t?.t('imports', 'error', 'error_selecting_file');
+    const importSuccessLabel = global.t?.t('imports', 'success', 'import_sent_successfully');
+    const importErrorLabel = global.t?.t('imports', 'error', 'error_sending_import');
+    const missingFileLabel = global.t?.t('imports', 'error', 'select_a_csv_file');
 
     const handlePickFile = async () => {
         try {
@@ -36,19 +48,19 @@ const AddImportModal = ({ visible, onClose, onSuccess, context = {} }) => {
             const pickedFile = result.assets[0];
 
             if (!pickedFile.name?.toLowerCase().endsWith('.csv')) {
-                showError('Apenas arquivos CSV são permitidos.');
+                showError(csvOnlyLabel);
                 return;
             }
 
             setFile(pickedFile);
-        } catch (err) {
-            showError('Erro ao selecionar arquivo.');
+        } catch {
+            showError(pickFileErrorLabel);
         }
     };
 
     const handleSave = async () => {
         if (!file) {
-            showError('Selecione um arquivo CSV.');
+            showError(missingFileLabel);
             return;
         }
 
@@ -75,11 +87,11 @@ const AddImportModal = ({ visible, onClose, onSuccess, context = {} }) => {
             }
 
             await api.upload('/imports/upload', formData);
-            showSuccess('Importação enviada com sucesso.');
+            showSuccess(importSuccessLabel);
             if (onSuccess) onSuccess();
             handleClose();
-        } catch (error) {
-            showError('Erro ao enviar importação.');
+        } catch {
+            showError(importErrorLabel);
         } finally {
             setLoading(false);
         }
@@ -94,57 +106,46 @@ const AddImportModal = ({ visible, onClose, onSuccess, context = {} }) => {
         <AnimatedModal
             visible={visible}
             onRequestClose={handleClose}
-            style={{ justifyContent: 'flex-end' }}
+            style={styles.modalAlignEnd}
         >
-            <View style={{ backgroundColor: '#fff', borderTopLeftRadius: 24, borderTopRightRadius: 24, maxHeight: '90%', width: '100%' }}>
-                <View style={{ flexDirection: 'row', justifyContent: 'space-between', padding: 20, borderBottomWidth: 1, borderColor: '#eee' }}>
-                    <Text style={{ fontSize: 20, fontWeight: '700' }}>Nova Importação</Text>
+            <View style={styles.sheet}>
+                <View style={styles.header}>
+                    <Text style={styles.title}>{modalTitle}</Text>
                     <TouchableOpacity onPress={handleClose}>
                         <Icon name="close" size={24} />
                     </TouchableOpacity>
                 </View>
 
-                <ScrollView style={{ padding: 20 }}>
-                    <Text style={{ marginBottom: 6, fontWeight: '600' }}>Arquivo CSV</Text>
+                <ScrollView style={styles.content}>
+                    <Text style={styles.label}>{csvLabel}</Text>
                     <TouchableOpacity
                         onPress={handlePickFile}
-                        style={{
-                            borderWidth: 1,
-                            borderColor: '#ddd',
-                            borderRadius: 10,
-                            padding: 16,
-                            flexDirection: 'row',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                        }}
+                        style={styles.filePicker}
                     >
-                        <Text numberOfLines={1} style={{ flex: 1, marginRight: 10 }}>
-                            {file ? file.name : 'Selecionar arquivo'}
+                        <Text numberOfLines={1} style={styles.fileName}>
+                            {file ? file.name : selectFileLabel}
                         </Text>
                         <Icon name="upload-file" size={22} color={file ? "#007bff" : "#666"} />
                     </TouchableOpacity>
-                    <Text style={{ marginTop: 10, color: '#6c757d', fontSize: 12 }}>
-                        Apenas arquivos .csv são permitidos.
+                    <Text style={styles.helperText}>
+                        {csvOnlyLabel}
                     </Text>
                 </ScrollView>
 
-                <View style={{ flexDirection: 'row', padding: 20, gap: 10, borderTopWidth: 1, borderColor: '#eee' }}>
-                    <TouchableOpacity onPress={handleClose} style={{ flex: 1, padding: 14, borderRadius: 10, borderWidth: 1, borderColor: '#aaa', alignItems: 'center' }}>
-                        <Text>Cancelar</Text>
+                <View style={styles.footer}>
+                    <TouchableOpacity onPress={handleClose} style={styles.secondaryButton}>
+                        <Text>{cancelLabel}</Text>
                     </TouchableOpacity>
 
                     <TouchableOpacity
                         onPress={handleSave}
                         disabled={loading}
-                        style={{
-                            flex: 1,
-                            padding: 14,
-                            borderRadius: 10,
-                            backgroundColor: loading ? '#ccc' : '#007bff',
-                            alignItems: 'center',
-                        }}
+                        style={[
+                            styles.primaryButton,
+                            loading && styles.primaryButtonDisabled,
+                        ]}
                     >
-                        {loading ? <ActivityIndicator color="#fff" /> : <Text style={{ color: '#fff', fontWeight: '600' }}>Importar</Text>}
+                        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.primaryButtonText}>{importLabel}</Text>}
                     </TouchableOpacity>
                 </View>
             </View>

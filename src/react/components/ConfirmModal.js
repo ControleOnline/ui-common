@@ -1,19 +1,20 @@
 import React from 'react';
 import { Modal, View, Text, TouchableOpacity } from 'react-native';
+import styles from './ConfirmModal.styles';
 
 export const ConfirmModal = ({ visible, title, message, onConfirm, onCancel }) => {
   return (
     <Modal visible={visible} transparent animationType="fade">
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0,0,0,0.5)' }}>
-        <View style={{ backgroundColor: '#fff', padding: 20, borderRadius: 10, width: '80%' }}>
-          <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>{title}</Text>
-          <Text style={{ fontSize: 14, marginBottom: 20 }}>{message}</Text>
-          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 10 }}>
-            <TouchableOpacity onPress={onCancel} style={{ padding: 10 }}>
+      <View style={styles.overlay}>
+        <View style={styles.card}>
+          <Text style={styles.title}>{title}</Text>
+          <Text style={styles.message}>{message}</Text>
+          <View style={styles.actions}>
+            <TouchableOpacity onPress={onCancel} style={styles.cancelButton}>
               <Text>{global.t?.t('confirmModal', 'button', 'cancel')}</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={onConfirm} style={{ padding: 10, backgroundColor: '#007AFF', borderRadius: 5 }}>
-              <Text style={{ color: '#fff' }}>{global.t?.t('confirmModal', 'button', 'confirm')}</Text>
+            <TouchableOpacity onPress={onConfirm} style={styles.confirmButton}>
+              <Text style={styles.confirmButtonText}>{global.t?.t('confirmModal', 'button', 'confirm')}</Text>
             </TouchableOpacity>
           </View>
         </View>
