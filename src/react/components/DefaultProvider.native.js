@@ -53,6 +53,8 @@ const parseThemeCss = cssText => {
 };
 
 export const DefaultProvider = ({children, onBootstrapReady}) => {
+  const appType = String(APP_ENV.APP_TYPE || '').toUpperCase();
+  const isShopClientApp = appType === 'SHOP' || appType === 'DELIVERY';
   const themeStore = useStore('theme');
   const getters = themeStore.getters;
   const actions = themeStore.actions;
@@ -540,18 +542,24 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
             },
           ]}>
           <View style={providerStyles.content}>{children}</View>
-          <RuntimeInfoFooter
-            appVersion={appVersion}
-            defaultCompany={defaultCompany}
-            device={device}
-            colors={colors}
-          />
+          {!isShopClientApp && (
+            <RuntimeInfoFooter
+              appVersion={appVersion}
+              defaultCompany={defaultCompany}
+              device={device}
+              colors={colors}
+            />
+          )}
         </View>
-        <WebsocketListener />
-        <DeviceAlertSoundService />
-        <ProductCatalogCacheService />
-        <RemoteCheckoutService />
-        <PrintService />
+        {!isShopClientApp && (
+          <>
+            <WebsocketListener />
+            <DeviceAlertSoundService />
+            <ProductCatalogCacheService />
+            <RemoteCheckoutService />
+            <PrintService />
+          </>
+        )}
       </ThemeContext.Provider>
     )
   );
