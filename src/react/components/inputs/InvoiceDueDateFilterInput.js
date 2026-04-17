@@ -2,6 +2,10 @@ import React, { useState } from 'react'
 import { View, Text, TextInput } from 'react-native'
 import { useStore } from '@store'
 import { normalizeDateInputToYmd } from '@controleonline/ui-common/src/react/utils/dateRangeFilter'
+import {
+  resolveInvoiceInvalidDateFormatMessage,
+  resolveInvoiceSingleDatePlaceholder,
+} from '@controleonline/ui-common/src/react/utils/invoiceDueDateMessages'
 import styles from './InvoiceDueDateFilterInput.styles'
 
 const InvoiceDueDateFilterInput = () => {
@@ -21,7 +25,7 @@ const InvoiceDueDateFilterInput = () => {
     if (normalizedDate) {
       setError('')
     } else {
-      setError('Use o formato DD/MM/YYYY ou YYYY-MM-DD')
+      setError(resolveInvoiceInvalidDateFormatMessage())
     }
 
     return Boolean(normalizedDate)
@@ -54,7 +58,7 @@ const InvoiceDueDateFilterInput = () => {
 
       <TextInput
         style={[styles.input, error && styles.inputError]}
-        placeholder="DD/MM/YYYY"
+        placeholder={resolveInvoiceSingleDatePlaceholder()}
         value={inputValue}
         onChangeText={handleTextChange}
         onBlur={handleBlur}

@@ -2,6 +2,12 @@ import React, { useEffect, useState } from 'react'
 import { View, Text, TextInput } from 'react-native'
 import { useStore } from '@store'
 import { normalizeDateInputToYmd } from '@controleonline/ui-common/src/react/utils/dateRangeFilter'
+import {
+  resolveInvoiceInvalidDateFormatMessage,
+  resolveInvoiceRangeEndPlaceholder,
+  resolveInvoiceRangeLabel,
+  resolveInvoiceRangeStartPlaceholder,
+} from '@controleonline/ui-common/src/react/utils/invoiceDueDateMessages'
 import styles from './InvoiceDueDateRangeFilterInput.styles'
 
 const InvoiceDueDateRangeFilterInput = ({ onSearch }) => {
@@ -32,7 +38,7 @@ const InvoiceDueDateRangeFilterInput = ({ onSearch }) => {
       setError('')
       return true
     } else {
-      setError('Use o formato DD/MM/YYYY ou YYYY-MM-DD')
+      setError(resolveInvoiceInvalidDateFormatMessage())
       return false
     }
   }
@@ -76,13 +82,13 @@ const InvoiceDueDateRangeFilterInput = ({ onSearch }) => {
   return (
     <View style={styles.container}>
       <Text style={styles.label}>
-        {global.t?.t("invoice", "label", "dueDate")} (início/fim)
+        {resolveInvoiceRangeLabel()}
       </Text>
 
       <View style={styles.row}>
         <TextInput
           style={[styles.input, startError && styles.inputError]}
-          placeholder="Início: DD/MM/YYYY"
+          placeholder={resolveInvoiceRangeStartPlaceholder()}
           value={startValue}
           onChangeText={handleStartChange}
           onBlur={handleBlur}
@@ -91,7 +97,7 @@ const InvoiceDueDateRangeFilterInput = ({ onSearch }) => {
         />
         <TextInput
           style={[styles.input, endError && styles.inputError]}
-          placeholder="Fim: DD/MM/YYYY"
+          placeholder={resolveInvoiceRangeEndPlaceholder()}
           value={endValue}
           onChangeText={handleEndChange}
           onBlur={handleBlur}
