@@ -137,6 +137,21 @@ const translateColumnValue = ({column, storeName, value}) => {
   return translateFn ? translateFn(storeName, 'span', value) : value;
 };
 
+export const resolveStoreConfigByName = storeName => {
+  const normalizedStoreName = normalizeText(storeName);
+  const stores = getAllStores();
+  const store = stores?.[normalizedStoreName];
+  const resourceEndpoint = getStoreEndpoint(store);
+
+  return {
+    columns: getStoreColumns(store),
+    resourceEndpoint,
+    resourceName: resourceEndpoint,
+    store,
+    storeName: normalizedStoreName,
+  };
+};
+
 export const resolveStoreConfigByEntity = ({entity = null, entityIri = ''} = {}) => {
   const resolvedEntityIri =
     normalizeText(entity?.['@id']) || normalizeText(entityIri);
@@ -144,7 +159,9 @@ export const resolveStoreConfigByEntity = ({entity = null, entityIri = ''} = {})
   if (!resourceName) {
     return {
       columns: [],
+      resourceEndpoint: '',
       resourceName: '',
+      store: null,
       storeName: '',
     };
   }
@@ -174,8 +191,10 @@ export const resolveStoreConfigByEntity = ({entity = null, entityIri = ''} = {})
 
       return {
         columns,
+        resourceEndpoint,
         resourceName,
         score,
+        store,
         storeName,
       };
     })
@@ -190,7 +209,9 @@ export const resolveStoreConfigByEntity = ({entity = null, entityIri = ''} = {})
 
   return candidates[0] || {
     columns: [],
+    resourceEndpoint: '',
     resourceName,
+    store: null,
     storeName: '',
   };
 };

@@ -2,13 +2,11 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Image,
-  Modal,
   ScrollView,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useStore } from '@store';
 import Formatter from '@controleonline/ui-common/src/utils/formatter';
@@ -24,7 +22,7 @@ import {
 import { resolveStoreConfigByEntity } from '@controleonline/ui-common/src/react/utils/storeColumns';
 import createStyles, {
   buildEntityLogPalette,
-} from './EntityLogModal.styles';
+} from './EntityLogContent.styles';
 
 const DEFAULT_ITEMS_PER_PAGE = 100;
 
@@ -594,28 +592,22 @@ const EntityLogBranch = ({
   );
 };
 
-const EntityLogModal = ({
+const EntityLogContent = ({
   entity = null,
   entityClass = '',
   entityId = null,
   entityIri = '',
   entityLabel = '',
   itemsPerPage = DEFAULT_ITEMS_PER_PAGE,
-  onClose,
   relationConfig = {},
   theme,
-  title = 'Historico',
-  visible,
 }) => {
-  const insets = useSafeAreaInsets();
   const palette = useMemo(() => buildEntityLogPalette(theme), [theme]);
   const styles = useMemo(() => createStyles(palette), [palette]);
-  const modalBottomInset = Math.max(insets?.bottom || 0, 8);
   const entityLogStore = useStore('entity_log');
   const entityLogActions = entityLogStore?.actions || {};
   const logCacheRef = useRef(new Map());
   const entityCacheRef = useRef(new Map());
-  const scrollRef = useRef(null);
   const [, setCacheVersion] = useState(0);
 
   const rootKey = useMemo(
@@ -629,8 +621,8 @@ const EntityLogModal = ({
     setCacheVersion(version => version + 1);
   }, [rootKey]);
 
-  const getLogsState = useCallback((className, rowId) => {
-    const key = buildEntityKey(className, rowId);
+  const getLogsState = useCallback((className, rowId, targetEntityIri = '') => {
+    const key = buildEntityKey(className, rowId, targetEntityIri);
     return logCacheRef.current.get(key) || {
       error: '',
       items: [],
@@ -639,8 +631,12 @@ const EntityLogModal = ({
     };
   }, []);
 
-  const getEntityState = useCallback((className, rowId, seedEntity = null) => {
-    const key = buildEntityKey(className, rowId);
+  const getEntityState = useCallback((className, rowId, seedEntity = null, targetEntityIri = '') => {
+    const key = buildEntityKey(
+      className,
+      rowId,
+      targetEntityIri || seedEntity?.['@id'] || '',
+    );
     return entityCacheRef.current.get(key) || {
       error: '',
       item: seedEntity,
@@ -648,8 +644,8 @@ const EntityLogModal = ({
     };
   }, []);
 
-  const fetchLogs = useCallback(async ({ className, rowId }) => {
-    const key = buildEntityKey(className, rowId);
+  const fetchLogs = useCallback(async ({ className, rowId, entityIri: targetEntityIri = '' }) => {
+    const key = buildEntityKey(className, rowId, targetEntityIri);
     if (!key) {
       return;
     }
@@ -669,8 +665,9 @@ const EntityLogModal = ({
 
     try {
       const response = await entityLogActions.getTimeline({
+        ...(className ? { class: className } : {}),
+        ...(targetEntityIri ? { entity: targetEntityIri } : {}),
         itemsPerPage,
-        class: className,
         row: rowId,
       });
       const items = Array.isArray(response?.items) ? response.items : [];
@@ -700,7 +697,11 @@ const EntityLogModal = ({
     entity: seedEntity,
     entityIri: explicitEntityIri = '',
   }) => {
-    const key = buildEntityKey(className, rowId);
+    const key = buildEntityKey(
+      className,
+      rowId,
+      explicitEntityIri || seedEntity?.['@id'] || '',
+    );
     if (!key) {
       return;
     }
@@ -751,17 +752,6 @@ const EntityLogModal = ({
     }
   }, [entityLogActions]);
 
-  const focusBranch = useCallback(offset => {
-    if (!scrollRef.current || typeof scrollRef.current.scrollTo !== 'function') {
-      return;
-    }
-
-    scrollRef.current.scrollTo({
-      y: Math.max(0, Number(offset || 0)),
-      animated: true,
-    });
-  }, []);
-
   const resolvedEntityLabel = useMemo(
     () =>
       entityLabel ||
@@ -773,74 +763,33 @@ const EntityLogModal = ({
     [entity, entityClass, entityId, entityLabel],
   );
 
-  if (!visible || !entityClass || !entityId) {
+  if (!entityId || (!entityClass && !entityIri)) {
     return null;
   }
 
   return (
-    <Modal
-      transparent
-      animationType="slide"
-      visible={visible}
-      onRequestClose={onClose}
-      statusBarTranslucent
-      presentationStyle="overFullScreen">
-      <View style={styles.modalSheetRoot}>
-        <TouchableOpacity
-          activeOpacity={1}
-          style={styles.modalSheetBackdrop}
-          onPress={onClose}
-        />
-
-        <View style={styles.modalSheetWrap}>
-          <View style={[styles.modalCard, { paddingBottom: 14 + modalBottomInset }]}>
-            <View style={styles.header}>
-              <View>
-                <Text style={styles.eyebrow}>{title}</Text>
-                <Text style={styles.title}>{resolvedEntityLabel}</Text>
-                <Text style={styles.subtitle}>
-                  {entityClass?.split('\\').pop()} #{entityId}
-                </Text>
-              </View>
-
-              <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                <Icon name="close" size={22} color={palette.textSecondary} />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView
-              ref={scrollRef}
-              style={styles.scroll}
-              contentContainerStyle={[
-                styles.scrollContent,
-                { paddingBottom: 20 + modalBottomInset },
-              ]}
-              maintainVisibleContentPosition={{ minIndexForVisible: 0 }}
-              nestedScrollEnabled
-              showsVerticalScrollIndicator={false}>
-              <EntityLogBranch
-                autoLoad={visible}
-                entity={entity}
-                entityClass={entityClass}
-                entityId={entityId}
-                entityIri={entityIri}
-                entityLabel={resolvedEntityLabel}
-                fetchEntityDetails={fetchEntityDetails}
-                fetchLogs={fetchLogs}
-                getEntityState={getEntityState}
-                getLogsState={getLogsState}
-                onFocusBranch={focusBranch}
-                parentOffset={0}
-                relationConfig={relationConfig}
-                styles={styles}
-                trailKeys={[]}
-              />
-            </ScrollView>
-          </View>
-        </View>
-      </View>
-    </Modal>
+    <ScrollView
+      style={styles.scroll}
+      contentContainerStyle={styles.scrollContent}
+      nestedScrollEnabled
+      showsVerticalScrollIndicator={false}>
+      <EntityLogBranch
+        autoLoad
+        entity={entity}
+        entityClass={entityClass}
+        entityId={entityId}
+        entityIri={entityIri}
+        entityLabel={resolvedEntityLabel}
+        fetchEntityDetails={fetchEntityDetails}
+        fetchLogs={fetchLogs}
+        getEntityState={getEntityState}
+        getLogsState={getLogsState}
+        relationConfig={relationConfig}
+        styles={styles}
+        trailKeys={[]}
+      />
+    </ScrollView>
   );
 };
 
-export default EntityLogModal;
+export default EntityLogContent;
