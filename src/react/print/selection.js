@@ -8,6 +8,7 @@ import {
 import {
   filterDeviceConfigsByCompany,
   normalizeDeviceId,
+  normalizeDeviceIds,
 } from '@controleonline/ui-common/src/react/utils/paymentDevices';
 import {
   PRINT_CONTEXT_DEVICE,
@@ -16,6 +17,7 @@ import {
 
 export const DISPLAY_DEVICE_LINK_CONFIG_KEY = 'display-id';
 export const DISPLAY_DEVICE_PRINTER_CONFIG_KEY = 'printer';
+export const COMPANY_ORDER_PRINT_DEVICES_CONFIG_KEY = 'order-print-devices';
 
 const normalizeEntityId = value =>
   String(value || '')
@@ -104,6 +106,32 @@ export const resolveConfiguredPrinterValue = deviceConfig =>
     parseConfigsObject(deviceConfig?.configs)?.[DISPLAY_DEVICE_PRINTER_CONFIG_KEY],
   );
 
+export const resolveCompanyConfiguredPrinterValue = ({
+  companyConfigs = {},
+  printerOptions = [],
+  currentDeviceId = '',
+  runtimeDeviceType = '',
+}) => {
+  const configuredPrinterValues = normalizeDeviceIds(
+    parseConfigsObject(companyConfigs)?.[COMPANY_ORDER_PRINT_DEVICES_CONFIG_KEY],
+  );
+
+  for (const printerValue of configuredPrinterValues) {
+    const validatedPrinterValue = resolveValidatedPrinterValue({
+      printerValue,
+      printerOptions,
+      currentDeviceId,
+      runtimeDeviceType,
+    });
+
+    if (validatedPrinterValue) {
+      return validatedPrinterValue;
+    }
+  }
+
+  return '';
+};
+
 export const resolveValidatedPrinterValue = ({
   printerValue = '',
   printerOptions = [],
@@ -164,6 +192,7 @@ export const resolveAutoPrinterValue = ({
 export const resolvePrintSelectionValue = ({
   transientPrinterValue = '',
   configuredPrinterValue = '',
+  companyConfiguredPrinterValue = '',
   printerOptions = [],
   currentDeviceId = '',
   runtimeDeviceType = '',
@@ -180,6 +209,7 @@ export const resolvePrintSelectionValue = ({
     currentDeviceId,
     runtimeDeviceType,
   }) ||
+  normalizeDeviceId(companyConfiguredPrinterValue) ||
   resolveAutoPrinterValue({
     printerOptions,
     currentDeviceId,

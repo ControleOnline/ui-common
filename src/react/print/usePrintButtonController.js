@@ -2,9 +2,11 @@ import {useCallback, useEffect, useMemo, useRef} from 'react';
 import {useStore} from '@store';
 import {
   canDisplayChangePrinter,
+  parseConfigsObject,
 } from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
 import {isWebRuntimeDevice} from '@controleonline/ui-common/src/react/utils/deviceRuntime';
 import {
+  DISPLAY_DEVICE_TYPE,
   getDeviceTypeLabel,
   normalizeDeviceType,
 } from '@controleonline/ui-common/src/react/utils/printerDevices';
@@ -18,6 +20,7 @@ import {
   normalizePrintJob,
 } from '@controleonline/ui-common/src/react/print/jobs';
 import {
+  resolveCompanyConfiguredPrinterValue,
   resolveConfiguredPrinterValue,
   resolvePrintDeviceConfig,
   resolvePrintSelectionValue,
@@ -56,6 +59,7 @@ export const usePrintButtonController = ({
 } = {}) => {
   const currentStore = useStore(store || 'print');
   const peopleStore = useStore('people');
+  const configsStore = useStore('configs');
   const deviceStore = useStore('device');
   const deviceConfigStore = useStore('device_config');
   const printStore = useStore('print');
@@ -64,6 +68,7 @@ export const usePrintButtonController = ({
   const storeGetters = currentStore?.getters || {};
   const storeActions = currentStore?.actions || {};
   const {currentCompany} = peopleStore.getters;
+  const {items: companyConfigs} = configsStore.getters;
   const {item: currentDevice} = deviceStore.getters;
   const {item: runtimeDeviceConfig, items: companyDeviceConfigs = []} =
     deviceConfigStore.getters;
@@ -104,6 +109,14 @@ export const usePrintButtonController = ({
       }),
     [currentDevice, runtimeDeviceConfig],
   );
+  const effectiveCompanyConfigs = useMemo(() => {
+    const storedCompanyConfigs = parseConfigsObject(companyConfigs);
+    if (Object.keys(storedCompanyConfigs).length > 0) {
+      return storedCompanyConfigs;
+    }
+
+    return parseConfigsObject(currentCompany?.configs);
+  }, [companyConfigs, currentCompany?.configs]);
 
   const contextType = useMemo(() => {
     if (normalizedJob?.type === PRINT_JOB_TYPE_SPOOL) {
@@ -168,11 +181,21 @@ export const usePrintButtonController = ({
     () => resolveConfiguredPrinterValue(effectiveDeviceConfig),
     [effectiveDeviceConfig],
   );
+  const effectiveDeviceType = useMemo(
+    () =>
+      normalizeDeviceType(
+        effectiveDeviceConfig?.type ||
+          effectiveDeviceConfig?.device?.type ||
+          runtimeDeviceType,
+      ),
+    [effectiveDeviceConfig?.device?.type, effectiveDeviceConfig?.type, runtimeDeviceType],
+  );
   const allowDisplayPrinterChange = useMemo(
     () =>
       contextType !== PRINT_CONTEXT_DISPLAY ||
+      effectiveDeviceType !== DISPLAY_DEVICE_TYPE ||
       canDisplayChangePrinter(effectiveDeviceConfig?.configs),
-    [contextType, effectiveDeviceConfig?.configs],
+    [contextType, effectiveDeviceConfig?.configs, effectiveDeviceType],
   );
 
   const selectionKey = useMemo(
@@ -196,6 +219,21 @@ export const usePrintButtonController = ({
       }),
     [companyDeviceConfigs, currentCompany?.id, printers],
   );
+  const companyConfiguredPrinterValue = useMemo(
+    () =>
+      resolveCompanyConfiguredPrinterValue({
+        companyConfigs: effectiveCompanyConfigs,
+        printerOptions,
+        currentDeviceId,
+        runtimeDeviceType,
+      }),
+    [
+      currentDeviceId,
+      effectiveCompanyConfigs,
+      printerOptions,
+      runtimeDeviceType,
+    ],
+  );
   const selectedPrinterValue = useMemo(
     () =>
       resolvePrintSelectionValue({
@@ -203,11 +241,13 @@ export const usePrintButtonController = ({
           ? transientPrinterValue
           : '',
         configuredPrinterValue,
+        companyConfiguredPrinterValue,
         printerOptions,
         currentDeviceId,
         runtimeDeviceType,
       }),
     [
+      companyConfiguredPrinterValue,
       configuredPrinterValue,
       currentDeviceId,
       printerOptions,
