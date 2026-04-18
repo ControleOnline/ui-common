@@ -21,6 +21,7 @@ import {
   formatLogValue,
   resolveEntityImageUrl,
 } from '@controleonline/ui-common/src/react/utils/entityLog';
+import { resolveStoreConfigByEntity } from '@controleonline/ui-common/src/react/utils/storeColumns';
 import createStyles, {
   buildEntityLogPalette,
 } from './EntityLogModal.styles';
@@ -63,10 +64,22 @@ const resolvePayload = log => {
 };
 
 // O card de resumo mostra os dados essenciais da entidade expandida.
-const EntitySummaryCard = ({ detailState, entity, entityClass, styles }) => {
+const EntitySummaryCard = ({
+  columns = [],
+  detailState,
+  entity,
+  entityClass,
+  storeName = '',
+  styles,
+}) => {
   const summaryFields = useMemo(
-    () => buildEntitySummaryFields({ entity, className: entityClass }),
-    [entity, entityClass],
+    () => buildEntitySummaryFields({
+      entity,
+      className: entityClass,
+      columns,
+      storeName,
+    }),
+    [columns, entity, entityClass, storeName],
   );
   const imageUrl = useMemo(() => resolveEntityImageUrl(entity), [entity]);
 
@@ -138,11 +151,17 @@ const getActionMeta = action => ACTION_META[String(action || '').toLowerCase()] 
 const renderChangeValue = (styles, title, value) => (
   <View style={styles.changeValueBox}>
     {title ? <Text style={styles.changeValueTitle}>{title}</Text> : null}
-    <Text style={styles.changeValueText}>{formatLogValue(value)}</Text>
+    <Text style={styles.changeValueText}>{value}</Text>
   </View>
 );
 
-const LogCard = ({ log, styles }) => {
+const LogCard = ({
+  columns = [],
+  log,
+  rowContext = null,
+  storeName = '',
+  styles,
+}) => {
   const payload = useMemo(() => resolvePayload(log), [log]);
   const actionMeta = useMemo(() => getActionMeta(log?.action), [log?.action]);
   const entries = useMemo(() => Object.entries(payload || {}), [payload]);
@@ -187,21 +206,41 @@ const LogCard = ({ log, styles }) => {
 
           return (
             <View key={`${log?.id || 'log'}-${field}`} style={styles.changeRow}>
-              <Text style={styles.changeLabel}>{formatLogFieldLabel(field)}</Text>
+              <Text style={styles.changeLabel}>
+                {formatLogFieldLabel(field, {
+                  columns,
+                  storeName,
+                })}
+              </Text>
 
               {isDiffValue ? (
                 <View style={styles.changeValuesRow}>
-                  {renderChangeValue(styles, 'Antes', value[0])}
+                  {renderChangeValue(styles, 'Antes', formatLogValue(value[0], {
+                    columns,
+                    fieldName: field,
+                    row: rowContext,
+                    storeName,
+                  }))}
                   <View style={styles.arrowWrap}>
                     <Icon name="east" size={16} color="#94A3B8" />
                   </View>
-                  {renderChangeValue(styles, 'Depois', value[1])}
+                  {renderChangeValue(styles, 'Depois', formatLogValue(value[1], {
+                    columns,
+                    fieldName: field,
+                    row: rowContext,
+                    storeName,
+                  }))}
                 </View>
               ) : (
                 renderChangeValue(
                   styles,
                   '',
-                  value,
+                  formatLogValue(value, {
+                    columns,
+                    fieldName: field,
+                    row: rowContext,
+                    storeName,
+                  }),
                 )
               )}
             </View>
@@ -216,7 +255,6 @@ const LogCard = ({ log, styles }) => {
 
 const EntityLogBranch = ({
   autoLoad = true,
-  classMap,
   entity,
   entityClass,
   entityId,
@@ -258,6 +296,16 @@ const EntityLogBranch = ({
     };
   }, [detailState?.item, entity]);
   const isNestedBranch = trailKeys.length > 0;
+  const storeConfig = useMemo(
+    () =>
+      resolveStoreConfigByEntity({
+        entity: resolvedEntity,
+        entityIri,
+      }),
+    [entityIri, resolvedEntity],
+  );
+  const storeColumns = storeConfig?.columns || [];
+  const storeName = storeConfig?.storeName || '';
 
   const branchTitle = useMemo(
     () =>
@@ -274,10 +322,9 @@ const EntityLogBranch = ({
     () =>
       buildEntityChildren(resolvedEntity, {
         relationConfig,
-        classMap,
         ancestryKeys: [...trailKeys, branchKey],
       }),
-    [branchKey, classMap, resolvedEntity, relationConfig, trailKeys],
+    [branchKey, resolvedEntity, relationConfig, trailKeys],
   );
 
   useEffect(() => {
@@ -375,9 +422,11 @@ const EntityLogBranch = ({
 
       <View style={styles.branchBody}>
         <EntitySummaryCard
+          columns={storeColumns}
           detailState={detailState}
           entity={resolvedEntity}
           entityClass={entityClass}
+          storeName={storeName}
           styles={styles}
         />
 
@@ -445,7 +494,6 @@ const EntityLogBranch = ({
                                 }>
                                 <EntityLogBranch
                                   autoLoad
-                                  classMap={classMap}
                                   entity={item.entity}
                                   entityClass={item.className}
                                   entityId={item.id}
@@ -472,7 +520,6 @@ const EntityLogBranch = ({
                             }>
                             <EntityLogBranch
                               autoLoad
-                              classMap={classMap}
                               entity={item.entity}
                               entityClass={item.className}
                               entityId={item.id}
@@ -530,7 +577,14 @@ const EntityLogBranch = ({
           {logsState.status === 'success' && !!logsState.items.length ? (
             <View style={styles.logList}>
               {logsState.items.map(log => (
-                <LogCard key={log?.id || `${branchKey}-${log?.createdAt}`} log={log} styles={styles} />
+                <LogCard
+                  key={log?.id || `${branchKey}-${log?.createdAt}`}
+                  columns={storeColumns}
+                  log={log}
+                  rowContext={resolvedEntity}
+                  storeName={storeName}
+                  styles={styles}
+                />
               ))}
             </View>
           ) : null}
@@ -541,7 +595,6 @@ const EntityLogBranch = ({
 };
 
 const EntityLogModal = ({
-  classMap = {},
   entity = null,
   entityClass = '',
   entityId = null,
@@ -767,7 +820,6 @@ const EntityLogModal = ({
               showsVerticalScrollIndicator={false}>
               <EntityLogBranch
                 autoLoad={visible}
-                classMap={classMap}
                 entity={entity}
                 entityClass={entityClass}
                 entityId={entityId}

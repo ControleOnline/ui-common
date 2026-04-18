@@ -5,52 +5,10 @@ import {
   normalizeText,
 } from '@controleonline/ui-common/src/react/utils/entityDisplay';
 import { resolveFileImageUrl } from '@controleonline/ui-common/src/react/utils/fileUrl';
-
-const DEFAULT_RESOURCE_CLASS_MAP = {
-  address: 'ControleOnline\\Entity\\Address',
-  addresses: 'ControleOnline\\Entity\\Address',
-  card: 'ControleOnline\\Entity\\Card',
-  cards: 'ControleOnline\\Entity\\Card',
-  categories: 'ControleOnline\\Entity\\Category',
-  category: 'ControleOnline\\Entity\\Category',
-  contracts: 'ControleOnline\\Entity\\Contract',
-  contract: 'ControleOnline\\Entity\\Contract',
-  devices: 'ControleOnline\\Entity\\Device',
-  device: 'ControleOnline\\Entity\\Device',
-  display: 'ControleOnline\\Entity\\Display',
-  displays: 'ControleOnline\\Entity\\Display',
-  files: 'ControleOnline\\Entity\\File',
-  file: 'ControleOnline\\Entity\\File',
-  invoices: 'ControleOnline\\Entity\\Invoice',
-  invoice: 'ControleOnline\\Entity\\Invoice',
-  logs: 'ControleOnline\\Entity\\Log',
-  log: 'ControleOnline\\Entity\\Log',
-  order_invoice: 'ControleOnline\\Entity\\OrderInvoice',
-  order_invoices: 'ControleOnline\\Entity\\OrderInvoice',
-  order_invoice_tax: 'ControleOnline\\Entity\\OrderInvoiceTax',
-  order_invoice_taxes: 'ControleOnline\\Entity\\OrderInvoiceTax',
-  order_product: 'ControleOnline\\Entity\\OrderProduct',
-  order_products: 'ControleOnline\\Entity\\OrderProduct',
-  orders: 'ControleOnline\\Entity\\Order',
-  order: 'ControleOnline\\Entity\\Order',
-  payment_type: 'ControleOnline\\Entity\\PaymentType',
-  payment_types: 'ControleOnline\\Entity\\PaymentType',
-  people: 'ControleOnline\\Entity\\People',
-  people_link: 'ControleOnline\\Entity\\PeopleLink',
-  people_links: 'ControleOnline\\Entity\\PeopleLink',
-  product: 'ControleOnline\\Entity\\Product',
-  products: 'ControleOnline\\Entity\\Product',
-  product_group: 'ControleOnline\\Entity\\ProductGroup',
-  product_groups: 'ControleOnline\\Entity\\ProductGroup',
-  status: 'ControleOnline\\Entity\\Status',
-  statuses: 'ControleOnline\\Entity\\Status',
-  task: 'ControleOnline\\Entity\\Task',
-  tasks: 'ControleOnline\\Entity\\Task',
-  user: 'ControleOnline\\Entity\\User',
-  users: 'ControleOnline\\Entity\\User',
-  wallet: 'ControleOnline\\Entity\\Wallet',
-  wallets: 'ControleOnline\\Entity\\Wallet',
-};
+import {
+  formatStoreColumnLabel,
+  formatStoreColumnValue,
+} from '@controleonline/ui-common/src/react/utils/storeColumns';
 
 const IGNORED_KEYS = new Set([
   '@context',
@@ -84,67 +42,6 @@ export const extractEntityId = entity => {
   return null;
 };
 
-const singularizeResourceName = resourceName => {
-  const normalized = String(resourceName || '')
-    .trim()
-    .replace(/^\/+|\/+$/g, '');
-
-  if (!normalized) {
-    return '';
-  }
-
-  if (normalized.endsWith('ies')) {
-    return `${normalized.slice(0, -3)}y`;
-  }
-
-  if (normalized.endsWith('sses')) {
-    return normalized.slice(0, -2);
-  }
-
-  if (normalized.endsWith('ses')) {
-    return normalized.slice(0, -2);
-  }
-
-  if (normalized.endsWith('s') && !normalized.endsWith('ss')) {
-    return normalized.slice(0, -1);
-  }
-
-  return normalized;
-};
-
-const snakeToPascal = value =>
-  String(value || '')
-    .split(/[_-]+/)
-    .filter(Boolean)
-    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
-    .join('');
-
-export const resolveEntityClassFromIri = (iri, classMap = {}) => {
-  const normalizedIri = String(iri || '').trim();
-  if (!normalizedIri) {
-    return '';
-  }
-
-  const segments = normalizedIri.split('/').filter(Boolean);
-  if (segments.length < 2) {
-    return '';
-  }
-
-  const resourceName = segments[segments.length - 2];
-  const normalizedResourceName = singularizeResourceName(resourceName);
-  const combinedMap = {
-    ...DEFAULT_RESOURCE_CLASS_MAP,
-    ...classMap,
-  };
-
-  return (
-    combinedMap[resourceName] ||
-    combinedMap[normalizedResourceName] ||
-    (normalizedResourceName
-      ? `ControleOnline\\Entity\\${snakeToPascal(normalizedResourceName)}`
-      : '')
-  );
-};
 export const resolveEntityClassFromType = type => {
   const normalizedType = String(type || '').trim().replace(/^#/, '');
   if (!normalizedType) {
@@ -325,7 +222,7 @@ export const buildEntityLabel = ({
   return shortClassName || `#${id || '--'}`;
 };
 
-export const formatLogFieldLabel = fieldName =>
+const humanizeFieldLabel = fieldName =>
   formatHumanLabel(
     String(fieldName || '')
       .replace(/([a-z])([A-Z])/g, '$1 $2')
@@ -333,9 +230,51 @@ export const formatLogFieldLabel = fieldName =>
       .trim(),
   ) || 'Campo';
 
-export const formatLogValue = value => {
+const normalizeDisplayValue = value => {
+  if (typeof value === 'boolean') {
+    return value ? 'Sim' : 'Nao';
+  }
+
+  if (typeof value === 'number') {
+    return String(value);
+  }
+
+  if (typeof value === 'object' && value && !Array.isArray(value)) {
+    return buildEntityLabel({entity: value});
+  }
+
+  return String(value);
+};
+
+export const formatLogFieldLabel = (fieldName, options = {}) =>
+  formatStoreColumnLabel({
+    columns: options?.columns,
+    fallbackLabel: humanizeFieldLabel(fieldName),
+    fieldName,
+    storeName: options?.storeName,
+  }) || humanizeFieldLabel(fieldName);
+
+export const formatLogValue = (value, options = {}) => {
   if (value === null || value === undefined || value === '') {
     return '—';
+  }
+
+  if (options?.fieldName && !Array.isArray(value)) {
+    const formattedColumnValue = formatStoreColumnValue({
+      columns: options?.columns,
+      fieldName: options.fieldName,
+      row: options?.row,
+      storeName: options?.storeName,
+      value,
+    });
+
+    if (
+      formattedColumnValue !== undefined &&
+      formattedColumnValue !== null &&
+      formattedColumnValue !== ''
+    ) {
+      return normalizeDisplayValue(formattedColumnValue);
+    }
   }
 
   if (typeof value === 'boolean') {
@@ -371,17 +310,13 @@ export const formatLogValue = value => {
     return buildEntityLabel({ entity: value });
   }
 
-  return String(value);
+  return normalizeDisplayValue(value);
 };
 
-const appendSummaryField = (fields, label, rawValue, options = {}) => {
-  if (rawValue === null || rawValue === undefined || rawValue === '') {
+const pushSummaryField = (fields, label, formattedValue) => {
+  if (formattedValue === null || formattedValue === undefined || formattedValue === '') {
     return;
   }
-
-  const formattedValue = options.money
-    ? Formatter.formatMoney(normalizeNumericValue(rawValue) || 0)
-    : formatLogValue(rawValue);
 
   if (!formattedValue || formattedValue === '—') {
     return;
@@ -398,13 +333,97 @@ const appendSummaryField = (fields, label, rawValue, options = {}) => {
   });
 };
 
-export const buildEntitySummaryFields = ({ entity, className }) => {
+const appendSummaryField = (fields, label, rawValue, options = {}) => {
+  if (rawValue === null || rawValue === undefined || rawValue === '') {
+    return;
+  }
+
+  const formattedValue = options.money
+    ? Formatter.formatMoney(normalizeNumericValue(rawValue) || 0)
+    : formatLogValue(rawValue);
+
+  pushSummaryField(fields, label, formattedValue);
+};
+
+const resolveFieldValue = (entity, fieldName) => {
+  if (!entity || typeof entity !== 'object' || !fieldName) {
+    return undefined;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(entity, fieldName)) {
+    return entity[fieldName];
+  }
+
+  if (!String(fieldName).includes('.')) {
+    return undefined;
+  }
+
+  return String(fieldName)
+    .split('.')
+    .filter(Boolean)
+    .reduce((currentValue, part) => {
+      if (!currentValue || typeof currentValue !== 'object') {
+        return undefined;
+      }
+
+      return currentValue[part];
+    }, entity);
+};
+
+export const buildEntitySummaryFields = ({
+  entity,
+  className,
+  columns = [],
+  storeName = '',
+}) => {
   if (!entity || typeof entity !== 'object') {
     return [];
   }
 
   const fields = [];
   const shortClassName = getShortClassName(className);
+  const safeColumns = Array.isArray(columns) ? columns.filter(Boolean) : [];
+
+  safeColumns.forEach(column => {
+    if (fields.length >= 6) {
+      return;
+    }
+
+    const fieldName = column?.key || column?.name;
+    if (
+      !fieldName ||
+      IGNORED_KEYS.has(fieldName) ||
+      fieldName === 'id' ||
+      fieldName === 'extraData'
+    ) {
+      return;
+    }
+
+    const rawValue = resolveFieldValue(entity, fieldName);
+    if (rawValue === null || rawValue === undefined || rawValue === '') {
+      return;
+    }
+
+    const formattedValue = formatLogValue(rawValue, {
+      columns: safeColumns,
+      fieldName,
+      row: entity,
+      storeName,
+    });
+
+    pushSummaryField(
+      fields,
+      formatLogFieldLabel(fieldName, {
+        columns: safeColumns,
+        storeName,
+      }),
+      formattedValue,
+    );
+  });
+
+  if (fields.length) {
+    return fields.slice(0, 6);
+  }
 
   if (shortClassName === 'Product') {
     appendSummaryField(fields, 'Produto', entity?.product || entity?.name);
@@ -486,14 +505,12 @@ const buildRelationItemCandidate = ({
   entity,
   className,
   fallbackLabel,
-  classMap,
   iri,
 }) => {
   const id = extractEntityId(entity);
   const resolvedClassName =
     className ||
     resolveEntityClassFromType(entity?.['@type']) ||
-    resolveEntityClassFromIri(entity?.['@id'], classMap) ||
     '';
 
   if (!id || !resolvedClassName) {
@@ -525,7 +542,6 @@ export const buildEntityChildren = (
   entity,
   {
     relationConfig = {},
-    classMap = {},
     ancestryKeys = [],
   } = {},
 ) => {
@@ -551,7 +567,6 @@ export const buildEntityChildren = (
           entity: item,
           className: config?.className,
           fallbackLabel: config?.itemLabel || config?.label || formatLogFieldLabel(key),
-          classMap,
           iri: typeof config?.buildIri === 'function' ? config.buildIri(item) : config?.iri,
         }),
       )
@@ -587,7 +602,6 @@ export const buildEntityChildren = (
           buildRelationItemCandidate({
             entity: item,
             fallbackLabel: formatLogFieldLabel(key),
-            classMap,
             iri: item?.['@id'],
           }),
         )
@@ -614,7 +628,6 @@ export const buildEntityChildren = (
     const item = buildRelationItemCandidate({
       entity: value,
       fallbackLabel: formatLogFieldLabel(key),
-      classMap,
       iri: value?.['@id'],
     });
 
