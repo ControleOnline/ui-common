@@ -251,10 +251,10 @@ const EntityLogBranch = ({
       return detailState.item;
     }
 
-    // Mantem campos locais do objeto atual, mas completa com o detalhe remoto.
+    // Mantem o seed local, mas o detalhe remoto prevalece quando trouxer mais dados.
     return {
-      ...detailState.item,
       ...entity,
+      ...detailState.item,
     };
   }, [detailState?.item, entity]);
   const isNestedBranch = trailKeys.length > 0;
