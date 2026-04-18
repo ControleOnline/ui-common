@@ -137,7 +137,7 @@ const getActionMeta = action => ACTION_META[String(action || '').toLowerCase()] 
 
 const renderChangeValue = (styles, title, value) => (
   <View style={styles.changeValueBox}>
-    <Text style={styles.changeValueTitle}>{title}</Text>
+    {title ? <Text style={styles.changeValueTitle}>{title}</Text> : null}
     <Text style={styles.changeValueText}>{formatLogValue(value)}</Text>
   </View>
 );
@@ -200,7 +200,7 @@ const LogCard = ({ log, styles }) => {
               ) : (
                 renderChangeValue(
                   styles,
-                  log?.action === 'delete' ? 'Valor removido' : 'Valor',
+                  '',
                   value,
                 )
               )}

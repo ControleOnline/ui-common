@@ -1,11 +1,10 @@
-import { env as APP_ENV } from '@env';
 import Formatter from '@controleonline/ui-common/src/utils/formatter';
 import {
   buildAddressOptionSummary,
   formatHumanLabel,
   normalizeText,
 } from '@controleonline/ui-common/src/react/utils/entityDisplay';
-import { buildAssetUrl } from '@controleonline/../../src/styles/branding';
+import { resolveFileImageUrl } from '@controleonline/ui-common/src/react/utils/fileUrl';
 
 const DEFAULT_RESOURCE_CLASS_MAP = {
   address: 'ControleOnline\\Entity\\Address',
@@ -62,13 +61,6 @@ const IGNORED_KEYS = new Set([
 
 const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}(?:[ T]\d{2}:\d{2}(?::\d{2})?)?/;
 const MONEY_FIELD_PATTERN = /(?:^|_)(?:price|total|amount|value|cost|fee|discount)(?:$|_)/i;
-
-const resolveAppHost = () =>
-  String(
-    (typeof globalThis !== 'undefined' && globalThis.location?.host) ||
-      APP_ENV?.DOMAIN ||
-      '',
-  ).trim();
 
 export const extractEntityId = entity => {
   if (!entity) return null;
@@ -195,24 +187,6 @@ const normalizeNumericValue = value => {
 
   const normalized = parseFloat(String(value).replace(/\./g, '').replace(',', '.'));
   return Number.isFinite(normalized) ? normalized : null;
-};
-
-const resolveFileDownloadUrl = value => {
-  const directAssetUrl = buildAssetUrl(value);
-  if (directAssetUrl) {
-    return directAssetUrl;
-  }
-
-  const fileId = extractEntityId(value);
-  if (!fileId) {
-    return '';
-  }
-
-  const appHost = resolveAppHost();
-  const apiEntryPoint = String(APP_ENV?.API_ENTRYPOINT || '').replace(/\/$/, '');
-  const relativeUrl = `/files/${fileId}/download?app-domain=${encodeURIComponent(appHost)}`;
-
-  return apiEntryPoint ? `${apiEntryPoint}${relativeUrl}` : relativeUrl;
 };
 
 const isImageFile = fileEntity =>
@@ -487,7 +461,7 @@ export const buildEntitySummaryFields = ({ entity, className }) => {
 
 export const resolveEntityImageUrl = entity => {
   const fileEntity = resolveEntityFileCandidate(entity);
-  return resolveFileDownloadUrl(fileEntity);
+  return resolveFileImageUrl(fileEntity);
 };
 
 const resolveRelationItems = (entity, key, config = {}) => {
