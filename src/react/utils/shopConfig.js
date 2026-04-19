@@ -16,6 +16,7 @@ const parseJsonValue = (value, fallback) => {
 
 export const SHOP_HOME_OPTION_SALES = 'sales';
 export const SHOP_HOME_OPTION_FRANCHISE_LOCATOR = 'franchise-locator';
+export const SHOP_HOME_OPTION_LOYALTY = 'loyalty';
 
 export const SHOP_SALES_PAGE_ENABLED_CONFIG_KEY = 'shop-sales-page-enabled';
 export const SHOP_FRANCHISE_LOCATOR_ENABLED_CONFIG_KEY =
@@ -117,6 +118,7 @@ export const normalizeShopLoyaltyRequiredSales = (value, fallback = 0) => {
 export const getEnabledShopHomeOptions = ({
   salesPageEnabled,
   franchiseLocatorEnabled,
+  loyaltyCouponsEnabled,
 }) => {
   const enabledOptions = [];
 
@@ -126,6 +128,10 @@ export const getEnabledShopHomeOptions = ({
 
   if (franchiseLocatorEnabled) {
     enabledOptions.push(SHOP_HOME_OPTION_FRANCHISE_LOCATOR);
+  }
+
+  if (loyaltyCouponsEnabled) {
+    enabledOptions.push(SHOP_HOME_OPTION_LOYALTY);
   }
 
   return enabledOptions;
@@ -161,17 +167,25 @@ export const resolveShopSettings = configs => {
   const enabledHomeOptions = getEnabledShopHomeOptions({
     salesPageEnabled,
     franchiseLocatorEnabled,
+    loyaltyCouponsEnabled: normalizeBooleanConfig(
+      configMap[SHOP_LOYALTY_COUPONS_ENABLED_CONFIG_KEY],
+    ),
   });
+  const loyaltyCouponsEnabled = normalizeBooleanConfig(
+    configMap[SHOP_LOYALTY_COUPONS_ENABLED_CONFIG_KEY],
+  );
 
   return {
     salesPageEnabled,
     franchiseLocatorEnabled,
+    loyaltyCouponsEnabled,
     enabledHomeOptions,
     primaryEntry: normalizeShopPrimaryEntry(
       configMap[SHOP_PRIMARY_ENTRY_CONFIG_KEY],
       {
         salesPageEnabled,
         franchiseLocatorEnabled,
+        loyaltyCouponsEnabled,
       },
     ),
     bottomBarEnabled: normalizeBooleanConfig(
@@ -182,9 +196,6 @@ export const resolveShopSettings = configs => {
     ),
     visibleFranchiseAddressIds: normalizeShopEntityIds(
       configMap[SHOP_FRANCHISE_VISIBLE_ADDRESS_IDS_CONFIG_KEY],
-    ),
-    loyaltyCouponsEnabled: normalizeBooleanConfig(
-      configMap[SHOP_LOYALTY_COUPONS_ENABLED_CONFIG_KEY],
     ),
     loyaltyProductIds: normalizeShopEntityIds(
       configMap[SHOP_LOYALTY_PRODUCT_IDS_CONFIG_KEY],
