@@ -5,7 +5,7 @@ import {
 } from '@controleonline/ui-common/src/react/utils/commercialDocumentOrders';
 import {normalizeShopEntityId} from '@controleonline/ui-common/src/react/utils/shopConfig';
 
-export const SHOP_FRANCHISE_LINK_TYPES = ['franchisee', 'franchise'];
+export const SHOP_FRANCHISE_LINK_TYPE = 'franchisee';
 
 const sortByLabel = (left, right) =>
   String(left || '')
@@ -28,7 +28,7 @@ export const fetchShopFranchiseCompanies = async ({
 
   const params = {
     'link.company': toEntityIri(companyId, 'people'),
-    'link.linkType': SHOP_FRANCHISE_LINK_TYPES,
+    'link.linkType': SHOP_FRANCHISE_LINK_TYPE,
     itemsPerPage,
   };
 
