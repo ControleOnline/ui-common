@@ -102,16 +102,16 @@ const ipCameraProfile = {
   registrationSectionTitle: 'Cadastro da camera IP',
   detailAliasPlaceholder: 'Nome da camera IP',
   registrationAlertTitle: 'Cadastro da camera IP',
-  routingSectionTitle: 'Roteamento da camera',
+  routingSectionTitle: 'Acesso da camera',
   routingSectionDescription:
-    'Aqui voce define qual PDV ou DISPLAY local fica responsavel por acompanhar e acessar a camera IP na rede.',
-  routingAlertTitle: 'Configuracao da camera IP',
+    'Informe como acessar o stream da camera e qual PDV ou DISPLAY local fica responsavel por acompanhar essa conexao.',
+  routingAlertTitle: 'Acesso da camera IP',
   hostMissingBeforeSaveMessage:
     'Informe o IP ou hostname da camera IP antes de salvar.',
   managerRoutingMessage:
     'Selecione qual PDV ou DISPLAY acompanha esta camera IP.',
   saveBeforeRoutingMessage:
-    'Salve primeiro o cadastro da camera IP para aplicar o novo IP antes do roteamento.',
+    'Salve primeiro o cadastro da camera IP antes de configurar o acesso.',
   footerDebugDescription:
     'Controla se esta camera IP mostra apenas a bolinha discreta do socket no rodape global ou se abre as linhas detalhadas de debug.',
   removeSectionTitle: 'Remover cadastro de rede',
