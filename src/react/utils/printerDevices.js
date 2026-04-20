@@ -1,6 +1,7 @@
 import {parseConfigsObject} from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
 import {
   filterDeviceConfigsByCompany,
+  isPdvPrinterEnabled,
   normalizeDeviceId,
 } from '@controleonline/ui-common/src/react/utils/paymentDevices';
 
@@ -97,6 +98,20 @@ export const isPrintCapableDeviceType = type =>
   [PRINT_DEVICE_TYPE, PRINTER_DEVICE_TYPE, PDV_DEVICE_TYPE].includes(
     normalizeDeviceType(type),
   );
+
+export const isPrintCapableDeviceConfig = deviceConfig => {
+  const deviceType = getDeviceConfigType(deviceConfig);
+
+  if (!isPrintCapableDeviceType(deviceType)) {
+    return false;
+  }
+
+  if (normalizeDeviceType(deviceType) !== PDV_DEVICE_TYPE) {
+    return true;
+  }
+
+  return isPdvPrinterEnabled(deviceConfig);
+};
 
 export const isPrinterDeviceType = isNetworkPrinterDeviceType;
 
@@ -285,7 +300,7 @@ export const getPrinterOptions = ({
   };
 
   filterDeviceConfigsByCompany(deviceConfigs, companyId)
-    .filter(deviceConfig => isPrintCapableDeviceType(getDeviceConfigType(deviceConfig)))
+    .filter(isPrintCapableDeviceConfig)
     .forEach(deviceConfig => {
       const deviceId = normalizeDeviceId(
         deviceConfig?.device?.device || deviceConfig?.device?.id,

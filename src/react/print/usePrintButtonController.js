@@ -223,12 +223,14 @@ export const usePrintButtonController = ({
     () =>
       resolveCompanyConfiguredPrinterValue({
         companyConfigs: effectiveCompanyConfigs,
+        currentDeviceConfig: effectiveDeviceConfig,
         printerOptions,
         currentDeviceId,
         runtimeDeviceType,
       }),
     [
       currentDeviceId,
+      effectiveDeviceConfig,
       effectiveCompanyConfigs,
       printerOptions,
       runtimeDeviceType,
@@ -242,6 +244,7 @@ export const usePrintButtonController = ({
           : '',
         configuredPrinterValue,
         companyConfiguredPrinterValue,
+        currentDeviceConfig: effectiveDeviceConfig,
         printerOptions,
         currentDeviceId,
         runtimeDeviceType,
@@ -250,6 +253,7 @@ export const usePrintButtonController = ({
       companyConfiguredPrinterValue,
       configuredPrinterValue,
       currentDeviceId,
+      effectiveDeviceConfig,
       printerOptions,
       runtimeDeviceType,
       transientPrinterValue,
@@ -260,12 +264,19 @@ export const usePrintButtonController = ({
   const selectedPrinter = useMemo(
     () =>
       resolveSelectedPrinter({
+        currentDeviceConfig: effectiveDeviceConfig,
         printerOptions,
         selectedPrinterValue,
         currentDevice,
         runtimeDeviceType,
       }),
-    [currentDevice, printerOptions, runtimeDeviceType, selectedPrinterValue],
+    [
+      currentDevice,
+      effectiveDeviceConfig,
+      printerOptions,
+      runtimeDeviceType,
+      selectedPrinterValue,
+    ],
   );
 
   const requestKey = useMemo(

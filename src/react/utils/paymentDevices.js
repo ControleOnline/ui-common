@@ -1,8 +1,17 @@
 import {Platform} from 'react-native';
 
-export const PAYMENT_GATEWAYS = ['cielo', 'infinite-pay'];
+export const PAYMENT_GATEWAY_CIELO = 'cielo';
+export const PAYMENT_GATEWAY_INFINITE_PAY = 'infinite-pay';
+export const PAYMENT_GATEWAYS = [
+  PAYMENT_GATEWAY_CIELO,
+  PAYMENT_GATEWAY_INFINITE_PAY,
+];
+export const POS_GATEWAY_CONFIG_KEY = 'pos-gateway';
+export const PDV_PRINTER_ENABLED_CONFIG_KEY = 'printer-enabled';
 export const ORDER_PAYMENT_DEVICES_CONFIG_KEY = 'order-payment-devices';
 export const ORDER_PAYMENT_DEVICE_CONFIG_KEY = 'order-payment-device';
+export const ORDER_CHARGE_ON_DELIVERY_ENABLED_CONFIG_KEY =
+  'order-charge-on-delivery-enabled';
 
 const parseJsonValue = (value, fallback) => {
   if (value === null || value === undefined || value === '') {
@@ -12,7 +21,7 @@ const parseJsonValue = (value, fallback) => {
   if (typeof value === 'string') {
     try {
       return JSON.parse(value);
-    } catch (e) {
+    } catch {
       return fallback;
     }
   }
@@ -46,7 +55,7 @@ const parseConfigsObject = value => {
     try {
       const parsed = JSON.parse(value);
       return parsed && typeof parsed === 'object' ? parsed : {};
-    } catch (e) {
+    } catch {
       return {};
     }
   }
@@ -54,7 +63,20 @@ const parseConfigsObject = value => {
   return typeof value === 'object' ? value : {};
 };
 
-const normalizeGatewayValue = value => {
+const resolveConfigsSource = value => {
+  if (
+    value &&
+    typeof value === 'object' &&
+    !Array.isArray(value) &&
+    Object.prototype.hasOwnProperty.call(value, 'configs')
+  ) {
+    return value.configs;
+  }
+
+  return value;
+};
+
+export const normalizePaymentGateway = value => {
   const rawGateway = String(value || '')
     .trim()
     .toLowerCase();
@@ -65,17 +87,20 @@ const normalizeGatewayValue = value => {
 
   const compactGateway = rawGateway.replace(/[\s_]/g, '-');
   if (compactGateway === 'infinitepay') {
-    return 'infinite-pay';
+    return PAYMENT_GATEWAY_INFINITE_PAY;
   }
-  if (compactGateway === 'infinite-pay') {
-    return 'infinite-pay';
+  if (compactGateway === PAYMENT_GATEWAY_INFINITE_PAY) {
+    return PAYMENT_GATEWAY_INFINITE_PAY;
   }
-  if (compactGateway === 'cielo') {
-    return 'cielo';
+  if (compactGateway === PAYMENT_GATEWAY_CIELO) {
+    return PAYMENT_GATEWAY_CIELO;
   }
 
   return compactGateway;
 };
+
+const isTruthyValue = value =>
+  value === true || value === '1' || value === 1 || value === 'true';
 
 const resolveDeviceConfigDevice = deviceConfig => {
   const nestedDevice = deviceConfig?.device;
@@ -106,10 +131,35 @@ export const filterDeviceConfigsByCompany = (deviceConfigs, companyId) => {
   );
 };
 
-export const getPaymentGateway = deviceConfig => {
-  const configs = parseConfigsObject(deviceConfig?.configs);
-  return normalizeGatewayValue(configs?.['pos-gateway']);
+export const getPaymentGatewayFromConfigs = configs =>
+  normalizePaymentGateway(
+    parseConfigsObject(resolveConfigsSource(configs))?.[POS_GATEWAY_CONFIG_KEY],
+  );
+
+export const getPaymentGateway = deviceConfig =>
+  getPaymentGatewayFromConfigs(deviceConfig);
+
+export const isPdvPrinterEnabled = configs => {
+  const parsedConfigs = parseConfigsObject(resolveConfigsSource(configs));
+  const printerEnabled = parsedConfigs?.[PDV_PRINTER_ENABLED_CONFIG_KEY];
+
+  if (
+    printerEnabled === undefined ||
+    printerEnabled === null ||
+    printerEnabled === ''
+  ) {
+    return true;
+  }
+
+  return isTruthyValue(printerEnabled);
 };
+
+export const isOrderChargeOnDeliveryEnabled = configs =>
+  isTruthyValue(
+    parseConfigsObject(resolveConfigsSource(configs))?.[
+      ORDER_CHARGE_ON_DELIVERY_ENABLED_CONFIG_KEY
+    ],
+  );
 
 export const isPaymentGateway = gateway => PAYMENT_GATEWAYS.includes(gateway);
 
@@ -123,8 +173,8 @@ export const getPaymentDeviceLabel = deviceConfig =>
   'Device sem nome';
 
 export const getPaymentGatewayLabel = gateway => {
-  if (gateway === 'cielo') return 'Cielo';
-  if (gateway === 'infinite-pay') return 'Infinite Pay';
+  if (gateway === PAYMENT_GATEWAY_CIELO) return 'Cielo';
+  if (gateway === PAYMENT_GATEWAY_INFINITE_PAY) return 'Infinite Pay';
   return 'Gateway nao configurado';
 };
 

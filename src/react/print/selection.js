@@ -7,6 +7,7 @@ import {
 } from '@controleonline/ui-common/src/react/utils/printerDevices';
 import {
   filterDeviceConfigsByCompany,
+  isPdvPrinterEnabled,
   normalizeDeviceId,
   normalizeDeviceIds,
 } from '@controleonline/ui-common/src/react/utils/paymentDevices';
@@ -33,6 +34,15 @@ const normalizePrinterRuntimeType = value =>
   String(value || '')
     .trim()
     .toUpperCase();
+
+const canUseCurrentPdvAsPrinter = ({
+  currentDeviceConfig = null,
+  currentDeviceId = '',
+  runtimeDeviceType = '',
+}) =>
+  normalizePrinterRuntimeType(runtimeDeviceType) === PDV_DEVICE_TYPE &&
+  normalizeDeviceId(currentDeviceId) !== '' &&
+  isPdvPrinterEnabled(currentDeviceConfig);
 
 export const resolveDisplayDeviceConfig = ({
   deviceConfigs = [],
@@ -108,6 +118,7 @@ export const resolveConfiguredPrinterValue = deviceConfig =>
 
 export const resolveCompanyConfiguredPrinterValue = ({
   companyConfigs = {},
+  currentDeviceConfig = null,
   printerOptions = [],
   currentDeviceId = '',
   runtimeDeviceType = '',
@@ -119,6 +130,7 @@ export const resolveCompanyConfiguredPrinterValue = ({
   for (const printerValue of configuredPrinterValues) {
     const validatedPrinterValue = resolveValidatedPrinterValue({
       printerValue,
+      currentDeviceConfig,
       printerOptions,
       currentDeviceId,
       runtimeDeviceType,
@@ -134,6 +146,7 @@ export const resolveCompanyConfiguredPrinterValue = ({
 
 export const resolveValidatedPrinterValue = ({
   printerValue = '',
+  currentDeviceConfig = null,
   printerOptions = [],
   currentDeviceId = '',
   runtimeDeviceType = '',
@@ -154,7 +167,11 @@ export const resolveValidatedPrinterValue = ({
   }
 
   if (
-    normalizePrinterRuntimeType(runtimeDeviceType) === PDV_DEVICE_TYPE &&
+    canUseCurrentPdvAsPrinter({
+      currentDeviceConfig,
+      currentDeviceId,
+      runtimeDeviceType,
+    }) &&
     normalizedPrinterValue === normalizeDeviceId(currentDeviceId)
   ) {
     return normalizedPrinterValue;
@@ -193,18 +210,21 @@ export const resolvePrintSelectionValue = ({
   transientPrinterValue = '',
   configuredPrinterValue = '',
   companyConfiguredPrinterValue = '',
+  currentDeviceConfig = null,
   printerOptions = [],
   currentDeviceId = '',
   runtimeDeviceType = '',
 }) =>
   resolveValidatedPrinterValue({
     printerValue: transientPrinterValue,
+    currentDeviceConfig,
     printerOptions,
     currentDeviceId,
     runtimeDeviceType,
   }) ||
   resolveValidatedPrinterValue({
     printerValue: configuredPrinterValue,
+    currentDeviceConfig,
     printerOptions,
     currentDeviceId,
     runtimeDeviceType,
@@ -228,6 +248,7 @@ export const resolvePrinterOptions = ({
   });
 
 export const resolveSelectedPrinter = ({
+  currentDeviceConfig = null,
   printerOptions = [],
   selectedPrinterValue = '',
   currentDevice = null,
@@ -248,6 +269,16 @@ export const resolveSelectedPrinter = ({
   }
 
   if (normalizeDeviceId(selectedPrinterValue) !== currentDeviceId) {
+    return null;
+  }
+
+  if (
+    !canUseCurrentPdvAsPrinter({
+      currentDeviceConfig,
+      currentDeviceId,
+      runtimeDeviceType,
+    })
+  ) {
     return null;
   }
 
