@@ -6,6 +6,7 @@ import {
 
 export const PRINT_DEVICE_TYPE = 'PRINT';
 export const PRINTER_DEVICE_TYPE = 'PRINTER';
+export const IP_CAMERA_DEVICE_TYPE = 'IP_CAMERA';
 export const DISPLAY_DEVICE_TYPE = 'DISPLAY';
 export const PDV_DEVICE_TYPE = 'PDV';
 
@@ -33,7 +34,7 @@ const parseMetadataObject = metadata => {
     try {
       const parsed = JSON.parse(metadata);
       return parsed && typeof parsed === 'object' ? parsed : {};
-    } catch (e) {
+    } catch {
       return {};
     }
   }
@@ -87,6 +88,11 @@ export const findPrinterOptionByValue = (printerOptions = [], value = '') => {
 export const isNetworkPrinterDeviceType = type =>
   [PRINT_DEVICE_TYPE, PRINTER_DEVICE_TYPE].includes(normalizeDeviceType(type));
 
+export const isManagedNetworkDeviceType = type =>
+  [PRINT_DEVICE_TYPE, PRINTER_DEVICE_TYPE, IP_CAMERA_DEVICE_TYPE].includes(
+    normalizeDeviceType(type),
+  );
+
 export const isPrintCapableDeviceType = type =>
   [PRINT_DEVICE_TYPE, PRINTER_DEVICE_TYPE, PDV_DEVICE_TYPE].includes(
     normalizeDeviceType(type),
@@ -99,6 +105,10 @@ export const getDeviceTypeLabel = type => {
 
   if (isPrinterDeviceType(normalizedType)) {
     return 'Impressora';
+  }
+
+  if (normalizedType === IP_CAMERA_DEVICE_TYPE) {
+    return 'Camera IP';
   }
 
   return normalizedType || 'DEVICE';
