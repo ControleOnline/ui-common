@@ -7,7 +7,7 @@ const parseJsonValue = (value, fallback) => {
     try {
       return JSON.parse(value);
     } catch {
-      return fallback;
+      return value;
     }
   }
 
@@ -23,6 +23,10 @@ export const SHOP_FRANCHISE_LOCATOR_ENABLED_CONFIG_KEY =
   'shop-franchise-locator-enabled';
 export const SHOP_PRIMARY_ENTRY_CONFIG_KEY = 'shop-primary-entry';
 export const SHOP_BOTTOM_BAR_ENABLED_CONFIG_KEY = 'shop-bottom-bar-enabled';
+export const SHOP_GOOGLE_MAPS_API_KEY_CONFIG_KEY =
+  'shop-google-maps-api-key';
+export const SHOP_FRANCHISE_PIN_ICON_URL_CONFIG_KEY =
+  'shop-franchise-pin-icon-url';
 export const SHOP_FRANCHISE_VISIBLE_COMPANY_IDS_CONFIG_KEY =
   'shop-franchise-visible-company-ids';
 export const SHOP_FRANCHISE_VISIBLE_ADDRESS_IDS_CONFIG_KEY =
@@ -49,6 +53,16 @@ export const normalizeShopEntityId = value => {
 };
 
 export const normalizeShopProductId = value => normalizeShopEntityId(value);
+
+export const normalizeShopTextConfig = (value, fallback = '') => {
+  const parsed = parseJsonValue(value, fallback);
+
+  if (parsed === null || parsed === undefined) {
+    return fallback;
+  }
+
+  return String(parsed).trim();
+};
 
 export const normalizeBooleanConfig = (value, fallback = false) => {
   if (value === null || value === undefined || value === '') {
@@ -190,6 +204,12 @@ export const resolveShopSettings = configs => {
     ),
     bottomBarEnabled: normalizeBooleanConfig(
       configMap[SHOP_BOTTOM_BAR_ENABLED_CONFIG_KEY],
+    ),
+    googleMapsApiKey: normalizeShopTextConfig(
+      configMap[SHOP_GOOGLE_MAPS_API_KEY_CONFIG_KEY],
+    ),
+    franchisePinIconUrl: normalizeShopTextConfig(
+      configMap[SHOP_FRANCHISE_PIN_ICON_URL_CONFIG_KEY],
     ),
     visibleFranchiseCompanyIds: normalizeShopEntityIds(
       configMap[SHOP_FRANCHISE_VISIBLE_COMPANY_IDS_CONFIG_KEY],
