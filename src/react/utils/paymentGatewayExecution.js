@@ -1,5 +1,5 @@
-import CieloService from '@controleonline/ui-orders/src/react/services/Cielo/Cielo';
-import InfinitePayService from '@controleonline/ui-orders/src/react/services/InfinitePay/InfinitePay';
+import {runCieloCheckoutPayment} from '@controleonline/ui-orders/src/react/services/Cielo/Checkout';
+import {runInfinitePayCheckoutPayment} from '@controleonline/ui-orders/src/react/services/InfinitePay/Checkout';
 
 import {
   PAYMENT_GATEWAY_CIELO,
@@ -34,17 +34,6 @@ export const normalizeGatewayPaymentError = (
   }
 };
 
-export const formatGatewayOrderProducts = orderProducts =>
-  (Array.isArray(orderProducts) ? orderProducts : []).map(orderProduct => ({
-    name: orderProduct?.product?.product,
-    quantity: orderProduct?.quantity,
-    sku:
-      orderProduct?.product?.sku ||
-      String(orderProduct?.product?.['@id'] || '').replace(/\D/g, ''),
-    unitOfMeasure: 'unidade',
-    unitPrice: Math.round(Number(orderProduct?.price || 0) * 100).toString(),
-  }));
-
 export const runConfiguredGatewayPayment = async ({
   gateway = '',
   installments = null,
@@ -64,39 +53,36 @@ export const runConfiguredGatewayPayment = async ({
   }
 
   if (gateway === PAYMENT_GATEWAY_CIELO) {
-    const response = await new CieloService().payment(
-      payment.paymentCode,
-      formatGatewayOrderProducts(orderProducts),
-      Math.round(resolvedTotal * 100).toString(),
-    );
+    const {response, paidAmount} = await runCieloCheckoutPayment({
+      orderProducts,
+      payment,
+      total: resolvedTotal,
+    });
 
     if (!response?.success) {
       throw new Error(normalizeGatewayPaymentError(response?.result));
     }
 
     return {
-      paidAmount: resolvedTotal,
+      paidAmount,
       response,
     };
   }
 
   if (gateway === PAYMENT_GATEWAY_INFINITE_PAY) {
-    const response = await new InfinitePayService().payment(
-      payment.paymentCode,
-      installments || payment.installments || 1,
-      order?.['@id'] || order?.id || '',
-      Math.round(resolvedTotal * 100).toString(),
-    );
+    const {response, paidAmount} = await runInfinitePayCheckoutPayment({
+      installments,
+      order,
+      payment,
+      total: resolvedTotal,
+    });
 
     if (!response?.success || response?.code === 1 || response?.code === 2) {
       throw response;
     }
 
     return {
-      paidAmount:
-        Number(response?.result?.paidAmount || 0) > 0
-          ? Number(response.result.paidAmount) / 100
-          : resolvedTotal,
+      paidAmount,
       response,
     };
   }
