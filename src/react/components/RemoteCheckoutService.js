@@ -1,15 +1,15 @@
-import React, {useState, useEffect, useCallback} from 'react';
-//import {useNavigation} from '@react-navigation/native';
+import React, {useEffect, useCallback, useRef} from 'react';
 
 import {api} from '@controleonline/ui-common/src/api';
-import CieloCheckout from '@controleonline/ui-orders/src/react/services/Cielo/Checkout';
-import InfinitePay from '@controleonline/ui-orders/src/react/services/InfinitePay/Checkout';
 import Formatter from '@controleonline/ui-common/src/utils/formatter';
 import {
   createInvoiceForGatewayFreePayment,
   isGatewayFreePayment,
-  shouldAutoHandleRemoteGatewayFreePayment,
 } from '@controleonline/ui-common/src/react/utils/cashPayment';
+import {
+  normalizeGatewayPaymentError,
+  runConfiguredGatewayPayment,
+} from '@controleonline/ui-common/src/react/utils/paymentGatewayExecution';
 
 import {useStore} from '@store';
 
@@ -63,39 +63,39 @@ const resolvePosPaidInvoiceStatusIri = async fallbackStatusId => {
   }
 };
 
+const buildOrderIri = value => {
+  const normalizedId = String(value || '').replace(/\D/g, '');
+  return normalizedId ? `/orders/${normalizedId}` : null;
+};
+
 const Checkout = () => {
-  const device_configStore = useStore('device_config');
-  const deviceConfigGetters = device_configStore.getters;
+  const deviceConfigStore = useStore('device_config');
+  const deviceConfigGetters = deviceConfigStore.getters;
   const categoriesStore = useStore('categories');
   const categoryActions = categoriesStore.actions;
   const {item: device} = deviceConfigGetters;
   const ordersStore = useStore('orders');
-  const ordersGetters = ordersStore.getters;
   const ordersActions = ordersStore.actions;
+  const orderProductsStore = useStore('order_products');
+  const orderProductsActions = orderProductsStore.actions;
   const invoiceStore = useStore('invoice');
   const invoiceGetters = invoiceStore.getters;
   const invoiceActions = invoiceStore.actions;
   const peopleStore = useStore('people');
   const peopleGetters = peopleStore.getters;
   const {currentCompany, defaultCompany} = peopleGetters;
-  const {item: order} = ordersGetters;
   const {messages, message} = invoiceGetters;
-  //const navigation = useNavigation();
-  const [paymentType, setPaymentType] = useState(null);
-  const [paymentValue, setPaymentValue] = useState(null);
+  const processingMessageKeyRef = useRef('');
 
-  useEffect(() => {
-    if (message?.action == 'pay') {
-      localStorage.setItem(
-        'master-device',
-        JSON.stringify({id: message['master-device']}),
-      );
-      ordersActions.get(message.order).then(() => {
-        setPaymentType(message.wallet_payment_type);
-        setPaymentValue(message.total);
-      });
-    }
-  }, [message, ordersActions]);
+  const clear = useCallback(() => {
+    localStorage.removeItem('master-device');
+    invoiceActions.setMessage(null);
+    categoryActions.setItems(null);
+    ordersActions.setItem(null);
+    orderProductsActions.setItems([]);
+    invoiceActions.setItems([]);
+    ordersActions.setPayable(0);
+  }, [categoryActions, invoiceActions, orderProductsActions, ordersActions]);
 
   useEffect(() => {
     if (
@@ -109,23 +109,7 @@ const Checkout = () => {
     }
   }, [messages, message]);
 
-  const clear = useCallback(() => {
-    localStorage.removeItem('master-device');
-    invoiceActions.setMessage(null);
-    setPaymentType(null);
-    setPaymentValue(0);
-    categoryActions.setItems(null);
-    ordersActions.setItem(null);
-    invoiceActions.setItems([]);
-    ordersActions.setPayable(0);
-    //navigation.reset('HomePage');
-  }, [categoryActions, invoiceActions, ordersActions]);
-
-  const cancelOperation = useCallback(() => {
-    clear();
-  }, [clear]);
-
-  const createInvoice = useCallback(async (selectedPayment, total) => {
+  const createInvoice = useCallback(async (selectedPayment, total, orderItem) => {
     const paidStatusIri = await resolvePosPaidInvoiceStatusIri(
       defaultCompany?.configs['pos-paid-status'],
     );
@@ -144,70 +128,100 @@ const Checkout = () => {
       paymentType: selectedPayment.paymentType['@id'],
       price: total,
       receiver: '/people/' + currentCompany.id,
-      order: order['@id'],
+      order: orderItem?.['@id'],
     };
 
-    invoiceActions.save(payload).finally(() => {
-      clear();
-    });
+    await invoiceActions.save(payload);
   }, [
-    clear,
     currentCompany?.id,
     defaultCompany?.configs,
     invoiceActions,
-    order,
   ]);
 
   useEffect(() => {
-    // Gateway-free payments such as cash should not depend on a Cielo/Infinite
-    // checkout screen to create the invoice on the receiving PDV.
-    if (
-      !shouldAutoHandleRemoteGatewayFreePayment({
-        remoteCheckoutMode: true,
-        payment: paymentType,
-        paymentValue,
-      })
-    ) {
+    if (message?.action !== 'pay') {
       return;
     }
 
-    createInvoiceForGatewayFreePayment({
-      payment: paymentType,
-      total: paymentValue,
-      createInvoice,
-    }).catch(error => {
-      invoiceActions.setError(error?.message || String(error || ''));
-      clear();
+    const messageKey = JSON.stringify({
+      action: message?.action,
+      masterDevice: message?.['master-device'],
+      order: message?.order,
+      payment: message?.wallet_payment_type?.paymentType?.['@id'],
+      total: message?.total,
     });
-  }, [clear, createInvoice, invoiceActions, paymentType, paymentValue]);
 
-  return (
-    device?.configs &&
-    paymentType &&
-    paymentValue &&
-    !isGatewayFreePayment(paymentType) && (
-      <>
-        {device?.configs?.['pos-gateway'] == 'cielo' && (
-          <CieloCheckout
-            cancelOperation={cancelOperation}
-            createInvoice={createInvoice}
-            remoteCheckoutMode={true}
-            paymentType={paymentType}
-            paymentValue={paymentValue}
-          />
-        )}
-        {device?.configs?.['pos-gateway'] == 'infinite-pay' && (
-          <InfinitePay
-            cancelOperation={cancelOperation}
-            createInvoice={createInvoice}
-            remoteCheckoutMode={true}
-            paymentType={paymentType}
-            paymentValue={paymentValue}
-          />
-        )}
-      </>
-    )
-  );
+    if (processingMessageKeyRef.current === messageKey) {
+      return;
+    }
+
+    processingMessageKeyRef.current = messageKey;
+
+    const processMessage = async () => {
+      try {
+        localStorage.setItem(
+          'master-device',
+          JSON.stringify({id: message['master-device']}),
+        );
+
+        const payment = message.wallet_payment_type;
+        const total = Number(message.total || 0);
+        const loadedOrder = await ordersActions.get(message.order);
+        const orderIri = loadedOrder?.['@id'] || buildOrderIri(message.order);
+        const loadedOrderProducts = orderIri
+          ? await orderProductsActions
+              .getItems({
+                order: orderIri,
+                itemsPerPage: 500,
+              })
+              .catch(() => [])
+          : [];
+
+        if (isGatewayFreePayment(payment)) {
+          await createInvoiceForGatewayFreePayment({
+            payment,
+            total,
+            createInvoice: async (selectedPayment, paidTotal) =>
+              createInvoice(selectedPayment, paidTotal, loadedOrder),
+          });
+          return;
+        }
+
+        const {paidAmount} = await runConfiguredGatewayPayment({
+          gateway: device?.configs?.['pos-gateway'],
+          installments: payment?.installments,
+          order: loadedOrder,
+          orderProducts: loadedOrderProducts,
+          payment,
+          total,
+        });
+
+        await createInvoice(payment, paidAmount, loadedOrder);
+      } catch (error) {
+        invoiceActions.setError(
+          normalizeGatewayPaymentError(
+            error,
+            'Nao foi possivel concluir o pagamento remoto.',
+          ),
+        );
+      } finally {
+        clear();
+        processingMessageKeyRef.current = '';
+      }
+    };
+
+    processMessage();
+  }, [
+    clear,
+    createInvoice,
+    device?.configs,
+    invoiceActions,
+    message,
+    orderProductsActions,
+    ordersActions,
+  ]);
+
+  return null;
 };
 
 export default Checkout;

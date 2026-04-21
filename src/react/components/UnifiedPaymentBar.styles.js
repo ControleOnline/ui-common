@@ -138,8 +138,13 @@ const createStyles = theme =>
       flexDirection: 'row',
       gap: 10,
     },
+    actionsRowSingle: {
+      flexDirection: 'column',
+      alignItems: 'stretch',
+    },
     actionButton: {
       flex: 1,
+      flexBasis: 0,
       minHeight: 48,
       borderRadius: 14,
       borderWidth: 1,
@@ -152,6 +157,7 @@ const createStyles = theme =>
     actionButtonSingle: {
       flex: 0,
       width: '100%',
+      alignSelf: 'stretch',
     },
     actionLabel: {
       fontSize: 14,

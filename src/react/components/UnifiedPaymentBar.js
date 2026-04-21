@@ -110,7 +110,11 @@ export default function UnifiedPaymentBar({
         </View>
 
         {visibleActions.length > 0 && (
-          <View style={styles.actionsRow}>
+          <View
+            style={[
+              styles.actionsRow,
+              visibleActions.length === 1 && styles.actionsRowSingle,
+            ]}>
             {visibleActions.map(action => {
               const key =
                 action?.key ||

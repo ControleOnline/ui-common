@@ -61,15 +61,6 @@ export const isGatewayFreePayment = payment =>
 export const isCashPaymentWithoutGateway = payment =>
   isCashPaymentOption(payment) && isGatewayFreePayment(payment);
 
-export const shouldAutoHandleRemoteGatewayFreePayment = ({
-  remoteCheckoutMode = false,
-  payment = null,
-  paymentValue = 0,
-}) =>
-  !!remoteCheckoutMode &&
-  isGatewayFreePayment(payment) &&
-  Number(paymentValue || 0) > 0;
-
 export const createInvoiceForGatewayFreePayment = async ({
   payment,
   total = 0,

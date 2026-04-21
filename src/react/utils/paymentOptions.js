@@ -56,7 +56,7 @@ export const isIntegratedPaymentOption = payment =>
 
 export const detectPaymentOptionKind = payment => {
   const text = normalizeText(
-    `${getPaymentOptionLabel(payment)} ${payment?.paymentCode || ''}`,
+    `${getPaymentOptionLabel(payment)} ${getPaymentOptionWalletLabel(payment)} ${payment?.paymentCode || ''}`,
   );
 
   if (text.includes('pix')) return 'pix';
@@ -71,7 +71,13 @@ export const detectPaymentOptionKind = payment => {
     return 'card';
   }
 
-  if (text.includes('dinh') || text.includes('cash')) {
+  if (
+    text.includes('dinh') ||
+    text.includes('cash') ||
+    text.includes('espec') ||
+    text.includes('moeda') ||
+    text.includes('papel')
+  ) {
     return 'cash';
   }
 
