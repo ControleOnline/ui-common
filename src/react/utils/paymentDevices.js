@@ -10,6 +10,8 @@ export const POS_GATEWAY_CONFIG_KEY = 'pos-gateway';
 export const PDV_PRINTER_ENABLED_CONFIG_KEY = 'printer-enabled';
 export const ORDER_PAYMENT_DEVICES_CONFIG_KEY = 'order-payment-devices';
 export const ORDER_PAYMENT_DEVICE_CONFIG_KEY = 'order-payment-device';
+export const ORDER_PAYMENT_DEVICE_CHANGE_ALLOWED_CONFIG_KEY =
+  'order-payment-device-change-allowed';
 export const ORDER_CHARGE_ON_DELIVERY_ENABLED_CONFIG_KEY =
   'order-charge-on-delivery-enabled';
 
@@ -161,6 +163,13 @@ export const isOrderChargeOnDeliveryEnabled = configs =>
     ],
   );
 
+export const isOrderPaymentDeviceChangeAllowed = configs =>
+  isTruthyValue(
+    parseConfigsObject(resolveConfigsSource(configs))?.[
+      ORDER_PAYMENT_DEVICE_CHANGE_ALLOWED_CONFIG_KEY
+    ],
+  );
+
 export const isPaymentGateway = gateway => PAYMENT_GATEWAYS.includes(gateway);
 
 export const isPaymentCapableDeviceConfig = deviceConfig =>
@@ -213,23 +222,28 @@ export const resolveRemotePaymentDeviceOptions = ({
   deviceConfigs,
   companyConfigs,
 }) => {
-  const availableOptions = getCompanyPaymentDeviceOptions(deviceConfigs);
+  const currentDeviceId = getDeviceConfigDeviceId(deviceConfig);
+  const availableOptions = getCompanyPaymentDeviceOptions(deviceConfigs).filter(
+    option => option.deviceId !== currentDeviceId,
+  );
   const configuredDeviceIds = resolveConfiguredRemotePaymentDeviceIds({
     deviceConfig,
     companyConfigs,
   });
 
   if (!configuredDeviceIds.length) {
-    return [];
+    return availableOptions;
   }
 
   const availableOptionsMap = new Map(
     availableOptions.map(option => [option.deviceId, option]),
   );
 
-  return configuredDeviceIds
+  const configuredOptions = configuredDeviceIds
     .map(deviceId => availableOptionsMap.get(deviceId))
     .filter(Boolean);
+
+  return configuredOptions.length > 0 ? configuredOptions : availableOptions;
 };
 
 export const supportsLocalCardPayment = ({deviceConfig, platform = Platform.OS}) =>
