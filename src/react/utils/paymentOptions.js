@@ -27,13 +27,14 @@ export const getPaymentOptionWalletId = payment =>
   normalizeEntityId(
     payment?.wallet?.['@id'] ||
       payment?.wallet?.id ||
-      payment?.wallet ||
-      payment?.destinationWallet?.['@id'] ||
-      payment?.destinationWallet?.id ||
-      payment?.destinationWallet ||
-      payment?.sourceWallet?.['@id'] ||
-      payment?.sourceWallet?.id ||
-      payment?.sourceWallet,
+      payment?.wallet,
+  );
+
+export const getInvoiceDestinationWalletId = invoice =>
+  normalizeEntityId(
+    invoice?.destinationWallet?.['@id'] ||
+      invoice?.destinationWallet?.id ||
+      invoice?.destinationWallet,
   );
 
 export const getPaymentOptionLabel = payment =>
@@ -47,14 +48,6 @@ export const getPaymentOptionLabel = payment =>
 export const getPaymentOptionWalletLabel = payment =>
   String(
     payment?.wallet?.wallet ||
-      payment?.wallet?.name ||
-      payment?.wallet?.alias ||
-      payment?.destinationWallet?.wallet ||
-      payment?.destinationWallet?.name ||
-      payment?.destinationWallet?.alias ||
-      payment?.sourceWallet?.wallet ||
-      payment?.sourceWallet?.name ||
-      payment?.sourceWallet?.alias ||
       '',
   ).trim();
 
