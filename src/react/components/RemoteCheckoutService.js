@@ -10,6 +10,11 @@ import {
   normalizeGatewayPaymentError,
   runConfiguredGatewayPayment,
 } from '@controleonline/ui-common/src/react/utils/paymentGatewayExecution';
+import {
+  buildRemotePaymentResultMessage,
+  isRemotePaymentRequestMessage,
+  normalizeRemotePaymentRequestKey,
+} from '@controleonline/ui-common/src/react/utils/remotePayment';
 
 import {useStore} from '@store';
 
@@ -84,6 +89,8 @@ const Checkout = () => {
   const peopleStore = useStore('people');
   const peopleGetters = peopleStore.getters;
   const {currentCompany, defaultCompany} = peopleGetters;
+  const websocketStore = useStore('websocket');
+  const websocketActions = websocketStore.actions;
   const {messages, message} = invoiceGetters;
   const processingMessageKeyRef = useRef('');
 
@@ -131,7 +138,7 @@ const Checkout = () => {
       order: orderItem?.['@id'],
     };
 
-    await invoiceActions.save(payload);
+    return await invoiceActions.save(payload);
   }, [
     currentCompany?.id,
     defaultCompany?.configs,
@@ -139,7 +146,7 @@ const Checkout = () => {
   ]);
 
   useEffect(() => {
-    if (message?.action !== 'pay') {
+    if (!isRemotePaymentRequestMessage(message)) {
       return;
     }
 
@@ -148,6 +155,7 @@ const Checkout = () => {
       masterDevice: message?.['master-device'],
       order: message?.order,
       payment: message?.wallet_payment_type?.paymentType?.['@id'],
+      requestKey: normalizeRemotePaymentRequestKey(message?.requestKey),
       total: message?.total,
     });
 
@@ -158,14 +166,45 @@ const Checkout = () => {
     processingMessageKeyRef.current = messageKey;
 
     const processMessage = async () => {
+      const payment = message.wallet_payment_type;
+      const total = Number(message.total || 0);
+      const requestKey = normalizeRemotePaymentRequestKey(message?.requestKey);
+      const masterDeviceId = String(message?.['master-device'] || '').trim();
+
+      const sendRemoteResult = async result => {
+        if (!masterDeviceId) {
+          return;
+        }
+
+        try {
+          await websocketActions.send(
+            buildRemotePaymentResultMessage({
+              destinationDeviceId: masterDeviceId,
+              orderId: message?.order,
+              payment,
+              requestKey,
+              targetDeviceId: device?.id || device?.device?.device || '',
+              targetDeviceLabel:
+                device?.device?.alias ||
+                device?.device?.name ||
+                device?.device?.device ||
+                '',
+              targetGateway: device?.configs?.['pos-gateway'] || '',
+              total,
+              ...result,
+            }),
+          );
+        } catch {
+          // silencioso: o pagamento ja foi executado neste device
+        }
+      };
+
       try {
         localStorage.setItem(
           'master-device',
           JSON.stringify({id: message['master-device']}),
         );
 
-        const payment = message.wallet_payment_type;
-        const total = Number(message.total || 0);
         const loadedOrder = await ordersActions.get(message.order);
         const orderIri = loadedOrder?.['@id'] || buildOrderIri(message.order);
         const loadedOrderProducts = orderIri
@@ -176,18 +215,31 @@ const Checkout = () => {
               })
               .catch(() => [])
           : [];
+        let createdInvoice = null;
+        let paidAmount = total;
 
         if (isGatewayFreePayment(payment)) {
           await createInvoiceForGatewayFreePayment({
             payment,
             total,
-            createInvoice: async (selectedPayment, paidTotal) =>
-              createInvoice(selectedPayment, paidTotal, loadedOrder),
+            createInvoice: async (selectedPayment, paidTotal) => {
+              createdInvoice = await createInvoice(
+                selectedPayment,
+                paidTotal,
+                loadedOrder,
+              );
+              return createdInvoice;
+            },
+          });
+          await sendRemoteResult({
+            invoice: createdInvoice,
+            paidAmount,
+            status: 'success',
           });
           return;
         }
 
-        const {paidAmount} = await runConfiguredGatewayPayment({
+        const gatewayResult = await runConfiguredGatewayPayment({
           gateway: device?.configs?.['pos-gateway'],
           installments: payment?.installments,
           order: loadedOrder,
@@ -195,15 +247,24 @@ const Checkout = () => {
           payment,
           total,
         });
+        paidAmount = gatewayResult?.paidAmount || total;
 
-        await createInvoice(payment, paidAmount, loadedOrder);
+        createdInvoice = await createInvoice(payment, paidAmount, loadedOrder);
+        await sendRemoteResult({
+          invoice: createdInvoice,
+          paidAmount,
+          status: 'success',
+        });
       } catch (error) {
-        invoiceActions.setError(
-          normalizeGatewayPaymentError(
-            error,
-            'Nao foi possivel concluir o pagamento remoto.',
-          ),
+        const errorMessage = normalizeGatewayPaymentError(
+          error,
+          'Nao foi possivel concluir o pagamento remoto.',
         );
+        invoiceActions.setError(errorMessage);
+        await sendRemoteResult({
+          error: errorMessage,
+          status: 'error',
+        });
       } finally {
         clear();
         processingMessageKeyRef.current = '';
@@ -215,10 +276,13 @@ const Checkout = () => {
     clear,
     createInvoice,
     device?.configs,
+    device?.device,
+    device?.id,
     invoiceActions,
     message,
     orderProductsActions,
     ordersActions,
+    websocketActions,
   ]);
 
   return null;
