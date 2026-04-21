@@ -1,10 +1,15 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useCallback} from 'react';
 //import {useNavigation} from '@react-navigation/native';
 
 import {api} from '@controleonline/ui-common/src/api';
 import CieloCheckout from '@controleonline/ui-orders/src/react/services/Cielo/Checkout';
 import InfinitePay from '@controleonline/ui-orders/src/react/services/InfinitePay/Checkout';
 import Formatter from '@controleonline/ui-common/src/utils/formatter';
+import {
+  createInvoiceForGatewayFreePayment,
+  isGatewayFreePayment,
+  shouldAutoHandleRemoteGatewayFreePayment,
+} from '@controleonline/ui-common/src/react/utils/cashPayment';
 
 import {useStore} from '@store';
 
@@ -53,7 +58,7 @@ const resolvePosPaidInvoiceStatusIri = async fallbackStatusId => {
     }
 
     return resolvedIri;
-  } catch (error) {
+  } catch {
     return fallbackIri;
   }
 };
@@ -104,10 +109,7 @@ const Checkout = () => {
     }
   }, [messages, message]);
 
-  const cancelOperation = () => {
-    clear();
-  };
-  const clear = () => {
+  const clear = useCallback(() => {
     localStorage.removeItem('master-device');
     invoiceActions.setMessage(null);
     setPaymentType(null);
@@ -117,8 +119,13 @@ const Checkout = () => {
     invoiceActions.setItems([]);
     ordersActions.setPayable(0);
     //navigation.reset('HomePage');
-  };
-  const createInvoice = async (selectedPayment, total) => {
+  }, [categoryActions, invoiceActions, ordersActions]);
+
+  const cancelOperation = useCallback(() => {
+    clear();
+  }, [clear]);
+
+  const createInvoice = useCallback(async (selectedPayment, total) => {
     const paidStatusIri = await resolvePosPaidInvoiceStatusIri(
       defaultCompany?.configs['pos-paid-status'],
     );
@@ -140,17 +147,47 @@ const Checkout = () => {
       order: order['@id'],
     };
 
-    invoiceActions.save(payload).finally(data => {
+    invoiceActions.save(payload).finally(() => {
       clear();
     });
-  };
+  }, [
+    clear,
+    currentCompany?.id,
+    defaultCompany?.configs,
+    invoiceActions,
+    order,
+  ]);
+
+  useEffect(() => {
+    // Gateway-free payments such as cash should not depend on a Cielo/Infinite
+    // checkout screen to create the invoice on the receiving PDV.
+    if (
+      !shouldAutoHandleRemoteGatewayFreePayment({
+        remoteCheckoutMode: true,
+        payment: paymentType,
+        paymentValue,
+      })
+    ) {
+      return;
+    }
+
+    createInvoiceForGatewayFreePayment({
+      payment: paymentType,
+      total: paymentValue,
+      createInvoice,
+    }).catch(error => {
+      invoiceActions.setError(error?.message || String(error || ''));
+      clear();
+    });
+  }, [clear, createInvoice, invoiceActions, paymentType, paymentValue]);
 
   return (
-    device.configs &&
+    device?.configs &&
     paymentType &&
-    paymentValue && (
+    paymentValue &&
+    !isGatewayFreePayment(paymentType) && (
       <>
-        {device.configs['pos-gateway'] == 'cielo' && (
+        {device?.configs?.['pos-gateway'] == 'cielo' && (
           <CieloCheckout
             cancelOperation={cancelOperation}
             createInvoice={createInvoice}
@@ -159,7 +196,7 @@ const Checkout = () => {
             paymentValue={paymentValue}
           />
         )}
-        {device.configs['pos-gateway'] == 'infinite-pay' && (
+        {device?.configs?.['pos-gateway'] == 'infinite-pay' && (
           <InfinitePay
             cancelOperation={cancelOperation}
             createInvoice={createInvoice}

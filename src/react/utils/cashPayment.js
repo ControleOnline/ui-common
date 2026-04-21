@@ -1,4 +1,5 @@
 import Formatter from '@controleonline/ui-common/src/utils/formatter';
+import {isCashPaymentOption} from './paymentOptions';
 
 export const parseMoneyInputValue = value => {
   const numericValue = String(value || '').replace(/\D/g, '');
@@ -47,4 +48,37 @@ export const resolveCashPaymentDetails = ({
     needsChange: changeAmount > 0.009,
     receivedAmount: normalizedReceivedAmount,
   };
+};
+
+const normalizePaymentCode = value => String(value || '').trim();
+
+export const hasIntegratedPaymentCode = payment =>
+  normalizePaymentCode(payment?.paymentCode) !== '';
+
+export const isGatewayFreePayment = payment =>
+  !!payment?.wallet && !!payment?.paymentType && !hasIntegratedPaymentCode(payment);
+
+export const isCashPaymentWithoutGateway = payment =>
+  isCashPaymentOption(payment) && isGatewayFreePayment(payment);
+
+export const shouldAutoHandleRemoteGatewayFreePayment = ({
+  remoteCheckoutMode = false,
+  payment = null,
+  paymentValue = 0,
+}) =>
+  !!remoteCheckoutMode &&
+  isGatewayFreePayment(payment) &&
+  Number(paymentValue || 0) > 0;
+
+export const createInvoiceForGatewayFreePayment = async ({
+  payment,
+  total = 0,
+  createInvoice,
+}) => {
+  if (!isGatewayFreePayment(payment) || typeof createInvoice !== 'function') {
+    return false;
+  }
+
+  await createInvoice(payment, Number(total || 0));
+  return true;
 };
