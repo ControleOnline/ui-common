@@ -315,6 +315,30 @@ const createStyles = palette => {
       fontSize: 12,
       fontWeight: '600',
     },
+    logChannel: {
+      color: palette.textSecondary,
+      fontSize: 12,
+      fontWeight: '700',
+      textTransform: 'uppercase',
+      letterSpacing: 0.4,
+    },
+    genericMessageBox: {
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: palette.border,
+      backgroundColor: palette.surfaceSoft,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+    },
+    genericMessage: {
+      color: palette.textPrimary,
+      fontSize: 14,
+      fontWeight: '700',
+      lineHeight: 20,
+    },
+    contextSection: {
+      gap: 8,
+    },
     changeRow: {
       gap: 6,
     },

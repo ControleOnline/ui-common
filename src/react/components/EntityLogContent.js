@@ -42,6 +42,78 @@ const ACTION_META = {
     icon: 'delete-outline',
     label: 'Removido',
   },
+  info: {
+    color: '#0F766E',
+    icon: 'info-outline',
+    label: 'Info',
+  },
+  notice: {
+    color: '#0369A1',
+    icon: 'notifications-none',
+    label: 'Aviso',
+  },
+  warning: {
+    color: '#D97706',
+    icon: 'warning-amber',
+    label: 'Alerta',
+  },
+  error: {
+    color: '#DC2626',
+    icon: 'error-outline',
+    label: 'Erro',
+  },
+  critical: {
+    color: '#991B1B',
+    icon: 'report-gmailerrorred',
+    label: 'Critico',
+  },
+  debug: {
+    color: '#475569',
+    icon: 'bug-report',
+    label: 'Debug',
+  },
+};
+
+const GENERIC_PAYLOAD_META_FIELDS = new Set(['channel', 'context', 'level', 'message']);
+
+const buildContextEntries = context => {
+  if (!context) {
+    return [];
+  }
+
+  if (Array.isArray(context)) {
+    return context.map((value, index) => [`item_${index + 1}`, value]);
+  }
+
+  if (typeof context === 'object') {
+    return Object.entries(context);
+  }
+
+  return [['context', context]];
+};
+
+const formatContextValue = value => {
+  if (value === null || value === undefined || value === '') {
+    return '—';
+  }
+
+  if (typeof value === 'boolean') {
+    return value ? 'Sim' : 'Nao';
+  }
+
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  if (typeof value === 'number') {
+    return String(value);
+  }
+
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
 };
 
 const resolvePayload = log => {
@@ -163,6 +235,22 @@ const LogCard = ({
   const payload = useMemo(() => resolvePayload(log), [log]);
   const actionMeta = useMemo(() => getActionMeta(log?.action), [log?.action]);
   const entries = useMemo(() => Object.entries(payload || {}), [payload]);
+  const detailEntries = useMemo(
+    () => entries.filter(([field]) => !GENERIC_PAYLOAD_META_FIELDS.has(field)),
+    [entries],
+  );
+  const genericMessage = useMemo(
+    () => (typeof payload?.message === 'string' ? payload.message.trim() : ''),
+    [payload?.message],
+  );
+  const genericChannel = useMemo(
+    () => (typeof payload?.channel === 'string' ? payload.channel.trim() : ''),
+    [payload?.channel],
+  );
+  const contextEntries = useMemo(
+    () => buildContextEntries(payload?.context),
+    [payload?.context],
+  );
   const logDate = useMemo(
     () => Formatter.formatDateYmdTodmY(log?.createdAt, true),
     [log?.createdAt],
@@ -194,8 +282,35 @@ const LogCard = ({
         )}
       </View>
 
-      {entries.length ? (
-        entries.map(([field, value]) => {
+      {!!genericChannel && (
+        <Text style={styles.logChannel}>{genericChannel}</Text>
+      )}
+
+      {!!genericMessage && (
+        <View style={styles.genericMessageBox}>
+          <Text style={styles.genericMessage}>{genericMessage}</Text>
+        </View>
+      )}
+
+      {!!contextEntries.length && (
+        <View style={styles.contextSection}>
+          {contextEntries.map(([field, value]) => (
+            <View key={`${log?.id || 'log'}-context-${field}`} style={styles.changeRow}>
+              <Text style={styles.changeLabel}>
+                {formatLogFieldLabel(field, {
+                  columns,
+                  storeName,
+                })}
+              </Text>
+
+              {renderChangeValue(styles, '', formatContextValue(value))}
+            </View>
+          ))}
+        </View>
+      )}
+
+      {detailEntries.length ? (
+        detailEntries.map(([field, value]) => {
           const isDiffValue =
             Array.isArray(value) &&
             value.length === 2 &&
@@ -245,7 +360,10 @@ const LogCard = ({
           );
         })
       ) : (
-        <Text style={styles.emptyInlineText}>Sem detalhes adicionais.</Text>
+        !genericMessage &&
+        !contextEntries.length && (
+          <Text style={styles.emptyInlineText}>Sem detalhes adicionais.</Text>
+        )
       )}
     </View>
   );

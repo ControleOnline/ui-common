@@ -1,0 +1,181 @@
+import {StyleSheet} from 'react-native';
+
+const createStyles = () =>
+  StyleSheet.create({
+    safeArea: {
+      flex: 1,
+      backgroundColor: '#F8FAFC',
+    },
+    container: {
+      flex: 1,
+      backgroundColor: '#F8FAFC',
+      paddingHorizontal: 12,
+      paddingTop: 12,
+    },
+    heroCard: {
+      borderRadius: 18,
+      backgroundColor: '#FFFFFF',
+      borderWidth: 1,
+      borderColor: '#E2E8F0',
+      paddingHorizontal: 14,
+      paddingVertical: 14,
+      marginBottom: 12,
+    },
+    heroHeader: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    heroTitle: {
+      color: '#0F172A',
+      fontSize: 18,
+      fontWeight: '800',
+    },
+    heroSubtitle: {
+      color: '#64748B',
+      fontSize: 13,
+      fontWeight: '600',
+      lineHeight: 19,
+      marginTop: 6,
+    },
+    refreshButton: {
+      width: 38,
+      height: 38,
+      borderRadius: 19,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: '#DBEAFE',
+      backgroundColor: '#EFF6FF',
+    },
+    scroll: {
+      flex: 1,
+    },
+    scrollContent: {
+      paddingBottom: 24,
+      gap: 10,
+    },
+    stateBox: {
+      minHeight: 140,
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: '#E2E8F0',
+      backgroundColor: '#FFFFFF',
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 18,
+      gap: 10,
+    },
+    stateTitle: {
+      color: '#0F172A',
+      fontSize: 16,
+      fontWeight: '800',
+      textAlign: 'center',
+    },
+    stateText: {
+      color: '#64748B',
+      fontSize: 13,
+      fontWeight: '600',
+      textAlign: 'center',
+      lineHeight: 19,
+    },
+    list: {
+      gap: 10,
+    },
+    card: {
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: '#E2E8F0',
+      backgroundColor: '#FFFFFF',
+      paddingHorizontal: 12,
+      paddingVertical: 12,
+      gap: 10,
+    },
+    metaRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: 10,
+      flexWrap: 'wrap',
+    },
+    metaLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+      flexWrap: 'wrap',
+      flex: 1,
+    },
+    badge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      borderRadius: 999,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderWidth: 1,
+    },
+    badgeText: {
+      fontSize: 12,
+      fontWeight: '800',
+    },
+    date: {
+      color: '#0F172A',
+      fontSize: 12,
+      fontWeight: '700',
+    },
+    user: {
+      color: '#64748B',
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    channel: {
+      color: '#475569',
+      fontSize: 12,
+      fontWeight: '700',
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    messageBox: {
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: '#E2E8F0',
+      backgroundColor: '#F8FAFC',
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+    },
+    message: {
+      color: '#0F172A',
+      fontSize: 14,
+      fontWeight: '700',
+      lineHeight: 20,
+    },
+    contextList: {
+      gap: 8,
+    },
+    contextRow: {
+      gap: 6,
+    },
+    contextLabel: {
+      color: '#2563EB',
+      fontSize: 11,
+      fontWeight: '800',
+      textTransform: 'uppercase',
+    },
+    contextValueBox: {
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: '#E2E8F0',
+      backgroundColor: '#F8FAFC',
+      paddingHorizontal: 10,
+      paddingVertical: 9,
+    },
+    contextValue: {
+      color: '#0F172A',
+      fontSize: 13,
+      fontWeight: '600',
+      lineHeight: 18,
+    },
+  });
+
+export default createStyles;

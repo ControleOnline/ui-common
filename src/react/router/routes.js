@@ -1,5 +1,6 @@
 import ImportsPage from '@controleonline/ui-common/src/react/pages/Imports';
 import EntityLogPage from '@controleonline/ui-common/src/react/pages/EntityLogPage';
+import GenericLogPage from '@controleonline/ui-common/src/react/pages/GenericLogPage';
 
 const commonRoutes = [
   {
@@ -10,6 +11,18 @@ const commonRoutes = [
       headerBackVisible: true,
       showBottomToolBar: false,
       title: 'Historico',
+    },
+  },
+  {
+    name: 'GenericLogPage',
+    component: GenericLogPage,
+    options: {
+      headerShown: true,
+      headerBackVisible: true,
+      showBottomToolBar: true,
+      showCompanyFilter: true,
+      companyFilterMode: 'icon',
+      title: 'Logs gerais',
     },
   },
   {
