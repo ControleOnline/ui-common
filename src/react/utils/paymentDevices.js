@@ -101,6 +101,11 @@ export const normalizePaymentGateway = value => {
   return compactGateway;
 };
 
+const normalizeDeviceType = value =>
+  String(value || '')
+    .trim()
+    .toUpperCase();
+
 const isTruthyValue = value =>
   value === true || value === '1' || value === 1 || value === 'true';
 
@@ -121,6 +126,9 @@ const getDeviceConfigDeviceId = deviceConfig => {
     device?.device || deviceConfig?.deviceId || deviceConfig?.device_id || '',
   );
 };
+
+const getDeviceConfigType = deviceConfig =>
+  normalizeDeviceType(deviceConfig?.type || deviceConfig?.device?.type);
 
 export const filterDeviceConfigsByCompany = (deviceConfigs, companyId) => {
   const normalizedCompanyId = normalizeEntityId(companyId);
@@ -175,6 +183,10 @@ export const isPaymentGateway = gateway => PAYMENT_GATEWAYS.includes(gateway);
 export const isPaymentCapableDeviceConfig = deviceConfig =>
   isPaymentGateway(getPaymentGateway(deviceConfig));
 
+export const isRemotePaymentCapableDeviceConfig = deviceConfig =>
+  getDeviceConfigType(deviceConfig) === 'PDV' &&
+  isPaymentCapableDeviceConfig(deviceConfig);
+
 export const getPaymentDeviceLabel = deviceConfig =>
   resolveDeviceConfigDevice(deviceConfig)?.alias ||
   resolveDeviceConfigDevice(deviceConfig)?.name ||
@@ -189,7 +201,7 @@ export const getPaymentGatewayLabel = gateway => {
 
 export const getCompanyPaymentDeviceOptions = deviceConfigs =>
   (Array.isArray(deviceConfigs) ? deviceConfigs : [])
-    .filter(isPaymentCapableDeviceConfig)
+    .filter(isRemotePaymentCapableDeviceConfig)
     .map(deviceConfig => ({
       alias: getPaymentDeviceLabel(deviceConfig),
       deviceId: getDeviceConfigDeviceId(deviceConfig),
@@ -203,18 +215,20 @@ export const resolveConfiguredRemotePaymentDeviceIds = ({
   deviceConfig,
   companyConfigs,
 }) => {
+  const configuredCompanyDeviceIds = normalizeDeviceIds(
+    companyConfigs?.[ORDER_PAYMENT_DEVICES_CONFIG_KEY],
+  );
+
+  if (configuredCompanyDeviceIds.length > 0) {
+    return configuredCompanyDeviceIds;
+  }
+
   const configs = parseConfigsObject(deviceConfig?.configs);
   const preferredDeviceId = normalizeDeviceId(
     configs?.[ORDER_PAYMENT_DEVICE_CONFIG_KEY],
   );
 
-  if (preferredDeviceId) {
-    return [preferredDeviceId];
-  }
-
-  return normalizeDeviceIds(
-    companyConfigs?.[ORDER_PAYMENT_DEVICES_CONFIG_KEY],
-  );
+  return preferredDeviceId ? [preferredDeviceId] : [];
 };
 
 export const resolveRemotePaymentDeviceOptions = ({
