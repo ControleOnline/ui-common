@@ -72,33 +72,14 @@ export const fetchShopFranchiseAddresses = async ({
 export const fetchShopFranchiseDirectory = async ({
   companyId,
   companyItemsPerPage = 200,
-  addressItemsPerPage = 100,
 } = {}) => {
   const companies = await fetchShopFranchiseCompanies({
     companyId,
     itemsPerPage: companyItemsPerPage,
   });
 
-  const directory = await Promise.all(
-    companies.map(async company => {
-      try {
-        const addresses = await fetchShopFranchiseAddresses({
-          peopleId: company?.id,
-          itemsPerPage: addressItemsPerPage,
-        });
-
-        return {
-          ...company,
-          shopAddresses: Array.isArray(addresses) ? addresses : [],
-        };
-      } catch {
-        return {
-          ...company,
-          shopAddresses: [],
-        };
-      }
-    }),
-  );
-
-  return directory;
+  return companies.map(company => ({
+    ...company,
+    shopAddresses: Array.isArray(company?.address) ? company.address : [],
+  }));
 };
