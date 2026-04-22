@@ -3,8 +3,14 @@ import {View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useStore} from '@store';
 import EntityLogContent from '@controleonline/ui-common/src/react/components/EntityLogContent';
-import {extractEntityId} from '@controleonline/ui-common/src/react/utils/entityLog';
-import {resolveStoreConfigByName} from '@controleonline/ui-common/src/react/utils/storeColumns';
+import {
+  extractEntityId,
+  resolveEntityClassFromType,
+} from '@controleonline/ui-common/src/react/utils/entityLog';
+import {
+  resolveStoreConfigByClassName,
+  resolveStoreConfigByName,
+} from '@controleonline/ui-common/src/react/utils/storeColumns';
 import createStyles from './EntityLogPage.styles';
 
 const buildEntityIri = (resourceEndpoint, entityId) => {
@@ -16,6 +22,18 @@ const buildEntityIri = (resourceEndpoint, entityId) => {
   return `/${normalizedEndpoint}/${entityId}`;
 };
 
+const buildEntityTypeFromEndpoint = resourceEndpoint =>
+  String(resourceEndpoint || '')
+    .replace(/^\/+|\/+$/g, '')
+    .replace(/ies$/i, 'y')
+    .replace(/sses$/i, 'ss')
+    .replace(/ses$/i, 'se')
+    .replace(/s$/i, '')
+    .split(/[_-]+/)
+    .filter(Boolean)
+    .map(token => token.charAt(0).toUpperCase() + token.slice(1))
+    .join('');
+
 export default function EntityLogPage({navigation, route}) {
   const entityId = useMemo(
     () => extractEntityId(route.params?.id),
@@ -25,12 +43,28 @@ export default function EntityLogPage({navigation, route}) {
     () => String(route.params?.store || '').trim(),
     [route.params?.store],
   );
-  const targetStore = useStore(storeName);
-  const targetStoreConfig = useMemo(
-    () => resolveStoreConfigByName(storeName),
-    [storeName],
+  const routeEntityClass = useMemo(
+    () => String(route.params?.entityClass || '').trim(),
+    [route.params?.entityClass],
   );
+  const targetStoreConfig = useMemo(
+    () =>
+      storeName
+        ? resolveStoreConfigByName(storeName)
+        : resolveStoreConfigByClassName(routeEntityClass),
+    [routeEntityClass, storeName],
+  );
+  const resolvedStoreName = targetStoreConfig?.storeName || storeName;
+  const targetStore = useStore(resolvedStoreName);
   const styles = useMemo(() => createStyles(), []);
+  const resolvedEntityClass = useMemo(
+    () =>
+      routeEntityClass ||
+      resolveEntityClassFromType(
+        buildEntityTypeFromEndpoint(targetStoreConfig?.resourceEndpoint),
+      ),
+    [routeEntityClass, targetStoreConfig?.resourceEndpoint],
+  );
   const entityIri = useMemo(
     () => buildEntityIri(targetStoreConfig?.resourceEndpoint, entityId),
     [entityId, targetStoreConfig?.resourceEndpoint],
@@ -44,7 +78,7 @@ export default function EntityLogPage({navigation, route}) {
 
     return entityId
       ? {
-          '@id': entityIri,
+          ...(entityIri ? {'@id': entityIri} : {}),
           id: entityId,
         }
       : null;
@@ -66,7 +100,7 @@ export default function EntityLogPage({navigation, route}) {
     }
   }, [entityId, loadEntity, storeItem]);
 
-  if (!entityId || !storeName) {
+  if (!entityId || (!resolvedStoreName && !resolvedEntityClass)) {
     return (
       <SafeAreaView edges={['left', 'right', 'bottom']} style={styles.safeArea}>
         <View style={styles.container} />
@@ -79,8 +113,10 @@ export default function EntityLogPage({navigation, route}) {
       <View style={styles.container}>
         <EntityLogContent
           entity={seedEntity}
+          entityClass={resolvedEntityClass}
           entityId={entityId}
           entityIri={entityIri}
+          entityLabel={String(route.params?.entityLabel || '').trim()}
         />
       </View>
     </SafeAreaView>

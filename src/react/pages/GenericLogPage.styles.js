@@ -27,6 +27,9 @@ const createStyles = () =>
       justifyContent: 'space-between',
       gap: 12,
     },
+    heroCopy: {
+      flex: 1,
+    },
     heroTitle: {
       color: '#0F172A',
       fontSize: 18,
@@ -38,6 +41,12 @@ const createStyles = () =>
       fontWeight: '600',
       lineHeight: 19,
       marginTop: 6,
+    },
+    heroSummary: {
+      color: '#0F172A',
+      fontSize: 13,
+      fontWeight: '800',
+      marginTop: 12,
     },
     refreshButton: {
       width: 38,
@@ -55,6 +64,165 @@ const createStyles = () =>
     scrollContent: {
       paddingBottom: 24,
       gap: 10,
+    },
+    filtersCard: {
+      borderRadius: 16,
+      borderWidth: 1,
+      borderColor: '#E2E8F0',
+      backgroundColor: '#FFFFFF',
+      paddingHorizontal: 12,
+      paddingVertical: 12,
+      gap: 14,
+    },
+    filterHeaderRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      justifyContent: 'space-between',
+      gap: 12,
+    },
+    filterHeaderCopy: {
+      flex: 1,
+    },
+    filterTitle: {
+      color: '#0F172A',
+      fontSize: 15,
+      fontWeight: '800',
+    },
+    filterSubtitle: {
+      color: '#64748B',
+      fontSize: 12,
+      fontWeight: '600',
+      lineHeight: 18,
+      marginTop: 4,
+    },
+    clearButton: {
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: '#DBEAFE',
+      backgroundColor: '#EFF6FF',
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+    },
+    clearButtonText: {
+      color: '#2563EB',
+      fontSize: 12,
+      fontWeight: '800',
+    },
+    filterGroup: {
+      gap: 8,
+    },
+    filterLabel: {
+      color: '#0F172A',
+      fontSize: 12,
+      fontWeight: '800',
+      textTransform: 'uppercase',
+      letterSpacing: 0.6,
+    },
+    filterHint: {
+      color: '#64748B',
+      fontSize: 12,
+      fontWeight: '600',
+      lineHeight: 18,
+    },
+    filterChipsRow: {
+      gap: 8,
+      paddingRight: 2,
+    },
+    filterChip: {
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: '#CBD5E1',
+      backgroundColor: '#F8FAFC',
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+    },
+    filterChipActive: {
+      borderColor: '#2563EB',
+      backgroundColor: '#EFF6FF',
+    },
+    filterChipText: {
+      color: '#475569',
+      fontSize: 12,
+      fontWeight: '800',
+    },
+    filterChipTextActive: {
+      color: '#2563EB',
+    },
+    customRangeBox: {
+      gap: 8,
+      paddingTop: 4,
+    },
+    dateInputsRow: {
+      flexDirection: 'row',
+      gap: 8,
+    },
+    dateInput: {
+      flex: 1,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: '#CBD5E1',
+      backgroundColor: '#F8FAFC',
+      color: '#0F172A',
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    validationText: {
+      color: '#DC2626',
+      fontSize: 12,
+      fontWeight: '700',
+      lineHeight: 18,
+    },
+    customActionsRow: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      gap: 8,
+    },
+    secondaryButton: {
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: '#CBD5E1',
+      backgroundColor: '#F1F5F9',
+      paddingHorizontal: 14,
+      paddingVertical: 9,
+    },
+    secondaryButtonText: {
+      color: '#0F172A',
+      fontSize: 12,
+      fontWeight: '800',
+    },
+    primaryButton: {
+      borderRadius: 999,
+      backgroundColor: '#2563EB',
+      paddingHorizontal: 14,
+      paddingVertical: 9,
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+    },
+    primaryButtonText: {
+      color: '#FFFFFF',
+      fontSize: 12,
+      fontWeight: '900',
+    },
+    textFilterRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 8,
+    },
+    textFilterInput: {
+      flex: 1,
+      borderRadius: 12,
+      borderWidth: 1,
+      borderColor: '#CBD5E1',
+      backgroundColor: '#F8FAFC',
+      color: '#0F172A',
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      fontSize: 13,
+      fontWeight: '700',
     },
     stateBox: {
       minHeight: 140,
@@ -92,14 +260,14 @@ const createStyles = () =>
       paddingVertical: 12,
       gap: 10,
     },
-    metaRow: {
+    cardHeader: {
       flexDirection: 'row',
-      alignItems: 'center',
       justifyContent: 'space-between',
-      gap: 10,
+      alignItems: 'flex-start',
+      gap: 8,
       flexWrap: 'wrap',
     },
-    metaLeft: {
+    badgesRow: {
       flexDirection: 'row',
       alignItems: 'center',
       gap: 8,
@@ -124,17 +292,27 @@ const createStyles = () =>
       fontSize: 12,
       fontWeight: '700',
     },
-    user: {
+    entityTitle: {
+      color: '#0F172A',
+      fontSize: 15,
+      fontWeight: '800',
+    },
+    classTitle: {
+      color: '#0F172A',
+      fontSize: 14,
+      fontWeight: '800',
+    },
+    metaText: {
       color: '#64748B',
       fontSize: 12,
       fontWeight: '600',
+      lineHeight: 18,
     },
-    channel: {
-      color: '#475569',
-      fontSize: 12,
-      fontWeight: '700',
-      textTransform: 'uppercase',
-      letterSpacing: 0.5,
+    previewText: {
+      color: '#334155',
+      fontSize: 13,
+      fontWeight: '600',
+      lineHeight: 19,
     },
     messageBox: {
       borderRadius: 12,
@@ -150,19 +328,19 @@ const createStyles = () =>
       fontWeight: '700',
       lineHeight: 20,
     },
-    contextList: {
+    payloadList: {
       gap: 8,
     },
-    contextRow: {
+    payloadRow: {
       gap: 6,
     },
-    contextLabel: {
+    payloadLabel: {
       color: '#2563EB',
       fontSize: 11,
       fontWeight: '800',
       textTransform: 'uppercase',
     },
-    contextValueBox: {
+    payloadValueBox: {
       borderRadius: 12,
       borderWidth: 1,
       borderColor: '#E2E8F0',
@@ -170,11 +348,53 @@ const createStyles = () =>
       paddingHorizontal: 10,
       paddingVertical: 9,
     },
-    contextValue: {
+    payloadValue: {
       color: '#0F172A',
       fontSize: 13,
       fontWeight: '600',
       lineHeight: 18,
+    },
+    cardActionsRow: {
+      flexDirection: 'row',
+      gap: 8,
+      flexWrap: 'wrap',
+    },
+    secondaryActionButton: {
+      borderRadius: 999,
+      borderWidth: 1,
+      borderColor: '#CBD5E1',
+      backgroundColor: '#FFFFFF',
+      paddingHorizontal: 14,
+      paddingVertical: 9,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    secondaryActionButtonText: {
+      color: '#0F172A',
+      fontSize: 12,
+      fontWeight: '800',
+    },
+    primaryActionButton: {
+      borderRadius: 999,
+      backgroundColor: '#2563EB',
+      paddingHorizontal: 14,
+      paddingVertical: 9,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+    },
+    primaryActionButtonText: {
+      color: '#FFFFFF',
+      fontSize: 12,
+      fontWeight: '900',
+    },
+    expandedEntityWrap: {
+      borderTopWidth: 1,
+      borderTopColor: '#E2E8F0',
+      paddingTop: 12,
+      marginTop: 2,
+      minHeight: 220,
     },
   });
 

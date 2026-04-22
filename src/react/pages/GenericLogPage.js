@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   ScrollView,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -10,10 +11,60 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {useFocusEffect} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {useStore} from '@store';
+import EntityLogContent from '@controleonline/ui-common/src/react/components/EntityLogContent';
 import Formatter from '@controleonline/ui-common/src/utils/formatter';
+import {resolveStoreConfigByClassName} from '@controleonline/ui-common/src/react/utils/storeColumns';
+import {
+  getDateRange,
+  resolveDateRangeSummary,
+  validateCustomDateRange,
+} from '@controleonline/ui-common/src/react/utils/dateRangeFilter';
 import createStyles from './GenericLogPage.styles';
 
-const LEVEL_META = {
+const DATE_FILTER_OPTIONS = [
+  {key: 'all', label: 'Todo periodo'},
+  {key: 'today', label: 'Hoje'},
+  {key: '7d', label: '7 dias'},
+  {key: '30d', label: '30 dias'},
+  {key: 'this_month', label: 'Este mes'},
+  {key: 'last_month', label: 'Mes passado'},
+  {key: 'custom', label: 'Personalizado'},
+];
+
+const TYPE_META = {
+  entity: {
+    color: '#2563EB',
+    icon: 'account-tree',
+    label: 'Entidade',
+  },
+  operation_patterns: {
+    color: '#D97706',
+    icon: 'schema',
+    label: 'Padrao operacional',
+  },
+  generic: {
+    color: '#0F766E',
+    icon: 'notes',
+    label: 'Generico',
+  },
+};
+
+const ACTION_META = {
+  insert: {
+    color: '#16A34A',
+    icon: 'add-circle',
+    label: 'Criado',
+  },
+  update: {
+    color: '#2563EB',
+    icon: 'edit-note',
+    label: 'Alterado',
+  },
+  delete: {
+    color: '#DC2626',
+    icon: 'delete-outline',
+    label: 'Removido',
+  },
   info: {
     color: '#0F766E',
     icon: 'info-outline',
@@ -46,6 +97,37 @@ const LEVEL_META = {
   },
 };
 
+const KNOWN_LOG_TYPES = ['entity', 'operation_patterns', 'generic'];
+
+const buildEntityIri = (resourceEndpoint, entityId) => {
+  const normalizedEndpoint = String(resourceEndpoint || '').replace(/^\/+|\/+$/g, '');
+  if (!normalizedEndpoint || !entityId) {
+    return '';
+  }
+
+  return `/${normalizedEndpoint}/${entityId}`;
+};
+
+const normalizeText = value => String(value || '').trim();
+const normalizeFilterKey = value => normalizeText(value).toLowerCase();
+
+const formatHumanLabel = value =>
+  String(value || '')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+const getShortClassName = className => {
+  const parts = normalizeText(className).split('\\').filter(Boolean);
+  return parts[parts.length - 1] || normalizeText(className);
+};
+
+const formatClassLabel = className => {
+  const shortClassName = getShortClassName(className);
+  return formatHumanLabel(shortClassName) || shortClassName || 'Sem classe';
+};
+
 const resolvePayload = log => {
   if (log?.payload && typeof log.payload === 'object' && !Array.isArray(log.payload)) {
     return log.payload;
@@ -63,29 +145,7 @@ const resolvePayload = log => {
   return {};
 };
 
-const getLevelMeta = level => LEVEL_META[String(level || '').toLowerCase()] || {
-  color: '#64748B',
-  icon: 'history',
-  label: 'Evento',
-};
-
-const buildContextEntries = context => {
-  if (!context) {
-    return [];
-  }
-
-  if (Array.isArray(context)) {
-    return context.map((value, index) => [`item_${index + 1}`, value]);
-  }
-
-  if (typeof context === 'object') {
-    return Object.entries(context);
-  }
-
-  return [['context', context]];
-};
-
-const formatContextValue = value => {
+const formatValue = value => {
   if (value === null || value === undefined || value === '') {
     return '—';
   }
@@ -109,72 +169,266 @@ const formatContextValue = value => {
   }
 };
 
-const formatContextLabel = value =>
-  String(value || '')
-    .replace(/_/g, ' ')
-    .trim() || 'Contexto';
+const getTypeMeta = type => TYPE_META[normalizeFilterKey(type)] || {
+  color: '#64748B',
+  icon: 'history',
+  label: formatHumanLabel(type) || 'Outro',
+};
 
-function GenericLogCard({log, styles}) {
+const getActionMeta = action => ACTION_META[normalizeFilterKey(action)] || {
+  color: '#64748B',
+  icon: 'history',
+  label: 'Evento',
+};
+
+const buildLogKey = log =>
+  String(log?.id || `${log?.type || 'log'}-${log?.class || 'no-class'}-${log?.row || 'no-row'}-${log?.createdAt || 'no-date'}`);
+
+const buildTypeOptions = items => {
+  const typeKeys = new Set(KNOWN_LOG_TYPES);
+  items.forEach(log => {
+    const key = normalizeFilterKey(log?.type);
+    if (key) {
+      typeKeys.add(key);
+    }
+  });
+
+  return [
+    {key: 'all', label: 'Todos'},
+    ...Array.from(typeKeys).map(key => ({
+      key,
+      label: getTypeMeta(key).label,
+    })),
+  ];
+};
+
+const buildQuickClassOptions = items => {
+  const counts = new Map();
+
+  items.forEach(log => {
+    if (normalizeFilterKey(log?.type) !== 'entity' || !normalizeText(log?.class)) {
+      return;
+    }
+
+    const key = getShortClassName(log.class);
+    counts.set(key, (counts.get(key) || 0) + 1);
+  });
+
+  return Array.from(counts.entries())
+    .sort((left, right) => {
+      if (right[1] !== left[1]) {
+        return right[1] - left[1];
+      }
+
+      return left[0].localeCompare(right[0], 'pt-BR');
+    })
+    .slice(0, 12)
+    .map(([value]) => ({
+      label: formatClassLabel(value),
+      value,
+    }));
+};
+
+function FilterChip({active, label, onPress, styles}) {
+  return (
+    <TouchableOpacity
+      activeOpacity={0.9}
+      onPress={onPress}
+      style={[styles.filterChip, active ? styles.filterChipActive : null]}>
+      <Text style={[styles.filterChipText, active ? styles.filterChipTextActive : null]}>
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
+function MetaBadge({meta, styles}) {
+  return (
+    <View
+      style={[
+        styles.badge,
+        {
+          borderColor: `${meta.color}44`,
+          backgroundColor: `${meta.color}14`,
+        },
+      ]}>
+      <Icon name={meta.icon} size={14} color={meta.color} />
+      <Text style={[styles.badgeText, {color: meta.color}]}>
+        {meta.label}
+      </Text>
+    </View>
+  );
+}
+
+function PayloadFieldList({entries, styles}) {
+  if (!entries.length) {
+    return null;
+  }
+
+  return (
+    <View style={styles.payloadList}>
+      {entries.map(([field, value]) => (
+        <View key={field} style={styles.payloadRow}>
+          <Text style={styles.payloadLabel}>{formatHumanLabel(field) || field}</Text>
+          <View style={styles.payloadValueBox}>
+            <Text style={styles.payloadValue}>{formatValue(value)}</Text>
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function EntityLogCard({
+  log,
+  isExpanded,
+  onOpenFullHistory,
+  onToggleExpand,
+  styles,
+}) {
   const payload = useMemo(() => resolvePayload(log), [log]);
-  const meta = useMemo(() => getLevelMeta(log?.action || payload?.level), [log?.action, payload?.level]);
-  const contextEntries = useMemo(() => buildContextEntries(payload?.context), [payload?.context]);
-  const message = useMemo(
-    () => (typeof payload?.message === 'string' ? payload.message.trim() : ''),
-    [payload?.message],
-  );
-  const channel = useMemo(
-    () => (typeof payload?.channel === 'string' ? payload.channel.trim() : ''),
-    [payload?.channel],
-  );
+  const payloadEntries = useMemo(() => Object.entries(payload || {}), [payload]);
+  const typeMeta = useMemo(() => getTypeMeta(log?.type), [log?.type]);
+  const actionMeta = useMemo(() => getActionMeta(log?.action), [log?.action]);
   const logDate = useMemo(
     () => Formatter.formatDateYmdTodmY(log?.createdAt, true),
     [log?.createdAt],
   );
+  const entityTitle = useMemo(
+    () => `${formatClassLabel(log?.class)} #${log?.row || '--'}`,
+    [log?.class, log?.row],
+  );
+  const previewFields = useMemo(
+    () => payloadEntries.slice(0, 4).map(([field]) => formatHumanLabel(field) || field),
+    [payloadEntries],
+  );
+  const storeConfig = useMemo(
+    () => resolveStoreConfigByClassName(log?.class),
+    [log?.class],
+  );
+  const entityIri = useMemo(
+    () => buildEntityIri(storeConfig?.resourceEndpoint, log?.row),
+    [log?.row, storeConfig?.resourceEndpoint],
+  );
 
   return (
     <View style={styles.card}>
-      <View style={styles.metaRow}>
-        <View style={styles.metaLeft}>
-          <View
-            style={[
-              styles.badge,
-              {
-                borderColor: `${meta.color}44`,
-                backgroundColor: `${meta.color}14`,
-              },
-            ]}>
-            <Icon name={meta.icon} size={14} color={meta.color} />
-            <Text style={[styles.badgeText, {color: meta.color}]}>
-              {meta.label}
-            </Text>
-          </View>
-
-          <Text style={styles.date}>{logDate || 'Sem data'}</Text>
+      <View style={styles.cardHeader}>
+        <View style={styles.badgesRow}>
+          <MetaBadge meta={typeMeta} styles={styles} />
+          <MetaBadge meta={actionMeta} styles={styles} />
         </View>
 
-        {!!log?.userDisplayName && (
-          <Text style={styles.user}>{log.userDisplayName}</Text>
-        )}
+        <Text style={styles.date}>{logDate || 'Sem data'}</Text>
       </View>
 
-      {!!channel && <Text style={styles.channel}>{channel}</Text>}
+      <Text style={styles.entityTitle}>{entityTitle}</Text>
+
+      {!!log?.userDisplayName && (
+        <Text style={styles.metaText}>Usuario: {log.userDisplayName}</Text>
+      )}
+
+      {!!previewFields.length ? (
+        <Text style={styles.previewText}>
+          Campos afetados: {previewFields.join(', ')}
+        </Text>
+      ) : (
+        <Text style={styles.previewText}>Sem diff detalhado registrado neste evento.</Text>
+      )}
+
+      <View style={styles.cardActionsRow}>
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={onToggleExpand}
+          style={styles.secondaryActionButton}>
+          <Icon
+            name={isExpanded ? 'expand-less' : 'expand-more'}
+            size={18}
+            color="#0F172A"
+          />
+          <Text style={styles.secondaryActionButtonText}>
+            {isExpanded ? 'Recolher timeline' : 'Expandir timeline'}
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={onOpenFullHistory}
+          style={styles.primaryActionButton}>
+          <Icon name="open-in-new" size={16} color="#FFFFFF" />
+          <Text style={styles.primaryActionButtonText}>Abrir historico</Text>
+        </TouchableOpacity>
+      </View>
+
+      {isExpanded ? (
+        <View style={styles.expandedEntityWrap}>
+          <EntityLogContent
+            entity={entityIri ? {'@id': entityIri, id: log?.row} : {id: log?.row}}
+            entityClass={normalizeText(log?.class)}
+            entityId={Number(log?.row) || null}
+            entityIri={entityIri}
+            entityLabel={entityTitle}
+            itemsPerPage={40}
+          />
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+function OtherLogCard({log, styles}) {
+  const payload = useMemo(() => resolvePayload(log), [log]);
+  const typeMeta = useMemo(() => getTypeMeta(log?.type), [log?.type]);
+  const actionMeta = useMemo(() => getActionMeta(log?.action), [log?.action]);
+  const logDate = useMemo(
+    () => Formatter.formatDateYmdTodmY(log?.createdAt, true),
+    [log?.createdAt],
+  );
+  const payloadEntries = useMemo(
+    () => Object.entries(payload || {}).filter(([field]) => field !== 'message'),
+    [payload],
+  );
+  const primaryMessage = useMemo(() => {
+    const payloadMessage =
+      typeof payload?.message === 'string' ? payload.message.trim() : '';
+
+    if (payloadMessage) {
+      return payloadMessage;
+    }
+
+    return normalizeText(log?.action) || 'Sem descricao registrada.';
+  }, [log?.action, payload?.message]);
+  const rawAction = normalizeText(log?.action);
+  const showRawAction = rawAction && rawAction !== actionMeta.label && rawAction !== primaryMessage;
+
+  return (
+    <View style={styles.card}>
+      <View style={styles.cardHeader}>
+        <View style={styles.badgesRow}>
+          <MetaBadge meta={typeMeta} styles={styles} />
+          <MetaBadge meta={actionMeta} styles={styles} />
+        </View>
+
+        <Text style={styles.date}>{logDate || 'Sem data'}</Text>
+      </View>
+
+      {!!normalizeText(log?.class) && (
+        <Text style={styles.classTitle}>{formatClassLabel(log.class)}</Text>
+      )}
+
+      {!!log?.userDisplayName && (
+        <Text style={styles.metaText}>Usuario: {log.userDisplayName}</Text>
+      )}
 
       <View style={styles.messageBox}>
-        <Text style={styles.message}>{message || 'Sem mensagem registrada.'}</Text>
+        <Text style={styles.message}>{primaryMessage}</Text>
       </View>
 
-      {!!contextEntries.length && (
-        <View style={styles.contextList}>
-          {contextEntries.map(([field, value]) => (
-            <View key={`${log?.id || 'log'}-${field}`} style={styles.contextRow}>
-              <Text style={styles.contextLabel}>{formatContextLabel(field)}</Text>
-              <View style={styles.contextValueBox}>
-                <Text style={styles.contextValue}>{formatContextValue(value)}</Text>
-              </View>
-            </View>
-          ))}
-        </View>
-      )}
+      {showRawAction ? (
+        <Text style={styles.metaText}>Acao registrada: {rawAction}</Text>
+      ) : null}
+
+      <PayloadFieldList entries={payloadEntries} styles={styles} />
     </View>
   );
 }
@@ -187,9 +441,28 @@ export default function GenericLogPage({navigation}) {
     error: '',
     items: [],
     status: 'idle',
+    totalItems: 0,
   });
+  const [selectedType, setSelectedType] = useState('all');
+  const [dateFilterKey, setDateFilterKey] = useState('all');
+  const [customRange, setCustomRange] = useState({
+    from: '',
+    to: '',
+  });
+  const [customRangeDraft, setCustomRangeDraft] = useState({
+    from: '',
+    to: '',
+  });
+  const [classFilterInput, setClassFilterInput] = useState('');
+  const [appliedClassFilter, setAppliedClassFilter] = useState('');
+  const [dateValidationMessage, setDateValidationMessage] = useState('');
+  const [expandedEntityKey, setExpandedEntityKey] = useState('');
 
   const loadLogs = useCallback(async () => {
+    const {after, before} = getDateRange(dateFilterKey, customRange, {
+      useCurrentMoment: true,
+    });
+
     setLogsState(current => ({
       ...current,
       error: '',
@@ -198,29 +471,125 @@ export default function GenericLogPage({navigation}) {
 
     try {
       const response = await entityLogActions.getTimeline({
-        itemsPerPage: 100,
-        type: 'generic',
+        itemsPerPage: 200,
+        type: selectedType === 'all' ? 'all' : selectedType,
+        ...(after ? {'createdAt[after]': after} : {}),
+        ...(before ? {'createdAt[before]': before} : {}),
+        ...(appliedClassFilter ? {class: appliedClassFilter} : {}),
       });
 
+      const items = Array.isArray(response?.items) ? response.items : [];
       setLogsState({
         error: '',
-        items: Array.isArray(response?.items) ? response.items : [],
+        items,
         status: 'success',
+        totalItems: Number(response?.totalItems || items.length || 0),
       });
     } catch (error) {
       setLogsState({
         error: error?.message || 'Erro ao carregar logs.',
         items: [],
         status: 'error',
+        totalItems: 0,
       });
     }
-  }, [entityLogActions]);
+  }, [appliedClassFilter, customRange, dateFilterKey, entityLogActions, selectedType]);
+
+  const typeOptions = useMemo(
+    () => buildTypeOptions(logsState.items),
+    [logsState.items],
+  );
+
+  const quickClassOptions = useMemo(
+    () => buildQuickClassOptions(logsState.items),
+    [logsState.items],
+  );
+
+  const activeDateSummary = useMemo(
+    () => resolveDateRangeSummary(dateFilterKey, customRange, {useCurrentMoment: true}),
+    [customRange, dateFilterKey],
+  );
+
+  const hasActiveFilters = useMemo(
+    () =>
+      selectedType !== 'all' ||
+      Boolean(appliedClassFilter) ||
+      Boolean(activeDateSummary),
+    [activeDateSummary, appliedClassFilter, selectedType],
+  );
+
+  const resultsSummary = useMemo(() => {
+    const loadedCount = logsState.items.length;
+    const totalCount = logsState.totalItems || loadedCount;
+    const countLabel =
+      loadedCount === totalCount
+        ? `${loadedCount} logs`
+        : `${loadedCount} de ${totalCount} logs`;
+
+    if (!activeDateSummary) {
+      return countLabel;
+    }
+
+    return `${countLabel} no periodo ${activeDateSummary}`;
+  }, [activeDateSummary, logsState.items.length, logsState.totalItems]);
+
+  const handleDateFilterSelect = useCallback(key => {
+    setDateValidationMessage('');
+    setDateFilterKey(key);
+  }, []);
+
+  const applyCustomRange = useCallback(() => {
+    const validationMessage = validateCustomDateRange(
+      customRangeDraft.from,
+      customRangeDraft.to,
+    );
+    setDateValidationMessage(validationMessage);
+
+    if (validationMessage) {
+      return;
+    }
+
+    setCustomRange({
+      from: normalizeText(customRangeDraft.from),
+      to: normalizeText(customRangeDraft.to),
+    });
+    setDateFilterKey('custom');
+  }, [customRangeDraft.from, customRangeDraft.to]);
+
+  const applyClassFilter = useCallback(() => {
+    setAppliedClassFilter(normalizeText(classFilterInput));
+  }, [classFilterInput]);
+
+  const clearAllFilters = useCallback(() => {
+    setSelectedType('all');
+    setDateFilterKey('all');
+    setCustomRange({from: '', to: ''});
+    setCustomRangeDraft({from: '', to: ''});
+    setClassFilterInput('');
+    setAppliedClassFilter('');
+    setDateValidationMessage('');
+    setExpandedEntityKey('');
+  }, []);
+
+  const openEntityHistory = useCallback((log) => {
+    const storeConfig = resolveStoreConfigByClassName(log?.class);
+    navigation.navigate('EntityLogPage', {
+      id: log?.row,
+      store: storeConfig?.storeName || '',
+      entityClass: normalizeText(log?.class),
+      entityLabel: `${formatClassLabel(log?.class)} #${log?.row || '--'}`,
+    });
+  }, [navigation]);
 
   useEffect(() => {
     navigation.setOptions({
-      title: 'Logs gerais',
+      title: 'Logs',
     });
   }, [navigation]);
+
+  useEffect(() => {
+    setExpandedEntityKey('');
+  }, [appliedClassFilter, dateFilterKey, logsState.items, selectedType]);
 
   useFocusEffect(
     useCallback(() => {
@@ -233,10 +602,10 @@ export default function GenericLogPage({navigation}) {
       <View style={styles.container}>
         <View style={styles.heroCard}>
           <View style={styles.heroHeader}>
-            <View style={{flex: 1}}>
-              <Text style={styles.heroTitle}>Logs gerais</Text>
+            <View style={styles.heroCopy}>
+              <Text style={styles.heroTitle}>Logs</Text>
               <Text style={styles.heroSubtitle}>
-                Eventos operacionais que nao puderam ser vinculados a uma entidade especifica.
+                Timeline global com todos os tipos de log. Para registros de entidade, a expansao reutiliza o historico da propria entidade.
               </Text>
             </View>
 
@@ -247,12 +616,177 @@ export default function GenericLogPage({navigation}) {
               <Icon name="refresh" size={18} color="#2563EB" />
             </TouchableOpacity>
           </View>
+
+          <Text style={styles.heroSummary}>{resultsSummary}</Text>
         </View>
 
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}>
+          <View style={styles.filtersCard}>
+            <View style={styles.filterHeaderRow}>
+              <View style={styles.filterHeaderCopy}>
+                <Text style={styles.filterTitle}>Filtros</Text>
+                <Text style={styles.filterSubtitle}>
+                  Filtre por periodo, tipo real do log e classe da entidade. Para integracao, use `entity` e pesquise `Integration`.
+                </Text>
+              </View>
+
+              {hasActiveFilters ? (
+                <TouchableOpacity
+                  activeOpacity={0.9}
+                  onPress={clearAllFilters}
+                  style={styles.clearButton}>
+                  <Text style={styles.clearButtonText}>Limpar</Text>
+                </TouchableOpacity>
+              ) : null}
+            </View>
+
+            <View style={styles.filterGroup}>
+              <Text style={styles.filterLabel}>Periodo</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.filterChipsRow}>
+                {DATE_FILTER_OPTIONS.map(option => (
+                  <FilterChip
+                    key={option.key}
+                    active={option.key === dateFilterKey}
+                    label={option.label}
+                    onPress={() => handleDateFilterSelect(option.key)}
+                    styles={styles}
+                  />
+                ))}
+              </ScrollView>
+
+              {!!activeDateSummary && (
+                <Text style={styles.filterHint}>Periodo atual: {activeDateSummary}</Text>
+              )}
+
+              {dateFilterKey === 'custom' ? (
+                <View style={styles.customRangeBox}>
+                  <View style={styles.dateInputsRow}>
+                    <TextInput
+                      value={customRangeDraft.from}
+                      onChangeText={value =>
+                        setCustomRangeDraft(current => ({...current, from: value}))
+                      }
+                      placeholder="Data inicial (AAAA-MM-DD)"
+                      placeholderTextColor="#94A3B8"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      style={styles.dateInput}
+                    />
+
+                    <TextInput
+                      value={customRangeDraft.to}
+                      onChangeText={value =>
+                        setCustomRangeDraft(current => ({...current, to: value}))
+                      }
+                      placeholder="Data final (AAAA-MM-DD)"
+                      placeholderTextColor="#94A3B8"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      style={styles.dateInput}
+                    />
+                  </View>
+
+                  <Text style={styles.filterHint}>
+                    Aceita `AAAA-MM-DD` ou `DD/MM/AAAA`.
+                  </Text>
+
+                  {!!dateValidationMessage && (
+                    <Text style={styles.validationText}>{dateValidationMessage}</Text>
+                  )}
+
+                  <View style={styles.customActionsRow}>
+                    <TouchableOpacity
+                      activeOpacity={0.9}
+                      onPress={() => {
+                        setCustomRangeDraft(customRange);
+                        setDateValidationMessage('');
+                      }}
+                      style={styles.secondaryButton}>
+                      <Text style={styles.secondaryButtonText}>Restaurar</Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      activeOpacity={0.9}
+                      onPress={applyCustomRange}
+                      style={styles.primaryButton}>
+                      <Text style={styles.primaryButtonText}>Aplicar periodo</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ) : null}
+            </View>
+
+            <View style={styles.filterGroup}>
+              <Text style={styles.filterLabel}>Tipo de log</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.filterChipsRow}>
+                {typeOptions.map(option => (
+                  <FilterChip
+                    key={option.key}
+                    active={option.key === selectedType}
+                    label={option.label}
+                    onPress={() => setSelectedType(option.key)}
+                    styles={styles}
+                  />
+                ))}
+              </ScrollView>
+            </View>
+
+            <View style={styles.filterGroup}>
+              <Text style={styles.filterLabel}>Classe / origem</Text>
+              <View style={styles.textFilterRow}>
+                <TextInput
+                  value={classFilterInput}
+                  onChangeText={setClassFilterInput}
+                  placeholder="Ex.: Integration, Device, execute_operation"
+                  placeholderTextColor="#94A3B8"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  style={styles.textFilterInput}
+                />
+
+                <TouchableOpacity
+                  activeOpacity={0.9}
+                  onPress={applyClassFilter}
+                  style={styles.primaryButton}>
+                  <Text style={styles.primaryButtonText}>Aplicar</Text>
+                </TouchableOpacity>
+              </View>
+
+              {!!appliedClassFilter && (
+                <Text style={styles.filterHint}>Classe aplicada: {appliedClassFilter}</Text>
+              )}
+
+              {!!quickClassOptions.length && (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.filterChipsRow}>
+                  {quickClassOptions.map(option => (
+                    <FilterChip
+                      key={option.value}
+                      active={normalizeFilterKey(option.value) === normalizeFilterKey(appliedClassFilter)}
+                      label={option.label}
+                      onPress={() => {
+                        setClassFilterInput(option.value);
+                        setAppliedClassFilter(option.value);
+                      }}
+                      styles={styles}
+                    />
+                  ))}
+                </ScrollView>
+              )}
+            </View>
+          </View>
+
           {logsState.status === 'loading' ? (
             <View style={styles.stateBox}>
               <ActivityIndicator size="small" color="#2563EB" />
@@ -273,20 +807,43 @@ export default function GenericLogPage({navigation}) {
               <Icon name="history-toggle-off" size={22} color="#94A3B8" />
               <Text style={styles.stateTitle}>Nenhum log encontrado</Text>
               <Text style={styles.stateText}>
-                Ainda nao existem logs genericos sem entidade para esta base.
+                Nenhum registro corresponde aos filtros aplicados.
               </Text>
             </View>
           ) : null}
 
           {logsState.status === 'success' && !!logsState.items.length ? (
             <View style={styles.list}>
-              {logsState.items.map(log => (
-                <GenericLogCard
-                  key={log?.id || `${log?.createdAt}-${log?.message || 'generic-log'}`}
-                  log={log}
-                  styles={styles}
-                />
-              ))}
+              {logsState.items.map(log => {
+                const logKey = buildLogKey(log);
+                const isEntityLog =
+                  normalizeFilterKey(log?.type) === 'entity' &&
+                  normalizeText(log?.class) &&
+                  Number(log?.row) > 0;
+
+                if (isEntityLog) {
+                  return (
+                    <EntityLogCard
+                      key={logKey}
+                      isExpanded={expandedEntityKey === logKey}
+                      log={log}
+                      onOpenFullHistory={() => openEntityHistory(log)}
+                      onToggleExpand={() =>
+                        setExpandedEntityKey(current => current === logKey ? '' : logKey)
+                      }
+                      styles={styles}
+                    />
+                  );
+                }
+
+                return (
+                  <OtherLogCard
+                    key={logKey}
+                    log={log}
+                    styles={styles}
+                  />
+                );
+              })}
             </View>
           ) : null}
         </ScrollView>

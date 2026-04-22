@@ -22,7 +22,7 @@ const commonRoutes = [
       showBottomToolBar: true,
       showCompanyFilter: true,
       companyFilterMode: 'icon',
-      title: 'Logs gerais',
+      title: 'Logs',
     },
   },
   {

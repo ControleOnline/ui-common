@@ -152,6 +152,67 @@ export const resolveStoreConfigByName = storeName => {
   };
 };
 
+export const resolveStoreConfigByClassName = className => {
+  const normalizedClassKey = normalizeKey(
+    String(className || '').split('\\').filter(Boolean).pop(),
+  );
+  if (!normalizedClassKey) {
+    return {
+      columns: [],
+      resourceEndpoint: '',
+      resourceName: '',
+      store: null,
+      storeName: '',
+    };
+  }
+
+  const stores = getAllStores();
+  const candidates = Object.entries(stores || {})
+    .map(([storeName, store]) => {
+      const resourceEndpoint = getStoreEndpoint(store);
+      const normalizedEndpoint = singularizeResourceName(resourceEndpoint);
+      const columns = getStoreColumns(store);
+      const endpointKey = normalizeKey(normalizedEndpoint);
+      const resourceKey = normalizeKey(resourceEndpoint);
+      const storeKey = normalizeKey(storeName);
+
+      let score = 0;
+      if (endpointKey === normalizedClassKey) score += 4;
+      if (storeKey === normalizedClassKey) score += 3;
+      if (resourceKey === normalizedClassKey) score += 2;
+      if (!score) {
+        return null;
+      }
+
+      if (columns.length) score += 1;
+
+      return {
+        columns,
+        resourceEndpoint,
+        resourceName: resourceEndpoint,
+        score,
+        store,
+        storeName,
+      };
+    })
+    .filter(Boolean)
+    .sort((left, right) => {
+      if (right.score !== left.score) {
+        return right.score - left.score;
+      }
+
+      return right.columns.length - left.columns.length;
+    });
+
+  return candidates[0] || {
+    columns: [],
+    resourceEndpoint: '',
+    resourceName: '',
+    store: null,
+    storeName: '',
+  };
+};
+
 export const resolveStoreConfigByEntity = ({entity = null, entityIri = ''} = {}) => {
   const resolvedEntityIri =
     normalizeText(entity?.['@id']) || normalizeText(entityIri);
