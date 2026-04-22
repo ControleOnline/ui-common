@@ -131,7 +131,7 @@ export const searchCompanyProducts = async ({ companyId, query = '', itemsPerPag
 
   const params = {
     company: toEntityIri(companyId, 'people'),
-    active: true,
+    active: 1,
     itemsPerPage,
     'order[product]': 'ASC',
   };
