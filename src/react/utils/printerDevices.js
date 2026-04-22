@@ -433,6 +433,20 @@ export const getManagedPrinterDevices = ({
         return;
       }
 
+      const printerConfigs = parseConfigsObject(printerDeviceConfig?.configs);
+      const explicitManagerDeviceId = normalizeDeviceId(
+        printerConfigs?.[NETWORK_PRINTER_MANAGER_DEVICE_CONFIG_KEY],
+      );
+
+      // When the printer already names a specific manager device, only that
+      // device should consume the spool to avoid duplicated prints.
+      if (
+        explicitManagerDeviceId &&
+        explicitManagerDeviceId !== normalizedManagerDeviceId
+      ) {
+        return;
+      }
+
       assignManagedPrinter({
         ...(printerDeviceConfig?.device || {}),
         type: getDeviceConfigType(printerDeviceConfig),
