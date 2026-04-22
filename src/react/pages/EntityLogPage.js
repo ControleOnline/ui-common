@@ -55,7 +55,7 @@ export default function EntityLogPage({navigation, route}) {
     [routeEntityClass, storeName],
   );
   const resolvedStoreName = targetStoreConfig?.storeName || storeName;
-  const targetStore = useStore(resolvedStoreName);
+  const targetStore = useStore(resolvedStoreName || 'entity_log');
   const styles = useMemo(() => createStyles(), []);
   const resolvedEntityClass = useMemo(
     () =>
@@ -69,8 +69,8 @@ export default function EntityLogPage({navigation, route}) {
     () => buildEntityIri(targetStoreConfig?.resourceEndpoint, entityId),
     [entityId, targetStoreConfig?.resourceEndpoint],
   );
-  const loadEntity = targetStore?.actions?.get;
-  const storeItem = targetStore?.getters?.item;
+  const loadEntity = resolvedStoreName ? targetStore?.actions?.get : null;
+  const storeItem = resolvedStoreName ? targetStore?.getters?.item : null;
   const seedEntity = useMemo(() => {
     if (extractEntityId(storeItem) === entityId) {
       return storeItem;

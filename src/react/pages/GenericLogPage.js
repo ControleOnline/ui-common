@@ -472,7 +472,7 @@ export default function GenericLogPage({navigation}) {
     try {
       const response = await entityLogActions.getTimeline({
         itemsPerPage: 200,
-        type: selectedType === 'all' ? 'all' : selectedType,
+        ...(selectedType !== 'all' ? {type: selectedType} : {}),
         ...(after ? {'createdAt[after]': after} : {}),
         ...(before ? {'createdAt[before]': before} : {}),
         ...(appliedClassFilter ? {class: appliedClassFilter} : {}),

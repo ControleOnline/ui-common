@@ -23,10 +23,15 @@ const normalizeEntityIri = entityIri =>
 // Mantemos o acesso ao backend do historico concentrado nesta store.
 export const getTimeline = ({getters}, params = {}) => {
   const itemsPerPage = Number(params?.itemsPerPage) || 100;
+  const hasExplicitType = Object.prototype.hasOwnProperty.call(params || {}, 'type');
+  const hasEntityTarget =
+    !!String(params?.class || '').trim() ||
+    !!String(params?.entity || '').trim() ||
+    Number(params?.row) > 0;
   const query = {
     itemsPerPage,
-    type: 'entity',
     'order[createdAt]': 'desc',
+    ...(!hasExplicitType && hasEntityTarget ? {type: 'entity'} : {}),
     ...(params || {}),
   };
 
