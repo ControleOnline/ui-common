@@ -15,6 +15,34 @@ export const DISPLAY_AUTO_PRINT_PRODUCT_CONFIG_KEY =
   'display-auto-print-product';
 export const DISPLAY_ALLOW_PRINTER_CHANGE_CONFIG_KEY =
   'display-allow-printer-change';
+export const POS_OPERATION_MODE_CONFIG_KEY = 'pos-operation-mode';
+export const POS_OPERATION_MODE_COUNTER = 'counter';
+export const POS_OPERATION_MODE_WAITER = 'waiter';
+export const POS_OPERATION_MODE_KIOSK = 'kiosk';
+export const POS_OPERATION_MODE_CASHIER = 'cashier';
+export const POS_OPERATION_MODE_DEFAULT = POS_OPERATION_MODE_CASHIER;
+export const POS_OPERATION_MODE_OPTIONS = [
+  {
+    value: POS_OPERATION_MODE_COUNTER,
+    translationKey: 'counterService',
+    descriptionKey: 'counterServiceDescription',
+  },
+  {
+    value: POS_OPERATION_MODE_WAITER,
+    translationKey: 'waiterService',
+    descriptionKey: 'waiterServiceDescription',
+  },
+  {
+    value: POS_OPERATION_MODE_KIOSK,
+    translationKey: 'selfServiceKiosk',
+    descriptionKey: 'selfServiceKioskDescription',
+  },
+  {
+    value: POS_OPERATION_MODE_CASHIER,
+    translationKey: 'cashierPOS',
+    descriptionKey: 'cashierPOSDescription',
+  },
+];
 
 export const DEFAULT_DEVICE_CONFIGS = {
   'pos-type': 'full',
@@ -29,6 +57,7 @@ export const DEFAULT_DEVICE_CONFIGS = {
   [DEVICE_ALERT_SOUND_URL_KEY]: '',
   [DEVICE_RUNTIME_DEBUG_INFO_ENABLED_KEY]: '0',
   [DISPLAY_ALLOW_PRINTER_CHANGE_CONFIG_KEY]: '0',
+  [POS_OPERATION_MODE_CONFIG_KEY]: POS_OPERATION_MODE_DEFAULT,
 };
 
 export const isTruthyValue = value =>
@@ -44,12 +73,84 @@ export const parseConfigsObject = configs => {
     try {
       const parsed = JSON.parse(configs);
       return parsed && typeof parsed === 'object' ? parsed : {};
-    } catch (e) {
+    } catch {
       return {};
     }
   }
 
   return typeof configs === 'object' ? {...configs} : {};
+};
+
+export const normalizePosOperationMode = value => {
+  const normalizedValue = String(value || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\s_]/g, '-');
+
+  if (
+    [
+      POS_OPERATION_MODE_COUNTER,
+      'balcao',
+      'counter-service',
+      'front-counter',
+    ].includes(normalizedValue)
+  ) {
+    return POS_OPERATION_MODE_COUNTER;
+  }
+
+  if (
+    [
+      POS_OPERATION_MODE_WAITER,
+      'garcon',
+      'garcom',
+      'table-service',
+    ].includes(normalizedValue)
+  ) {
+    return POS_OPERATION_MODE_WAITER;
+  }
+
+  if (
+    [
+      POS_OPERATION_MODE_KIOSK,
+      'totem',
+      'self-service',
+      'self-service-kiosk',
+    ].includes(normalizedValue)
+  ) {
+    return POS_OPERATION_MODE_KIOSK;
+  }
+
+  if (
+    [
+      POS_OPERATION_MODE_CASHIER,
+      'pdv',
+      'pos',
+      'checkout',
+      'cashier-pos',
+    ].includes(normalizedValue)
+  ) {
+    return POS_OPERATION_MODE_CASHIER;
+  }
+
+  return POS_OPERATION_MODE_DEFAULT;
+};
+
+export const resolvePosOperationMode = configs =>
+  normalizePosOperationMode(
+    parseConfigsObject(configs)?.[POS_OPERATION_MODE_CONFIG_KEY],
+  );
+
+export const getPosOperationModeOption = mode => {
+  const normalizedMode = normalizePosOperationMode(mode);
+
+  return (
+    POS_OPERATION_MODE_OPTIONS.find(option => option.value === normalizedMode) ||
+    POS_OPERATION_MODE_OPTIONS.find(
+      option => option.value === POS_OPERATION_MODE_DEFAULT,
+    )
+  );
 };
 
 export const resolveDeviceOrderVisibility = configs => {
