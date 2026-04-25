@@ -2,6 +2,7 @@ import React, {createContext, useContext, useState} from 'react';
 import {Dimensions} from 'react-native';
 import {Portal, Dialog, Paragraph, Button} from 'react-native-paper';
 import {toast, ToastPosition} from '@backpackapp-io/react-native-toast';
+import SystemErrorToast from './SystemErrorToast';
 import {
   TOAST_DEFAULT_BOTTOM_OFFSET,
   TOAST_DEFAULT_DURATION,
@@ -113,7 +114,7 @@ export const MessageProvider = ({children}) => {
 
   const showError = (message, options = {}) => {
     return toast.error(
-      normalizeMessage(message),
+      <SystemErrorToast error={message} />,
       normalizeOptions(
         {position: 'top', offsetTop: TOAST_DEFAULT_TOP_OFFSET, ...options},
         'top',
