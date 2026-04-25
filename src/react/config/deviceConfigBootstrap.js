@@ -142,6 +142,9 @@ export const resolvePosOperationMode = configs =>
     parseConfigsObject(configs)?.[POS_OPERATION_MODE_CONFIG_KEY],
   );
 
+export const isPosKioskMode = configs =>
+  resolvePosOperationMode(configs) === POS_OPERATION_MODE_KIOSK;
+
 export const getPosOperationModeOption = mode => {
   const normalizedMode = normalizePosOperationMode(mode);
 
