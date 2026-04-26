@@ -16,11 +16,21 @@ export const DISPLAY_AUTO_PRINT_PRODUCT_CONFIG_KEY =
 export const DISPLAY_ALLOW_PRINTER_CHANGE_CONFIG_KEY =
   'display-allow-printer-change';
 export const POS_OPERATION_MODE_CONFIG_KEY = 'pos-operation-mode';
+export const POS_AUTO_PRINT_ENABLED_CONFIG_KEY = 'pos-auto-print-enabled';
+export const POS_CASH_MANAGEMENT_MODE_CONFIG_KEY =
+  'pos-cash-management-mode';
 export const POS_OPERATION_MODE_COUNTER = 'counter';
 export const POS_OPERATION_MODE_WAITER = 'waiter';
 export const POS_OPERATION_MODE_KIOSK = 'kiosk';
 export const POS_OPERATION_MODE_CASHIER = 'cashier';
 export const POS_OPERATION_MODE_DEFAULT = POS_OPERATION_MODE_CASHIER;
+export const POS_PRINT_MODE_ORDER = 'order';
+export const POS_PRINT_MODE_FORM = 'form';
+export const POS_PRINT_MODE_DEFAULT = POS_PRINT_MODE_ORDER;
+export const POS_CASH_MANAGEMENT_MODE_CASH_REGISTER = 'cash-register';
+export const POS_CASH_MANAGEMENT_MODE_DAILY = 'daily';
+export const POS_CASH_MANAGEMENT_MODE_DEFAULT =
+  POS_CASH_MANAGEMENT_MODE_CASH_REGISTER;
 export const POS_OPERATION_MODE_OPTIONS = [
   {
     value: POS_OPERATION_MODE_COUNTER,
@@ -58,6 +68,8 @@ export const DEFAULT_DEVICE_CONFIGS = {
   [DEVICE_RUNTIME_DEBUG_INFO_ENABLED_KEY]: '0',
   [DISPLAY_ALLOW_PRINTER_CHANGE_CONFIG_KEY]: '0',
   [POS_OPERATION_MODE_CONFIG_KEY]: POS_OPERATION_MODE_DEFAULT,
+  [POS_AUTO_PRINT_ENABLED_CONFIG_KEY]: '0',
+  [POS_CASH_MANAGEMENT_MODE_CONFIG_KEY]: POS_CASH_MANAGEMENT_MODE_DEFAULT,
 };
 
 export const isTruthyValue = value =>
@@ -144,6 +156,101 @@ export const resolvePosOperationMode = configs =>
 
 export const isPosKioskMode = configs =>
   resolvePosOperationMode(configs) === POS_OPERATION_MODE_KIOSK;
+
+export const isPosCounterMode = configs =>
+  resolvePosOperationMode(configs) === POS_OPERATION_MODE_COUNTER;
+
+export const isPosSelfServiceMode = configs =>
+  isPosKioskMode(configs) || isPosCounterMode(configs);
+
+export const resolvePosPrintMode = configs => {
+  const value = String(parseConfigsObject(configs)?.['print-mode'] || '')
+    .trim()
+    .toLowerCase();
+
+  return value === POS_PRINT_MODE_FORM
+    ? POS_PRINT_MODE_FORM
+    : POS_PRINT_MODE_DEFAULT;
+};
+
+export const isPosAutoPrintEnabled = configs => {
+  const parsedConfigs = parseConfigsObject(configs);
+  const storedValue = parsedConfigs?.[POS_AUTO_PRINT_ENABLED_CONFIG_KEY];
+
+  if (
+    storedValue === undefined ||
+    storedValue === null ||
+    String(storedValue).trim() === ''
+  ) {
+    return !isPosCounterMode(parsedConfigs);
+  }
+
+  return isTruthyValue(storedValue);
+};
+
+export const resolvePosCashManagementMode = configs => {
+  const normalizedValue = String(
+    parseConfigsObject(configs)?.[POS_CASH_MANAGEMENT_MODE_CONFIG_KEY] || '',
+  )
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\s_]/g, '-');
+
+  if (
+    [
+      POS_CASH_MANAGEMENT_MODE_DAILY,
+      'diario',
+      'daily-close',
+      'daily-closing',
+    ].includes(normalizedValue)
+  ) {
+    return POS_CASH_MANAGEMENT_MODE_DAILY;
+  }
+
+  if (
+    [
+      POS_CASH_MANAGEMENT_MODE_CASH_REGISTER,
+      'abertura-fechamento',
+      'open-close',
+      'open-close-cash-register',
+    ].includes(normalizedValue)
+  ) {
+    return POS_CASH_MANAGEMENT_MODE_CASH_REGISTER;
+  }
+
+  return POS_CASH_MANAGEMENT_MODE_DEFAULT;
+};
+
+export const shouldUsePosCashRegisterLifecycle = configs => {
+  if (isPosKioskMode(configs)) {
+    return false;
+  }
+
+  if (isPosCounterMode(configs)) {
+    return (
+      resolvePosCashManagementMode(configs) ===
+      POS_CASH_MANAGEMENT_MODE_CASH_REGISTER
+    );
+  }
+
+  return true;
+};
+
+export const isPosCashRegisterOpen = configs => {
+  if (!shouldUsePosCashRegisterLifecycle(configs)) {
+    return true;
+  }
+
+  const closedValue =
+    parseConfigsObject(configs)?.['cash-wallet-closed-id'];
+
+  return closedValue === 0 || closedValue === '0';
+};
+
+export const isPosCashRegisterClosed = configs =>
+  !isPosCashRegisterOpen(configs);
 
 export const getPosOperationModeOption = mode => {
   const normalizedMode = normalizePosOperationMode(mode);
