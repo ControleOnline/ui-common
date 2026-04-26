@@ -14,15 +14,20 @@ const parseJsonValue = (value, fallback) => {
   return value;
 };
 
-export const SHOP_HOME_OPTION_SALES = 'sales';
-export const SHOP_HOME_OPTION_FRANCHISE_LOCATOR = 'franchise-locator';
-export const SHOP_HOME_OPTION_LOYALTY = 'loyalty';
-
-export const SHOP_SALES_PAGE_ENABLED_CONFIG_KEY = 'shop-sales-page-enabled';
+export const SHOP_HOME_OPTION_SALES = 
+  'sales';
+export const SHOP_HOME_OPTION_FRANCHISE_LOCATOR = 
+  'franchise-locator';
+export const SHOP_HOME_OPTION_LOYALTY = 
+  'loyalty';
+export const SHOP_SALES_PAGE_ENABLED_CONFIG_KEY = 
+  'shop-sales-page-enabled';
 export const SHOP_FRANCHISE_LOCATOR_ENABLED_CONFIG_KEY =
   'shop-franchise-locator-enabled';
-export const SHOP_PRIMARY_ENTRY_CONFIG_KEY = 'shop-primary-entry';
-export const SHOP_BOTTOM_BAR_ENABLED_CONFIG_KEY = 'shop-bottom-bar-enabled';
+export const SHOP_PRIMARY_ENTRY_CONFIG_KEY = 
+  'shop-primary-entry';
+export const SHOP_BOTTOM_BAR_ENABLED_CONFIG_KEY = 
+  'shop-bottom-bar-enabled';
 export const SHOP_CHARGE_ON_DELIVERY_ENABLED_CONFIG_KEY =
   'shop-charge-on-delivery-enabled';
 export const SHOP_GOOGLE_MAPS_API_KEY_CONFIG_KEY =
@@ -33,10 +38,10 @@ export const SHOP_FRANCHISE_VISIBLE_COMPANY_IDS_CONFIG_KEY =
   'shop-franchise-visible-company-ids';
 export const SHOP_FRANCHISE_VISIBLE_ADDRESS_IDS_CONFIG_KEY =
   'shop-franchise-visible-address-ids';
-
 export const SHOP_LOYALTY_COUPONS_ENABLED_CONFIG_KEY =
   'shop-loyalty-coupons-enabled';
-export const SHOP_LOYALTY_PRODUCT_IDS_CONFIG_KEY = 'shop-loyalty-product-ids';
+export const SHOP_LOYALTY_PRODUCT_IDS_CONFIG_KEY = 
+  'shop-loyalty-product-ids';
 export const SHOP_LOYALTY_REQUIRED_SALES_CONFIG_KEY =
   'shop-loyalty-required-sales';
 export const SHOP_LOYALTY_GIFT_PRODUCT_ID_CONFIG_KEY =
