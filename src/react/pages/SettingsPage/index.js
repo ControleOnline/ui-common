@@ -37,12 +37,17 @@ import {
   DEVICE_RUNTIME_DEBUG_INFO_ENABLED_KEY,
   isTruthyValue,
   parseConfigsObject,
-  POS_CHECK_ORDER_TYPE_COMANDA,
+  POS_CHECK_ORDER_MANAGEMENT_MODE_CONFIG_KEY,
+  POS_CHECK_ORDER_MANAGEMENT_MODE_EXISTING_ONLY,
+  POS_CHECK_ORDER_MANAGEMENT_MODE_MANAGE,
   POS_CHECK_ORDER_TYPE_CONFIG_KEY,
-  POS_CHECK_ORDER_TYPE_MESA,
   POS_CHECK_ORDER_TYPE_NONE,
+  POS_CHECK_ORDER_TYPE_TAB,
+  POS_CHECK_ORDER_TYPE_TABLE,
   resolveDefaultGateway,
   resolveDeviceOrderVisibility,
+  resolvePosCheckOrderManagementMode,
+  resolvePosCheckOrderType,
 } from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
 
 import {isWebRuntimeDevice as resolveIsWebRuntimeDevice} from '@controleonline/ui-common/src/react/utils/deviceRuntime';
@@ -103,6 +108,9 @@ const Settings = () => {
 
   const [checkType, setCheckType] = useState('manual');
   const [checkOrderType, setCheckOrderType] = useState(POS_CHECK_ORDER_TYPE_NONE);
+  const [checkOrderManagementMode, setCheckOrderManagementMode] = useState(
+    POS_CHECK_ORDER_MANAGEMENT_MODE_MANAGE,
+  );
   const [productInputType, setProductInputType] = useState('manual');
   const [selectionType, setSelectionType] = useState('single');
   const [showSound, setShowSound] = useState(false);
@@ -209,6 +217,11 @@ const Settings = () => {
       lc[POS_CHECK_ORDER_TYPE_CONFIG_KEY] = POS_CHECK_ORDER_TYPE_NONE;
       needsUpdate = true;
     }
+    if (!lc[POS_CHECK_ORDER_MANAGEMENT_MODE_CONFIG_KEY]) {
+      lc[POS_CHECK_ORDER_MANAGEMENT_MODE_CONFIG_KEY] =
+        POS_CHECK_ORDER_MANAGEMENT_MODE_MANAGE;
+      needsUpdate = true;
+    }
     if (!lc['product-input-type']) {
       lc['product-input-type'] = 'manual';
       needsUpdate = true;
@@ -311,7 +324,7 @@ const Settings = () => {
             if (typeof data[0]?.configs === 'string') {
               try {
                 parsedConfigs = JSON.parse(data[0].configs);
-              } catch (e) {
+              } catch {
                 parsedConfigs = {};
               }
             } else if (typeof data[0]?.configs === 'object') {
@@ -368,8 +381,10 @@ const Settings = () => {
       if (device?.configs) {
         setCheckType(device?.configs['check-type'] || 'manual');
         setCheckOrderType(
-          device?.configs[POS_CHECK_ORDER_TYPE_CONFIG_KEY] ||
-            POS_CHECK_ORDER_TYPE_NONE,
+          resolvePosCheckOrderType(device?.configs),
+        );
+        setCheckOrderManagementMode(
+          resolvePosCheckOrderManagementMode(device?.configs),
         );
         setProductInputType(device?.configs['product-input-type'] || 'manual');
         setSelectionType(device?.configs['selection-type'] || 'single');
@@ -393,6 +408,7 @@ const Settings = () => {
       } else {
         setCheckType('manual');
         setCheckOrderType(POS_CHECK_ORDER_TYPE_NONE);
+        setCheckOrderManagementMode(POS_CHECK_ORDER_MANAGEMENT_MODE_MANAGE);
         setProductInputType('manual');
         setSelectionType('single');
         setShowSound(false);
@@ -456,9 +472,33 @@ const Settings = () => {
     setCheckOrderType(value);
     let lc = appendScreenMetrics({...(device?.configs || {})});
     lc[POS_CHECK_ORDER_TYPE_CONFIG_KEY] = value;
+    if (value === POS_CHECK_ORDER_TYPE_NONE) {
+      lc[POS_CHECK_ORDER_MANAGEMENT_MODE_CONFIG_KEY] =
+        POS_CHECK_ORDER_MANAGEMENT_MODE_MANAGE;
+      setCheckOrderManagementMode(POS_CHECK_ORDER_MANAGEMENT_MODE_MANAGE);
+    }
     lc['config-version'] = appVersion;
     persistDeviceConfigs(lc).catch(err => {
       console.error('addDeviceConfigs (check-order-type) failed:', err);
+      Alert.alert('Erro ao gravar configurações', err.message || JSON.stringify(err));
+    });
+  };
+
+  const handleCheckOrderManagementModeChange = value => {
+    const nextValue =
+      value === POS_CHECK_ORDER_MANAGEMENT_MODE_EXISTING_ONLY
+        ? POS_CHECK_ORDER_MANAGEMENT_MODE_EXISTING_ONLY
+        : POS_CHECK_ORDER_MANAGEMENT_MODE_MANAGE;
+
+    setCheckOrderManagementMode(nextValue);
+    let lc = appendScreenMetrics({...(device?.configs || {})});
+    lc[POS_CHECK_ORDER_MANAGEMENT_MODE_CONFIG_KEY] = nextValue;
+    lc['config-version'] = appVersion;
+    persistDeviceConfigs(lc).catch(err => {
+      console.error(
+        'addDeviceConfigs (check-order-management-mode) failed:',
+        err,
+      );
       Alert.alert('Erro ao gravar configurações', err.message || JSON.stringify(err));
     });
   };
@@ -701,7 +741,7 @@ const Settings = () => {
             </View>
           )}
 
-          {/* // // // // // TIPO DE COMANDA */}
+          {/* // // // // // LINKED ORDER INPUT */}
           <View style={inlineStyle_659_16}>
             <Text style={styles.Settings.label}>{global.t?.t("configs", "label", "tab type")}</Text>
             <Picker
@@ -720,7 +760,8 @@ const Settings = () => {
 
           <View style={inlineStyle_676_16}>
             <Text style={styles.Settings.label}>
-              {global.t?.t('configs', 'label', 'linkedOrderType') || 'Pedido base do atendimento'}
+              {global.t?.t('configs', 'label', 'linkedOrderType') ||
+                'Service base order'}
             </Text>
             <Picker
               selectedValue={checkOrderType}
@@ -729,19 +770,52 @@ const Settings = () => {
               mode={pickerMode}
               style={styles.Settings.picker}>
               <Picker.Item
-                label={global.t?.t('configs', 'option', 'none') || 'Nenhum'}
+                label={global.t?.t('configs', 'option', 'none') || 'None'}
                 value={POS_CHECK_ORDER_TYPE_NONE}
               />
               <Picker.Item
-                label={global.t?.t('orders', 'title', 'tab') || 'Comanda'}
-                value={POS_CHECK_ORDER_TYPE_COMANDA}
+                label={global.t?.t('orders', 'title', 'tab') || 'Tab'}
+                value={POS_CHECK_ORDER_TYPE_TAB}
               />
               <Picker.Item
-                label={global.t?.t('orders', 'title', 'table') || 'Mesa'}
-                value={POS_CHECK_ORDER_TYPE_MESA}
+                label={global.t?.t('orders', 'title', 'table') || 'Table'}
+                value={POS_CHECK_ORDER_TYPE_TABLE}
               />
             </Picker>
           </View>
+
+          {checkOrderType !== POS_CHECK_ORDER_TYPE_NONE && (
+            <View style={inlineStyle_676_16}>
+              <Text style={styles.Settings.label}>
+                {global.t?.t('configs', 'label', 'linkedOrderManagementMode') ||
+                  'Tab and table access'}
+              </Text>
+              <Picker
+                selectedValue={checkOrderManagementMode}
+                onValueChange={handleCheckOrderManagementModeChange}
+                enabled={!isWebRuntimeDevice}
+                mode={pickerMode}
+                style={styles.Settings.picker}>
+                <Picker.Item
+                  label={
+                    global.t?.t('configs', 'option', 'manageLinkedOrders') ||
+                    'Open and close tabs/tables'
+                  }
+                  value={POS_CHECK_ORDER_MANAGEMENT_MODE_MANAGE}
+                />
+                <Picker.Item
+                  label={
+                    global.t?.t(
+                      'configs',
+                      'option',
+                      'existingLinkedOrdersOnly',
+                    ) || 'Use open tabs/tables only'
+                  }
+                  value={POS_CHECK_ORDER_MANAGEMENT_MODE_EXISTING_ONLY}
+                />
+              </Picker>
+            </View>
+          )}
 
           {/* // // // // // TIPO DE LEITURA DE PRODUTO */}
           <View style={inlineStyle_676_16}>

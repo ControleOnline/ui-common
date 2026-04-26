@@ -20,13 +20,17 @@ export const POS_AUTO_PRINT_ENABLED_CONFIG_KEY = 'pos-auto-print-enabled';
 export const POS_CASH_MANAGEMENT_MODE_CONFIG_KEY =
   'pos-cash-management-mode';
 export const POS_CHECK_ORDER_TYPE_CONFIG_KEY = 'check-order-type';
+export const POS_CHECK_ORDER_MANAGEMENT_MODE_CONFIG_KEY =
+  'check-order-management-mode';
 export const POS_OPERATION_MODE_COUNTER = 'counter';
 export const POS_OPERATION_MODE_WAITER = 'waiter';
 export const POS_OPERATION_MODE_KIOSK = 'kiosk';
 export const POS_OPERATION_MODE_CASHIER = 'cashier';
 export const POS_CHECK_ORDER_TYPE_NONE = 'none';
-export const POS_CHECK_ORDER_TYPE_COMANDA = 'comanda';
-export const POS_CHECK_ORDER_TYPE_MESA = 'mesa';
+export const POS_CHECK_ORDER_TYPE_TAB = 'tab';
+export const POS_CHECK_ORDER_TYPE_TABLE = 'table';
+export const POS_CHECK_ORDER_MANAGEMENT_MODE_MANAGE = 'manage';
+export const POS_CHECK_ORDER_MANAGEMENT_MODE_EXISTING_ONLY = 'existing-only';
 export const POS_OPERATION_MODE_DEFAULT = POS_OPERATION_MODE_CASHIER;
 export const POS_PRINT_MODE_ORDER = 'order';
 export const POS_PRINT_MODE_FORM = 'form';
@@ -72,6 +76,8 @@ export const DEFAULT_DEVICE_CONFIGS = {
   [DEVICE_RUNTIME_DEBUG_INFO_ENABLED_KEY]: '0',
   [DISPLAY_ALLOW_PRINTER_CHANGE_CONFIG_KEY]: '0',
   [POS_CHECK_ORDER_TYPE_CONFIG_KEY]: POS_CHECK_ORDER_TYPE_NONE,
+  [POS_CHECK_ORDER_MANAGEMENT_MODE_CONFIG_KEY]:
+    POS_CHECK_ORDER_MANAGEMENT_MODE_MANAGE,
   [POS_OPERATION_MODE_CONFIG_KEY]: POS_OPERATION_MODE_DEFAULT,
   [POS_AUTO_PRINT_ENABLED_CONFIG_KEY]: '0',
   [POS_CASH_MANAGEMENT_MODE_CONFIG_KEY]: POS_CASH_MANAGEMENT_MODE_DEFAULT,
@@ -169,21 +175,20 @@ export const normalizePosCheckOrderType = value => {
 
   if (
     [
-      POS_CHECK_ORDER_TYPE_COMANDA,
+      POS_CHECK_ORDER_TYPE_TAB,
       'tab',
-      'check',
     ].includes(normalizedValue)
   ) {
-    return POS_CHECK_ORDER_TYPE_COMANDA;
+    return POS_CHECK_ORDER_TYPE_TAB;
   }
 
   if (
     [
-      POS_CHECK_ORDER_TYPE_MESA,
+      POS_CHECK_ORDER_TYPE_TABLE,
       'table',
     ].includes(normalizedValue)
   ) {
-    return POS_CHECK_ORDER_TYPE_MESA;
+    return POS_CHECK_ORDER_TYPE_TABLE;
   }
 
   return POS_CHECK_ORDER_TYPE_NONE;
@@ -193,6 +198,52 @@ export const resolvePosCheckOrderType = configs =>
   normalizePosCheckOrderType(
     parseConfigsObject(configs)?.[POS_CHECK_ORDER_TYPE_CONFIG_KEY],
   );
+
+export const normalizePosCheckOrderManagementMode = value => {
+  const normalizedValue = String(value || '')
+    .trim()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\s_]/g, '-');
+
+  if (
+    [
+      POS_CHECK_ORDER_MANAGEMENT_MODE_EXISTING_ONLY,
+      'existing',
+      'existing-open',
+      'opened-only',
+      'already-open',
+      'use-open-only',
+      'use-existing-only',
+    ].includes(normalizedValue)
+  ) {
+    return POS_CHECK_ORDER_MANAGEMENT_MODE_EXISTING_ONLY;
+  }
+
+  if (
+    [
+      POS_CHECK_ORDER_MANAGEMENT_MODE_MANAGE,
+      'open-close',
+      'open-and-close',
+      'full',
+      'manage-open-close',
+    ].includes(normalizedValue)
+  ) {
+    return POS_CHECK_ORDER_MANAGEMENT_MODE_MANAGE;
+  }
+
+  return POS_CHECK_ORDER_MANAGEMENT_MODE_MANAGE;
+};
+
+export const resolvePosCheckOrderManagementMode = configs =>
+  normalizePosCheckOrderManagementMode(
+    parseConfigsObject(configs)?.[POS_CHECK_ORDER_MANAGEMENT_MODE_CONFIG_KEY],
+  );
+
+export const canManagePosCheckOrders = configs =>
+  resolvePosCheckOrderManagementMode(configs) ===
+  POS_CHECK_ORDER_MANAGEMENT_MODE_MANAGE;
 
 export const usesPosCheckLinkedOrder = configs =>
   resolvePosCheckOrderType(configs) !== POS_CHECK_ORDER_TYPE_NONE;
