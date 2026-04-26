@@ -62,10 +62,9 @@ export const resolveActionPalette = (
 const createStyles = theme =>
   StyleSheet.create({
     wrapper: {
-      position: 'absolute',
-      left: 12,
-      right: 12,
-      zIndex: 60,
+      marginTop: 'auto',
+      paddingHorizontal: 12,
+      paddingTop: 12,
     },
     card: {
       borderRadius: 18,

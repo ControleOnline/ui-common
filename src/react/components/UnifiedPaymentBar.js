@@ -53,7 +53,7 @@ export default function UnifiedPaymentBar({
   paidAmount = 0,
   pendingAmount = 0,
   theme,
-  title = 'Pagamento',
+  title = '',
   totalAmount = 0,
 }) {
   const styles = useMemo(() => createStyles(theme), [theme]);
@@ -69,10 +69,10 @@ export default function UnifiedPaymentBar({
   const visibleActions = Array.isArray(actions) ? actions.filter(Boolean) : [];
 
   return (
-    <View style={[styles.wrapper, {bottom: bottomOffset + 12}]}>
+    <View style={[styles.wrapper, {paddingBottom: bottomOffset + 12}]}>
       <View style={styles.card}>
-        <View style={styles.headerRow}>
-          <Text style={styles.title}>{title}</Text>
+        <View style={[styles.headerRow, !title && styles.headerRowCompact]}>
+          {title ? <Text style={styles.title}>{title}</Text> : null}
           <View
             style={[
               styles.statusBadge,
@@ -89,21 +89,9 @@ export default function UnifiedPaymentBar({
         </View>
 
         <View style={styles.metricsRow}>
-          <View style={styles.metricCard}>
-            <Text style={styles.metricLabel}>Total</Text>
-            <Text style={[styles.metricValue, styles.metricValueStrong]}>
-              {Formatter.formatMoney(resolvedTotalAmount)}
-            </Text>
-          </View>
-          <View style={styles.metricCard}>
-            <Text style={styles.metricLabel}>Pago</Text>
-            <Text style={styles.metricValue}>
-              {Formatter.formatMoney(resolvedPaidAmount)}
-            </Text>
-          </View>
-          <View style={styles.metricCard}>
+          <View style={[styles.metricCard, styles.metricCardSingle]}>
             <Text style={styles.metricLabel}>Pendente</Text>
-            <Text style={styles.metricValue}>
+            <Text style={[styles.metricValue, styles.metricValueStrong]}>
               {Formatter.formatMoney(resolvedPendingAmount)}
             </Text>
           </View>
