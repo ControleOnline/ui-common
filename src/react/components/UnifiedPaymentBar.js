@@ -69,7 +69,7 @@ export default function UnifiedPaymentBar({
   const visibleActions = Array.isArray(actions) ? actions.filter(Boolean) : [];
 
   return (
-    <View style={[styles.wrapper, {paddingBottom: bottomOffset + 12}]}>
+    <View style={[styles.wrapper, {bottom: bottomOffset + 12}]}>
       <View style={styles.card}>
         <View style={[styles.headerRow, !title && styles.headerRowCompact]}>
           {title ? <Text style={styles.title}>{title}</Text> : null}

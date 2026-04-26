@@ -62,9 +62,10 @@ export const resolveActionPalette = (
 const createStyles = theme =>
   StyleSheet.create({
     wrapper: {
-      marginTop: 'auto',
-      paddingHorizontal: 12,
-      paddingTop: 12,
+      position: 'absolute',
+      left: 12,
+      right: 12,
+      zIndex: 60,
     },
     card: {
       borderRadius: 18,
@@ -84,6 +85,9 @@ const createStyles = theme =>
       alignItems: 'center',
       justifyContent: 'space-between',
       gap: 10,
+    },
+    headerRowCompact: {
+      justifyContent: 'flex-end',
     },
     title: {
       color: theme?.text || '#0F172A',
@@ -105,8 +109,7 @@ const createStyles = theme =>
     },
     metricsRow: {
       marginTop: 12,
-      flexDirection: 'row',
-      gap: 10,
+      width: '100%',
     },
     metricCard: {
       flex: 1,
@@ -116,6 +119,10 @@ const createStyles = theme =>
       backgroundColor: theme?.background || '#F8FAFC',
       paddingHorizontal: 10,
       paddingVertical: 9,
+    },
+    metricCardSingle: {
+      flex: 1,
+      alignSelf: 'stretch',
     },
     metricLabel: {
       color: theme?.muted || '#64748B',
