@@ -1,6 +1,12 @@
 import React, {createContext, useContext, useState} from 'react';
 import {Dimensions} from 'react-native';
-import {Portal, Dialog, Paragraph, Button} from 'react-native-paper';
+import {
+  Portal,
+  Dialog,
+  Paragraph,
+  Button,
+  TextInput as PaperTextInput,
+} from 'react-native-paper';
 import {toast, ToastPosition} from '@backpackapp-io/react-native-toast';
 import SystemErrorToast from './SystemErrorToast';
 import {
@@ -22,6 +28,17 @@ export const MessageProvider = ({children}) => {
     message: '',
     onConfirm: null,
     onCancel: null,
+  });
+  const [prompt, setPrompt] = useState({
+    visible: false,
+    title: '',
+    message: '',
+    value: '',
+    placeholder: '',
+    confirmLabel: '',
+    cancelLabel: '',
+    keyboardType: 'default',
+    resolve: null,
   });
 
   const normalizeMessage = message => {
@@ -157,11 +174,48 @@ export const MessageProvider = ({children}) => {
 
   const hideDialog = () => setDialog(d => ({...d, visible: false}));
 
+  const hidePrompt = () =>
+    setPrompt({
+      visible: false,
+      title: '',
+      message: '',
+      value: '',
+      placeholder: '',
+      confirmLabel: '',
+      cancelLabel: '',
+      keyboardType: 'default',
+      resolve: null,
+    });
+
+  const showPrompt = ({
+    title,
+    message,
+    defaultValue = '',
+    placeholder = '',
+    confirmLabel = '',
+    cancelLabel = '',
+    keyboardType = 'default',
+  }) =>
+    new Promise(resolve => {
+      setPrompt({
+        visible: true,
+        title: normalizeMessage(title),
+        message: normalizeMessage(message),
+        value: normalizeMessage(defaultValue),
+        placeholder: normalizeMessage(placeholder),
+        confirmLabel: normalizeMessage(confirmLabel),
+        cancelLabel: normalizeMessage(cancelLabel),
+        keyboardType,
+        resolve,
+      });
+    });
+
   return (
     <MessageContext.Provider
       value={{
         showToast,
         showDialog,
+        showPrompt,
         showSuccess,
         showError,
         showWarning,
@@ -189,6 +243,54 @@ export const MessageProvider = ({children}) => {
                 dialog.onConfirm?.();
               }}>
               Confirmar
+            </Button>
+          </Dialog.Actions>
+        </Dialog>
+
+        <Dialog
+          visible={prompt.visible}
+          onDismiss={() => {
+            prompt.resolve?.(null);
+            hidePrompt();
+          }}>
+          <Dialog.Title>{prompt.title}</Dialog.Title>
+          <Dialog.Content>
+            {!!prompt.message && <Paragraph>{prompt.message}</Paragraph>}
+            <PaperTextInput
+              autoFocus
+              mode="outlined"
+              value={prompt.value}
+              onChangeText={value => {
+                setPrompt(currentPrompt => ({
+                  ...currentPrompt,
+                  value,
+                }));
+              }}
+              keyboardType={prompt.keyboardType || 'default'}
+              placeholder={prompt.placeholder}
+              returnKeyType="done"
+              onSubmitEditing={() => {
+                const resolvedValue = String(prompt.value || '').trim();
+                prompt.resolve?.(resolvedValue || null);
+                hidePrompt();
+              }}
+            />
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button
+              onPress={() => {
+                prompt.resolve?.(null);
+                hidePrompt();
+              }}>
+              {prompt.cancelLabel || 'Cancelar'}
+            </Button>
+            <Button
+              onPress={() => {
+                const resolvedValue = String(prompt.value || '').trim();
+                prompt.resolve?.(resolvedValue || null);
+                hidePrompt();
+              }}>
+              {prompt.confirmLabel || 'Confirmar'}
             </Button>
           </Dialog.Actions>
         </Dialog>

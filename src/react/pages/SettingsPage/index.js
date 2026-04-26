@@ -37,6 +37,10 @@ import {
   DEVICE_RUNTIME_DEBUG_INFO_ENABLED_KEY,
   isTruthyValue,
   parseConfigsObject,
+  POS_CHECK_ORDER_TYPE_COMANDA,
+  POS_CHECK_ORDER_TYPE_CONFIG_KEY,
+  POS_CHECK_ORDER_TYPE_MESA,
+  POS_CHECK_ORDER_TYPE_NONE,
   resolveDefaultGateway,
   resolveDeviceOrderVisibility,
 } from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
@@ -98,6 +102,7 @@ const Settings = () => {
   const appVersion = packageVersion || storagedDevice?.appVersion;
 
   const [checkType, setCheckType] = useState('manual');
+  const [checkOrderType, setCheckOrderType] = useState(POS_CHECK_ORDER_TYPE_NONE);
   const [productInputType, setProductInputType] = useState('manual');
   const [selectionType, setSelectionType] = useState('single');
   const [showSound, setShowSound] = useState(false);
@@ -198,6 +203,10 @@ const Settings = () => {
     }
     if (!lc['check-type']) {
       lc['check-type'] = 'manual';
+      needsUpdate = true;
+    }
+    if (!lc[POS_CHECK_ORDER_TYPE_CONFIG_KEY]) {
+      lc[POS_CHECK_ORDER_TYPE_CONFIG_KEY] = POS_CHECK_ORDER_TYPE_NONE;
       needsUpdate = true;
     }
     if (!lc['product-input-type']) {
@@ -358,6 +367,10 @@ const Settings = () => {
     useCallback(() => {
       if (device?.configs) {
         setCheckType(device?.configs['check-type'] || 'manual');
+        setCheckOrderType(
+          device?.configs[POS_CHECK_ORDER_TYPE_CONFIG_KEY] ||
+            POS_CHECK_ORDER_TYPE_NONE,
+        );
         setProductInputType(device?.configs['product-input-type'] || 'manual');
         setSelectionType(device?.configs['selection-type'] || 'single');
         setShowSound(
@@ -379,6 +392,7 @@ const Settings = () => {
         setSelectedGateway(device?.configs['pos-gateway'] || 'infinite-pay');
       } else {
         setCheckType('manual');
+        setCheckOrderType(POS_CHECK_ORDER_TYPE_NONE);
         setProductInputType('manual');
         setSelectionType('single');
         setShowSound(false);
@@ -436,6 +450,17 @@ const Settings = () => {
         console.error('addDeviceConfigs (check-type) failed:', err);
         Alert.alert('Erro ao gravar configurações', err.message || JSON.stringify(err));
       });
+  };
+
+  const handleCheckOrderTypeChange = value => {
+    setCheckOrderType(value);
+    let lc = appendScreenMetrics({...(device?.configs || {})});
+    lc[POS_CHECK_ORDER_TYPE_CONFIG_KEY] = value;
+    lc['config-version'] = appVersion;
+    persistDeviceConfigs(lc).catch(err => {
+      console.error('addDeviceConfigs (check-order-type) failed:', err);
+      Alert.alert('Erro ao gravar configurações', err.message || JSON.stringify(err));
+    });
   };
 
   const handleProductInputTypeChange = (value) => {
@@ -690,6 +715,31 @@ const Settings = () => {
               <Picker.Item label={global.t?.t("configs", "option", "barcode")} value="barcode" />
               <Picker.Item label={global.t?.t("configs", "option", "rfid")} value="rfid" />                            
               
+            </Picker>
+          </View>
+
+          <View style={inlineStyle_676_16}>
+            <Text style={styles.Settings.label}>
+              {global.t?.t('configs', 'label', 'linkedOrderType') || 'Pedido base do atendimento'}
+            </Text>
+            <Picker
+              selectedValue={checkOrderType}
+              onValueChange={handleCheckOrderTypeChange}
+              enabled={!isWebRuntimeDevice}
+              mode={pickerMode}
+              style={styles.Settings.picker}>
+              <Picker.Item
+                label={global.t?.t('configs', 'option', 'none') || 'Nenhum'}
+                value={POS_CHECK_ORDER_TYPE_NONE}
+              />
+              <Picker.Item
+                label={global.t?.t('orders', 'title', 'tab') || 'Comanda'}
+                value={POS_CHECK_ORDER_TYPE_COMANDA}
+              />
+              <Picker.Item
+                label={global.t?.t('orders', 'title', 'table') || 'Mesa'}
+                value={POS_CHECK_ORDER_TYPE_MESA}
+              />
             </Picker>
           </View>
 
