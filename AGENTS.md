@@ -22,3 +22,7 @@
 - Erros visuais transitrios do sistema devem sair por um unico componente compartilhado ligado ao `MessageService`.
 - `showError` e o ponto canonico para esse feedback. Ele recebe string ou objeto de erro, exibe por alguns segundos e some sozinho.
 - Nao criar banners, alerts ou toasts paralelos para erro quando o caso puder usar o `MessageService`.
+
+## Regras de UI compartilhada
+- Filtros compactos de selecao devem ser centralizados em componentes reutilizaveis de `src/react/components/filters`.
+- Evite linhas horizontais extensas de chips para filtros primarios. O padrao compartilhado e botao compacto com valor atual e modal de opcoes.

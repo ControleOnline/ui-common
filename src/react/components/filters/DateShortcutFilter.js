@@ -1,10 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ScrollView, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { Text, TextInput, TouchableOpacity, View } from 'react-native';
+import CompactFilterSelector from './CompactFilterSelector';
 import createStyles from './DateShortcutFilter.styles';
 import {
   buildDateFilterOptions,
   DEFAULT_DATE_FILTER_OPTION_KEYS,
-  resolveDateFilterCurrentLabel,
   resolveDateFilterTitle,
   resolveDateRangeSummary,
   validateCustomDateRange,
@@ -38,16 +38,27 @@ const DateShortcutFilter = ({
   const [customFromInput, setCustomFromInput] = useState('');
   const [customToInput, setCustomToInput] = useState('');
   const [dateValidationMessage, setDateValidationMessage] = useState('');
+  const [isCustomEditorVisible, setIsCustomEditorVisible] = useState(
+    value === 'custom',
+  );
   const options = useMemo(
     () => buildDateFilterOptions(optionKeys),
     [optionKeys],
   );
   const periodLabel = resolveDateFilterTitle();
-  const currentDateLabel = resolveDateFilterCurrentLabel();
   const activeRangeSummary = useMemo(
     () => resolveDateRangeSummary(value, customRange),
     [customRange, value],
   );
+  const currentOptionLabel = useMemo(
+    () => options.find(option => option.key === value)?.label || '',
+    [options, value],
+  );
+  const selectedLabel = useMemo(() => (
+    value === 'custom'
+      ? activeRangeSummary || currentOptionLabel
+      : currentOptionLabel || activeRangeSummary
+  ), [activeRangeSummary, currentOptionLabel, value]);
 
   useEffect(() => {
     setCustomFromInput(String(customRange?.from || ''));
@@ -57,6 +68,7 @@ const DateShortcutFilter = ({
   useEffect(() => {
     if (value !== 'custom') {
       setDateValidationMessage('');
+      setIsCustomEditorVisible(false);
     }
   }, [value]);
 
@@ -70,13 +82,14 @@ const DateShortcutFilter = ({
     setDateValidationMessage(validationMessage);
 
     if (validationMessage) {
-      return;
+      return false;
     }
 
     onCustomRangeChange?.({
       from: String(customFromInput || '').trim(),
       to: String(customToInput || '').trim(),
     });
+    return true;
   }, [customFromInput, customToInput, onCustomRangeChange]);
 
   const clearCustomRange = useCallback(() => {
@@ -89,112 +102,99 @@ const DateShortcutFilter = ({
     });
   }, [onCustomRangeChange]);
 
+  const handleSelect = useCallback(optionKey => {
+    if (optionKey === 'custom') {
+      setIsCustomEditorVisible(true);
+      setDateValidationMessage('');
+      return false;
+    }
+
+    setIsCustomEditorVisible(false);
+    onChange?.(optionKey);
+    return true;
+  }, [onChange]);
+
   return (
-    <View style={styles.container}>
-      <View style={styles.card}>
-        <View style={styles.headerRow}>
-          <Text style={styles.title}>
-            {periodLabel}
-          </Text>
+    <CompactFilterSelector
+      accentColor={themeColors.accent}
+      active={value !== 'all'}
+      icon="calendar"
+      label={selectedLabel}
+      options={options}
+      selectedKey={isCustomEditorVisible || value === 'custom' ? 'custom' : value}
+      title={periodLabel}
+      onSelect={handleSelect}
+    >
+      {({ close }) => (isCustomEditorVisible || value === 'custom') ? (
+        <View style={styles.customRangeWrap}>
+          <Text style={styles.customLabel}>{periodLabel}</Text>
+
+          <View style={styles.customInputsRow}>
+            <TextInput
+              value={customFromInput}
+              onChangeText={setCustomFromInput}
+              placeholder={global.t?.t('orders', 'placeholder', 'date_from')}
+              placeholderTextColor={themeColors.textSecondary}
+              style={styles.customInput}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+
+            <TextInput
+              value={customToInput}
+              onChangeText={setCustomToInput}
+              placeholder={global.t?.t('orders', 'placeholder', 'date_to')}
+              placeholderTextColor={themeColors.textSecondary}
+              style={styles.customInput}
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+          </View>
 
           {!!activeRangeSummary && (
-            <View style={styles.currentDateWrap}>
-              <Text style={styles.currentDateLabel}>
-                {currentDateLabel}
-              </Text>
-              <Text style={styles.currentDateValue}>
-                {activeRangeSummary}
-              </Text>
-            </View>
+            <Text style={styles.currentDateValue}>
+              {activeRangeSummary}
+            </Text>
           )}
-        </View>
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.chipsRow}
-        >
-          {options.map(option => {
-            const active = option.key === value;
+          {!!dateValidationMessage && (
+            <Text style={styles.validationText}>
+              {dateValidationMessage}
+            </Text>
+          )}
 
-            return (
-              <TouchableOpacity
-                key={option.key}
-                activeOpacity={0.9}
-                style={[
-                  styles.chip,
-                  active ? styles.chipActive : null,
-                ]}
-                onPress={() => onChange?.(option.key)}
-              >
-                <Text
-                  style={[
-                    styles.chipText,
-                    active ? styles.chipTextActive : null,
-                  ]}
-                >
-                  {option.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          })}
-        </ScrollView>
-
-        {value === 'custom' && (
-          <View style={styles.customRangeWrap}>
-            <View style={styles.customInputsRow}>
-              <TextInput
-                value={customFromInput}
-                onChangeText={setCustomFromInput}
-                placeholder={global.t?.t('orders', 'placeholder', 'date_from')}
-                placeholderTextColor={themeColors.textSecondary}
-                style={styles.customInput}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-
-              <TextInput
-                value={customToInput}
-                onChangeText={setCustomToInput}
-                placeholder={global.t?.t('orders', 'placeholder', 'date_to')}
-                placeholderTextColor={themeColors.textSecondary}
-                style={styles.customInput}
-                autoCapitalize="none"
-                autoCorrect={false}
-              />
-            </View>
-
-            {!!dateValidationMessage && (
-              <Text style={styles.validationText}>
-                {dateValidationMessage}
+          <View style={styles.customActionsRow}>
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              activeOpacity={0.9}
+              onPress={clearCustomRange}
+            >
+              <Text style={styles.secondaryButtonText}>
+                {global.t?.t('orders', 'button', 'clear')}
               </Text>
-            )}
+            </TouchableOpacity>
 
-            <View style={styles.customActionsRow}>
-              <TouchableOpacity
-                style={styles.secondaryButton}
-                activeOpacity={0.9}
-                onPress={clearCustomRange}
-              >
-                <Text style={styles.secondaryButtonText}>
-                  {global.t?.t('orders', 'button', 'clear')}
-                </Text>
-              </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.primaryButton}
+              activeOpacity={0.9}
+              onPress={() => {
+                const applied = applyCustomRange();
+                if (!applied) {
+                  return;
+                }
 
-              <TouchableOpacity
-                style={styles.primaryButton}
-                activeOpacity={0.9}
-                onPress={applyCustomRange}
-              >
-                <Text style={styles.primaryButtonText}>
-                  {global.t?.t('orders', 'button', 'apply_period')}
-                </Text>
-              </TouchableOpacity>
-            </View>
+                onChange?.('custom');
+                close();
+              }}
+            >
+              <Text style={styles.primaryButtonText}>
+                {global.t?.t('orders', 'button', 'apply_period')}
+              </Text>
+            </TouchableOpacity>
           </View>
-        )}
-      </View>
-    </View>
+        </View>
+      ) : null}
+    </CompactFilterSelector>
   );
 };
 

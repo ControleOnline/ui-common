@@ -11,25 +11,16 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {useFocusEffect} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {useStore} from '@store';
+import CompactFilterSelector from '@controleonline/ui-common/src/react/components/filters/CompactFilterSelector';
+import DateShortcutFilter from '@controleonline/ui-common/src/react/components/filters/DateShortcutFilter';
 import EntityLogContent from '@controleonline/ui-common/src/react/components/EntityLogContent';
 import Formatter from '@controleonline/ui-common/src/utils/formatter';
 import {resolveStoreConfigByClassName} from '@controleonline/ui-common/src/react/utils/storeColumns';
 import {
   getDateRange,
   resolveDateRangeSummary,
-  validateCustomDateRange,
 } from '@controleonline/ui-common/src/react/utils/dateRangeFilter';
 import createStyles from './GenericLogPage.styles';
-
-const DATE_FILTER_OPTIONS = [
-  {key: 'all', label: 'Todo periodo'},
-  {key: 'today', label: 'Hoje'},
-  {key: '7d', label: '7 dias'},
-  {key: '30d', label: '30 dias'},
-  {key: 'this_month', label: 'Este mes'},
-  {key: 'last_month', label: 'Mes passado'},
-  {key: 'custom', label: 'Personalizado'},
-];
 
 const TYPE_META = {
   entity: {
@@ -228,19 +219,6 @@ const buildQuickClassOptions = items => {
       value,
     }));
 };
-
-function FilterChip({active, label, onPress, styles}) {
-  return (
-    <TouchableOpacity
-      activeOpacity={0.9}
-      onPress={onPress}
-      style={[styles.filterChip, active ? styles.filterChipActive : null]}>
-      <Text style={[styles.filterChipText, active ? styles.filterChipTextActive : null]}>
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
-}
 
 function MetaBadge({meta, styles}) {
   return (
@@ -449,13 +427,8 @@ export default function GenericLogPage({navigation}) {
     from: '',
     to: '',
   });
-  const [customRangeDraft, setCustomRangeDraft] = useState({
-    from: '',
-    to: '',
-  });
   const [classFilterInput, setClassFilterInput] = useState('');
   const [appliedClassFilter, setAppliedClassFilter] = useState('');
-  const [dateValidationMessage, setDateValidationMessage] = useState('');
   const [expandedEntityKey, setExpandedEntityKey] = useState('');
 
   const loadLogs = useCallback(async () => {
@@ -532,29 +505,19 @@ export default function GenericLogPage({navigation}) {
 
     return `${countLabel} no periodo ${activeDateSummary}`;
   }, [activeDateSummary, logsState.items.length, logsState.totalItems]);
-
-  const handleDateFilterSelect = useCallback(key => {
-    setDateValidationMessage('');
-    setDateFilterKey(key);
-  }, []);
-
-  const applyCustomRange = useCallback(() => {
-    const validationMessage = validateCustomDateRange(
-      customRangeDraft.from,
-      customRangeDraft.to,
-    );
-    setDateValidationMessage(validationMessage);
-
-    if (validationMessage) {
-      return;
+  const selectedTypeLabel = useMemo(
+    () => typeOptions.find(option => option.key === selectedType)?.label || 'Todos',
+    [selectedType, typeOptions],
+  );
+  const selectedQuickClassLabel = useMemo(() => {
+    if (!appliedClassFilter) {
+      return 'Sugestoes';
     }
 
-    setCustomRange({
-      from: normalizeText(customRangeDraft.from),
-      to: normalizeText(customRangeDraft.to),
-    });
-    setDateFilterKey('custom');
-  }, [customRangeDraft.from, customRangeDraft.to]);
+    return quickClassOptions.find(
+      option => normalizeFilterKey(option.value) === normalizeFilterKey(appliedClassFilter),
+    )?.label || formatClassLabel(appliedClassFilter);
+  }, [appliedClassFilter, quickClassOptions]);
 
   const applyClassFilter = useCallback(() => {
     setAppliedClassFilter(normalizeText(classFilterInput));
@@ -564,10 +527,8 @@ export default function GenericLogPage({navigation}) {
     setSelectedType('all');
     setDateFilterKey('all');
     setCustomRange({from: '', to: ''});
-    setCustomRangeDraft({from: '', to: ''});
     setClassFilterInput('');
     setAppliedClassFilter('');
-    setDateValidationMessage('');
     setExpandedEntityKey('');
   }, []);
 
@@ -645,99 +606,47 @@ export default function GenericLogPage({navigation}) {
 
             <View style={styles.filterGroup}>
               <Text style={styles.filterLabel}>Periodo</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.filterChipsRow}>
-                {DATE_FILTER_OPTIONS.map(option => (
-                  <FilterChip
-                    key={option.key}
-                    active={option.key === dateFilterKey}
-                    label={option.label}
-                    onPress={() => handleDateFilterSelect(option.key)}
-                    styles={styles}
-                  />
-                ))}
-              </ScrollView>
+              <DateShortcutFilter
+                value={dateFilterKey}
+                onChange={setDateFilterKey}
+                customRange={customRange}
+                onCustomRangeChange={setCustomRange}
+                colors={{
+                  accent: '#2563EB',
+                  appBg: 'transparent',
+                  border: '#CBD5E1',
+                  borderSoft: '#E2E8F0',
+                  cardBg: '#FFFFFF',
+                  cardBgSoft: '#F8FAFC',
+                  danger: '#DC2626',
+                  isLight: true,
+                  panelBg: '#EFF6FF',
+                  pillTextDark: '#FFFFFF',
+                  textPrimary: '#0F172A',
+                  textSecondary: '#64748B',
+                }}
+              />
 
               {!!activeDateSummary && (
                 <Text style={styles.filterHint}>Periodo atual: {activeDateSummary}</Text>
               )}
-
-              {dateFilterKey === 'custom' ? (
-                <View style={styles.customRangeBox}>
-                  <View style={styles.dateInputsRow}>
-                    <TextInput
-                      value={customRangeDraft.from}
-                      onChangeText={value =>
-                        setCustomRangeDraft(current => ({...current, from: value}))
-                      }
-                      placeholder="Data inicial (AAAA-MM-DD)"
-                      placeholderTextColor="#94A3B8"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      style={styles.dateInput}
-                    />
-
-                    <TextInput
-                      value={customRangeDraft.to}
-                      onChangeText={value =>
-                        setCustomRangeDraft(current => ({...current, to: value}))
-                      }
-                      placeholder="Data final (AAAA-MM-DD)"
-                      placeholderTextColor="#94A3B8"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      style={styles.dateInput}
-                    />
-                  </View>
-
-                  <Text style={styles.filterHint}>
-                    Aceita `AAAA-MM-DD` ou `DD/MM/AAAA`.
-                  </Text>
-
-                  {!!dateValidationMessage && (
-                    <Text style={styles.validationText}>{dateValidationMessage}</Text>
-                  )}
-
-                  <View style={styles.customActionsRow}>
-                    <TouchableOpacity
-                      activeOpacity={0.9}
-                      onPress={() => {
-                        setCustomRangeDraft(customRange);
-                        setDateValidationMessage('');
-                      }}
-                      style={styles.secondaryButton}>
-                      <Text style={styles.secondaryButtonText}>Restaurar</Text>
-                    </TouchableOpacity>
-
-                    <TouchableOpacity
-                      activeOpacity={0.9}
-                      onPress={applyCustomRange}
-                      style={styles.primaryButton}>
-                      <Text style={styles.primaryButtonText}>Aplicar periodo</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              ) : null}
             </View>
 
             <View style={styles.filterGroup}>
               <Text style={styles.filterLabel}>Tipo de log</Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.filterChipsRow}>
-                {typeOptions.map(option => (
-                  <FilterChip
-                    key={option.key}
-                    active={option.key === selectedType}
-                    label={option.label}
-                    onPress={() => setSelectedType(option.key)}
-                    styles={styles}
-                  />
-                ))}
-              </ScrollView>
+              <CompactFilterSelector
+                icon="filter"
+                label={selectedTypeLabel}
+                title="Tipo de log"
+                accentColor="#2563EB"
+                active={selectedType !== 'all'}
+                options={typeOptions}
+                selectedKey={selectedType}
+                onSelect={optionKey => {
+                  setSelectedType(optionKey);
+                  return true;
+                }}
+              />
             </View>
 
             <View style={styles.filterGroup}>
@@ -766,23 +675,23 @@ export default function GenericLogPage({navigation}) {
               )}
 
               {!!quickClassOptions.length && (
-                <ScrollView
-                  horizontal
-                  showsHorizontalScrollIndicator={false}
-                  contentContainerStyle={styles.filterChipsRow}>
-                  {quickClassOptions.map(option => (
-                    <FilterChip
-                      key={option.value}
-                      active={normalizeFilterKey(option.value) === normalizeFilterKey(appliedClassFilter)}
-                      label={option.label}
-                      onPress={() => {
-                        setClassFilterInput(option.value);
-                        setAppliedClassFilter(option.value);
-                      }}
-                      styles={styles}
-                    />
-                  ))}
-                </ScrollView>
+                <CompactFilterSelector
+                  icon="layers"
+                  label={selectedQuickClassLabel}
+                  title="Sugestoes de classe"
+                  accentColor="#2563EB"
+                  active={Boolean(appliedClassFilter)}
+                  options={quickClassOptions.map(option => ({
+                    key: option.value,
+                    label: option.label,
+                  }))}
+                  selectedKey={appliedClassFilter}
+                  onSelect={optionKey => {
+                    setClassFilterInput(optionKey);
+                    setAppliedClassFilter(optionKey);
+                    return true;
+                  }}
+                />
               )}
             </View>
           </View>

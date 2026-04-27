@@ -4,6 +4,7 @@ const DATE_INPUT_PATTERN_DMY = /^\d{2}\/\d{2}\/\d{4}$/;
 const DATE_FILTER_LABEL_KEYS = {
   all: 'period_all',
   today: 'period_today',
+  yesterday: 'period_yesterday',
   '7d': 'period_7d',
   '30d': 'period_30d',
   this_month: 'period_this_month',
@@ -17,6 +18,7 @@ const formatDateToApi = date =>
   `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())} ${pad2(date.getHours())}:${pad2(date.getMinutes())}:${pad2(date.getSeconds())}`;
 
 const resolveOrderLabel = key => global.t?.t('orders', 'label', key);
+const resolveYesterdayLabel = () => global.t?.t('users', 'date', 'yesterday', 'Ontem');
 
 const createDayStart = date =>
   new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
@@ -115,6 +117,16 @@ const resolveDateObjectsRange = (dateFilterKey, customRange = null, options = {}
     };
   }
 
+  if (dateFilterKey === 'yesterday') {
+    const yesterday = new Date(now);
+    yesterday.setDate(yesterday.getDate() - 1);
+
+    return {
+      afterDate: createDayStart(yesterday),
+      beforeDate: createDayEnd(yesterday),
+    };
+  }
+
   if (dateFilterKey === '7d') {
     return {
       afterDate: resolveRelativeStart(now, 7, relativeMode),
@@ -172,6 +184,7 @@ export const DEFAULT_DATE_FILTER_KEY = 'today';
 export const DEFAULT_DATE_FILTER_OPTION_KEYS = [
   'all',
   'today',
+  'yesterday',
   '7d',
   '30d',
   'this_month',
@@ -183,7 +196,9 @@ export const buildDateFilterOptions = (
   optionKeys = DEFAULT_DATE_FILTER_OPTION_KEYS,
 ) => optionKeys.map(key => ({
   key,
-  label: resolveOrderLabel(DATE_FILTER_LABEL_KEYS[key] || key),
+  label: key === 'yesterday'
+    ? resolveYesterdayLabel()
+    : resolveOrderLabel(DATE_FILTER_LABEL_KEYS[key] || key),
 }));
 
 export const getDateRange = (
