@@ -10,12 +10,14 @@ const {
   DISPLAY_SIZE_CONFIG_KEY,
   POS_AUTO_PRINT_ENABLED_CONFIG_KEY,
   POS_CASH_MANAGEMENT_MODE_CONFIG_KEY,
+  POS_DELIVERY_ENABLED_CONFIG_KEY,
   POS_OPERATION_MODE_CONFIG_KEY,
   isDisplaySideBreakEnabled,
   isPosAutoPrintEnabled,
   isPosCashRegisterClosed,
   isPosCashRegisterOpen,
   isPosCounterMode,
+  isPosDeliveryEnabled,
   isPosSelfServiceMode,
   resolveDisplaySize,
   resolvePosCashManagementMode,
@@ -118,6 +120,20 @@ describe('deviceConfigBootstrap POS operation helpers', () => {
     expect(
       isDisplaySideBreakEnabled({
         [DISPLAY_SIDE_BREAK_CONFIG_KEY]: '1',
+      }),
+    ).toBe(true)
+  })
+
+  it('keeps delivery enabled by default and respects explicit disablement', () => {
+    expect(isPosDeliveryEnabled({})).toBe(true)
+    expect(
+      isPosDeliveryEnabled({
+        [POS_DELIVERY_ENABLED_CONFIG_KEY]: '0',
+      }),
+    ).toBe(false)
+    expect(
+      isPosDeliveryEnabled({
+        [POS_DELIVERY_ENABLED_CONFIG_KEY]: '1',
       }),
     ).toBe(true)
   })

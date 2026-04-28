@@ -9,6 +9,7 @@ export const DEVICE_ALERT_SOUND_URL_KEY = 'notification-sound-url';
 export const DEVICE_ORDER_VISIBILITY_KEY = 'pos-order-visibility';
 export const DEVICE_ORDER_VISIBILITY_DEVICE = 'device';
 export const DEVICE_ORDER_VISIBILITY_COMPANY = 'company';
+export const POS_DELIVERY_ENABLED_CONFIG_KEY = 'pos-delivery-enabled';
 export const DEVICE_RUNTIME_DEBUG_INFO_ENABLED_KEY =
   'device-runtime-debug-info-enabled';
 export const DISPLAY_AUTO_PRINT_PRODUCT_CONFIG_KEY =
@@ -76,6 +77,7 @@ export const DEFAULT_DEVICE_CONFIGS = {
   sound: '0',
   vibration: '0',
   [DEVICE_ORDER_VISIBILITY_KEY]: DEVICE_ORDER_VISIBILITY_DEVICE,
+  [POS_DELIVERY_ENABLED_CONFIG_KEY]: '1',
   [DEVICE_ALERT_SOUND_ENABLED_KEY]: '0',
   [DEVICE_ALERT_SOUND_URL_KEY]: '',
   [DEVICE_RUNTIME_DEBUG_INFO_ENABLED_KEY]: '0',
@@ -112,6 +114,10 @@ export const parseConfigsObject = configs => {
 };
 
 export const normalizeDisplaySize = value => {
+  if (isMissingConfigValue(value)) {
+    return DISPLAY_SIZE_DEFAULT;
+  }
+
   const numericValue = Number(String(value ?? '').trim());
 
   if (!Number.isFinite(numericValue)) {
@@ -400,6 +406,17 @@ export const resolveDeviceOrderVisibility = configs => {
 
 export const canDeviceViewCompanyOrders = configs =>
   resolveDeviceOrderVisibility(configs) === DEVICE_ORDER_VISIBILITY_COMPANY;
+
+export const isPosDeliveryEnabled = configs => {
+  const parsedConfigs = parseConfigsObject(configs);
+  const storedValue = parsedConfigs?.[POS_DELIVERY_ENABLED_CONFIG_KEY];
+
+  if (isMissingConfigValue(storedValue)) {
+    return true;
+  }
+
+  return isTruthyValue(storedValue);
+};
 
 export const isDeviceRuntimeDebugInfoEnabled = configs =>
   isTruthyValue(
