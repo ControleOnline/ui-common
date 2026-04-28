@@ -6,14 +6,18 @@ jest.mock('../../../react/utils/screenMetrics', () => ({
 }))
 
 const {
+  DISPLAY_SIDE_BREAK_CONFIG_KEY,
+  DISPLAY_SIZE_CONFIG_KEY,
   POS_AUTO_PRINT_ENABLED_CONFIG_KEY,
   POS_CASH_MANAGEMENT_MODE_CONFIG_KEY,
   POS_OPERATION_MODE_CONFIG_KEY,
+  isDisplaySideBreakEnabled,
   isPosAutoPrintEnabled,
   isPosCashRegisterClosed,
   isPosCashRegisterOpen,
   isPosCounterMode,
   isPosSelfServiceMode,
+  resolveDisplaySize,
   resolvePosCashManagementMode,
   resolvePosOperationMode,
   resolvePosPrintMode,
@@ -93,5 +97,28 @@ describe('deviceConfigBootstrap POS operation helpers', () => {
 
     expect(shouldUsePosCashRegisterLifecycle(configs)).toBe(false)
     expect(resolvePosPrintMode(configs)).toBe('form')
+  })
+
+  it('defaults display size to 5 and clamps the configured range to 1..10', () => {
+    expect(resolveDisplaySize({})).toBe(5)
+    expect(
+      resolveDisplaySize({
+        [DISPLAY_SIZE_CONFIG_KEY]: '1',
+      }),
+    ).toBe(1)
+    expect(
+      resolveDisplaySize({
+        [DISPLAY_SIZE_CONFIG_KEY]: '18',
+      }),
+    ).toBe(10)
+  })
+
+  it('treats display side break as an explicit boolean flag', () => {
+    expect(isDisplaySideBreakEnabled({})).toBe(false)
+    expect(
+      isDisplaySideBreakEnabled({
+        [DISPLAY_SIDE_BREAK_CONFIG_KEY]: '1',
+      }),
+    ).toBe(true)
   })
 })
