@@ -51,6 +51,35 @@ const parseThemeCss = cssText => {
   return parsedColors;
 };
 
+const normalizeLanguageCode = value => {
+  if (typeof value !== 'string') {
+    return '';
+  }
+
+  return value.trim().replace(/_/g, '-').toLowerCase();
+};
+
+const resolveCompanyLanguageCode = company => {
+  const candidates = [
+    company?.language?.language,
+    company?.language?.locale,
+    company?.language?.code,
+    company?.locale,
+    company?.languageCode,
+    typeof company?.language === 'string' ? company.language : '',
+    company?.configs?.language,
+  ];
+
+  for (const candidate of candidates) {
+    const normalized = normalizeLanguageCode(candidate);
+    if (normalized) {
+      return normalized;
+    }
+  }
+
+  return '';
+};
+
 const normalizeDeviceId = value =>
   String(value?.device || value?.id || value || '').trim();
 
@@ -509,9 +538,11 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
       const currentConfig = JSON.parse(localStorage.getItem('config') || '{}');
       const sessionData = JSON.parse(localStorage.getItem('session') || '{}');
       const configuredLanguage =
+        resolveCompanyLanguageCode(currentCompany) ||
+        resolveCompanyLanguageCode(defaultCompany) ||
         currentConfig?.language ||
         sessionData?.language ||
-        'pt-BR';
+        'pt-br';
 
       if (currentConfig.language !== configuredLanguage) {
         const nextConfig = { ...currentConfig, language: configuredLanguage };
@@ -521,6 +552,7 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
         );
       }
 
+      setTranslateReady(false);
       global.t = new Translate(
         companies,
         defaultCompany,
@@ -531,6 +563,7 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
 
       global.t.discoveryAll().then(() => {
         setTranslateReady(true);
+        global.refreshTranslationsUI?.();
       });
     }
   }, [currentCompany, defaultCompany, deviceConfigFetched, isLogged]);
