@@ -9,6 +9,14 @@ export const MAINTENANCE_ROUTINE_ITEMS = [
     defaultEnabled: true,
     defaultCronExpression: '* * * * *',
   },
+  {
+    key: 'open_overdue_opportunities',
+    title: 'Oportunidades vencidas para aberto',
+    description:
+      'Move oportunidades de CRM de pendente para aberto quando a data de retorno ja passou.',
+    defaultEnabled: true,
+    defaultCronExpression: '* * * * *',
+  },
 ];
 
 export const normalizeMaintenanceRoutines = value => {
