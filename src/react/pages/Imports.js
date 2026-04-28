@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect, useLayoutEffect } from 'react';
+import React, { useCallback, useState, useEffect, useLayoutEffect, useMemo } from 'react';
 import {
     Text,
     View,
@@ -18,6 +18,80 @@ import { Directory, File } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import styles from './Imports.styles';
 
+const normalizeImportStatus = value =>
+    String(value || '')
+        .trim()
+        .toLowerCase();
+
+const getImportStatusMeta = item => {
+    const rawStatus =
+        item?.status?.realStatus ||
+        item?.status?.status ||
+        item?.status?.name ||
+        '';
+    const normalizedStatus = normalizeImportStatus(rawStatus);
+
+    const processingStatuses = ['pending', 'processing', 'queued', 'uploading', 'uploaded'];
+    const errorStatuses = ['error', 'failed', 'failure', 'invalid'];
+    const successStatuses = ['done', 'success', 'completed', 'processed', 'finished'];
+
+    if (processingStatuses.includes(normalizedStatus)) {
+        return {
+            isProcessing: true,
+            isError: false,
+            labelKey: 'processing',
+            rawStatus,
+            backgroundColor: '#FEF3C7',
+            textColor: '#B45309',
+        };
+    }
+
+    if (errorStatuses.includes(normalizedStatus)) {
+        return {
+            isProcessing: false,
+            isError: true,
+            labelKey: 'error',
+            rawStatus,
+            backgroundColor: '#FEE2E2',
+            textColor: '#B91C1C',
+        };
+    }
+
+    if (successStatuses.includes(normalizedStatus)) {
+        return {
+            isProcessing: false,
+            isError: false,
+            labelKey: 'done',
+            rawStatus,
+            backgroundColor: '#DCFCE7',
+            textColor: '#15803D',
+        };
+    }
+
+    return {
+        isProcessing: false,
+        isError: false,
+        labelKey: 'fallback',
+        rawStatus,
+        backgroundColor: '#E2E8F0',
+        textColor: '#475569',
+    };
+};
+
+const getImportErrorDetail = item => {
+    const candidates = [
+        item?.error,
+        item?.errorMessage,
+        item?.status?.message,
+        item?.status?.description,
+        item?.status?.detail,
+        item?.detail,
+        item?.message,
+    ];
+
+    return candidates.find(candidate => String(candidate || '').trim()) || '';
+};
+
 const formatDate = (dateString) => {
     const d = new Date(dateString);
     return d.toLocaleString(); // Formato local legível
@@ -31,6 +105,14 @@ const Imports = ({ context = {}, onClose }) => {
     const importType = context.context;
     const title = context.title;
     const searchPlaceholder = context.searchPlaceholder;
+    const refreshLabel = global.t?.t('imports', 'button', 'refresh') || 'Atualizar';
+    const processingLabel = global.t?.t('imports', 'status', 'processing') || 'Processando';
+    const errorLabel = global.t?.t('imports', 'status', 'error') || 'Erro';
+    const doneLabel = global.t?.t('imports', 'status', 'done') || 'Concluido';
+    const noStatusLabel = global.t?.t('imports', 'status', 'no_status') || 'Sem status';
+    const processingHelpLabel =
+        global.t?.t('imports', 'message', 'processing_after_upload') ||
+        'Importacao enviada e aguardando processamento.';
 
     const navigation = useNavigation();
 
@@ -64,9 +146,9 @@ const Imports = ({ context = {}, onClose }) => {
                 params.name = String(query ?? searchQuery).trim();
             }
 
-            actions.getItems(params);
+            return actions.getItems(params);
         },
-        [currentPage, itemsPerPage, searchQuery, importType],
+        [actions, currentCompany, currentPage, itemsPerPage, searchQuery, importType],
     );
 
     useLayoutEffect(() => {
@@ -78,7 +160,7 @@ const Imports = ({ context = {}, onClose }) => {
     useFocusEffect(
         useCallback(() => {
             fetchImports(searchQuery, currentPage);
-        }, [currentPage, itemsPerPage, searchQuery, importType]),
+        }, [currentPage, fetchImports, searchQuery]),
     );
 
     useEffect(() => {
@@ -104,14 +186,49 @@ const Imports = ({ context = {}, onClose }) => {
         return () => clearTimeout(t);
     }, [searchText]);
 
-    const onRefresh = useCallback(() => {
+    const hasProcessingImports = useMemo(
+        () => allImports.some(item => getImportStatusMeta(item).isProcessing),
+        [allImports],
+    );
+
+    const resolveImportStatusLabel = useCallback(
+        statusMeta => {
+            if (statusMeta.labelKey === 'processing') return processingLabel;
+            if (statusMeta.labelKey === 'error') return errorLabel;
+            if (statusMeta.labelKey === 'done') return doneLabel;
+            return statusMeta.rawStatus || noStatusLabel;
+        },
+        [doneLabel, errorLabel, noStatusLabel, processingLabel],
+    );
+
+    useEffect(() => {
+        if (!hasProcessingImports) {
+            return undefined;
+        }
+
+        const intervalId = setInterval(() => {
+            setCurrentPage(1);
+            fetchImports(searchQuery, 1);
+        }, 15000);
+
+        return () => clearInterval(intervalId);
+    }, [fetchImports, hasProcessingImports, searchQuery]);
+
+    const onRefresh = useCallback(async () => {
         setRefreshing(true);
-        fetchImports(searchQuery, 1);
-        setCurrentPage(1);
-        setRefreshing(false);
+        try {
+            setCurrentPage(1);
+            await fetchImports(searchQuery, 1);
+        } finally {
+            setRefreshing(false);
+        }
     }, [fetchImports, searchQuery]);
 
-    const renderImportCard = ({ item }) => (
+    const renderImportCard = ({ item }) => {
+        const statusMeta = getImportStatusMeta(item);
+        const errorDetail = statusMeta.isError ? getImportErrorDetail(item) : '';
+
+        return (
         <TouchableOpacity style={styles.card} activeOpacity={0.8}>
             <View style={styles.cardHeader}>
                 <View style={styles.avatar}>
@@ -138,15 +255,45 @@ const Imports = ({ context = {}, onClose }) => {
                     <Text style={styles.infoText}>{formatDate(item.uploadDate)}</Text>
                 </View>
 
-                {item.status?.status && (
+                {(item.status?.status || statusMeta.rawStatus || statusMeta.labelKey) && (
                     <View style={styles.infoRow}>
                         <Icon name="info-circle" size={16} color={colors.primary} />
-                        <Text style={styles.infoText}>{item.status.status}</Text>
+                        <View style={styles.statusContent}>
+                            <View
+                                style={[
+                                    styles.statusBadge,
+                                    {
+                                        backgroundColor: statusMeta.backgroundColor,
+                                    },
+                                ]}>
+                                <Text
+                                    style={[
+                                        styles.statusBadgeText,
+                                        { color: statusMeta.textColor },
+                                    ]}>
+                                    {resolveImportStatusLabel(statusMeta)}
+                                </Text>
+                            </View>
+
+                            {statusMeta.isProcessing && (
+                                <Text style={styles.statusHelperText}>
+                                    {processingHelpLabel}
+                                </Text>
+                            )}
+                        </View>
                     </View>
                 )}
+
+                {errorDetail ? (
+                    <View style={styles.infoRow}>
+                        <Icon name="exclamation-circle" size={16} color="#DC2626" />
+                        <Text style={styles.errorText}>{errorDetail}</Text>
+                    </View>
+                ) : null}
             </View>
         </TouchableOpacity>
-    );
+        );
+    };
 
     const downloadTemplate = async () => {
         try {
@@ -206,10 +353,24 @@ const Imports = ({ context = {}, onClose }) => {
 
             <View style={styles.subHeader}>
                 <View style={styles.topRow}>
-                    <TouchableOpacity style={styles.downloadButton} onPress={downloadTemplate}>
-                        <IconAdd name="download" size={20} color="#fff" />
-                        <Text style={styles.downloadText}>Baixar Modelo</Text>
-                    </TouchableOpacity>
+                    <View style={styles.topRowActions}>
+                        <TouchableOpacity style={styles.downloadButton} onPress={downloadTemplate}>
+                            <IconAdd name="download" size={20} color="#fff" />
+                            <Text style={styles.downloadText}>Baixar Modelo</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.refreshButton} onPress={onRefresh}>
+                            <Icon name="refresh" size={16} color={colors.primary} />
+                            <Text style={styles.refreshButtonText}>{refreshLabel}</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {hasProcessingImports ? (
+                        <View style={styles.processingBadge}>
+                            <Icon name="clock-o" size={14} color="#B45309" />
+                            <Text style={styles.processingBadgeText}>{processingLabel}</Text>
+                        </View>
+                    ) : null}
                 </View>
 
                 <View style={styles.searchRow}>
@@ -256,8 +417,8 @@ const Imports = ({ context = {}, onClose }) => {
                 onClose={() => setShowAddImportModal(false)}
                 context={context}
                 onSuccess={() => {
-                    fetchImports(searchQuery, 1);
                     setCurrentPage(1);
+                    fetchImports(searchQuery, 1);
                 }}
             />
         </View>
