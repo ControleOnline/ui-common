@@ -17,80 +17,12 @@ import AddImportModal from '../components/AddImportModal';
 import { Directory, File } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import styles from './Imports.styles';
-
-const normalizeImportStatus = value =>
-    String(value || '')
-        .trim()
-        .toLowerCase();
-
-const getImportStatusMeta = item => {
-    const rawStatus =
-        item?.status?.realStatus ||
-        item?.status?.status ||
-        item?.status?.name ||
-        '';
-    const normalizedStatus = normalizeImportStatus(rawStatus);
-
-    const processingStatuses = ['pending', 'processing', 'queued', 'uploading', 'uploaded'];
-    const errorStatuses = ['error', 'failed', 'failure', 'invalid'];
-    const successStatuses = ['done', 'success', 'completed', 'processed', 'finished'];
-
-    if (processingStatuses.includes(normalizedStatus)) {
-        return {
-            isProcessing: true,
-            isError: false,
-            labelKey: 'processing',
-            rawStatus,
-            backgroundColor: '#FEF3C7',
-            textColor: '#B45309',
-        };
-    }
-
-    if (errorStatuses.includes(normalizedStatus)) {
-        return {
-            isProcessing: false,
-            isError: true,
-            labelKey: 'error',
-            rawStatus,
-            backgroundColor: '#FEE2E2',
-            textColor: '#B91C1C',
-        };
-    }
-
-    if (successStatuses.includes(normalizedStatus)) {
-        return {
-            isProcessing: false,
-            isError: false,
-            labelKey: 'done',
-            rawStatus,
-            backgroundColor: '#DCFCE7',
-            textColor: '#15803D',
-        };
-    }
-
-    return {
-        isProcessing: false,
-        isError: false,
-        labelKey: 'fallback',
-        rawStatus,
-        backgroundColor: '#E2E8F0',
-        textColor: '#475569',
-    };
-};
-
-const getImportErrorDetail = item => {
-    const candidates = [
-        item?.error,
-        item?.errorMessage,
-        item?.status?.message,
-        item?.status?.description,
-        item?.status?.detail,
-        item?.detail,
-        item?.message,
-    ];
-
-    return candidates.find(candidate => String(candidate || '').trim()) || '';
-};
+const {
+    getImportErrorDetail,
+    getImportStatusMeta,
+    resolveImportLabels,
+    resolveImportStatusLabel: resolveImportStatusLabelValue,
+} = require('../utils/importStatus');
 
 const formatDate = (dateString) => {
     const d = new Date(dateString);
@@ -105,14 +37,14 @@ const Imports = ({ context = {}, onClose }) => {
     const importType = context.context;
     const title = context.title;
     const searchPlaceholder = context.searchPlaceholder;
-    const refreshLabel = global.t?.t('imports', 'button', 'refresh') || 'Atualizar';
-    const processingLabel = global.t?.t('imports', 'status', 'processing') || 'Processando';
-    const errorLabel = global.t?.t('imports', 'status', 'error') || 'Erro';
-    const doneLabel = global.t?.t('imports', 'status', 'done') || 'Concluido';
-    const noStatusLabel = global.t?.t('imports', 'status', 'no_status') || 'Sem status';
-    const processingHelpLabel =
-        global.t?.t('imports', 'message', 'processing_after_upload') ||
-        'Importacao enviada e aguardando processamento.';
+    const {
+        refreshLabel,
+        processingLabel,
+        errorLabel,
+        doneLabel,
+        noStatusLabel,
+        processingHelpLabel,
+    } = resolveImportLabels(global.t?.t);
 
     const navigation = useNavigation();
 
@@ -193,10 +125,12 @@ const Imports = ({ context = {}, onClose }) => {
 
     const resolveImportStatusLabel = useCallback(
         statusMeta => {
-            if (statusMeta.labelKey === 'processing') return processingLabel;
-            if (statusMeta.labelKey === 'error') return errorLabel;
-            if (statusMeta.labelKey === 'done') return doneLabel;
-            return statusMeta.rawStatus || noStatusLabel;
+            return resolveImportStatusLabelValue(statusMeta, {
+                processingLabel,
+                errorLabel,
+                doneLabel,
+                noStatusLabel,
+            });
         },
         [doneLabel, errorLabel, noStatusLabel, processingLabel],
     );

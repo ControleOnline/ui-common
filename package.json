@@ -5,7 +5,10 @@
   "description": "ControleOnline Common Quasar UI Component",
   "license": "MIT",
   "main": "src/vue/index.js",
-  "scripts": {},
+  "scripts": {
+    "test": "npm run test:imports-status",
+    "test:imports-status": "node --test src/tests/react/utils/importStatus.test.js"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/ControleOnline/ui-common.git"
