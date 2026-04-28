@@ -9,7 +9,6 @@ const commonRoutes = [
     options: {
       headerShown: true,
       headerBackVisible: true,
-      showBottomToolBar: false,
       title: 'Historico',
     },
   },
@@ -31,7 +30,6 @@ const commonRoutes = [
     options: {
       showCompanyFilter: true,
       headerShown: true,
-      headerBackVisible: false,
       showBottomToolBar: true,
       title: 'Importações',
     },
