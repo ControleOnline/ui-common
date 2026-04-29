@@ -27,10 +27,13 @@ const styles = StyleSheet.create({
   },
 
   topRow: {
+    marginBottom: 8,
+  },
+
+  topRowActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 8,
+    flexWrap: 'wrap',
   },
 
   downloadButton: {
@@ -43,6 +46,38 @@ const styles = StyleSheet.create({
   },
 
   downloadText: { color: '#fff', fontWeight: '600', marginLeft: 6 },
+  refreshButton: {
+    marginLeft: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+  },
+  refreshButtonText: {
+    color: colors.primary,
+    fontWeight: '600',
+    marginLeft: 6,
+  },
+  processingBadge: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FEF3C7',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    marginTop: 10,
+  },
+  processingBadgeText: {
+    marginLeft: 6,
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#B45309',
+  },
   searchRow: { flexDirection: 'row', alignItems: 'center' },
 
   searchInputContainer: {
@@ -132,6 +167,32 @@ const styles = StyleSheet.create({
   infoText: {
     fontSize: 14,
     color: '#475569',
+    marginLeft: 8,
+    fontWeight: '500',
+    flex: 1,
+  },
+  statusContent: {
+    flex: 1,
+    marginLeft: 8,
+  },
+  statusBadge: {
+    alignSelf: 'flex-start',
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  statusBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  statusHelperText: {
+    marginTop: 6,
+    fontSize: 12,
+    color: '#92400E',
+  },
+  errorText: {
+    fontSize: 13,
+    color: '#B91C1C',
     marginLeft: 8,
     fontWeight: '500',
     flex: 1,
