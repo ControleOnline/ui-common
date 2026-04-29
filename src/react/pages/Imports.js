@@ -18,85 +18,6 @@ import { Directory, File } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import styles from './Imports.styles';
 
-const REQUIRED_IMPORT_HEADERS = {
-    product: ['product', 'type', 'price', 'active', 'company'],
-};
-
-const parseCsvHeaderLine = (line) => {
-    const values = [];
-    let currentValue = '';
-    let insideQuotes = false;
-
-    for (let index = 0; index < line.length; index += 1) {
-        const char = line[index];
-        const nextChar = line[index + 1];
-
-        if (char === '"') {
-            if (insideQuotes && nextChar === '"') {
-                currentValue += '"';
-                index += 1;
-                continue;
-            }
-
-            insideQuotes = !insideQuotes;
-            continue;
-        }
-
-        if (char === ',' && !insideQuotes) {
-            values.push(currentValue);
-            currentValue = '';
-            continue;
-        }
-
-        currentValue += char;
-    }
-
-    values.push(currentValue);
-    return values;
-};
-
-const serializeCsvHeaderLine = (values) =>
-    values
-        .map((value) => {
-            const normalized = String(value ?? '');
-            if (!/[",\n]/.test(normalized)) {
-                return normalized;
-            }
-
-            return `"${normalized.replace(/"/g, '""')}"`;
-        })
-        .join(',');
-
-const applyRequiredHeadersToCsvTemplate = (csvText, importType) => {
-    const requiredHeaders = REQUIRED_IMPORT_HEADERS[importType];
-    if (!requiredHeaders?.length || typeof csvText !== 'string' || !csvText.trim()) {
-        return csvText;
-    }
-
-    const lineBreak = csvText.includes('\r\n') ? '\r\n' : '\n';
-    const [headerLine, ...remainingLines] = csvText.split(/\r?\n/);
-    if (!headerLine) {
-        return csvText;
-    }
-
-    const requiredHeaderSet = new Set(
-        requiredHeaders.map((header) => String(header).trim().toLowerCase()),
-    );
-
-    const updatedHeaderLine = serializeCsvHeaderLine(
-        parseCsvHeaderLine(headerLine).map((header) => {
-            const normalizedHeader = String(header).trim().toLowerCase();
-            if (!requiredHeaderSet.has(normalizedHeader)) {
-                return header;
-            }
-
-            return String(header).endsWith('*') ? header : `${header}*`;
-        }),
-    );
-
-    return [updatedHeaderLine, ...remainingLines].join(lineBreak);
-};
-
 const formatDate = (dateString) => {
     const d = new Date(dateString);
     return d.toLocaleString(); // Formato local legível
@@ -238,7 +159,6 @@ const Imports = ({ context = {}, onClose }) => {
             console.log('CSV recebido:', csvText.slice(0, 200));
 
             if (!csvText) throw new Error('CSV vazio');
-            const decoratedCsvText = applyRequiredHeadersToCsvTemplate(csvText, importType);
 
             // mobile: verifica se o diretório está disponível
             const dirUri = Directory?.cacheDocumentDirectory || Directory?.documentDirectory;
@@ -246,7 +166,7 @@ const Imports = ({ context = {}, onClose }) => {
             if (dirUri) {
                 const fileUri = `${dirUri}modelo_${importType}.csv`;
 
-                const file = new File(fileUri, { contents: decoratedCsvText });
+                const file = new File(fileUri, { contents: csvText });
                 await file.create();
 
                 if (await Sharing.isAvailableAsync()) {
@@ -257,7 +177,7 @@ const Imports = ({ context = {}, onClose }) => {
                 return fileUri;
             } else if (typeof window !== 'undefined') {
                 // fallback web
-                const blob = new Blob([decoratedCsvText], { type: 'text/csv' });
+                const blob = new Blob([csvText], { type: 'text/csv' });
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
                 link.download = `modelo_${importType}.csv`;
