@@ -10,6 +10,7 @@ import RuntimeInfoFooter from '@controleonline/ui-common/src/react/components/Ru
 import { useStore } from '@store';
 import { api } from '@controleonline/ui-common/src/api';
 import { env as APP_ENV } from '@env';
+const { resolveConfiguredLanguage } = require('../utils/runtimeLanguage');
 import {
   applyPaletteToRuntimeColors,
   applyThemeCssVariables,
@@ -508,10 +509,12 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
     ) {
       const currentConfig = JSON.parse(localStorage.getItem('config') || '{}');
       const sessionData = JSON.parse(localStorage.getItem('session') || '{}');
-      const configuredLanguage =
-        currentConfig?.language ||
-        sessionData?.language ||
-        'pt-BR';
+      const configuredLanguage = resolveConfiguredLanguage({
+        currentCompany,
+        defaultCompany,
+        currentConfig,
+        sessionData,
+      });
 
       if (currentConfig.language !== configuredLanguage) {
         const nextConfig = { ...currentConfig, language: configuredLanguage };
@@ -521,6 +524,7 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
         );
       }
 
+      setTranslateReady(false);
       global.t = new Translate(
         companies,
         defaultCompany,
@@ -531,6 +535,7 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
 
       global.t.discoveryAll().then(() => {
         setTranslateReady(true);
+        global.refreshTranslationsUI?.();
       });
     }
   }, [currentCompany, defaultCompany, deviceConfigFetched, isLogged]);
