@@ -1,17 +1,17 @@
 import { StyleSheet } from 'react-native';
 
-const createStyles = theme => StyleSheet.create({
+const createStyles = (theme, dense = false) => StyleSheet.create({
   trigger: {
     minWidth: 0,
     flexGrow: 1,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: dense ? 8 : 10,
     borderWidth: 1,
     borderColor: theme.borderColor,
-    borderRadius: 14,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderRadius: dense ? 12 : 14,
+    paddingHorizontal: dense ? 10 : 12,
+    paddingVertical: dense ? 8 : 10,
     backgroundColor: theme.backgroundColor,
   },
   triggerActive: {
@@ -19,9 +19,9 @@ const createStyles = theme => StyleSheet.create({
     backgroundColor: theme.activeBackgroundColor,
   },
   iconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 10,
+    width: dense ? 24 : 28,
+    height: dense ? 24 : 28,
+    borderRadius: dense ? 8 : 10,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: theme.iconBackgroundColor,
@@ -29,10 +29,26 @@ const createStyles = theme => StyleSheet.create({
   iconWrapActive: {
     backgroundColor: theme.activeIconBackgroundColor,
   },
-  triggerText: {
+  textWrap: {
     flex: 1,
-    fontSize: 13,
-    fontWeight: '700',
+    minWidth: 0,
+  },
+  triggerCaption: {
+    fontSize: dense ? 9 : 10,
+    lineHeight: dense ? 10 : 12,
+    fontWeight: '800',
+    letterSpacing: 0.45,
+    textTransform: 'uppercase',
+    color: '#94A3B8',
+    marginBottom: dense ? 1 : 2,
+  },
+  triggerCaptionActive: {
+    color: theme.accentColor,
+  },
+  triggerText: {
+    fontSize: dense ? 12 : 13,
+    lineHeight: dense ? 14 : 16,
+    fontWeight: dense ? '800' : '700',
     color: theme.textColor,
   },
   triggerTextActive: {

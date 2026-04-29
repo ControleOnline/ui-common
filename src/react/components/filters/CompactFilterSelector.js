@@ -28,9 +28,11 @@ const CompactFilterSelector = ({
   accentColor = '#2563EB',
   active = false,
   children = null,
+  dense = false,
   disabled = false,
   icon = 'sliders',
   label = '',
+  labelCaption = '',
   onSelect = null,
   options = [],
   selectedKey = '',
@@ -38,8 +40,8 @@ const CompactFilterSelector = ({
 }) => {
   const [visible, setVisible] = useState(false);
   const styles = useMemo(
-    () => createStyles(buildTheme(accentColor)),
-    [accentColor],
+    () => createStyles(buildTheme(accentColor), dense),
+    [accentColor, dense],
   );
 
   const closeModal = useCallback(() => {
@@ -85,21 +87,35 @@ const CompactFilterSelector = ({
         <View style={[styles.iconWrap, active ? styles.iconWrapActive : null]}>
           <Icon
             name={icon}
-            size={15}
+            size={dense ? 14 : 15}
             color={active ? accentColor : '#64748B'}
           />
         </View>
 
-        <Text
-          numberOfLines={1}
-          style={[styles.triggerText, active ? styles.triggerTextActive : null]}
-        >
-          {label}
-        </Text>
+        <View style={styles.textWrap}>
+          {!!labelCaption && (
+            <Text
+              numberOfLines={1}
+              style={[
+                styles.triggerCaption,
+                active ? styles.triggerCaptionActive : null,
+              ]}
+            >
+              {labelCaption}
+            </Text>
+          )}
+
+          <Text
+            numberOfLines={1}
+            style={[styles.triggerText, active ? styles.triggerTextActive : null]}
+          >
+            {label}
+          </Text>
+        </View>
 
         <Icon
           name="chevron-down"
-          size={16}
+          size={dense ? 14 : 16}
           color={active ? accentColor : '#94A3B8'}
         />
       </TouchableOpacity>

@@ -25,12 +25,25 @@ const createDefaultColors = colors => ({
   textSecondary: colors?.textSecondary || '#64748B',
 });
 
+const COMPACT_DATE_LABELS = {
+  all: 'Todos',
+  today: 'Hoje',
+  yesterday: 'Ontem',
+  '7d': '7 dias',
+  '30d': '30 dias',
+  this_month: 'Este mes',
+  last_month: 'Mes ant.',
+  custom: 'Periodo',
+};
+
 const DateShortcutFilter = ({
   value = '',
   onChange = null,
   customRange = null,
   onCustomRangeChange = null,
   colors = null,
+  dense = false,
+  labelCaption = '',
   optionKeys = DEFAULT_DATE_FILTER_OPTION_KEYS,
 }) => {
   const themeColors = useMemo(() => createDefaultColors(colors), [colors]);
@@ -59,6 +72,13 @@ const DateShortcutFilter = ({
       ? activeRangeSummary || currentOptionLabel
       : currentOptionLabel || activeRangeSummary
   ), [activeRangeSummary, currentOptionLabel, value]);
+  const compactSelectedLabel = useMemo(() => {
+    if (value === 'custom') {
+      return activeRangeSummary || COMPACT_DATE_LABELS.custom;
+    }
+
+    return COMPACT_DATE_LABELS[value] || currentOptionLabel || selectedLabel;
+  }, [activeRangeSummary, currentOptionLabel, selectedLabel, value]);
 
   useEffect(() => {
     setCustomFromInput(String(customRange?.from || ''));
@@ -117,9 +137,11 @@ const DateShortcutFilter = ({
   return (
     <CompactFilterSelector
       accentColor={themeColors.accent}
+      dense={dense}
       active={value !== 'all'}
       icon="calendar"
-      label={selectedLabel}
+      label={dense ? compactSelectedLabel : selectedLabel}
+      labelCaption={labelCaption || periodLabel}
       options={options}
       selectedKey={isCustomEditorVisible || value === 'custom' ? 'custom' : value}
       title={periodLabel}
