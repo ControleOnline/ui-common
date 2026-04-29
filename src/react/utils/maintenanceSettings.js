@@ -1,22 +1,38 @@
 export const MAINTENANCE_ROUTINES_CONFIG_KEY = 'maintenance-routines';
 
+const translateRoutineLabel = key => global.t?.t('configs', 'label', key);
+
+const translateRoutineMessage = key => global.t?.t('configs', 'message', key);
+
+const createMaintenanceRoutineItem = ({
+  key,
+  titleKey,
+  descriptionKey,
+  defaultEnabled = true,
+  defaultCronExpression = '* * * * *',
+}) => ({
+  key,
+  get title() {
+    return translateRoutineLabel(titleKey);
+  },
+  get description() {
+    return translateRoutineMessage(descriptionKey);
+  },
+  defaultEnabled,
+  defaultCronExpression,
+});
+
 export const MAINTENANCE_ROUTINE_ITEMS = [
-  {
+  createMaintenanceRoutineItem({
     key: 'cleanup_logs',
-    title: 'Limpeza de logs',
-    description:
-      'Executa a politica de retencao dos logs e remove registros expirados.',
-    defaultEnabled: true,
-    defaultCronExpression: '* * * * *',
-  },
-  {
+    titleKey: 'cleanup_logs',
+    descriptionKey: 'cleanup_logs_description',
+  }),
+  createMaintenanceRoutineItem({
     key: 'open_overdue_opportunities',
-    title: 'Oportunidades vencidas para aberto',
-    description:
-      'Move oportunidades de CRM de pendente para aberto quando a data de retorno ja passou.',
-    defaultEnabled: true,
-    defaultCronExpression: '* * * * *',
-  },
+    titleKey: 'open_overdue_opportunities',
+    descriptionKey: 'open_overdue_opportunities_description',
+  }),
 ];
 
 export const normalizeMaintenanceRoutines = value => {
