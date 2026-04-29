@@ -10,6 +10,7 @@ import ProductCatalogCacheService from '@controleonline/ui-common/src/react/comp
 import RuntimeInfoFooter from '@controleonline/ui-common/src/react/components/RuntimeInfoFooter';
 import {api} from '@controleonline/ui-common/src/api';
 import {env as APP_ENV} from '@env';
+const {resolveConfiguredLanguage} = require('../utils/runtimeLanguage');
 import {
   applyPaletteToRuntimeColors,
   applyThemeCssVariables,
@@ -50,35 +51,6 @@ const parseThemeCss = cssText => {
   });
 
   return parsedColors;
-};
-
-const normalizeLanguageCode = value => {
-  if (typeof value !== 'string') {
-    return '';
-  }
-
-  return value.trim().replace(/_/g, '-').toLowerCase();
-};
-
-const resolveCompanyLanguageCode = company => {
-  const candidates = [
-    company?.language?.language,
-    company?.language?.locale,
-    company?.language?.code,
-    company?.locale,
-    company?.languageCode,
-    typeof company?.language === 'string' ? company.language : '',
-    company?.configs?.language,
-  ];
-
-  for (const candidate of candidates) {
-    const normalized = normalizeLanguageCode(candidate);
-    if (normalized) {
-      return normalized;
-    }
-  }
-
-  return '';
 };
 
 export const DefaultProvider = ({children, onBootstrapReady}) => {
@@ -466,12 +438,12 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
     ) {
       const currentConfig = JSON.parse(localStorage.getItem('config') || '{}');
       const sessionData = JSON.parse(localStorage.getItem('session') || '{}');
-      const configuredLanguage =
-        resolveCompanyLanguageCode(currentCompany) ||
-        resolveCompanyLanguageCode(defaultCompany) ||
-        currentConfig?.language ||
-        sessionData?.language ||
-        'pt-br';
+      const configuredLanguage = resolveConfiguredLanguage({
+        currentCompany,
+        defaultCompany,
+        currentConfig,
+        sessionData,
+      });
 
       if (currentConfig.language !== configuredLanguage) {
         const nextConfig = {...currentConfig, language: configuredLanguage};
