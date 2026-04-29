@@ -7,7 +7,7 @@
   "main": "src/vue/index.js",
   "scripts": {
     "test": "npm run test:imports-status",
-    "test:imports-status": "node --test src/tests/react/utils/importStatus.test.js"
+    "test:imports-status": "mkdir -p node_modules/@controleonline && ln -sfn ../.. node_modules/@controleonline/ui-common && node --test src/tests/react/utils/importStatus.test.js"
   },
   "repository": {
     "type": "git",

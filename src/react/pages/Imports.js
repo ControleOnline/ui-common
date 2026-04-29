@@ -22,7 +22,7 @@ const {
     getImportStatusMeta,
     resolveImportLabels,
     resolveImportStatusLabel: resolveImportStatusLabelValue,
-} = require('../utils/importStatus');
+} = require('@controleonline/ui-common/src/react/utils/importStatus');
 
 const formatDate = (dateString) => {
     const d = new Date(dateString);

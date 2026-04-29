@@ -7,7 +7,7 @@ const {
   normalizeImportStatus,
   resolveImportLabels,
   resolveImportStatusLabel,
-} = require('../../../react/utils/importStatus')
+} = require('@controleonline/ui-common/src/react/utils/importStatus')
 
 test('normalizeImportStatus trims and lowercases the raw value', () => {
   assert.equal(normalizeImportStatus('  Processing '), 'processing')
