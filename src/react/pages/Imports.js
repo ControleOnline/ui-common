@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useEffect, useLayoutEffect } from 'react';
+import React, { useCallback, useState, useEffect, useLayoutEffect, useMemo } from 'react';
 import {
     Text,
     View,
@@ -17,6 +17,12 @@ import AddImportModal from '../components/AddImportModal';
 import { Directory, File } from 'expo-file-system';
 import * as Sharing from 'expo-sharing';
 import styles from './Imports.styles';
+const {
+    getImportErrorDetail,
+    getImportStatusMeta,
+    resolveImportLabels,
+    resolveImportStatusLabel: resolveImportStatusLabelValue,
+} = require('@controleonline/ui-common/src/react/utils/importStatus');
 
 const formatDate = (dateString) => {
     const d = new Date(dateString);
@@ -31,6 +37,14 @@ const Imports = ({ context = {}, onClose }) => {
     const importType = context.context;
     const title = context.title;
     const searchPlaceholder = context.searchPlaceholder;
+    const {
+        refreshLabel,
+        processingLabel,
+        errorLabel,
+        doneLabel,
+        noStatusLabel,
+        processingHelpLabel,
+    } = resolveImportLabels(global.t?.t);
 
     const navigation = useNavigation();
 
@@ -64,9 +78,9 @@ const Imports = ({ context = {}, onClose }) => {
                 params.name = String(query ?? searchQuery).trim();
             }
 
-            actions.getItems(params);
+            return actions.getItems(params);
         },
-        [currentPage, itemsPerPage, searchQuery, importType],
+        [actions, currentCompany, currentPage, itemsPerPage, searchQuery, importType],
     );
 
     useLayoutEffect(() => {
@@ -78,7 +92,7 @@ const Imports = ({ context = {}, onClose }) => {
     useFocusEffect(
         useCallback(() => {
             fetchImports(searchQuery, currentPage);
-        }, [currentPage, itemsPerPage, searchQuery, importType]),
+        }, [currentPage, fetchImports, searchQuery]),
     );
 
     useEffect(() => {
@@ -104,14 +118,51 @@ const Imports = ({ context = {}, onClose }) => {
         return () => clearTimeout(t);
     }, [searchText]);
 
-    const onRefresh = useCallback(() => {
+    const hasProcessingImports = useMemo(
+        () => allImports.some(item => getImportStatusMeta(item).isProcessing),
+        [allImports],
+    );
+
+    const resolveImportStatusLabel = useCallback(
+        statusMeta => {
+            return resolveImportStatusLabelValue(statusMeta, {
+                processingLabel,
+                errorLabel,
+                doneLabel,
+                noStatusLabel,
+            });
+        },
+        [doneLabel, errorLabel, noStatusLabel, processingLabel],
+    );
+
+    useEffect(() => {
+        if (!hasProcessingImports) {
+            return undefined;
+        }
+
+        const intervalId = setInterval(() => {
+            setCurrentPage(1);
+            fetchImports(searchQuery, 1);
+        }, 15000);
+
+        return () => clearInterval(intervalId);
+    }, [fetchImports, hasProcessingImports, searchQuery]);
+
+    const onRefresh = useCallback(async () => {
         setRefreshing(true);
-        fetchImports(searchQuery, 1);
-        setCurrentPage(1);
-        setRefreshing(false);
+        try {
+            setCurrentPage(1);
+            await fetchImports(searchQuery, 1);
+        } finally {
+            setRefreshing(false);
+        }
     }, [fetchImports, searchQuery]);
 
-    const renderImportCard = ({ item }) => (
+    const renderImportCard = ({ item }) => {
+        const statusMeta = getImportStatusMeta(item);
+        const errorDetail = statusMeta.isError ? getImportErrorDetail(item) : '';
+
+        return (
         <TouchableOpacity style={styles.card} activeOpacity={0.8}>
             <View style={styles.cardHeader}>
                 <View style={styles.avatar}>
@@ -138,15 +189,45 @@ const Imports = ({ context = {}, onClose }) => {
                     <Text style={styles.infoText}>{formatDate(item.uploadDate)}</Text>
                 </View>
 
-                {item.status?.status && (
+                {(item.status?.status || statusMeta.rawStatus || statusMeta.labelKey) && (
                     <View style={styles.infoRow}>
                         <Icon name="info-circle" size={16} color={colors.primary} />
-                        <Text style={styles.infoText}>{item.status.status}</Text>
+                        <View style={styles.statusContent}>
+                            <View
+                                style={[
+                                    styles.statusBadge,
+                                    {
+                                        backgroundColor: statusMeta.backgroundColor,
+                                    },
+                                ]}>
+                                <Text
+                                    style={[
+                                        styles.statusBadgeText,
+                                        { color: statusMeta.textColor },
+                                    ]}>
+                                    {resolveImportStatusLabel(statusMeta)}
+                                </Text>
+                            </View>
+
+                            {statusMeta.isProcessing && (
+                                <Text style={styles.statusHelperText}>
+                                    {processingHelpLabel}
+                                </Text>
+                            )}
+                        </View>
                     </View>
                 )}
+
+                {errorDetail ? (
+                    <View style={styles.infoRow}>
+                        <Icon name="exclamation-circle" size={16} color="#DC2626" />
+                        <Text style={styles.errorText}>{errorDetail}</Text>
+                    </View>
+                ) : null}
             </View>
         </TouchableOpacity>
-    );
+        );
+    };
 
     const downloadTemplate = async () => {
         try {
@@ -206,10 +287,24 @@ const Imports = ({ context = {}, onClose }) => {
 
             <View style={styles.subHeader}>
                 <View style={styles.topRow}>
-                    <TouchableOpacity style={styles.downloadButton} onPress={downloadTemplate}>
-                        <IconAdd name="download" size={20} color="#fff" />
-                        <Text style={styles.downloadText}>Baixar Modelo</Text>
-                    </TouchableOpacity>
+                    <View style={styles.topRowActions}>
+                        <TouchableOpacity style={styles.downloadButton} onPress={downloadTemplate}>
+                            <IconAdd name="download" size={20} color="#fff" />
+                            <Text style={styles.downloadText}>Baixar Modelo</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity style={styles.refreshButton} onPress={onRefresh}>
+                            <Icon name="refresh" size={16} color={colors.primary} />
+                            <Text style={styles.refreshButtonText}>{refreshLabel}</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    {hasProcessingImports ? (
+                        <View style={styles.processingBadge}>
+                            <Icon name="clock-o" size={14} color="#B45309" />
+                            <Text style={styles.processingBadgeText}>{processingLabel}</Text>
+                        </View>
+                    ) : null}
                 </View>
 
                 <View style={styles.searchRow}>
@@ -256,8 +351,8 @@ const Imports = ({ context = {}, onClose }) => {
                 onClose={() => setShowAddImportModal(false)}
                 context={context}
                 onSuccess={() => {
-                    fetchImports(searchQuery, 1);
                     setCurrentPage(1);
+                    fetchImports(searchQuery, 1);
                 }}
             />
         </View>
