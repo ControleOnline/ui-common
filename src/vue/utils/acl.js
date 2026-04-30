@@ -78,7 +78,7 @@ export default class Acl {
     let user_disabled = true;
 
     user_disabled = !company.user.enabled;
-    if (company.enabled && company.user.employee_enabled && !user_disabled) {
+    if (company.panel_enabled && !user_disabled) {
       if (!this.myCompany)
         this.store.dispatch("people/currentCompany", company);
       this.store.commit("acl/SET_DISABLED", false);
