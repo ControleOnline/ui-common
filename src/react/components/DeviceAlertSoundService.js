@@ -1,12 +1,19 @@
 import React, {useCallback, useEffect, useMemo, useRef} from 'react';
 import {createAudioPlayer} from 'expo-audio';
 import {useStore, useStores} from '@store';
+import {env as APP_ENV} from '@env';
 import {
   DEVICE_ALERT_SOUND_ENABLED_KEY,
   DEVICE_ALERT_SOUND_URL_KEY,
   isTruthyValue,
   parseConfigsObject,
 } from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
+import {
+  hasStoredManagerOrderNotificationPreferences,
+  isManagerAppType,
+  resolveManagerOrderNotificationPreferences,
+  showManagerOrderNotification,
+} from '@controleonline/ui-common/src/react/utils/managerOrderNotifications';
 
 const MAX_PROCESSED_EVENTS = 200;
 const ORDER_CREATED_EVENT = 'order.created';
@@ -71,7 +78,7 @@ const buildMessageFingerprint = message => {
   });
 };
 
-const isRelevantAlertMessage = message => {
+const isRelevantOrderCreatedMessage = message => {
   const store = normalizeText(message?.store);
   const event = normalizeText(message?.event);
   const realStatus = normalizeText(message?.realStatus).toLowerCase();
@@ -79,8 +86,7 @@ const isRelevantAlertMessage = message => {
   return (
     store === 'orders' &&
     event === ORDER_CREATED_EVENT &&
-    realStatus === 'open' &&
-    isTruthyValue(message?.alertSound)
+    realStatus === 'open'
   );
 };
 
@@ -97,6 +103,7 @@ const isMessageForCurrentCompany = (message, currentCompanyId) => {
 };
 
 const DeviceAlertSoundService = () => {
+  const authStore = useStore('auth');
   const peopleStore = useStore('people');
   const deviceConfigStore = useStore('device_config');
   const ordersStore = useStores(state => state?.orders || {getters: {}, actions: {}});
@@ -105,19 +112,42 @@ const DeviceAlertSoundService = () => {
   const playerRef = useRef(null);
   const playerSourceRef = useRef('');
 
+  const {user} = authStore.getters;
   const {currentCompany} = peopleStore.getters;
   const deviceConfig = useMemo(
     () => parseConfigsObject(deviceConfigStore.getters?.item?.configs),
     [deviceConfigStore.getters?.item?.configs],
   );
+  const managerOrderNotificationPreferences = useMemo(
+    () => resolveManagerOrderNotificationPreferences(user),
+    [user],
+  );
 
+  const isManagerRuntime = isManagerAppType(APP_ENV?.APP_TYPE);
+  const hasStoredManagerPreferences =
+    isManagerRuntime && hasStoredManagerOrderNotificationPreferences(user);
   const currentCompanyId = normalizeEntityId(currentCompany?.id);
-  const alertSoundEnabled = isTruthyValue(
+  const managerPushEnabled =
+    isManagerRuntime && managerOrderNotificationPreferences.pushEnabled;
+  const managerSoundEnabled =
+    managerPushEnabled && managerOrderNotificationPreferences.soundEnabled;
+  const managerSoundUrl = normalizeText(
+    managerOrderNotificationPreferences.soundUrl,
+  );
+  const deviceAlertSoundEnabled = isTruthyValue(
     deviceConfig?.[DEVICE_ALERT_SOUND_ENABLED_KEY],
   );
-  const alertSoundUrl = normalizeText(
+  const deviceAlertSoundUrl = normalizeText(
     deviceConfig?.[DEVICE_ALERT_SOUND_URL_KEY],
   );
+  const shouldPlayManagerSound = managerSoundEnabled && !!managerSoundUrl;
+  const shouldPlayAlertSound = hasStoredManagerPreferences
+    ? shouldPlayManagerSound
+    : shouldPlayManagerSound || (deviceAlertSoundEnabled && !!deviceAlertSoundUrl);
+  const alertSoundUrl =
+    shouldPlayManagerSound && managerSoundUrl
+      ? managerSoundUrl
+      : deviceAlertSoundUrl;
 
   const ensurePlayer = useCallback(
     source => {
@@ -196,11 +226,10 @@ const DeviceAlertSoundService = () => {
   const orderMessage = ordersStore.getters?.message;
 
   useEffect(() => {
-    const incomingMessages = [
-      ...collectMessages(orderMessages, orderMessage),
-    ].filter(
+    const incomingMessages = [...collectMessages(orderMessages, orderMessage)].filter(
       message =>
-        isRelevantAlertMessage(message) &&
+        isRelevantOrderCreatedMessage(message) &&
+        (isManagerRuntime || isTruthyValue(message?.alertSound)) &&
         isMessageForCurrentCompany(message, currentCompanyId),
     );
 
@@ -208,31 +237,48 @@ const DeviceAlertSoundService = () => {
       return;
     }
 
-    const unseenKeys = incomingMessages
-      .map(buildMessageFingerprint)
-      .filter(Boolean)
-      .filter(key => !processedEventsRef.current.has(key));
+    const unseenEntries = incomingMessages
+      .map(message => ({
+        message,
+        key: buildMessageFingerprint(message),
+      }))
+      .filter(entry => entry.key && !processedEventsRef.current.has(entry.key));
 
-    if (unseenKeys.length === 0) {
+    if (unseenEntries.length === 0) {
       return;
     }
 
-    if (!alertSoundEnabled || !alertSoundUrl) {
-      markProcessedKeys(unseenKeys);
-      return;
-    }
+    const unseenKeys = unseenEntries.map(entry => entry.key);
+    const unseenMessages = unseenEntries.map(entry => entry.message);
 
     markProcessedKeys(unseenKeys);
 
-    playAlertSound();
+    if (!managerPushEnabled && (!shouldPlayAlertSound || !alertSoundUrl)) {
+      return;
+    }
+
+    Promise.allSettled([
+      managerPushEnabled
+        ? showManagerOrderNotification({
+            messages: unseenMessages,
+            currentCompany,
+          })
+        : Promise.resolve(false),
+      shouldPlayAlertSound && alertSoundUrl
+        ? playAlertSound()
+        : Promise.resolve(),
+    ]);
   }, [
-    alertSoundEnabled,
     alertSoundUrl,
     currentCompanyId,
+    currentCompany,
+    managerPushEnabled,
     markProcessedKeys,
     orderMessage,
     orderMessages,
     playAlertSound,
+    shouldPlayAlertSound,
+    isManagerRuntime,
   ]);
 
   return null;
