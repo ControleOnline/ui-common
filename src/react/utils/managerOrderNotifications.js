@@ -166,6 +166,7 @@ export const buildManagerOrderNotificationContent = (
   messages = [],
   currentCompany = null,
 ) => {
+  const firstMessage = Array.isArray(messages) ? messages[0] || null : null;
   const orderIds = Array.from(
     new Set(
       (Array.isArray(messages) ? messages : [])
@@ -176,24 +177,42 @@ export const buildManagerOrderNotificationContent = (
   const companyLabel = normalizeText(
     currentCompany?.alias || currentCompany?.name || currentCompany?.company,
   );
+  const headerTitle = normalizeText(
+    firstMessage?.notificationHeader ||
+      firstMessage?.headerTitle ||
+      firstMessage?.orderHeader,
+  );
+  const headerSubtitle = normalizeText(
+    firstMessage?.notificationSubheader ||
+      firstMessage?.headerSubtitle ||
+      firstMessage?.orderSubheader,
+  );
+  const statusLabel =
+    normalizeText(
+      firstMessage?.notificationStatusLabel ||
+        firstMessage?.statusLabel ||
+        firstMessage?.queueStatusLabel,
+    ) || 'Fila';
 
   if (orderIds.length > 1) {
     return {
       title: `${orderIds.length} novos pedidos`,
       body: companyLabel
-        ? `${companyLabel} recebeu ${orderIds.length} novos pedidos em preparo.`
-        : `${orderIds.length} novos pedidos entraram em preparo.`,
+        ? `${companyLabel} recebeu ${orderIds.length} novos pedidos. Status: ${statusLabel}.`
+        : `${orderIds.length} novos pedidos entraram na ${statusLabel.toLowerCase()}.`,
       orderIds,
+      statusLabel,
     };
   }
 
   const orderLabel = orderIds[0] ? ` #${orderIds[0]}` : '';
   return {
-    title: `Novo pedido${orderLabel}`,
-    body: companyLabel
-      ? `${companyLabel} recebeu um novo pedido em preparo.`
-      : 'Um novo pedido entrou em preparo.',
+    title: headerTitle || `Novo pedido${orderLabel}`,
+    body: [headerSubtitle, companyLabel, `Status: ${statusLabel}`]
+      .filter(Boolean)
+      .join(' | ') || `Novo pedido${orderLabel}`,
     orderIds,
+    statusLabel,
   };
 };
 

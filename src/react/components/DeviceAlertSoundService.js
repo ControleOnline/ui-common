@@ -2,12 +2,14 @@ import React, {useCallback, useEffect, useMemo, useRef} from 'react';
 import {createAudioPlayer} from 'expo-audio';
 import {useStore, useStores} from '@store';
 import {env as APP_ENV} from '@env';
+import {api} from '@controleonline/ui-common/src/api';
 import {
   DEVICE_ALERT_SOUND_ENABLED_KEY,
   DEVICE_ALERT_SOUND_URL_KEY,
   isTruthyValue,
   parseConfigsObject,
 } from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
+import {resolveOrderIdentity} from '@controleonline/ui-orders/src/react/utils/orderIdentity';
 import {
   hasStoredManagerOrderNotificationPreferences,
   isManagerAppType,
@@ -198,6 +200,47 @@ const DeviceAlertSoundService = () => {
     }
   }, [alertSoundUrl, ensurePlayer]);
 
+  const enrichNotificationMessages = useCallback(async messages => {
+    const messageList = Array.isArray(messages) ? messages : [];
+
+    if (!isManagerRuntime || messageList.length !== 1) {
+      return messageList;
+    }
+
+    const [message] = messageList;
+    const orderId = normalizeEntityId(message?.order);
+
+    if (!orderId) {
+      return messageList;
+    }
+
+    try {
+      const order = await api.fetch(`orders/${orderId}`, {});
+      const identity = resolveOrderIdentity(order);
+
+      return [
+        {
+          ...message,
+          notificationHeader:
+            normalizeText(identity?.primaryText) ||
+            normalizeText(message?.notificationHeader),
+          notificationSubheader:
+            normalizeText(identity?.secondaryText) ||
+            normalizeText(message?.notificationSubheader),
+          notificationStatusLabel: 'Fila',
+        },
+      ];
+    } catch {
+      return [
+        {
+          ...message,
+          notificationStatusLabel:
+            normalizeText(message?.notificationStatusLabel) || 'Fila',
+        },
+      ];
+    }
+  }, [isManagerRuntime]);
+
   const markProcessedKeys = useCallback(keys => {
     keys.forEach(key => {
       processedEventsRef.current.set(key, Date.now());
@@ -257,21 +300,28 @@ const DeviceAlertSoundService = () => {
       return;
     }
 
-    Promise.allSettled([
+    Promise.resolve(
       managerPushEnabled
-        ? showManagerOrderNotification({
-            messages: unseenMessages,
-            currentCompany,
-          })
-        : Promise.resolve(false),
-      shouldPlayAlertSound && alertSoundUrl
-        ? playAlertSound()
-        : Promise.resolve(),
-    ]);
+        ? enrichNotificationMessages(unseenMessages)
+        : unseenMessages,
+    ).then(notificationMessages =>
+      Promise.allSettled([
+        managerPushEnabled
+          ? showManagerOrderNotification({
+              messages: notificationMessages,
+              currentCompany,
+            })
+          : Promise.resolve(false),
+        shouldPlayAlertSound && alertSoundUrl
+          ? playAlertSound()
+          : Promise.resolve(),
+      ]),
+    );
   }, [
     alertSoundUrl,
     currentCompanyId,
     currentCompany,
+    enrichNotificationMessages,
     managerPushEnabled,
     markProcessedKeys,
     orderMessage,
