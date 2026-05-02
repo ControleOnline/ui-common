@@ -3,6 +3,7 @@ import {createAudioPlayer} from 'expo-audio';
 import {useStore, useStores} from '@store';
 import {env as APP_ENV} from '@env';
 import {api} from '@controleonline/ui-common/src/api';
+import Formatter from '@controleonline/ui-common/src/utils/formatter';
 import {
   DEVICE_ALERT_SOUND_ENABLED_KEY,
   DEVICE_ALERT_SOUND_URL_KEY,
@@ -40,6 +41,45 @@ const normalizeEntityId = value => {
 };
 
 const normalizeText = value => String(value || '').trim();
+
+const parseNumericValue = value => {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : NaN;
+  }
+
+  const normalizedValue = normalizeText(value);
+  if (!normalizedValue) {
+    return NaN;
+  }
+
+  const sanitizedValue = normalizedValue
+    .replace(/[^\d,.-]/g, '')
+    .replace(/\.(?=\d{3}(?:\D|$))/g, '')
+    .replace(',', '.');
+  const numericValue = Number(sanitizedValue);
+
+  return Number.isFinite(numericValue) ? numericValue : NaN;
+};
+
+const resolveOrderCustomerName = order =>
+  normalizeText(
+    order?.client?.alias ||
+      order?.client?.name ||
+      order?.customer?.alias ||
+      order?.customer?.name ||
+      order?.person?.alias ||
+      order?.person?.name,
+  );
+
+const resolveOrderPriceLabel = order => {
+  const numericPrice = parseNumericValue(order?.price);
+
+  if (Number.isFinite(numericPrice) && numericPrice > 0) {
+    return Formatter.formatMoney(numericPrice);
+  }
+
+  return '';
+};
 
 const isFilledObject = value =>
   !!value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length > 0;
@@ -189,7 +229,7 @@ const DeviceAlertSoundService = () => {
       if (typeof player.seekTo === 'function') {
         await player.seekTo(0);
       }
-    } catch (error) {
+    } catch {
       // Alguns players ainda não aceitam seek antes da primeira carga completa.
     }
 
@@ -227,6 +267,12 @@ const DeviceAlertSoundService = () => {
           notificationSubheader:
             normalizeText(identity?.secondaryText) ||
             normalizeText(message?.notificationSubheader),
+          notificationCustomerName:
+            resolveOrderCustomerName(order) ||
+            normalizeText(message?.notificationCustomerName),
+          notificationPriceLabel:
+            resolveOrderPriceLabel(order) ||
+            normalizeText(message?.notificationPriceLabel),
           notificationStatusLabel: 'Fila',
         },
       ];

@@ -62,6 +62,8 @@ describe('managerOrderNotifications helpers', () => {
             order: '/orders/77',
             notificationHeader: 'Pedido #77',
             notificationSubheader: 'Ref. interna #77',
+            notificationCustomerName: 'Maria Oliveira',
+            notificationPriceLabel: 'R$ 42,90',
             notificationStatusLabel: 'Fila',
           },
         ],
@@ -69,7 +71,8 @@ describe('managerOrderNotifications helpers', () => {
       ),
     ).toEqual({
       title: 'Pedido #77',
-      body: 'Ref. interna #77 | Loja Centro | Status: Fila',
+      body:
+        'Ref. interna #77 | Cliente: Maria Oliveira | Valor: R$ 42,90 | Loja Centro | Status: Fila',
       orderIds: ['77'],
       statusLabel: 'Fila',
     });

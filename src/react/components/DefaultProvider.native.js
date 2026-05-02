@@ -1,8 +1,9 @@
 import React, {createContext, useContext, useEffect, useState} from 'react';
-import {View, ActivityIndicator, Text} from 'react-native';
+import {View, ActivityIndicator, Text, AppState, Platform} from 'react-native';
 import DeviceInfo from 'react-native-device-info';
 import Translate from '@controleonline/ui-common/src/utils/translate';
 import {WebsocketListener} from '@controleonline/ui-common/src/react/components/WebsocketListener';
+import BackgroundRuntimeBridge from '@controleonline/ui-common/src/react/components/BackgroundRuntimeBridge';
 import DeviceAlertSoundService from '@controleonline/ui-common/src/react/components/DeviceAlertSoundService';
 import PrintService from '@controleonline/ui-common/src/react/components/PrintService';
 import RemoteCheckoutService from '@controleonline/ui-common/src/react/components/RemoteCheckoutService';
@@ -93,6 +94,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
   const [mainConfigsDiscovered, setMainConfigsDiscovered] = useState(false);
   const [deviceRuntimeConfigSynced, setDeviceRuntimeConfigSynced] =
     useState(false);
+  const [appState, setAppState] = useState(AppState.currentState || 'active');
   const [, setTranslateVersion] = useState(0);
   const [baseThemeColors, setBaseThemeColors] = useState({});
   const [device, setDevice] = useState(
@@ -104,6 +106,8 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
     appType: APP_ENV.APP_TYPE,
     deviceInfo: device || {},
   });
+  const shouldRunForegroundRealtimeServices =
+    Platform.OS !== 'android' || appState === 'active';
 
   useEffect(() => {
     global.refreshTranslationsUI = () => {
@@ -114,6 +118,16 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
       if (global.refreshTranslationsUI) {
         delete global.refreshTranslationsUI;
       }
+    };
+  }, []);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextState => {
+      setAppState(nextState || 'active');
+    });
+
+    return () => {
+      subscription?.remove?.();
     };
   }, []);
 
@@ -556,13 +570,18 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
             />
           )}
         </View>
+        <BackgroundRuntimeBridge appState={appState} />
         {!isShopClientApp && (
           <>
-            <WebsocketListener />
-            <DeviceAlertSoundService />
-            <ProductCatalogCacheService />
-            <RemoteCheckoutService />
-            <PrintService />
+            {shouldRunForegroundRealtimeServices && (
+              <>
+                <WebsocketListener />
+                <DeviceAlertSoundService />
+                <ProductCatalogCacheService />
+                <RemoteCheckoutService />
+                <PrintService />
+              </>
+            )}
           </>
         )}
       </ThemeContext.Provider>

@@ -1,5 +1,7 @@
 import {Platform} from 'react-native';
 
+import Formatter from '@controleonline/ui-common/src/utils/formatter';
+
 export const MANAGER_ORDER_NOTIFICATION_PREFERENCES_KEY =
   'managerOrderNotifications';
 
@@ -15,6 +17,25 @@ let nativeNotificationHandlerConfigured = false;
 let nativeNotificationChannelConfigured = false;
 
 const normalizeText = value => String(value || '').trim();
+
+const parseNumericValue = value => {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : NaN;
+  }
+
+  const normalizedValue = normalizeText(value);
+  if (!normalizedValue) {
+    return NaN;
+  }
+
+  const sanitizedValue = normalizedValue
+    .replace(/[^\d,.-]/g, '')
+    .replace(/\.(?=\d{3}(?:\D|$))/g, '')
+    .replace(',', '.');
+  const numericValue = Number(sanitizedValue);
+
+  return Number.isFinite(numericValue) ? numericValue : NaN;
+};
 
 const isPlainObject = value =>
   !!value && typeof value === 'object' && !Array.isArray(value);
@@ -48,6 +69,37 @@ const extractOrderId = value => {
   return numericId || normalizeText(value);
 };
 
+const resolveCustomerName = message =>
+  normalizeText(
+    message?.notificationCustomerName ||
+      message?.customerName ||
+      message?.clientName ||
+      message?.client?.alias ||
+      message?.client?.name,
+  );
+
+const resolvePriceLabel = message => {
+  const explicitLabel = normalizeText(
+    message?.notificationPriceLabel ||
+      message?.priceLabel ||
+      message?.orderPriceLabel,
+  );
+
+  if (explicitLabel) {
+    return explicitLabel;
+  }
+
+  const numericPrice = parseNumericValue(
+    message?.notificationPrice || message?.orderPrice || message?.price,
+  );
+
+  if (Number.isFinite(numericPrice) && numericPrice > 0) {
+    return Formatter.formatMoney(numericPrice);
+  }
+
+  return '';
+};
+
 const toPermissionStatus = permissions => {
   if (permissions?.granted === true) {
     return 'granted';
@@ -72,6 +124,8 @@ const loadExpoNotifications = async () => {
 
   return notificationsModulePromise;
 };
+
+const getWebNotification = () => globalThis.Notification;
 
 const ensureNativeNotificationsReady = async () => {
   const Notifications = await loadExpoNotifications();
@@ -193,6 +247,8 @@ export const buildManagerOrderNotificationContent = (
         firstMessage?.statusLabel ||
         firstMessage?.queueStatusLabel,
     ) || 'Fila';
+  const customerName = resolveCustomerName(firstMessage);
+  const priceLabel = resolvePriceLabel(firstMessage);
 
   if (orderIds.length > 1) {
     return {
@@ -208,9 +264,14 @@ export const buildManagerOrderNotificationContent = (
   const orderLabel = orderIds[0] ? ` #${orderIds[0]}` : '';
   return {
     title: headerTitle || `Novo pedido${orderLabel}`,
-    body: [headerSubtitle, companyLabel, `Status: ${statusLabel}`]
-      .filter(Boolean)
-      .join(' | ') || `Novo pedido${orderLabel}`,
+    body:
+      [headerSubtitle]
+        .concat(customerName ? [`Cliente: ${customerName}`] : [])
+        .concat(priceLabel ? [`Valor: ${priceLabel}`] : [])
+        .concat(companyLabel ? [companyLabel] : [])
+        .concat([`Status: ${statusLabel}`])
+        .filter(Boolean)
+        .join(' | ') || `Novo pedido${orderLabel}`,
     orderIds,
     statusLabel,
   };
@@ -218,11 +279,12 @@ export const buildManagerOrderNotificationContent = (
 
 export const getManagerOrderNotificationPermissionStatus = async () => {
   if (Platform.OS === 'web') {
-    if (typeof Notification === 'undefined') {
+    const WebNotification = getWebNotification();
+    if (typeof WebNotification === 'undefined') {
       return 'unsupported';
     }
 
-    return normalizeText(Notification.permission) || 'default';
+    return normalizeText(WebNotification.permission) || 'default';
   }
 
   try {
@@ -240,18 +302,17 @@ export const getManagerOrderNotificationPermissionStatus = async () => {
 
 export const requestManagerOrderNotificationPermission = async () => {
   if (Platform.OS === 'web') {
-    if (typeof Notification === 'undefined') {
+    const WebNotification = getWebNotification();
+    if (typeof WebNotification === 'undefined') {
       return 'unsupported';
     }
 
-    if (typeof Notification.requestPermission !== 'function') {
-      return normalizeText(Notification.permission) || 'unsupported';
+    if (typeof WebNotification.requestPermission !== 'function') {
+      return normalizeText(WebNotification.permission) || 'unsupported';
     }
 
     try {
-      return (
-        normalizeText(await Notification.requestPermission()) || 'default'
-      );
+      return normalizeText(await WebNotification.requestPermission()) || 'default';
     } catch {
       return 'denied';
     }
@@ -287,15 +348,16 @@ export const showManagerOrderNotification = async ({
   );
 
   if (Platform.OS === 'web') {
+    const WebNotification = getWebNotification();
     if (
-      typeof Notification === 'undefined' ||
-      normalizeText(Notification.permission) !== 'granted'
+      typeof WebNotification === 'undefined' ||
+      normalizeText(WebNotification.permission) !== 'granted'
     ) {
       return false;
     }
 
     try {
-      const notification = new Notification(title, {
+      const notification = new WebNotification(title, {
         body,
         silent: true,
         tag:
