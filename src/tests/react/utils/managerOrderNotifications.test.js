@@ -57,13 +57,24 @@ describe('managerOrderNotifications helpers', () => {
   it('builds a focused title for one order and a grouped summary for many', () => {
     expect(
       buildManagerOrderNotificationContent(
-        [{order: '/orders/77'}],
+        [
+          {
+            order: '/orders/77',
+            notificationHeader: 'Pedido #77',
+            notificationSubheader: 'Ref. interna #77',
+            notificationCustomerName: 'Maria Oliveira',
+            notificationPriceLabel: 'R$ 42,90',
+            notificationStatusLabel: 'Fila',
+          },
+        ],
         {alias: 'Loja Centro'},
       ),
     ).toEqual({
-      title: 'Novo pedido #77',
-      body: 'Loja Centro recebeu um novo pedido em preparo.',
+      title: 'Pedido #77',
+      body:
+        'Ref. interna #77 | Cliente: Maria Oliveira | Valor: R$ 42,90 | Loja Centro | Status: Fila',
       orderIds: ['77'],
+      statusLabel: 'Fila',
     });
 
     expect(
@@ -73,8 +84,9 @@ describe('managerOrderNotifications helpers', () => {
       ),
     ).toEqual({
       title: '2 novos pedidos',
-      body: 'Operacao Norte recebeu 2 novos pedidos em preparo.',
+      body: 'Operacao Norte recebeu 2 novos pedidos. Status: Fila.',
       orderIds: ['10', '12'],
+      statusLabel: 'Fila',
     });
   });
 
