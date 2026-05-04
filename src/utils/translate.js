@@ -10,6 +10,8 @@ export default class Translate {
     this.translateActions = translateActions;
     this.companies = companies;
     this.stores = stores;
+    this.pendingMissingTranslations = new Set();
+    this.t = this.t.bind(this);
   }
 
   getLanguageBucket(createIfMissing = false) {
@@ -123,8 +125,23 @@ export default class Translate {
     return this.getStoreBucket(null, store)?.[type]?.[key];
   }
 
+  getMissingTranslateToken(store, type, key) {
+    return [
+      this.normalizeId(this.defaultCompany?.id) || "",
+      String(store || ""),
+      String(type || ""),
+      String(key || ""),
+    ].join("::");
+  }
+
   persistMissingTranslate(store, type, key, translate) {
     if (!store || !type || !key || !this.defaultCompany?.id) return;
+    if (
+      typeof this.translateActions?.addToQueue !== "function" ||
+      typeof this.translateActions?.initQueue !== "function" ||
+      typeof this.translateActions?.save !== "function"
+    )
+      return;
 
     // verifica se tenho acesso ao defaultCompany
     if (
@@ -132,6 +149,11 @@ export default class Translate {
       !this.companies.some((company) => company.id === this.defaultCompany.id)
     )
       return;
+
+    const pendingToken = this.getMissingTranslateToken(store, type, key);
+    if (this.pendingMissingTranslations.has(pendingToken)) return;
+
+    this.pendingMissingTranslations.add(pendingToken);
 
     const payload = {
       people: "/people/" + this.defaultCompany.id,
@@ -142,14 +164,25 @@ export default class Translate {
       translate,
     };
 
-    this.translateActions.addToQueue(() => {
-      return this.translateActions.save(payload).then(() => {
-        this.findMessage(store, type, key, translate);
-        this.persist();
-      });
-    });
+    setTimeout(() => {
+      try {
+        this.translateActions.addToQueue(() => {
+          return Promise.resolve()
+            .then(() => this.translateActions.save(payload))
+            .then(() => {
+              this.findMessage(store, type, key, translate);
+              this.persist();
+            })
+            .finally(() => {
+              this.pendingMissingTranslations.delete(pendingToken);
+            });
+        });
 
-    this.translateActions.initQueue();
+        this.translateActions.initQueue();
+      } catch (e) {
+        this.pendingMissingTranslations.delete(pendingToken);
+      }
+    }, 0);
   }
 
   t(store, type, key) {

@@ -52,6 +52,62 @@ test('prefers the current company translation and falls back to the default comp
   assert.equal(fallbackTranslate.t('orders', 'label', 'save'), 'Salvar');
 });
 
+test('keeps the translate method bound when passed as a standalone function', () => {
+  installLocalStorage();
+
+  const translate = new Translate(
+    [{id: 1}],
+    {id: 1},
+    {id: 1},
+    ['orders'],
+    {},
+  );
+
+  translate.findMessage('orders', 'label', 'save', 'Salvar', 1);
+
+  const detachedTranslate = translate.t;
+
+  assert.equal(detachedTranslate('orders', 'label', 'save'), 'Salvar');
+});
+
+test('defers missing translation persistence and deduplicates repeated renders', async () => {
+  installLocalStorage();
+
+  let addToQueueCalls = 0;
+  let initQueueCalls = 0;
+  const queued = [];
+  const translate = new Translate(
+    [{id: 1}],
+    {id: 1},
+    {id: 1},
+    ['contract'],
+    {
+      addToQueue: fn => {
+        addToQueueCalls += 1;
+        queued.push(fn);
+      },
+      initQueue: () => {
+        initQueueCalls += 1;
+      },
+      save: async () => ({}),
+    },
+  );
+
+  const firstValue = translate.t('contract', 'empty', 'none_registered_title');
+  const secondValue = translate.t('contract', 'empty', 'none_registered_title');
+
+  assert.equal(firstValue, 'None registered title');
+  assert.equal(secondValue, 'None registered title');
+  assert.equal(addToQueueCalls, 0);
+  assert.equal(initQueueCalls, 0);
+
+  await new Promise(resolve => setTimeout(resolve, 0));
+
+  assert.equal(addToQueueCalls, 1);
+  assert.equal(initQueueCalls, 1);
+  assert.equal(queued.length, 1);
+});
+
 test('loads each requested store for every linked company once', async () => {
   installLocalStorage();
 
