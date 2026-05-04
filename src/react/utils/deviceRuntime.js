@@ -1,6 +1,5 @@
 import {Platform} from 'react-native';
 import {buildScreenMetrics} from '@controleonline/ui-common/src/react/utils/screenMetrics';
-import {getAllStores} from '@store';
 
 const APP_TYPE_DEVICE_MAP = {
   POS: 'PDV',
@@ -18,16 +17,6 @@ const safeTrim = value => String(value || '').trim();
 const normalizeWebUserId = userId => safeTrim(userId).replace(/^web-/, '');
 
 const resolveStoredWebUserId = () => {
-  try {
-    const authStore = getAllStores()?.auth;
-    const storeUserId = authStore?.getters?.user?.id;
-    if (storeUserId) {
-      return normalizeWebUserId(storeUserId);
-    }
-  } catch (e) {
-    // segue para o fallback em localStorage
-  }
-
   if (typeof localStorage === 'undefined') {
     return '';
   }
