@@ -168,6 +168,28 @@ export function printInventory({commit}, params = {}) {
     });
 }
 
+export function printProductLabel({commit}, params = {}) {
+  commit(types.SET_ISLOADING);
+
+  const options = {
+    method: 'POST',
+    body: params,
+  };
+
+  return api
+    .fetch('/products/labels/print', options)
+    .then(data => {
+      commit(types.SET_ISLOADING, false);
+      return data;
+    })
+    .catch(e => {
+      commit(types.SET_ISLOADING, false);
+
+      commit(types.SET_ERROR, e.message);
+      throw e;
+    });
+}
+
 export const addToPrint = ({commit, getters}, print) => {
   let spool = [...getters.print];
   spool.push(print);
