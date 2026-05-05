@@ -4,6 +4,7 @@ import {
   PRINT_JOB_TYPE_ORDER,
   PRINT_JOB_TYPE_ORDER_PRODUCT,
   PRINT_JOB_TYPE_ORDER_PRODUCT_QUEUE,
+  PRINT_JOB_TYPE_PRODUCT_LABEL,
   PRINT_JOB_TYPE_PURCHASING_SUGGESTION,
 } from '@controleonline/ui-common/src/react/print/jobs';
 
@@ -62,6 +63,18 @@ export const executeRemotePrintRequest = async ({
 
   if (printJob.type === PRINT_JOB_TYPE_INVENTORY) {
     return await printActions.printInventory(commonParams);
+  }
+
+  if (printJob.type === PRINT_JOB_TYPE_PRODUCT_LABEL) {
+    return await printActions.printProductLabel({
+      ...commonParams,
+      productId: printJob.productId || null,
+      productName: printJob.productName || '',
+      handlingDate: printJob.handlingDate || '',
+      expirationDate: printJob.expirationDate || '',
+      freeText: printJob.freeText || '',
+      labelText: printJob.labelText || '',
+    });
   }
 
   return null;

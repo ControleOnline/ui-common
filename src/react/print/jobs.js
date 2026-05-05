@@ -6,6 +6,7 @@ export const PRINT_JOB_TYPE_ORDER_PRODUCT_QUEUE = 'order-product-queue';
 export const PRINT_JOB_TYPE_CASH_REGISTER = 'cash-register';
 export const PRINT_JOB_TYPE_PURCHASING_SUGGESTION = 'purchasing-suggestion';
 export const PRINT_JOB_TYPE_INVENTORY = 'inventory';
+export const PRINT_JOB_TYPE_PRODUCT_LABEL = 'product-label';
 export const PRINT_JOB_TYPE_SPOOL = 'spool';
 
 export const PRINT_CONTEXT_DEVICE = 'device';
@@ -127,6 +128,19 @@ export const normalizePrintJob = ({
     ].includes(type)
   ) {
     return {type};
+  }
+
+  if (type === PRINT_JOB_TYPE_PRODUCT_LABEL) {
+    return {
+      type,
+      id: normalizeEntityId(job?.id || job?.productId || fallbackId),
+      productId: normalizeEntityId(job?.productId || job?.id || fallbackId),
+      productName: String(job?.productName || '').trim(),
+      handlingDate: String(job?.handlingDate || '').trim(),
+      expirationDate: String(job?.expirationDate || '').trim(),
+      freeText: String(job?.freeText || '').trim(),
+      labelText: String(job?.labelText || '').trim(),
+    };
   }
 
   return null;
