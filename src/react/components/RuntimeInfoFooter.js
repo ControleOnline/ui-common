@@ -126,8 +126,6 @@ const RuntimeInfoFooter = ({appVersion, defaultCompany, device, colors}) => {
     if (typeof __DEV__ !== 'undefined' && !__DEV__) {
       return;
     }
-
-    console.log('[RuntimeInfoFooter]', footerDebugInfo);
   }, [footerDebugInfo]);
 
   if (entries.length === 0 && !showDebugInfo) {
