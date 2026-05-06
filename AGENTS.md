@@ -26,4 +26,4 @@
 ## Regras de UI compartilhada
 - Filtros compactos de selecao devem ser centralizados em componentes reutilizaveis de `src/react/components/filters`.
 - Evite linhas horizontais extensas de chips para filtros primarios. O padrao compartilhado e botao compacto com valor atual e modal de opcoes.
-- O `RuntimeInfoFooter` deve montar o texto como `nome (identificador) / versao`, usando o host/IP atual em runtime web e, no nativo, priorizando a versao persistida na metadata do device salvo no backend e o mesmo identificador mostrado na lista de devices (`device_config.device.device`), com fallback local quando o backend ainda nao tiver esse valor.
+- O `RuntimeInfoFooter` deve montar o texto como `nome (identificador) / versao`, usando em runtime web o IP externo lido de `/runtime/ip` e persistido na metadata do device, com `location.hostname` apenas como fallback. No nativo, deve priorizar a versao persistida na metadata do device salvo no backend e o mesmo identificador mostrado na lista de devices (`device_config.device.device`), com fallback local quando o backend ainda nao tiver esse valor.

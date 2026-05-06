@@ -90,6 +90,39 @@ const getRuntimeFooterWebHost = () => {
   return hostname;
 };
 
+const getRuntimeFooterWebIdentifierCandidates = ({device, deviceConfig}) => {
+  const deviceMetadata = parseDeviceMetadata(device?.metadata);
+  const storedDeviceMetadata = parseDeviceMetadata(deviceConfig?.device?.metadata);
+  const candidates = [
+    {
+      value: safeTrim(storedDeviceMetadata?.network?.publicIp),
+      source: 'device_config.device.metadata.network.publicIp',
+    },
+    {
+      value: safeTrim(deviceMetadata?.network?.publicIp),
+      source: 'device.metadata.network.publicIp',
+    },
+    {
+      value: safeTrim(device?.externalIp),
+      source: 'device.externalIp',
+    },
+    {
+      value: getRuntimeFooterWebHost(),
+      source: 'location.hostname',
+    },
+  ];
+  const seenValues = new Set();
+
+  return candidates.filter(candidate => {
+    if (!candidate.value || seenValues.has(candidate.value)) {
+      return false;
+    }
+
+    seenValues.add(candidate.value);
+    return true;
+  });
+};
+
 const getRuntimeFooterStoredVersion = deviceConfig => {
   const configs = parseDeviceConfigs(deviceConfig?.configs);
   return formatRuntimeFooterVersion(configs?.['config-version']);
@@ -174,14 +207,20 @@ const getRuntimeFooterDebugInfo = ({device, appVersion, deviceConfig}) => {
   });
   const versionLabel = versionCandidates[0]?.label || '';
   const isWebRuntime = isWebRuntimeDevice(device);
-  const webHost = isWebRuntime ? getRuntimeFooterWebHost() : '';
+  const webIdentifierCandidates = isWebRuntime
+    ? getRuntimeFooterWebIdentifierCandidates({
+      device,
+      deviceConfig,
+    })
+    : [];
+  const webIdentifier = webIdentifierCandidates[0]?.value || '';
   const nativeIdentifierCandidates = getRuntimeFooterNativeIdentifierCandidates({
     device,
     deviceConfig,
   });
   const nativeIdentifier = nativeIdentifierCandidates[0]?.value || '';
   const runtimeDetail = isWebRuntime
-    ? webHost
+    ? webIdentifier
     : nativeIdentifier;
   const displayName = runtimeDetail
     ? `${deviceName} (${runtimeDetail})`
@@ -196,28 +235,36 @@ const getRuntimeFooterDebugInfo = ({device, appVersion, deviceConfig}) => {
     versionLabel,
     runtimeDetail,
     runtimeDetailSource: isWebRuntime
-      ? 'location.hostname'
+      ? webIdentifierCandidates[0]?.source || ''
       : nativeIdentifierCandidates[0]?.source || '',
     primaryText,
     isWebRuntime,
     versionCandidates,
+    webIdentifierCandidates,
     nativeIdentifierCandidates,
     rawValues: {
       appVersionProp: safeTrim(appVersion),
       deviceId: safeTrim(device?.id),
+      deviceExternalIp: safeTrim(device?.externalIp),
       deviceAppVersion: safeTrim(device?.appVersion),
       deviceMetadataAppVersion: safeTrim(
         parseDeviceMetadata(device?.metadata)?.app?.version,
+      ),
+      deviceMetadataPublicIp: safeTrim(
+        parseDeviceMetadata(device?.metadata)?.network?.publicIp,
       ),
       storedDeviceRecordId: safeTrim(deviceConfig?.device?.id),
       storedDeviceIdentifier: safeTrim(deviceConfig?.device?.device),
       storedDeviceMetadataAppVersion: safeTrim(
         parseDeviceMetadata(deviceConfig?.device?.metadata)?.app?.version,
       ),
+      storedDeviceMetadataPublicIp: safeTrim(
+        parseDeviceMetadata(deviceConfig?.device?.metadata)?.network?.publicIp,
+      ),
       storedConfigVersion: safeTrim(
         parseDeviceConfigs(deviceConfig?.configs)?.['config-version'],
       ),
-      webHost,
+      webHost: getRuntimeFooterWebHost(),
     },
   };
 };
@@ -234,6 +281,7 @@ module.exports = {
   getRuntimeFooterPrimaryText,
   getRuntimeFooterStoredVersion,
   getRuntimeFooterVersionCandidates,
+  getRuntimeFooterWebIdentifierCandidates,
   getRuntimeFooterText,
   getRuntimeFooterWebHost,
   normalizeRuntimeFooterText,

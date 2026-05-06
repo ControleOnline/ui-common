@@ -6,6 +6,7 @@ const {
   getRuntimeFooterNativeIdentifierCandidates,
   getRuntimeFooterPrimaryText,
   getRuntimeFooterStoredVersion,
+  getRuntimeFooterWebIdentifierCandidates,
   getRuntimeFooterWebHost,
 } = require('../../../react/utils/runtimeFooter')
 
@@ -29,7 +30,7 @@ const restoreLocation = () => {
   delete globalThis.location
 }
 
-test('appends the current host for web runtime devices', () => {
+test('prefers the persisted public ip for web runtime devices', () => {
   setLocation({hostname: '10.0.0.15'})
 
   try {
@@ -40,15 +41,28 @@ test('appends the current host for web runtime devices', () => {
           appVersion: '1.3.6',
           deviceType: 'web',
           id: 'web-12',
+          externalIp: '198.51.100.21',
+          metadata: {
+            network: {
+              publicIp: '198.51.100.21',
+            },
+          },
         },
         appVersion: '1.3.6',
         deviceConfig: {
+          device: {
+            metadata: {
+              network: {
+                publicIp: '203.0.113.42',
+              },
+            },
+          },
           configs: {
             'config-version': '1.3.5',
           },
         },
       }),
-      'web (10.0.0.15) / v1.3.6',
+      'web (203.0.113.42) / v1.3.6',
     )
 
     const debugInfo = getRuntimeFooterDebugInfo({
@@ -57,16 +71,31 @@ test('appends the current host for web runtime devices', () => {
         appVersion: '1.3.6',
         deviceType: 'web',
         id: 'web-12',
+        externalIp: '198.51.100.21',
+        metadata: {
+          network: {
+            publicIp: '198.51.100.21',
+          },
+        },
       },
       appVersion: '1.3.6',
       deviceConfig: {
+        device: {
+          metadata: {
+            network: {
+              publicIp: '203.0.113.42',
+            },
+          },
+        },
         configs: {
           'config-version': '1.3.5',
         },
       },
     })
 
-    assert.equal(debugInfo.runtimeDetailSource, 'location.hostname')
+    assert.equal(debugInfo.runtimeDetailSource, 'device_config.device.metadata.network.publicIp')
+    assert.equal(debugInfo.rawValues.storedDeviceMetadataPublicIp, '203.0.113.42')
+    assert.equal(debugInfo.rawValues.deviceMetadataPublicIp, '198.51.100.21')
   } finally {
     restoreLocation()
   }
@@ -77,6 +106,25 @@ test('normalizes localhost to the loopback address on web', () => {
 
   try {
     assert.equal(getRuntimeFooterWebHost(), '127.0.0.1')
+  } finally {
+    restoreLocation()
+  }
+})
+
+test('falls back to the browser hostname for web when no persisted public ip exists', () => {
+  setLocation({hostname: 'localhost'})
+
+  try {
+    const candidates = getRuntimeFooterWebIdentifierCandidates({
+      device: {
+        deviceType: 'web',
+        id: 'web-12',
+      },
+      deviceConfig: {},
+    })
+
+    assert.equal(candidates[0]?.value, '127.0.0.1')
+    assert.equal(candidates[0]?.source, 'location.hostname')
   } finally {
     restoreLocation()
   }

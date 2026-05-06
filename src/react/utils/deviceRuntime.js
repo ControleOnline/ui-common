@@ -24,7 +24,7 @@ const resolveStoredWebUserId = () => {
   try {
     const sessionData = JSON.parse(localStorage.getItem('session') || '{}');
     return normalizeWebUserId(sessionData?.id || '');
-  } catch (e) {
+  } catch {
     return '';
   }
 };
@@ -32,7 +32,7 @@ const resolveStoredWebUserId = () => {
 const safeStringify = value => {
   try {
     return JSON.stringify(value || {});
-  } catch (e) {
+  } catch {
     return '{}';
   }
 };
@@ -59,7 +59,7 @@ export const getOrCreateWebDeviceInstanceId = () => {
   try {
     localStorage.setItem(WEB_DEVICE_INSTANCE_STORAGE_KEY, nextId);
     return nextId;
-  } catch (e) {
+  } catch {
     return nextId;
   }
 };
@@ -111,6 +111,7 @@ export const buildDeviceMetadata = ({deviceInfo, appType}) => {
           language: navigator.language || null,
         }
       : {};
+  const publicIp = safeTrim(deviceInfo?.externalIp) || null;
 
   return {
     runtime: Platform.OS,
@@ -124,6 +125,9 @@ export const buildDeviceMetadata = ({deviceInfo, appType}) => {
       deviceResolution: screen?.deviceResolution || null,
       actualSize: screen?.actualSize || null,
       windosSize: screen?.windosSize || null,
+    },
+    network: {
+      publicIp,
     },
     system: {
       name: safeTrim(deviceInfo?.systemName) || null,
