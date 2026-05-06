@@ -8,6 +8,7 @@ import {
   parseConfigsObject,
 } from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
 import {
+  getRuntimeFooterDebugInfo,
   getRuntimeFooterPrimaryText,
   getRuntimeFooterText,
 } from '@controleonline/ui-common/src/react/utils/runtimeFooter';
@@ -25,9 +26,22 @@ const RuntimeInfoFooter = ({appVersion, defaultCompany, device, colors}) => {
   const deviceConfigItem = deviceConfigStore?.getters?.item || {};
   const runtimeDebugSummary = runtimeDebugStore?.getters?.summary || {};
 
+  const footerDebugInfo = useMemo(
+    () =>
+      getRuntimeFooterDebugInfo({
+        device,
+        appVersion,
+        deviceConfig: deviceConfigItem,
+      }),
+    [appVersion, device, deviceConfigItem?.configs, deviceConfigItem?.device?.metadata],
+  );
   const primaryText = useMemo(
-    () => getRuntimeFooterPrimaryText({device, appVersion}),
-    [appVersion, device],
+    () => footerDebugInfo.primaryText || getRuntimeFooterPrimaryText({
+      device,
+      appVersion,
+      deviceConfig: deviceConfigItem,
+    }),
+    [appVersion, device, deviceConfigItem, footerDebugInfo.primaryText],
   );
   const companyFooterText = useMemo(
     () => getRuntimeFooterText(defaultCompany),
@@ -107,6 +121,14 @@ const RuntimeInfoFooter = ({appVersion, defaultCompany, device, colors}) => {
       clearInterval(intervalId);
     };
   }, [entries.length, shouldRotate]);
+
+  useEffect(() => {
+    if (typeof __DEV__ !== 'undefined' && !__DEV__) {
+      return;
+    }
+
+    console.log('[RuntimeInfoFooter]', footerDebugInfo);
+  }, [footerDebugInfo]);
 
   if (entries.length === 0 && !showDebugInfo) {
     return null;
