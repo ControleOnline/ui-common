@@ -287,6 +287,15 @@ export const usesPosCheckLinkedOrder = configs =>
 export const isPosKioskMode = configs =>
   resolvePosOperationMode(configs) === POS_OPERATION_MODE_KIOSK;
 
+export const shouldEnableAndroidKioskMode = ({
+  appType,
+  configs,
+  platform,
+}) =>
+  String(appType || '').trim().toUpperCase() === 'POS' &&
+  platform === 'android' &&
+  isPosKioskMode(configs);
+
 export const isPosCounterMode = configs =>
   resolvePosOperationMode(configs) === POS_OPERATION_MODE_COUNTER;
 
