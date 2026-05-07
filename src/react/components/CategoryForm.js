@@ -435,13 +435,17 @@ const ChannelPicker = ({ value, onChange }) => {
   );
 };
 
+const normalizeCategoryContext = context =>
+  String(context || 'products').trim().toLowerCase() || 'products';
+
 /* ─── Formulário principal ─── */
-const CategoryForm = forwardRef(({ category, onClose, onSaved }, ref) => {
+const CategoryForm = forwardRef(({ category, context = 'products', onClose, onSaved }, ref) => {
   const categoriesStore = useStore('categories');
   const categoryActions = categoriesStore.actions;
   const categories = categoriesStore.getters.items;
   const peopleStore = useStore('people');
   const { currentCompany } = peopleStore.getters;
+  const categoryContext = normalizeCategoryContext(context);
 
   const [name, setName] = useState('');
   const [color, setColor] = useState('#CBD5E1');
@@ -480,7 +484,7 @@ const CategoryForm = forwardRef(({ category, onClose, onSaved }, ref) => {
       name,
       color,
       icon: icon || '',
-      context: 'products',
+      context: categoryContext,
       company: companyIri,
       parent: parent ? `/categories/${parent}` : null,
       extraData: {
@@ -493,7 +497,7 @@ const CategoryForm = forwardRef(({ category, onClose, onSaved }, ref) => {
     const saved = await categoryActions.save(payload);
 
     await categoryActions.getItems({
-      context: 'products',
+      context: categoryContext,
       'order[name]': 'ASC',
       company: currentCompany.id,
     });
