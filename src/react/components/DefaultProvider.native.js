@@ -5,6 +5,7 @@ import Translate from '@controleonline/ui-common/src/utils/translate';
 import {WebsocketListener} from '@controleonline/ui-common/src/react/components/WebsocketListener';
 import BackgroundRuntimeBridge from '@controleonline/ui-common/src/react/components/BackgroundRuntimeBridge';
 import DeviceAlertSoundService from '@controleonline/ui-common/src/react/components/DeviceAlertSoundService';
+import KioskModeBridge from '@controleonline/ui-common/src/react/components/KioskModeBridge';
 import PrintService from '@controleonline/ui-common/src/react/components/PrintService';
 import RemoteCheckoutService from '@controleonline/ui-common/src/react/components/RemoteCheckoutService';
 import ProductCatalogCacheService from '@controleonline/ui-common/src/react/components/ProductCatalogCacheService';
@@ -570,6 +571,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
             />
           )}
         </View>
+        <KioskModeBridge appState={appState} />
         <BackgroundRuntimeBridge appState={appState} />
         {!isShopClientApp && (
           <>

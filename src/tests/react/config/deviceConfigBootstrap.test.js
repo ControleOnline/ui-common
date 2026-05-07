@@ -23,6 +23,7 @@ const {
   resolvePosCashManagementMode,
   resolvePosOperationMode,
   resolvePosPrintMode,
+  shouldEnableAndroidKioskMode,
   shouldUsePosCashRegisterLifecycle,
 } = require('../../../react/config/deviceConfigBootstrap')
 
@@ -99,6 +100,36 @@ describe('deviceConfigBootstrap POS operation helpers', () => {
 
     expect(shouldUsePosCashRegisterLifecycle(configs)).toBe(false)
     expect(resolvePosPrintMode(configs)).toBe('form')
+  })
+
+  it('enables Android kiosk only for POS kiosk runtime', () => {
+    const configs = {
+      [POS_OPERATION_MODE_CONFIG_KEY]: 'kiosk',
+    }
+
+    expect(
+      shouldEnableAndroidKioskMode({
+        appType: 'POS',
+        configs,
+        platform: 'android',
+      }),
+    ).toBe(true)
+
+    expect(
+      shouldEnableAndroidKioskMode({
+        appType: 'MANAGER',
+        configs,
+        platform: 'android',
+      }),
+    ).toBe(false)
+
+    expect(
+      shouldEnableAndroidKioskMode({
+        appType: 'POS',
+        configs,
+        platform: 'web',
+      }),
+    ).toBe(false)
   })
 
   it('defaults display size to 5 and clamps the configured range to 1..10', () => {
