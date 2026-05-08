@@ -27,3 +27,6 @@
 ## Regras de UI compartilhada
 - Filtros compactos de selecao devem ser centralizados em componentes reutilizaveis de `src/react/components/filters`.
 - Evite linhas horizontais extensas de chips para filtros primarios. O padrao compartilhado e botao compacto com valor atual e modal de opcoes.
+- Filtros de periodo/data em React devem reaproveitar `DateShortcutFilter`.
+- Filtros de status e selecoes curtas em React devem reaproveitar `CompactFilterSelector`.
+- `DateShortcutFilter` e `CompactFilterSelector` devem receber `store` e `field` quando estiverem representando coluna de listagem, e resolver internamente a coluna/label a partir das `columns` do store. A tela so deve passar valor, handlers e opcoes quando necessario.

@@ -9,6 +9,11 @@ import {
   resolveDateRangeSummary,
   validateCustomDateRange,
 } from '../../utils/dateRangeFilter';
+import {
+  formatStoreColumnLabel,
+  resolveStoreColumn,
+  resolveStoreConfigByName,
+} from '../../utils/storeColumns';
 
 const createDefaultColors = colors => ({
   accent: colors?.accent || '#0EA5E9',
@@ -36,6 +41,37 @@ const COMPACT_DATE_LABELS = {
   custom: 'Periodo',
 };
 
+const normalizeText = value => String(value || '').trim();
+
+const resolveStoreName = store => {
+  if (typeof store === 'string') return normalizeText(store);
+  return normalizeText(store?.storeName || store?.name || '');
+};
+
+const resolveStoreFieldLabel = ({ fallbackLabel = '', field = '', store = '' }) => {
+  const storeName = resolveStoreName(store);
+  const fieldName = normalizeText(field);
+  if (!storeName || !fieldName) return fallbackLabel;
+
+  const { columns } = resolveStoreConfigByName(storeName);
+  const column = resolveStoreColumn(columns, fieldName);
+  const labelKey = normalizeText(column?.label || fieldName);
+  const translatedLabel =
+    global.t?.t(storeName, 'label', labelKey) ||
+    global.t?.t(storeName, 'input', labelKey);
+
+  return (
+    translatedLabel ||
+    formatStoreColumnLabel({
+      columns,
+      fallbackLabel: fallbackLabel || labelKey,
+      fieldName,
+      storeName,
+    }) ||
+    fallbackLabel
+  );
+};
+
 const DateShortcutFilter = ({
   value = '',
   onChange = null,
@@ -43,8 +79,10 @@ const DateShortcutFilter = ({
   onCustomRangeChange = null,
   colors = null,
   dense = false,
+  field = '',
   labelCaption = '',
   optionKeys = DEFAULT_DATE_FILTER_OPTION_KEYS,
+  store = '',
 }) => {
   const themeColors = useMemo(() => createDefaultColors(colors), [colors]);
   const styles = useMemo(() => createStyles(themeColors), [themeColors]);
@@ -58,7 +96,14 @@ const DateShortcutFilter = ({
     () => buildDateFilterOptions(optionKeys),
     [optionKeys],
   );
-  const periodLabel = resolveDateFilterTitle();
+  const periodLabel = useMemo(
+    () => resolveStoreFieldLabel({
+      fallbackLabel: labelCaption || resolveDateFilterTitle(),
+      field,
+      store,
+    }),
+    [field, labelCaption, store],
+  );
   const activeRangeSummary = useMemo(
     () => resolveDateRangeSummary(value, customRange),
     [customRange, value],
@@ -141,10 +186,12 @@ const DateShortcutFilter = ({
       active={value !== 'all'}
       icon="calendar"
       label={dense ? compactSelectedLabel : selectedLabel}
-      labelCaption={labelCaption || periodLabel}
+      labelCaption={labelCaption}
       options={options}
       selectedKey={isCustomEditorVisible || value === 'custom' ? 'custom' : value}
-      title={periodLabel}
+      title=""
+      store={store}
+      field={field}
       onSelect={handleSelect}
     >
       {({ close }) => (isCustomEditorVisible || value === 'custom') ? (

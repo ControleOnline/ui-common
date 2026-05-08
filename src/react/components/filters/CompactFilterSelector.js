@@ -8,6 +8,11 @@ import {
   View,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
+import {
+  formatStoreColumnLabel,
+  resolveStoreColumn,
+  resolveStoreConfigByName,
+} from '../../utils/storeColumns';
 import createStyles from './CompactFilterSelector.styles';
 
 const buildTheme = accentColor => ({
@@ -24,6 +29,37 @@ const buildTheme = accentColor => ({
 
 const noop = () => {};
 
+const normalizeText = value => String(value || '').trim();
+
+const resolveStoreName = store => {
+  if (typeof store === 'string') return normalizeText(store);
+  return normalizeText(store?.storeName || store?.name || '');
+};
+
+const resolveStoreFieldLabel = ({ fallbackLabel = '', field = '', store = '' }) => {
+  const storeName = resolveStoreName(store);
+  const fieldName = normalizeText(field);
+  if (!storeName || !fieldName) return fallbackLabel;
+
+  const { columns } = resolveStoreConfigByName(storeName);
+  const column = resolveStoreColumn(columns, fieldName);
+  const labelKey = normalizeText(column?.label || fieldName);
+  const translatedLabel =
+    global.t?.t(storeName, 'label', labelKey) ||
+    global.t?.t(storeName, 'input', labelKey);
+
+  return (
+    translatedLabel ||
+    formatStoreColumnLabel({
+      columns,
+      fallbackLabel: fallbackLabel || labelKey,
+      fieldName,
+      storeName,
+    }) ||
+    fallbackLabel
+  );
+};
+
 const CompactFilterSelector = ({
   accentColor = '#2563EB',
   active = false,
@@ -36,6 +72,8 @@ const CompactFilterSelector = ({
   onSelect = null,
   options = [],
   selectedKey = '',
+  field = '',
+  store = '',
   title = '',
 }) => {
   const [visible, setVisible] = useState(false);
@@ -43,6 +81,12 @@ const CompactFilterSelector = ({
     () => createStyles(buildTheme(accentColor), dense),
     [accentColor, dense],
   );
+  const storeFieldLabel = useMemo(
+    () => resolveStoreFieldLabel({ fallbackLabel: labelCaption || title, field, store }),
+    [field, labelCaption, store, title],
+  );
+  const resolvedLabelCaption = labelCaption || storeFieldLabel;
+  const resolvedTitle = title || storeFieldLabel;
 
   const closeModal = useCallback(() => {
     setVisible(false);
@@ -93,7 +137,7 @@ const CompactFilterSelector = ({
         </View>
 
         <View style={styles.textWrap}>
-          {!!labelCaption && (
+          {!!resolvedLabelCaption && (
             <Text
               numberOfLines={1}
               style={[
@@ -101,7 +145,7 @@ const CompactFilterSelector = ({
                 active ? styles.triggerCaptionActive : null,
               ]}
             >
-              {labelCaption}
+              {resolvedLabelCaption}
             </Text>
           )}
 
@@ -131,7 +175,7 @@ const CompactFilterSelector = ({
             <TouchableWithoutFeedback onPress={noop}>
               <View style={styles.modalCard}>
                 <View style={styles.modalHeader}>
-                  <Text style={styles.modalTitle}>{title}</Text>
+                  <Text style={styles.modalTitle}>{resolvedTitle}</Text>
 
                   <TouchableOpacity onPress={closeModal} activeOpacity={0.8}>
                     <Icon name="x" size={20} color="#64748B" />
