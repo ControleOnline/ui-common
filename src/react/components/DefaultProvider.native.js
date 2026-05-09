@@ -30,6 +30,7 @@ import {
   hasDeviceRecordChanges,
   resolveOperationalDeviceType,
 } from '@controleonline/ui-common/src/react/utils/deviceRuntime';
+import {normalizeRuntimeMenuResponse} from '@controleonline/ui-common/src/react/utils/runtimeMenu';
 import packageJson from '@package';
 import providerStyles from './DefaultProvider.styles';
 
@@ -524,6 +525,37 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
       fetchColors();
     }
   }, [actions, currentCompany?.id, defaultCompany?.id, device?.id]);
+
+  useEffect(() => {
+    if (!isLogged || !currentCompany?.id || !appType) {
+      actions.setMenus([]);
+      return;
+    }
+
+    let cancelled = false;
+
+    api
+      .fetch('menus-people', {
+        params: {
+          myCompany: currentCompany.id,
+          appType,
+        },
+      })
+      .then(result => {
+        if (!cancelled) {
+          actions.setMenus(normalizeRuntimeMenuResponse(result));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          actions.setMenus([]);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [actions, appType, currentCompany?.id, isLogged]);
 
   useEffect(() => {
     const companyThemeColors =

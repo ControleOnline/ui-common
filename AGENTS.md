@@ -27,3 +27,5 @@
 ## Regras de UI compartilhada
 - Componentes que implementam comportamento default de listagem/filtros pertencem a `ui-default`.
 - `ui-common` pode fornecer helpers e utilitarios usados por esses componentes, mas nao deve manter uma segunda implementacao de `DateShortcutFilter`, `CompactFilterSelector` ou componentes equivalentes de filtro de listagem.
+- `DefaultProvider` carrega `menus-people` com `myCompany` e `APP_TYPE` atual e grava o resultado normalizado em `theme.menus`.
+- Normalizacao de payload de menu runtime deve ficar em helper compartilhado neste modulo.
