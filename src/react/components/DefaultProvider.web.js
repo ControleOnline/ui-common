@@ -61,6 +61,18 @@ const normalizeEntityId = value =>
     .replace(/\D/g, '')
     .trim();
 
+const normalizeRuntimeIp = value => String(value || '').trim();
+
+const getRuntimeIpFromResponse = response =>
+  normalizeRuntimeIp(response?.member?.[0]?.ip || response?.ip);
+
+const getRuntimeIpFromDeviceInfo = deviceInfo =>
+  normalizeRuntimeIp(
+    deviceInfo?.externalIp ||
+      deviceInfo?.metadata?.network?.publicIp ||
+      deviceInfo?.metadata?.browser?.publicIp,
+  );
+
 const selectRuntimeDeviceConfig = ({
   items = [],
   deviceId,
@@ -150,6 +162,11 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
   const [device, setDevice] = useState(
     JSON.parse(localStorage.getItem('device') || '{}'),
   );
+  const [webRuntimeIp, setWebRuntimeIp] = useState(() =>
+    getRuntimeIpFromDeviceInfo(
+      JSON.parse(localStorage.getItem('device') || '{}'),
+    ),
+  );
   const packageVersion = packageJson?.version || packageJson?.default?.version;
   const appVersion = packageVersion || device?.appVersion;
   const runtimeDeviceType = resolveOperationalDeviceType({
@@ -168,6 +185,30 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
       }
     };
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    api
+      .fetch('runtime/ip', {
+        method: 'GET',
+      })
+      .then(response => {
+        const nextRuntimeIp = getRuntimeIpFromResponse(response);
+        if (!nextRuntimeIp || cancelled) {
+          return;
+        }
+
+        setWebRuntimeIp(currentIp =>
+          currentIp === nextRuntimeIp ? currentIp : nextRuntimeIp,
+        );
+      })
+      .catch(() => {});
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
 
   const buildWebDevice = () => {
     const webDeviceId = getOrCreateWebDeviceInstanceId();
@@ -196,6 +237,7 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
         isEmulator: false,
         appVersion: packageVersion || '1.0.0',
         buildNumber: packageVersion || '1.0.0',
+        externalIp: webRuntimeIp || null,
       },
     });
   };
@@ -231,7 +273,7 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
     }
 
     deviceActions.setItem(device);
-  }, [device, deviceActions, isLogged, packageVersion, user?.id]);
+  }, [device, deviceActions, isLogged, packageVersion, user?.id, webRuntimeIp]);
 
   useEffect(() => {
     if (device && device.id) {
@@ -319,6 +361,7 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
     device?.batteryLevel,
     device?.buildNumber,
     device?.deviceType,
+    device?.externalIp,
     device?.id,
     device?.manufacturer,
     device?.model,

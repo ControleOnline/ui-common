@@ -3,7 +3,7 @@ import test from 'node:test';
 
 import Translate from '../../../utils/translate.js';
 
-const installLocalStorage = () => {
+const installLocalStorage = (config = {language: 'pt-br'}) => {
   const storage = {};
 
   global.localStorage = {
@@ -20,7 +20,7 @@ const installLocalStorage = () => {
     },
   };
 
-  localStorage.setItem('config', JSON.stringify({language: 'pt-br'}));
+  localStorage.setItem('config', JSON.stringify(config));
   localStorage.setItem('translates', JSON.stringify({}));
 };
 
@@ -106,6 +106,38 @@ test('defers missing translation persistence and deduplicates repeated renders',
   assert.equal(addToQueueCalls, 1);
   assert.equal(initQueueCalls, 1);
   assert.equal(queued.length, 1);
+});
+
+test('persists missing translations with the normalized configured language', async () => {
+  installLocalStorage({language: 'en_US'});
+
+  const savedPayloads = [];
+  const queued = [];
+  const translate = new Translate(
+    [{id: 1}],
+    {id: 1},
+    {id: 1},
+    ['contract'],
+    {
+      addToQueue: fn => {
+        queued.push(fn);
+      },
+      initQueue: () => {},
+      save: async payload => {
+        savedPayloads.push(payload);
+        return {};
+      },
+    },
+  );
+
+  translate.t('contract', 'empty', 'none_registered_title');
+
+  await new Promise(resolve => setTimeout(resolve, 0));
+  await queued[0]();
+
+  assert.equal(savedPayloads.length, 1);
+  assert.equal(savedPayloads[0].language, 'en-us');
+  assert.equal(savedPayloads[0].people, '/people/1');
 });
 
 test('loads each requested store for every linked company once', async () => {

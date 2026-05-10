@@ -2,8 +2,9 @@ export default class Translate {
   constructor(companies, defaultCompany, currentCompany, stores, translateActions) {
     this.translates = JSON.parse(localStorage.getItem("translates") || "{}");
 
-    this.language =
-      JSON.parse(localStorage.getItem("config") || "{}").language || "pt-br";
+    this.language = this.normalizeLanguageCode(
+      JSON.parse(localStorage.getItem("config") || "{}").language
+    ) || "pt-br";
 
     this.defaultCompany = defaultCompany;
     this.currentCompany = currentCompany;
@@ -75,6 +76,12 @@ export default class Translate {
     return match?.[0] || null;
   }
 
+  normalizeLanguageCode(value) {
+    if (typeof value !== "string") return "";
+
+    return value.trim().replace(/_/g, "-").toLowerCase();
+  }
+
   getCompaniesToCache() {
     const companies = Array.isArray(this.companies) ? this.companies : [];
     const candidates = [
@@ -127,6 +134,7 @@ export default class Translate {
 
   getMissingTranslateToken(store, type, key) {
     return [
+      this.language,
       this.normalizeId(this.defaultCompany?.id) || "",
       String(store || ""),
       String(type || ""),
@@ -155,9 +163,10 @@ export default class Translate {
 
     this.pendingMissingTranslations.add(pendingToken);
 
+    // Persist missing translations in the same runtime language being rendered.
     const payload = {
       people: "/people/" + this.defaultCompany.id,
-      language: "/languages/1",
+      language: this.language,
       store,
       type,
       key,
