@@ -129,7 +129,6 @@ const RuntimeInfoFooter = ({appVersion, defaultCompany, device, colors}) => {
       return;
     }
 
-    console.log('[RuntimeInfoFooter]', footerDebugInfo);
   }, [footerDebugInfo]);
 
   if (entries.length === 0 && !showDebugInfo) {
