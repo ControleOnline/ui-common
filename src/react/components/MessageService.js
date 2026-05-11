@@ -1,4 +1,4 @@
-import React, {createContext, useContext, useState} from 'react';
+import React, {createContext, useContext, useEffect, useState} from 'react';
 import {Dimensions} from 'react-native';
 import {
   Portal,
@@ -20,10 +20,87 @@ import {
   withErrorToastStyles,
   withWarningToastStyles,
 } from '@controleonline/ui-common/src/react/utils/toastPresentation';
+import {
+  publishSystemError,
+  subscribeSystemErrors,
+} from '@controleonline/ui-common/src/react/utils/systemErrorChannel'
 
 const MessageContext = createContext();
 
 export const useMessage = () => useContext(MessageContext);
+
+const normalizeMessage = message => {
+  if (message === undefined || message === null) return ''
+  return message
+}
+
+const getDefaultProviderKey = () => {
+  const modalDepth = Number(global?.[TOAST_MODAL_COUNT_KEY] || 0)
+  if (modalDepth > 0) {
+    return TOAST_PROVIDER_KEYS.PERSIST
+  }
+
+  return TOAST_PROVIDER_KEYS.ROOT
+}
+
+const normalizeOptions = (options = {}, fallbackPosition = 'top') => {
+  const {
+    duration = TOAST_DEFAULT_DURATION,
+    position = fallbackPosition,
+    offsetTop,
+    offsetBottom,
+    providerKey,
+    styles: stylesOverride,
+    ...rest
+  } = options
+
+  const pressableAdjustments = {}
+
+  if (position === 'center') {
+    const screenCenterOffset = Math.max(
+      0,
+      Math.round(Dimensions.get('window').height * 0.45) -
+        TOAST_DEFAULT_TOP_OFFSET,
+    )
+    if (screenCenterOffset > 0) {
+      pressableAdjustments.marginTop = screenCenterOffset
+    }
+  }
+
+  if (position !== 'bottom' && typeof offsetTop === 'number') {
+    const topDiff = offsetTop - TOAST_DEFAULT_TOP_OFFSET
+    if (topDiff !== 0) {
+      pressableAdjustments.marginTop =
+        (pressableAdjustments.marginTop || 0) + topDiff
+    }
+  }
+
+  if (position === 'bottom' && typeof offsetBottom === 'number') {
+    const bottomDiff = offsetBottom - TOAST_DEFAULT_BOTTOM_OFFSET
+    if (bottomDiff !== 0) {
+      pressableAdjustments.marginBottom = bottomDiff
+    }
+  }
+
+  const mergedStyles =
+    Object.keys(pressableAdjustments).length > 0
+      ? {
+          ...(stylesOverride || {}),
+          pressable: {
+            ...(stylesOverride?.pressable || {}),
+            ...pressableAdjustments,
+          },
+        }
+      : stylesOverride
+
+  return {
+    duration,
+    position: position === 'bottom' ? ToastPosition.BOTTOM : ToastPosition.TOP,
+    providerKey: providerKey || getDefaultProviderKey(),
+    ...rest,
+    ...(mergedStyles ? {styles: mergedStyles} : {}),
+  }
+}
 
 export const MessageProvider = ({children}) => {
   const [dialog, setDialog] = useState({
@@ -45,79 +122,6 @@ export const MessageProvider = ({children}) => {
     resolve: null,
   });
 
-  const normalizeMessage = message => {
-    if (message === undefined || message === null) return '';
-    return message;
-  };
-
-  const getDefaultProviderKey = () => {
-    const modalDepth = Number(global?.[TOAST_MODAL_COUNT_KEY] || 0);
-    if (modalDepth > 0) {
-      return TOAST_PROVIDER_KEYS.PERSIST;
-    }
-
-    return TOAST_PROVIDER_KEYS.ROOT;
-  };
-
-  const normalizeOptions = (options = {}, fallbackPosition = 'top') => {
-    const {
-      duration = TOAST_DEFAULT_DURATION,
-      position = fallbackPosition,
-      offsetTop,
-      offsetBottom,
-      providerKey,
-      styles: stylesOverride,
-      ...rest
-    } = options;
-
-    const pressableAdjustments = {};
-
-    if (position === 'center') {
-      const screenCenterOffset = Math.max(
-        0,
-        Math.round(Dimensions.get('window').height * 0.45) -
-          TOAST_DEFAULT_TOP_OFFSET,
-      );
-      if (screenCenterOffset > 0) {
-        pressableAdjustments.marginTop = screenCenterOffset;
-      }
-    }
-
-    if (position !== 'bottom' && typeof offsetTop === 'number') {
-      const topDiff = offsetTop - TOAST_DEFAULT_TOP_OFFSET;
-      if (topDiff !== 0) {
-        pressableAdjustments.marginTop =
-          (pressableAdjustments.marginTop || 0) + topDiff;
-      }
-    }
-
-    if (position === 'bottom' && typeof offsetBottom === 'number') {
-      const bottomDiff = offsetBottom - TOAST_DEFAULT_BOTTOM_OFFSET;
-      if (bottomDiff !== 0) {
-        pressableAdjustments.marginBottom = bottomDiff;
-      }
-    }
-
-    const mergedStyles =
-      Object.keys(pressableAdjustments).length > 0
-        ? {
-            ...(stylesOverride || {}),
-            pressable: {
-              ...(stylesOverride?.pressable || {}),
-              ...pressableAdjustments,
-            },
-          }
-        : stylesOverride;
-
-    return {
-      duration,
-      position: position === 'bottom' ? ToastPosition.BOTTOM : ToastPosition.TOP,
-      providerKey: providerKey || getDefaultProviderKey(),
-      ...rest,
-      ...(mergedStyles ? {styles: mergedStyles} : {}),
-    };
-  };
-
   const showToast = (message, options = {}) => {
     return toast(normalizeMessage(message), normalizeOptions(options, 'center'));
   };
@@ -134,17 +138,7 @@ export const MessageProvider = ({children}) => {
   };
 
   const showError = (message, options = {}) => {
-    return toast.error(
-      <SystemErrorToast error={message} />,
-      normalizeOptions(
-        withErrorToastStyles({
-          position: 'top',
-          offsetTop: TOAST_DEFAULT_TOP_OFFSET,
-          ...options,
-        }),
-        'top',
-      ),
-    );
+    return publishSystemError(message, options)
   };
 
   const showWarning = (message, options = {}) => {
@@ -165,6 +159,22 @@ export const MessageProvider = ({children}) => {
       ...options,
     });
   };
+
+  useEffect(() => {
+    return subscribeSystemErrors(({error, message, options = {}}) => {
+      toast.error(
+        <SystemErrorToast error={error || message} />,
+        normalizeOptions(
+          withErrorToastStyles({
+            position: 'top',
+            offsetTop: TOAST_DEFAULT_TOP_OFFSET,
+            ...options,
+          }),
+          'top',
+        ),
+      )
+    })
+  }, [])
 
   const showDialog = ({title, message, onConfirm, onCancel}) => {
     setDialog({

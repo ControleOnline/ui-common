@@ -14,8 +14,10 @@ const SystemErrorToast = ({error}) => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.iconWrap}>
-        <Icon name="error-outline" size={15} color="#DC2626" />
+      <View style={styles.header}>
+        <View style={styles.iconWrap}>
+          <Icon name="error-outline" size={16} color="#DC2626" />
+        </View>
       </View>
       <View style={styles.copyWrap}>
         <Text style={styles.text}>{message}</Text>

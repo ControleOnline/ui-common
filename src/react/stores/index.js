@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { useSyncExternalStore } from 'react';
 import stores from '@stores';
+import {bridgeStoreError} from '@controleonline/ui-common/src/react/stores/storeErrorBridge'
 
 const storeState = {};
 
@@ -40,7 +41,7 @@ export const useStores = create((set, get) => {
       actions: {},
     };
 
-    const commit = (type, payload) => {
+    const commit = (type, payload, options = {}) => {
       if (!storeModule.mutations[type]) {
         console.error(`Mutation "${type}" not found in store "${storeName}"`);
         return;
@@ -57,6 +58,14 @@ export const useStores = create((set, get) => {
           [keyChanged]: payload,
         },
       }));
+
+      // Todas as stores precisam usar o mesmo feedback visual centralizado de erro.
+      bridgeStoreError({
+        storeName,
+        mutationType: type,
+        error: payload,
+        options,
+      })
     };
 
     const dispatch = (actionName, ...args) => {
