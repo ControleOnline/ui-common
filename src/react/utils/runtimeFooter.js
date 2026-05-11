@@ -48,10 +48,24 @@ const getRuntimeFooterText = company =>
     company?.configs?.[DEVICE_RUNTIME_FOOTER_TEXT_CONFIG_KEY],
   );
 
-const isWebRuntimeDevice = device =>
-  device?.deviceType === 'web' ||
-  device?.systemName === 'web' ||
-  safeTrim(device?.id).startsWith('web-');
+const isWebRuntimeDevice = device => {
+  const metadata = parseDeviceMetadata(device?.metadata);
+  const runtime = safeTrim(metadata?.runtime).toLowerCase();
+  const systemName = safeTrim(
+    device?.systemName || metadata?.system?.name,
+  ).toLowerCase();
+  const hardwareType = safeTrim(
+    device?.deviceType || metadata?.system?.hardwareType,
+  ).toLowerCase();
+  const identifier = safeTrim(device?.device || device?.id).toLowerCase();
+
+  return (
+    runtime === 'web' ||
+    systemName === 'web' ||
+    hardwareType === 'web' ||
+    identifier.startsWith('web-')
+  );
+};
 
 const getRuntimeFooterDeviceName = device => {
   if (isWebRuntimeDevice(device)) {
