@@ -4,7 +4,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 10,
   },
   iconWrap: {
@@ -19,12 +19,13 @@ const styles = StyleSheet.create({
   copyWrap: {
     flex: 1,
     minWidth: 0,
+    paddingTop: 1,
   },
   text: {
-    color: '#0F172A',
+    color: '#111827',
     fontSize: 13,
     fontWeight: '700',
-    lineHeight: 18,
+    lineHeight: 19,
   },
 });
 

@@ -16,6 +16,10 @@ import {
   TOAST_MODAL_COUNT_KEY,
   TOAST_PROVIDER_KEYS,
 } from './toastConfig';
+import {
+  withErrorToastStyles,
+  withWarningToastStyles,
+} from '@controleonline/ui-common/src/react/utils/toastPresentation';
 
 const MessageContext = createContext();
 
@@ -133,25 +137,25 @@ export const MessageProvider = ({children}) => {
     return toast.error(
       <SystemErrorToast error={message} />,
       normalizeOptions(
-        {position: 'top', offsetTop: TOAST_DEFAULT_TOP_OFFSET, ...options},
+        withErrorToastStyles({
+          position: 'top',
+          offsetTop: TOAST_DEFAULT_TOP_OFFSET,
+          ...options,
+        }),
         'top',
       ),
     );
   };
 
   const showWarning = (message, options = {}) => {
-    return showToast(message, {
-      position: 'top',
-      offsetTop: TOAST_DEFAULT_TOP_OFFSET,
-      ...options,
-      styles: {
-        ...(options?.styles || {}),
-        indicator: {
-          ...(options?.styles?.indicator || {}),
-          backgroundColor: '#F59E0B',
-        },
-      },
-    });
+    return showToast(
+      message,
+      withWarningToastStyles({
+        position: 'top',
+        offsetTop: TOAST_DEFAULT_TOP_OFFSET,
+        ...options,
+      }),
+    );
   };
 
   const showInfo = (message, options = {}) => {

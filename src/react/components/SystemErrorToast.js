@@ -3,35 +3,10 @@ import {Text, View} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
 import styles from './SystemErrorToast.styles';
-
-const resolveErrorMessage = error => {
-  if (error === undefined || error === null) {
-    return '';
-  }
-
-  if (typeof error === 'string') {
-    return error.trim();
-  }
-
-  if (Array.isArray(error?.message)) {
-    return error.message
-      .map(item => item?.message || item?.title || String(item || ''))
-      .filter(Boolean)
-      .join('\n')
-      .trim();
-  }
-
-  return String(
-    error?.message ||
-      error?.description ||
-      error?.errmsg ||
-      error?.error ||
-      '',
-  ).trim();
-};
+import {resolveSystemErrorMessage} from '@controleonline/ui-common/src/react/utils/systemErrorMessage';
 
 const SystemErrorToast = ({error}) => {
-  const message = useMemo(() => resolveErrorMessage(error), [error]);
+  const message = useMemo(() => resolveSystemErrorMessage(error), [error]);
 
   if (!message) {
     return null;
