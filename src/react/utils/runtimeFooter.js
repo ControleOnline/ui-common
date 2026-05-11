@@ -48,6 +48,11 @@ const getRuntimeFooterText = company =>
     company?.configs?.[DEVICE_RUNTIME_FOOTER_TEXT_CONFIG_KEY],
   );
 
+const isWebRuntimeDevice = device =>
+  device?.deviceType === 'web' ||
+  device?.systemName === 'web' ||
+  safeTrim(device?.id).startsWith('web-');
+
 const getRuntimeFooterDeviceName = device => {
   if (isWebRuntimeDevice(device)) {
     return 'web';
@@ -70,11 +75,6 @@ const formatRuntimeFooterVersion = version => {
   const normalizedVersion = safeTrim(version).replace(/^v/i, '');
   return normalizedVersion ? `v${normalizedVersion}` : '';
 };
-
-const isWebRuntimeDevice = device =>
-  device?.deviceType === 'web' ||
-  device?.systemName === 'web' ||
-  safeTrim(device?.id).startsWith('web-');
 
 const getRuntimeFooterWebHost = () => {
   const hostname = safeTrim(globalThis?.location?.hostname);
@@ -219,9 +219,7 @@ const getRuntimeFooterDebugInfo = ({device, appVersion, deviceConfig}) => {
     deviceConfig,
   });
   const nativeIdentifier = nativeIdentifierCandidates[0]?.value || '';
-  const runtimeDetail = isWebRuntime
-    ? webIdentifier
-    : nativeIdentifier;
+  const runtimeDetail = isWebRuntime ? webIdentifier : nativeIdentifier;
   const displayName = runtimeDetail
     ? `${deviceName} (${runtimeDetail})`
     : deviceName;

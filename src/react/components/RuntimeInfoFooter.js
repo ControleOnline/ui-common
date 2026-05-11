@@ -33,14 +33,16 @@ const RuntimeInfoFooter = ({appVersion, defaultCompany, device, colors}) => {
         appVersion,
         deviceConfig: deviceConfigItem,
       }),
-    [appVersion, device, deviceConfigItem?.configs, deviceConfigItem?.device?.metadata],
+    [appVersion, device, deviceConfigItem],
   );
   const primaryText = useMemo(
-    () => footerDebugInfo.primaryText || getRuntimeFooterPrimaryText({
-      device,
-      appVersion,
-      deviceConfig: deviceConfigItem,
-    }),
+    () =>
+      footerDebugInfo.primaryText ||
+      getRuntimeFooterPrimaryText({
+        device,
+        appVersion,
+        deviceConfig: deviceConfigItem,
+      }),
     [appVersion, device, deviceConfigItem, footerDebugInfo.primaryText],
   );
   const companyFooterText = useMemo(
@@ -126,6 +128,8 @@ const RuntimeInfoFooter = ({appVersion, defaultCompany, device, colors}) => {
     if (typeof __DEV__ !== 'undefined' && !__DEV__) {
       return;
     }
+
+    console.log('[RuntimeInfoFooter]', footerDebugInfo);
   }, [footerDebugInfo]);
 
   if (entries.length === 0 && !showDebugInfo) {
