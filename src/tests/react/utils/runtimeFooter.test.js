@@ -130,6 +130,38 @@ test('falls back to the browser hostname for web when no persisted public ip exi
   }
 })
 
+test('recognizes backend web devices by their persisted runtime metadata or device key', () => {
+  const debugInfo = getRuntimeFooterDebugInfo({
+    device: {
+      device: 'web-12',
+      metadata: {
+        runtime: 'web',
+        network: {
+          publicIp: '198.51.100.21',
+        },
+      },
+    },
+    deviceConfig: {
+      device: {
+        device: 'web-12',
+        metadata: {
+          runtime: 'web',
+          network: {
+            publicIp: '203.0.113.42',
+          },
+        },
+      },
+    },
+  })
+
+  assert.equal(debugInfo.isWebRuntime, true)
+  assert.equal(debugInfo.runtimeDetail, '203.0.113.42')
+  assert.equal(
+    debugInfo.runtimeDetailSource,
+    'device_config.device.metadata.network.publicIp',
+  )
+})
+
 test('reads the persisted config-version for non-web runtimes', () => {
   assert.equal(
     getRuntimeFooterStoredVersion({
