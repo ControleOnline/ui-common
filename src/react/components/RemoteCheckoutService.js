@@ -195,7 +195,7 @@ const Checkout = () => {
             }),
           );
         } catch {
-          // silencioso: o pagamento ja foi executado neste device
+          // silencioso: o pagamento ja foi executado neste equipamento
         }
       };
 

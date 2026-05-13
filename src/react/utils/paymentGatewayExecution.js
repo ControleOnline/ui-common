@@ -87,5 +87,5 @@ export const runConfiguredGatewayPayment = async ({
     };
   }
 
-  throw new Error('Gateway de pagamento indisponivel neste device.');
+  throw new Error('Gateway de pagamento indisponível neste equipamento.');
 };
