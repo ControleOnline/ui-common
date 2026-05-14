@@ -2,6 +2,7 @@ import React, {useEffect, useMemo, useRef} from 'react';
 import {NativeModules} from 'react-native';
 import {env as APP_ENV} from '@env';
 import {useStore} from '@store';
+import DeviceInfo from 'react-native-device-info';
 import {resolveAppDomain} from '@controleonline/ui-common/src/utils/appDomain';
 import {isWebRuntimeDevice} from '@controleonline/ui-common/src/react/utils/deviceRuntime';
 import {normalizeDeviceId} from '@controleonline/ui-common/src/react/utils/paymentDevices';
@@ -37,7 +38,7 @@ const serializeRegistration = registration => {
   }
 };
 
-const BackgroundRuntimeBridge = ({appState = 'active'}) => {
+const BackgroundRuntimeBridge = () => {
   const authStore = useStore('auth');
   const peopleStore = useStore('people');
   const deviceStore = useStore('device');
@@ -54,7 +55,9 @@ const BackgroundRuntimeBridge = ({appState = 'active'}) => {
   const lastRegistrationIdRef = useRef('');
   const lastRegistrationPayloadRef = useRef('');
 
-  const isBackgroundEnabled = appState !== 'active';
+  const bundleId = safeTrim(DeviceInfo.getBundleId());
+  const runtimeAppKey =
+    bundleId || safeTrim(APP_ENV.APP_TYPE).toUpperCase() || 'app';
   const runtimeDeviceId = normalizeDeviceId(runtimeDevice?.id);
   const runtimeDeviceType = normalizeDeviceType(
     runtimeDeviceConfig?.type ||
@@ -126,12 +129,13 @@ const BackgroundRuntimeBridge = ({appState = 'active'}) => {
     }
 
     return {
-      registrationId: `${runtimeDeviceId}::${currentCompanyId}`,
+      registrationId: `${runtimeAppKey}::${runtimeDeviceId}::${currentCompanyId}`,
+      packageName: runtimeAppKey,
       companyAlias: safeTrim(currentCompany?.alias || currentCompany?.name),
       companyId: currentCompanyId,
       appDomain: safeTrim(resolveAppDomain(APP_ENV.DOMAIN)),
       appType: safeTrim(APP_ENV.APP_TYPE).toUpperCase(),
-      backgroundEnabled: isBackgroundEnabled,
+      backgroundEnabled: true,
       deviceId: runtimeDeviceId,
       deviceType: runtimeDeviceType,
       notificationEnabled: true,
@@ -146,7 +150,7 @@ const BackgroundRuntimeBridge = ({appState = 'active'}) => {
     currentCompany?.alias,
     currentCompany?.name,
     currentCompanyId,
-    isBackgroundEnabled,
+    runtimeAppKey,
     isLogged,
     managedPrinters,
     runtimeDeviceId,
@@ -198,21 +202,6 @@ const BackgroundRuntimeBridge = ({appState = 'active'}) => {
 
     backgroundRuntimeModule.syncRegistration(nextPayload).catch(() => {});
   }, [registration]);
-
-  useEffect(() => {
-    if (!backgroundRuntimeModule) {
-      return undefined;
-    }
-
-    return () => {
-      const registrationId = lastRegistrationIdRef.current;
-      if (!registrationId) {
-        return;
-      }
-
-      backgroundRuntimeModule.clearRegistration(registrationId).catch(() => {});
-    };
-  }, []);
 
   return null;
 };

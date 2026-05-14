@@ -22,6 +22,7 @@ import {
 
 const MAX_PROCESSED_EVENTS = 200;
 const ORDER_CREATED_EVENT = 'order.created';
+const BACKGROUND_RUNTIME_SOURCE = 'background-runtime';
 const FINANCIAL_ALERT_EVENTS = new Set(['cash.closed', 'store.opened', 'store.closed']);
 
 const normalizeEntityId = value => {
@@ -134,6 +135,9 @@ const isRelevantOrderCreatedMessage = message => {
     realStatus === 'open'
   );
 };
+
+const isBackgroundRuntimeMessage = message =>
+  normalizeText(message?.source).toLowerCase() === BACKGROUND_RUNTIME_SOURCE;
 
 const isRelevantFinancialMessage = message => {
   const store = normalizeText(message?.store);
@@ -336,6 +340,7 @@ const DeviceAlertSoundService = () => {
     const incomingMessages = [...collectMessages(orderMessages, orderMessage)].filter(
       message =>
         isRelevantOrderCreatedMessage(message) &&
+        !isBackgroundRuntimeMessage(message) &&
         (isManagerRuntime || isTruthyValue(message?.alertSound)) &&
         isMessageForCurrentCompany(message, currentCompanyId),
     );
