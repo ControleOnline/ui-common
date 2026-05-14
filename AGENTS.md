@@ -26,6 +26,13 @@
 - Stores compartilhadas tambem devem usar esse fluxo. Quando uma store fizer `SET_ERROR`, o erro visual precisa sair pelo `MessageService`, nunca por caixa local do `StateStore`.
 - Nao criar banners, alerts ou toasts paralelos para erro quando o caso puder usar o `MessageService`.
 
+## Regras de runtime em background
+- O `BackgroundRuntimeBridge` deve manter o registro nativo por package/app, device e empresa para permitir varios APKs instalados no mesmo Android.
+- Em nativo, `WebsocketListener.native.js` deve consumir o stream local exposto pelo `BackgroundRuntimeService`, nao abrir websocket direto no backend.
+- `WebsocketListener.js` permanece como fluxo web e nao deve ser acoplado ao runtime Android.
+- Mensagens entregues pelo runtime nativo devem ser marcadas com `source: 'background-runtime'` para evitar duplicidade de notificacao/alerta dentro do app aberto.
+- Alteracoes no protocolo local do runtime precisam manter compatibilidade entre o template do plugin e qualquer arquivo Android gerado.
+
 ## Regras de UI compartilhada
 - Componentes que implementam comportamento default de listagem/filtros pertencem a `ui-default`.
 - `ui-common` pode fornecer helpers e utilitarios usados por esses componentes, mas nao deve manter uma segunda implementacao de `DateShortcutFilter`, `CompactFilterSelector` ou componentes equivalentes de filtro de listagem.
