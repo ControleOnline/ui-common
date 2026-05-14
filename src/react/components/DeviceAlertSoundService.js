@@ -14,12 +14,15 @@ import {resolveOrderIdentity} from '@controleonline/ui-orders/src/react/utils/or
 import {
   hasStoredManagerOrderNotificationPreferences,
   isManagerAppType,
+  resolveManagerFinancialNotificationPreferences,
   resolveManagerOrderNotificationPreferences,
+  showManagerFinancialNotification,
   showManagerOrderNotification,
 } from '@controleonline/ui-common/src/react/utils/managerOrderNotifications';
 
 const MAX_PROCESSED_EVENTS = 200;
 const ORDER_CREATED_EVENT = 'order.created';
+const FINANCIAL_ALERT_EVENTS = new Set(['cash.closed', 'store.opened', 'store.closed']);
 
 const normalizeEntityId = value => {
   if (value === null || value === undefined || value === '') {
@@ -132,6 +135,13 @@ const isRelevantOrderCreatedMessage = message => {
   );
 };
 
+const isRelevantFinancialMessage = message => {
+  const store = normalizeText(message?.store);
+  const event = normalizeText(message?.event);
+
+  return store === 'orders' && FINANCIAL_ALERT_EVENTS.has(event);
+};
+
 const isMessageForCurrentCompany = (message, currentCompanyId) => {
   if (!currentCompanyId) {
     return true;
@@ -164,6 +174,10 @@ const DeviceAlertSoundService = () => {
     () => resolveManagerOrderNotificationPreferences(user),
     [user],
   );
+  const managerFinancialNotificationPreferences = useMemo(
+    () => resolveManagerFinancialNotificationPreferences(user),
+    [user],
+  );
 
   const isManagerRuntime = isManagerAppType(APP_ENV?.APP_TYPE);
   const hasStoredManagerPreferences =
@@ -171,6 +185,10 @@ const DeviceAlertSoundService = () => {
   const currentCompanyId = normalizeEntityId(currentCompany?.id);
   const managerPushEnabled =
     isManagerRuntime && managerOrderNotificationPreferences.pushEnabled;
+  const managerFinancialCashCloseEnabled =
+    isManagerRuntime && managerFinancialNotificationPreferences.cashClosePushEnabled;
+  const managerFinancialStoreCloseEnabled =
+    isManagerRuntime && managerFinancialNotificationPreferences.storeClosePushEnabled;
   const managerSoundEnabled =
     managerPushEnabled && managerOrderNotificationPreferences.soundEnabled;
   const managerSoundUrl = normalizeText(
@@ -375,6 +393,71 @@ const DeviceAlertSoundService = () => {
     playAlertSound,
     shouldPlayAlertSound,
     isManagerRuntime,
+  ]);
+
+  useEffect(() => {
+    const incomingMessages = [...collectMessages(orderMessages, orderMessage)].filter(
+      message =>
+        isRelevantFinancialMessage(message) &&
+        isMessageForCurrentCompany(message, currentCompanyId),
+    );
+
+    if (incomingMessages.length === 0) {
+      return;
+    }
+
+    const unseenEntries = incomingMessages
+      .map(message => ({
+        message,
+        key: buildMessageFingerprint(message),
+      }))
+      .filter(entry => entry.key && !processedEventsRef.current.has(entry.key));
+
+    if (unseenEntries.length === 0) {
+      return;
+    }
+
+    const unseenKeys = unseenEntries.map(entry => entry.key);
+    const unseenMessages = unseenEntries.map(entry => entry.message);
+
+    markProcessedKeys(unseenKeys);
+
+    const enabledMessages = unseenMessages.filter(message => {
+      const event = normalizeText(message?.event);
+
+      if (event === 'cash.closed') {
+        return managerFinancialCashCloseEnabled;
+      }
+
+      if (event === 'store.opened' || event === 'store.closed') {
+        return managerFinancialStoreCloseEnabled;
+      }
+
+      return false;
+    });
+
+    if (enabledMessages.length === 0) {
+      return;
+    }
+
+    Promise.allSettled(
+      enabledMessages.map(message =>
+        showManagerFinancialNotification({
+          messages: [message],
+          currentCompany,
+          store: 'orders',
+          event: normalizeText(message?.event) || 'cash.closed',
+        }),
+      ),
+    ).catch(() => {});
+  }, [
+    currentCompany,
+    currentCompanyId,
+    managerFinancialCashCloseEnabled,
+    managerFinancialStoreCloseEnabled,
+    markProcessedKeys,
+    orderMessage,
+    orderMessages,
   ]);
 
   return null;

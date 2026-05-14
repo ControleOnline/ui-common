@@ -4,11 +4,18 @@ import Formatter from '@controleonline/ui-common/src/utils/formatter';
 
 export const MANAGER_ORDER_NOTIFICATION_PREFERENCES_KEY =
   'managerOrderNotifications';
+export const MANAGER_FINANCIAL_NOTIFICATION_PREFERENCES_KEY =
+  'managerFinancialNotifications';
 
 export const DEFAULT_MANAGER_ORDER_NOTIFICATION_PREFERENCES = {
   pushEnabled: true,
   soundEnabled: false,
   soundUrl: '',
+};
+
+export const DEFAULT_MANAGER_FINANCIAL_NOTIFICATION_PREFERENCES = {
+  cashClosePushEnabled: true,
+  storeClosePushEnabled: true,
 };
 
 const ANDROID_MANAGER_ORDERS_CHANNEL_ID = 'manager-orders';
@@ -216,6 +223,50 @@ export const applyManagerOrderNotificationPreferences = (user, patch = {}) => {
   };
 };
 
+export const resolveManagerFinancialNotificationPreferences = user => {
+  const storedPreferences = isPlainObject(
+    getUserLocalPreferences(user)?.[MANAGER_FINANCIAL_NOTIFICATION_PREFERENCES_KEY],
+  )
+    ? getUserLocalPreferences(user)[MANAGER_FINANCIAL_NOTIFICATION_PREFERENCES_KEY]
+    : {};
+
+  return {
+    cashClosePushEnabled: normalizeBoolean(
+      storedPreferences?.cashClosePushEnabled,
+      DEFAULT_MANAGER_FINANCIAL_NOTIFICATION_PREFERENCES.cashClosePushEnabled,
+    ),
+    storeClosePushEnabled: normalizeBoolean(
+      storedPreferences?.storeClosePushEnabled,
+      DEFAULT_MANAGER_FINANCIAL_NOTIFICATION_PREFERENCES.storeClosePushEnabled,
+    ),
+  };
+};
+
+export const applyManagerFinancialNotificationPreferences = (user, patch = {}) => {
+  const currentPreferences = resolveManagerFinancialNotificationPreferences(user);
+  const nextPreferences = {
+    ...currentPreferences,
+    ...(isPlainObject(patch) ? patch : {}),
+  };
+
+  return {
+    ...(user || {}),
+    localPreferences: {
+      ...getUserLocalPreferences(user),
+      [MANAGER_FINANCIAL_NOTIFICATION_PREFERENCES_KEY]: {
+        cashClosePushEnabled: normalizeBoolean(
+          nextPreferences.cashClosePushEnabled,
+          true,
+        ),
+        storeClosePushEnabled: normalizeBoolean(
+          nextPreferences.storeClosePushEnabled,
+          true,
+        ),
+      },
+    },
+  };
+};
+
 export const buildManagerOrderNotificationContent = (
   messages = [],
   currentCompany = null,
@@ -241,6 +292,11 @@ export const buildManagerOrderNotificationContent = (
       firstMessage?.headerSubtitle ||
       firstMessage?.orderSubheader,
   );
+  const notificationBody = normalizeText(
+    firstMessage?.notificationBody ||
+      firstMessage?.body ||
+      firstMessage?.message,
+  );
   const statusLabel =
     normalizeText(
       firstMessage?.notificationStatusLabel ||
@@ -265,7 +321,7 @@ export const buildManagerOrderNotificationContent = (
   return {
     title: headerTitle || `Novo pedido${orderLabel}`,
     body:
-      [headerSubtitle]
+      [headerSubtitle, notificationBody]
         .concat(customerName ? [`Cliente: ${customerName}`] : [])
         .concat(priceLabel ? [`Valor: ${priceLabel}`] : [])
         .concat(companyLabel ? [companyLabel] : [])
@@ -341,6 +397,9 @@ export const requestManagerOrderNotificationPermission = async () => {
 export const showManagerOrderNotification = async ({
   messages = [],
   currentCompany = null,
+  store = 'orders',
+  event = 'order.created',
+  tag = '',
 } = {}) => {
   const {title, body, orderIds} = buildManagerOrderNotificationContent(
     messages,
@@ -361,9 +420,10 @@ export const showManagerOrderNotification = async ({
         body,
         silent: true,
         tag:
-          orderIds.length > 0
+          tag ||
+          (orderIds.length > 0
             ? `manager-order-${orderIds.join('-')}`
-            : 'manager-order',
+            : 'manager-order'),
         renotify: true,
       });
 
@@ -398,8 +458,8 @@ export const showManagerOrderNotification = async ({
         title,
         body,
         data: {
-          store: 'orders',
-          event: 'order.created',
+          store,
+          event,
           orderIds,
           company: currentCompany?.id || null,
         },
@@ -412,3 +472,22 @@ export const showManagerOrderNotification = async ({
     return false;
   }
 };
+
+export const showManagerFinancialNotification = async ({
+  messages = [],
+  currentCompany = null,
+  store = 'orders',
+  event = 'cash.closed',
+  tag = '',
+} = {}) =>
+  showManagerOrderNotification({
+    messages,
+    currentCompany,
+    store,
+    event,
+    tag:
+      tag ||
+      `manager-financial-${normalizeText(event || 'financial')}-${normalizeText(
+        currentCompany?.id || 'company',
+      )}`,
+  });

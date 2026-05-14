@@ -22,6 +22,8 @@
 ## Regras de mensageria
 - Erros visuais transitrios do sistema devem sair por um unico componente compartilhado ligado ao `MessageService`.
 - `showError` e o ponto canonico para esse feedback. Ele recebe string ou objeto de erro, exibe por alguns segundos e some sozinho.
+- O card/modal transitorio de erro do `MessageService` e a unica UI permitida para esse feedback. Nao criar segunda tela de erro no modulo.
+- Stores compartilhadas tambem devem usar esse fluxo. Quando uma store fizer `SET_ERROR`, o erro visual precisa sair pelo `MessageService`, nunca por caixa local do `StateStore`.
 - Nao criar banners, alerts ou toasts paralelos para erro quando o caso puder usar o `MessageService`.
 
 ## Regras de UI compartilhada

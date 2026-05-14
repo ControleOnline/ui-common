@@ -15,6 +15,12 @@ import {
 } from '@controleonline/ui-common/src/react/utils/printerDevices';
 import {isWebRuntimeDevice} from '@controleonline/ui-common/src/react/utils/deviceRuntime';
 import {normalizeDeviceId} from '@controleonline/ui-common/src/react/utils/paymentDevices';
+import {
+  forgetTrackedSpool,
+  hasTrackedSpool,
+  pruneTrackedSpools,
+  rememberTrackedSpool,
+} from '@controleonline/ui-common/src/react/utils/spoolAckTracker';
 import {PRINT_JOB_TYPE_SPOOL} from '@controleonline/ui-common/src/react/print/jobs';
 import {printOnLocalCielo} from '@controleonline/ui-common/src/react/print/providers/local';
 import {executeRemotePrintRequest} from '@controleonline/ui-common/src/react/print/providers/remote';
@@ -22,6 +28,7 @@ import {useStore} from '@store';
 
 const SOCKET_PRINT_POLL_INTERVAL_DISCONNECTED = 10000;
 const SOCKET_PRINT_POLL_DELAY_CONNECTED = 60000;
+const SPOOL_ACK_RETRY_DELAY_MS = 10000;
 
 const normalizeDeviceType = value => String(value || '').trim().toUpperCase();
 
@@ -62,7 +69,10 @@ const PrintService = () => {
 
   const isPrintingRef = useRef(false);
   const spoolRef = useRef([]);
+  // Once the device prints locally, only the backend ack may remain pending.
+  const pendingAckSpoolsRef = useRef(new Map());
   const connectedPollTimeoutRef = useRef(null);
+  const ackRetryTimeoutRef = useRef(null);
   const [lastPrintCommandAt, setLastPrintCommandAt] = useState(null);
 
   const markPrintCommand = useCallback(() => {
@@ -95,6 +105,70 @@ const PrintService = () => {
         printJob?.device?.device || printJob?.device || storagedDevice?.id,
       ),
     [storagedDevice?.id],
+  );
+
+  const clearAckRetry = useCallback(() => {
+    if (ackRetryTimeoutRef.current) {
+      clearTimeout(ackRetryTimeoutRef.current);
+      ackRetryTimeoutRef.current = null;
+    }
+  }, []);
+
+  const scheduleAckRetry = useCallback(() => {
+    clearAckRetry();
+    ackRetryTimeoutRef.current = setTimeout(() => {
+      printActions.setReload(true);
+    }, SPOOL_ACK_RETRY_DELAY_MS);
+  }, [clearAckRetry, printActions]);
+
+  const hasPendingSpoolAck = useCallback(
+    spoolId => hasTrackedSpool(pendingAckSpoolsRef.current, spoolId),
+    [],
+  );
+
+  const rememberPendingSpoolAck = useCallback(
+    spoolId => {
+      rememberTrackedSpool(pendingAckSpoolsRef.current, spoolId, {
+        printedAt: Date.now(),
+      });
+    },
+    [],
+  );
+
+  const forgetPendingSpoolAck = useCallback(
+    spoolId => {
+      forgetTrackedSpool(pendingAckSpoolsRef.current, spoolId);
+      if (pendingAckSpoolsRef.current.size === 0) {
+        clearAckRetry();
+      }
+    },
+    [clearAckRetry],
+  );
+
+  const syncPendingSpoolAcks = useCallback(
+    openSpools => {
+      const openSpoolIds = (Array.isArray(openSpools) ? openSpools : []).map(
+        spoolItem => resolveSpoolId(spoolItem),
+      );
+      pruneTrackedSpools(pendingAckSpoolsRef.current, openSpoolIds);
+      if (pendingAckSpoolsRef.current.size === 0) {
+        clearAckRetry();
+      }
+    },
+    [clearAckRetry, resolveSpoolId],
+  );
+
+  const finalizeSpoolAck = useCallback(
+    async spoolId => {
+      if (!spoolId) {
+        return false;
+      }
+
+      await printActions.makePrintDone(spoolId);
+      forgetPendingSpoolAck(spoolId);
+      return true;
+    },
+    [forgetPendingSpoolAck, printActions],
   );
 
   const runtimeDeviceType = useMemo(
@@ -193,6 +267,8 @@ const PrintService = () => {
 
   const loadOpenSpools = useCallback(async () => {
     if (!shouldHandleSpool) {
+      pendingAckSpoolsRef.current.clear();
+      clearAckRetry();
       printActions.setItems([]);
       printActions.setReload(false);
       return [];
@@ -201,6 +277,8 @@ const PrintService = () => {
     const deviceIds = Array.from(new Set(spoolDeviceIds.filter(Boolean)));
 
     if (deviceIds.length === 0) {
+      pendingAckSpoolsRef.current.clear();
+      clearAckRetry();
       printActions.setItems([]);
       printActions.setReload(false);
       return [];
@@ -240,12 +318,20 @@ const PrintService = () => {
         return leftId - rightId;
       });
 
+      syncPendingSpoolAcks(mergedSpools);
       printActions.setItems(mergedSpools);
       return mergedSpools;
     } finally {
       printActions.setReload(false);
     }
-  }, [printActions, resolveSpoolId, shouldHandleSpool, spoolDeviceIds]);
+  }, [
+    clearAckRetry,
+    printActions,
+    resolveSpoolId,
+    shouldHandleSpool,
+    spoolDeviceIds,
+    syncPendingSpoolAcks,
+  ]);
 
   const removeSpoolFromQueue = useCallback(
     spoolId => {
@@ -309,6 +395,24 @@ const PrintService = () => {
   const processResolvedSpool = useCallback(
     async ({printJob, spoolData, removeFromQueue = false}) => {
       const spoolId = resolveSpoolId(spoolData || printJob);
+      if (spoolId && hasPendingSpoolAck(spoolId)) {
+        try {
+          await finalizeSpoolAck(spoolId);
+          if (removeFromQueue) {
+            removeSpoolFromQueue(spoolId);
+          }
+          return {spoolId, printed: true, ackPending: false};
+        } catch (ackError) {
+          scheduleAckRetry();
+          return {
+            spoolId,
+            printed: true,
+            ackPending: true,
+            error: ackError?.message || '',
+          };
+        }
+      }
+
       if (!spoolData?.file?.content) {
         if (removeFromQueue) {
           removeSpoolFromQueue(spoolId);
@@ -323,7 +427,18 @@ const PrintService = () => {
       }
 
       if (spoolId) {
-        await printActions.makePrintDone(spoolId);
+        rememberPendingSpoolAck(spoolId);
+        try {
+          await finalizeSpoolAck(spoolId);
+        } catch (ackError) {
+          scheduleAckRetry();
+          return {
+            spoolId,
+            printed: true,
+            ackPending: true,
+            error: ackError?.message || '',
+          };
+        }
       }
 
       if (removeFromQueue) {
@@ -332,7 +447,15 @@ const PrintService = () => {
 
       return {spoolId, printed: true};
     },
-    [printActions, printManagedSpool, removeSpoolFromQueue, resolveSpoolId],
+    [
+      finalizeSpoolAck,
+      hasPendingSpoolAck,
+      printManagedSpool,
+      removeSpoolFromQueue,
+      rememberPendingSpoolAck,
+      resolveSpoolId,
+      scheduleAckRetry,
+    ],
   );
 
   const resolveRequestedTargetDevice = useCallback(
@@ -427,6 +550,7 @@ const PrintService = () => {
             requestKey,
             status: 'success',
             completedAt: Date.now(),
+            ackPending: result?.ackPending === true,
             spoolId: result?.spoolId || null,
             targetDeviceId: normalizeDeviceId(spoolData?.device?.device),
           });
@@ -582,6 +706,13 @@ const PrintService = () => {
 
     goPrint(spoolRef.current[0]);
   }, [goPrint, spool]);
+
+  useEffect(
+    () => () => {
+      clearAckRetry();
+    },
+    [clearAckRetry],
+  );
 
   useEffect(() => {
     if (!message || Object.keys(message).length === 0) {

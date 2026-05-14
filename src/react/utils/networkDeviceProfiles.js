@@ -31,25 +31,25 @@ const printerProfile = {
   hostAlertTitle: 'IP da impressora',
   hostMissingMessage: 'Informe o IP ou hostname da impressora.',
   managerMissingMessage:
-    'Selecione o PDV ou DISPLAY responsavel por receber e encaminhar as impressoes.',
-  registerErrorMessage: 'Nao foi possivel cadastrar a impressora.',
+    'Selecione o PDV ou DISPLAY responsável por receber e encaminhar as impressões.',
+  registerErrorMessage: 'Não foi possível cadastrar a impressora.',
   registerErrorTitle: 'Erro ao cadastrar impressora',
   managerSectionDescription:
-    'Este PDV ou DISPLAY sera o gateway local que acompanha as impressoes desta impressora de rede.',
+    'Este PDV ou DISPLAY será o gateway local que acompanha as impressões desta impressora de rede.',
   createButtonLabel: 'Cadastrar impressora',
   statusSectionDescription:
-    'O app tenta abrir uma conexao TCP direta com a impressora IP para indicar se ela esta acessivel na rede deste device.',
+    'O app tenta abrir uma conexão TCP direta com a impressora IP para indicar se ela está acessível na rede deste device.',
   registrationSectionTitle: 'Cadastro da impressora',
   detailAliasPlaceholder: 'Nome da impressora',
   registrationAlertTitle: 'Cadastro da impressora',
-  routingSectionTitle: 'Roteamento de impressao',
+  routingSectionTitle: 'Roteamento de impressão',
   routingSectionDescription:
-    'O backend continua gerando a impressao para o device da impressora. Aqui voce define qual PDV ou DISPLAY local fica responsavel por consumir essa fila e falar com a impressora na rede.',
-  routingAlertTitle: 'Configuracao da impressora',
+    'O backend continua gerando a impressão para o device da impressora. Aqui você define qual PDV ou DISPLAY local fica responsável por consumir essa fila e falar com a impressora na rede.',
+  routingAlertTitle: 'Configuração da impressora',
   hostMissingBeforeSaveMessage:
     'Informe o IP ou hostname da impressora antes de salvar.',
   managerRoutingMessage:
-    'Selecione qual PDV ou DISPLAY executa a impressao desta impressora.',
+    'Selecione qual PDV ou DISPLAY executa a impressão desta impressora.',
   saveBeforeRoutingMessage:
     'Salve primeiro o cadastro da impressora para aplicar o novo IP antes do roteamento.',
   footerDebugDescription:
