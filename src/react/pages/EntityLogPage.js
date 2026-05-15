@@ -86,7 +86,7 @@ export default function EntityLogPage({navigation, route}) {
 
   useEffect(() => {
     navigation.setOptions({
-      title: 'Historico',
+      title: 'Histórico',
     });
   }, [navigation]);
 
