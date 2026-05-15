@@ -142,7 +142,7 @@ const formatValue = value => {
   }
 
   if (typeof value === 'boolean') {
-    return value ? 'Sim' : 'Nao';
+    return value ? 'Sim' : 'Não';
   }
 
   if (typeof value === 'string') {
@@ -706,7 +706,7 @@ export default function GenericLogPage({navigation}) {
           {logsState.status === 'error' ? (
             <View style={styles.stateBox}>
               <Icon name="error-outline" size={22} color="#DC2626" />
-              <Text style={styles.stateTitle}>Nao foi possivel carregar</Text>
+              <Text style={styles.stateTitle}>Não foi possível carregar</Text>
               <Text style={styles.stateText}>{logsState.error}</Text>
             </View>
           ) : null}
