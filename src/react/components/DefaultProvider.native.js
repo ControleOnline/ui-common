@@ -1,4 +1,4 @@
-import React, {createContext, useContext, useEffect, useState} from 'react';
+import React, {createContext, useContext, useEffect, useRef, useState} from 'react';
 import {View, ActivityIndicator, Text, AppState, Platform} from 'react-native';
 import DeviceInfo from 'react-native-device-info';
 import Translate from '@controleonline/ui-common/src/utils/translate';
@@ -10,6 +10,7 @@ import PrintService from '@controleonline/ui-common/src/react/components/PrintSe
 import RemoteCheckoutService from '@controleonline/ui-common/src/react/components/RemoteCheckoutService';
 import ProductCatalogCacheService from '@controleonline/ui-common/src/react/components/ProductCatalogCacheService';
 import RuntimeInfoFooter from '@controleonline/ui-common/src/react/components/RuntimeInfoFooter';
+import {isPublicRoute} from '@controleonline/ui-login/src/react/router/publicRoutes';
 import {api} from '@controleonline/ui-common/src/api';
 import {env as APP_ENV} from '@env';
 const {resolveConfiguredLanguage} = require('../utils/runtimeLanguage');
@@ -56,6 +57,11 @@ const parseThemeCss = cssText => {
   return parsedColors;
 };
 
+const normalizeEntityId = value =>
+  String(value?.id || value || '')
+    .replace(/\D/g, '')
+    .trim();
+
 export const DefaultProvider = ({children, onBootstrapReady}) => {
   const appType = String(APP_ENV.APP_TYPE || '').toUpperCase();
   const isShopClientApp = appType === 'SHOP';
@@ -96,9 +102,11 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
   const [mainConfigsDiscovered, setMainConfigsDiscovered] = useState(false);
   const [deviceRuntimeConfigSynced, setDeviceRuntimeConfigSynced] =
     useState(false);
+  const [currentRouteName, setCurrentRouteName] = useState('');
   const [appState, setAppState] = useState(AppState.currentState || 'active');
   const [, setTranslateVersion] = useState(0);
   const [baseThemeColors, setBaseThemeColors] = useState({});
+  const translateBootstrapKeyRef = useRef('');
   const [device, setDevice] = useState(
     JSON.parse(localStorage.getItem('device') || '{}'),
   );
@@ -108,6 +116,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
     appType: APP_ENV.APP_TYPE,
     deviceInfo: device || {},
   });
+  const isPublicRouteActive = isPublicRoute(currentRouteName);
   const shouldRunForegroundRealtimeServices =
     Platform.OS !== 'android' || appState === 'active';
 
@@ -122,6 +131,37 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
       }
     };
   }, []);
+
+  useEffect(() => {
+    global.setRuntimeRouteName = routeName => {
+      const normalizedRouteName = String(routeName || '').trim();
+
+      setCurrentRouteName(previousRouteName =>
+        previousRouteName === normalizedRouteName
+          ? previousRouteName
+          : normalizedRouteName,
+      );
+    };
+
+    return () => {
+      if (global.setRuntimeRouteName) {
+        delete global.setRuntimeRouteName;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isLogged && !isPublicRouteActive) {
+      return;
+    }
+
+    setTranslateReady(true);
+    translateBootstrapKeyRef.current = '';
+
+    if (global.t) {
+      delete global.t;
+    }
+  }, [isLogged, isPublicRouteActive]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', nextState => {
@@ -447,43 +487,79 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
 
   useEffect(() => {
     if (
-      isLogged &&
-      currentCompany &&
-      Object.entries(currentCompany).length > 0 &&
-      deviceConfigFetched
+      !currentRouteName ||
+      isPublicRouteActive
     ) {
-      const currentConfig = JSON.parse(localStorage.getItem('config') || '{}');
-      const sessionData = JSON.parse(localStorage.getItem('session') || '{}');
-      const configuredLanguage = resolveConfiguredLanguage({
-        currentCompany,
-        defaultCompany,
-        currentConfig,
-        sessionData,
-      });
+      return;
+    }
 
-      if (currentConfig.language !== configuredLanguage) {
-        const nextConfig = {...currentConfig, language: configuredLanguage};
-        localStorage.setItem(
-          'config',
-          JSON.stringify(nextConfig),
-        );
+    if (
+      !isLogged ||
+      !currentCompany ||
+      Object.entries(currentCompany).length === 0 ||
+      !deviceConfigFetched
+    ) {
+      return;
+    }
+
+    const currentConfig = JSON.parse(localStorage.getItem('config') || '{}');
+    const sessionData = JSON.parse(localStorage.getItem('session') || '{}');
+    const currentCompanyId = normalizeEntityId(currentCompany?.id);
+    const defaultCompanyId = normalizeEntityId(defaultCompany?.id);
+    const configuredLanguage = resolveConfiguredLanguage({
+      currentCompany,
+      defaultCompany,
+      currentConfig,
+      sessionData,
+    });
+    const nextTranslateBootstrapKey = [
+      configuredLanguage,
+      currentCompanyId,
+      defaultCompanyId,
+    ].join('::');
+
+    if (translateBootstrapKeyRef.current === nextTranslateBootstrapKey) {
+      if (global.t) {
+        global.t.companies = companies;
+        global.t.currentCompany = currentCompany;
+        global.t.defaultCompany = defaultCompany;
       }
 
-      setTranslateReady(false);
-      global.t = new Translate(
-        companies,
-        defaultCompany,
-        currentCompany,
-        Object.keys(stores),
-        translateActions,
-      );
-
-      global.t.discoveryAll().then(() => {
-        setTranslateReady(true);
-        global.refreshTranslationsUI?.();
-      });
+      return;
     }
-  }, [currentCompany, defaultCompany, deviceConfigFetched, isLogged]);
+
+    if (currentConfig.language !== configuredLanguage) {
+      const nextConfig = {...currentConfig, language: configuredLanguage};
+      localStorage.setItem(
+        'config',
+        JSON.stringify(nextConfig),
+      );
+    }
+
+    translateBootstrapKeyRef.current = nextTranslateBootstrapKey;
+    setTranslateReady(false);
+    global.t = new Translate(
+      companies,
+      defaultCompany,
+      currentCompany,
+      Object.keys(stores),
+      translateActions,
+    );
+
+    global.t.discoveryAll().then(() => {
+      setTranslateReady(true);
+      global.refreshTranslationsUI?.();
+    });
+  }, [
+    companies,
+    currentCompany,
+    currentRouteName,
+    defaultCompany,
+    deviceConfigFetched,
+    isLogged,
+    isPublicRouteActive,
+    translateActions,
+  ]);
 
 
   useEffect(() => {
@@ -574,7 +650,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
 
     actions.setColors(mergedThemeColors);
   }, [actions, baseThemeColors, currentCompany?.id, currentCompany?.theme?.colors]);
-  if (!translateReady && isLogged && hasCurrentCompany) {
+  if (!translateReady && isLogged && hasCurrentCompany && !isPublicRouteActive) {
     return (
       <View style={providerStyles.loadingContainer}>
         <ActivityIndicator size="large" color="#1B5587" />

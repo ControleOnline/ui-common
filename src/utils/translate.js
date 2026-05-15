@@ -83,11 +83,9 @@ export default class Translate {
   }
 
   getCompaniesToCache() {
-    const companies = Array.isArray(this.companies) ? this.companies : [];
     const candidates = [
-      this.defaultCompany,
       this.currentCompany,
-      ...companies,
+      this.defaultCompany,
     ].filter((company) => company?.id);
 
     const unique = [];

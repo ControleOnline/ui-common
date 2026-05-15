@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { View, ActivityIndicator, Text } from 'react-native';
 import Translate from '@controleonline/ui-common/src/utils/translate';
 import { WebsocketListener } from '@controleonline/ui-common/src/react/components/WebsocketListener';
@@ -10,6 +10,7 @@ import RuntimeInfoFooter from '@controleonline/ui-common/src/react/components/Ru
 import { useStore } from '@store';
 import { api } from '@controleonline/ui-common/src/api';
 import { env as APP_ENV } from '@env';
+import { isPublicRoute } from '@controleonline/ui-login/src/react/router/publicRoutes';
 const { resolveConfiguredLanguage } = require('../utils/runtimeLanguage');
 import {
   applyPaletteToRuntimeColors,
@@ -157,8 +158,10 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
   const [mainConfigsDiscovered, setMainConfigsDiscovered] = useState(false);
   const [deviceRuntimeConfigSynced, setDeviceRuntimeConfigSynced] =
     useState(false);
+  const [currentRouteName, setCurrentRouteName] = useState('');
   const [, setTranslateVersion] = useState(0);
   const [baseThemeColors, setBaseThemeColors] = useState({});
+  const translateBootstrapKeyRef = useRef('');
   const [device, setDevice] = useState(
     JSON.parse(localStorage.getItem('device') || '{}'),
   );
@@ -173,6 +176,7 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
     appType: APP_ENV.APP_TYPE,
     deviceInfo: device || {},
   });
+  const isPublicRouteActive = isPublicRoute(currentRouteName);
 
   useEffect(() => {
     global.refreshTranslationsUI = () => {
@@ -185,6 +189,37 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
       }
     };
   }, []);
+
+  useEffect(() => {
+    global.setRuntimeRouteName = routeName => {
+      const normalizedRouteName = String(routeName || '').trim();
+
+      setCurrentRouteName(previousRouteName =>
+        previousRouteName === normalizedRouteName
+          ? previousRouteName
+          : normalizedRouteName,
+      );
+    };
+
+    return () => {
+      if (global.setRuntimeRouteName) {
+        delete global.setRuntimeRouteName;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isLogged && !isPublicRouteActive) {
+      return;
+    }
+
+    setTranslateReady(true);
+    translateBootstrapKeyRef.current = '';
+
+    if (global.t) {
+      delete global.t;
+    }
+  }, [isLogged, isPublicRouteActive]);
 
   useEffect(() => {
     let cancelled = false;
@@ -546,43 +581,78 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
 
   useEffect(() => {
     if (
-      isLogged &&
-      currentCompany &&
-      Object.entries(currentCompany).length > 0 &&
-      deviceConfigFetched
+      !currentRouteName ||
+      isPublicRouteActive
     ) {
-      const currentConfig = JSON.parse(localStorage.getItem('config') || '{}');
-      const sessionData = JSON.parse(localStorage.getItem('session') || '{}');
-      const configuredLanguage = resolveConfiguredLanguage({
-        currentCompany,
-        defaultCompany,
-        currentConfig,
-        sessionData,
-      });
+      return;
+    }
 
-      if (currentConfig.language !== configuredLanguage) {
-        const nextConfig = { ...currentConfig, language: configuredLanguage };
-        localStorage.setItem(
-          'config',
-          JSON.stringify(nextConfig),
-        );
+    if (
+      !isLogged ||
+      Object.entries(currentCompany).length === 0 ||
+      !deviceConfigFetched
+    ) {
+      return;
+    }
+
+    const currentConfig = JSON.parse(localStorage.getItem('config') || '{}');
+    const sessionData = JSON.parse(localStorage.getItem('session') || '{}');
+    const currentCompanyId = normalizeEntityId(currentCompany?.id);
+    const defaultCompanyId = normalizeEntityId(defaultCompany?.id);
+    const configuredLanguage = resolveConfiguredLanguage({
+      currentCompany,
+      defaultCompany,
+      currentConfig,
+      sessionData,
+    });
+    const nextTranslateBootstrapKey = [
+      configuredLanguage,
+      currentCompanyId,
+      defaultCompanyId,
+    ].join('::');
+
+    if (translateBootstrapKeyRef.current === nextTranslateBootstrapKey) {
+      if (global.t) {
+        global.t.companies = companies;
+        global.t.currentCompany = currentCompany;
+        global.t.defaultCompany = defaultCompany;
       }
 
-      setTranslateReady(false);
-      global.t = new Translate(
-        companies,
-        defaultCompany,
-        currentCompany,
-        Object.keys(stores),
-        translateActions,
-      );
-
-      global.t.discoveryAll().then(() => {
-        setTranslateReady(true);
-        global.refreshTranslationsUI?.();
-      });
+      return;
     }
-  }, [currentCompany, defaultCompany, deviceConfigFetched, isLogged]);
+
+    if (currentConfig.language !== configuredLanguage) {
+      const nextConfig = { ...currentConfig, language: configuredLanguage };
+      localStorage.setItem(
+        'config',
+        JSON.stringify(nextConfig),
+      );
+    }
+
+    translateBootstrapKeyRef.current = nextTranslateBootstrapKey;
+    setTranslateReady(false);
+    global.t = new Translate(
+      companies,
+      defaultCompany,
+      currentCompany,
+      Object.keys(stores),
+      translateActions,
+    );
+
+    global.t.discoveryAll().then(() => {
+      setTranslateReady(true);
+      global.refreshTranslationsUI?.();
+    });
+  }, [
+    companies,
+    currentCompany,
+    currentRouteName,
+    defaultCompany,
+    deviceConfigFetched,
+    isLogged,
+    isPublicRouteActive,
+    translateActions,
+  ]);
 
   useEffect(() => {
     if (!isLogged || translateReady || !hasCurrentCompany) {
@@ -668,7 +738,7 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
     actions.setColors(mergedThemeColors);
   }, [actions, baseThemeColors, currentCompany?.id, currentCompany?.theme?.colors]);
 
-  if (!translateReady && isLogged && hasCurrentCompany) {
+  if (!translateReady && isLogged && hasCurrentCompany && !isPublicRouteActive) {
     return (
       <View style={providerStyles.loadingContainer}>
         <ActivityIndicator size="large" color="#1B5587" />

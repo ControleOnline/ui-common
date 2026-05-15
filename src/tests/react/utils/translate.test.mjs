@@ -140,12 +140,12 @@ test('persists missing translations with the normalized configured language', as
   assert.equal(savedPayloads[0].people, '/people/1');
 });
 
-test('loads each requested store for every linked company once', async () => {
+test('loads each requested store only for the current and default companies', async () => {
   installLocalStorage();
 
   const calls = [];
   const translate = new Translate(
-    [{id: 1}, {id: 5}],
+    [{id: 1}, {id: 5}, {id: 9}],
     {id: 1},
     {id: 5},
     ['orders', 'crm'],
@@ -162,9 +162,9 @@ test('loads each requested store for every linked company once', async () => {
   await translate.discoveryAll();
 
   assert.deepEqual(calls, [
-    {store: 'orders', 'language.language': 'pt-br', people: '/people/1', page: 1},
     {store: 'orders', 'language.language': 'pt-br', people: '/people/5', page: 1},
-    {store: 'crm', 'language.language': 'pt-br', people: '/people/1', page: 1},
+    {store: 'orders', 'language.language': 'pt-br', people: '/people/1', page: 1},
     {store: 'crm', 'language.language': 'pt-br', people: '/people/5', page: 1},
+    {store: 'crm', 'language.language': 'pt-br', people: '/people/1', page: 1},
   ]);
 });
