@@ -7,6 +7,16 @@ import {resolveAppDomain} from '@controleonline/ui-common/src/utils/appDomain';
 import {isWebRuntimeDevice} from '@controleonline/ui-common/src/react/utils/deviceRuntime';
 import {normalizeDeviceId} from '@controleonline/ui-common/src/react/utils/paymentDevices';
 import {
+  DEVICE_ALERT_SOUND_ENABLED_KEY,
+  DEVICE_ALERT_SOUND_URL_KEY,
+  isTruthyValue,
+  parseConfigsObject,
+} from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
+import {
+  isManagerAppType,
+  resolveManagerOrderNotificationPreferences,
+} from '@controleonline/ui-common/src/react/utils/managerOrderNotifications';
+import {
   DEFAULT_NETWORK_PRINTER_PORT,
   DISPLAY_DEVICE_TYPE,
   NETWORK_PRINTER_PORT_CONFIG_KEY,
@@ -44,7 +54,7 @@ const BackgroundRuntimeBridge = () => {
   const deviceStore = useStore('device');
   const deviceConfigStore = useStore('device_config');
 
-  const {isLogged} = authStore.getters;
+  const {isLogged, user} = authStore.getters;
   const {currentCompany} = peopleStore.getters;
   const {item: runtimeDevice} = deviceStore.getters;
   const {
@@ -66,6 +76,30 @@ const BackgroundRuntimeBridge = () => {
   );
   const currentCompanyId = safeTrim(currentCompany?.id);
   const sessionToken = readSessionToken();
+  const isManagerRuntime = isManagerAppType(APP_ENV?.APP_TYPE);
+  const managerOrderNotificationPreferences =
+    resolveManagerOrderNotificationPreferences(user);
+  const userAlertSoundUrl = safeTrim(
+    managerOrderNotificationPreferences.soundUrl,
+  );
+  const userAlertSoundEnabled =
+    isManagerRuntime &&
+    managerOrderNotificationPreferences.pushEnabled &&
+    managerOrderNotificationPreferences.soundEnabled &&
+    !!userAlertSoundUrl;
+  const runtimeDeviceConfigs = parseConfigsObject(runtimeDeviceConfig?.configs);
+  const deviceAlertSoundEnabled = isTruthyValue(
+    runtimeDeviceConfigs?.[DEVICE_ALERT_SOUND_ENABLED_KEY],
+  );
+  const deviceAlertSoundUrl = safeTrim(
+    runtimeDeviceConfigs?.[DEVICE_ALERT_SOUND_URL_KEY],
+  );
+  const alertSoundEnabled =
+    userAlertSoundEnabled ||
+    (deviceAlertSoundEnabled && !!deviceAlertSoundUrl);
+  const alertSoundUrl = userAlertSoundEnabled
+    ? userAlertSoundUrl
+    : deviceAlertSoundUrl;
 
   const managedPrinters = useMemo(
     () =>
@@ -139,6 +173,12 @@ const BackgroundRuntimeBridge = () => {
       deviceId: runtimeDeviceId,
       deviceType: runtimeDeviceType,
       notificationEnabled: true,
+      alertSoundEnabled,
+      alertSoundUrl,
+      deviceAlertSoundEnabled,
+      deviceAlertSoundUrl,
+      userAlertSoundEnabled,
+      userAlertSoundUrl,
       printEnabled: spoolDeviceIds.length > 0 && managedPrinters.length > 0,
       managedPrinters,
       socketUrl: safeTrim(APP_ENV.SOCKET),
@@ -150,6 +190,10 @@ const BackgroundRuntimeBridge = () => {
     currentCompany?.alias,
     currentCompany?.name,
     currentCompanyId,
+    alertSoundEnabled,
+    alertSoundUrl,
+    deviceAlertSoundEnabled,
+    deviceAlertSoundUrl,
     runtimeAppKey,
     isLogged,
     managedPrinters,
@@ -157,6 +201,8 @@ const BackgroundRuntimeBridge = () => {
     runtimeDeviceType,
     sessionToken,
     spoolDeviceIds,
+    userAlertSoundEnabled,
+    userAlertSoundUrl,
   ]);
 
   useEffect(() => {

@@ -12,7 +12,6 @@ import {
 } from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
 import {resolveOrderIdentity} from '@controleonline/ui-orders/src/react/utils/orderIdentity';
 import {
-  hasStoredManagerOrderNotificationPreferences,
   isManagerAppType,
   resolveManagerFinancialNotificationPreferences,
   resolveManagerOrderNotificationPreferences,
@@ -22,7 +21,6 @@ import {
 
 const MAX_PROCESSED_EVENTS = 200;
 const ORDER_CREATED_EVENT = 'order.created';
-const BACKGROUND_RUNTIME_SOURCE = 'background-runtime';
 const FINANCIAL_ALERT_EVENTS = new Set(['cash.closed', 'store.opened', 'store.closed']);
 
 const normalizeEntityId = value => {
@@ -136,9 +134,6 @@ const isRelevantOrderCreatedMessage = message => {
   );
 };
 
-const isBackgroundRuntimeMessage = message =>
-  normalizeText(message?.source).toLowerCase() === BACKGROUND_RUNTIME_SOURCE;
-
 const isRelevantFinancialMessage = message => {
   const store = normalizeText(message?.store);
   const event = normalizeText(message?.event);
@@ -184,8 +179,6 @@ const DeviceAlertSoundService = () => {
   );
 
   const isManagerRuntime = isManagerAppType(APP_ENV?.APP_TYPE);
-  const hasStoredManagerPreferences =
-    isManagerRuntime && hasStoredManagerOrderNotificationPreferences(user);
   const currentCompanyId = normalizeEntityId(currentCompany?.id);
   const managerPushEnabled =
     isManagerRuntime && managerOrderNotificationPreferences.pushEnabled;
@@ -205,9 +198,10 @@ const DeviceAlertSoundService = () => {
     deviceConfig?.[DEVICE_ALERT_SOUND_URL_KEY],
   );
   const shouldPlayManagerSound = managerSoundEnabled && !!managerSoundUrl;
-  const shouldPlayAlertSound = hasStoredManagerPreferences
-    ? shouldPlayManagerSound
-    : shouldPlayManagerSound || (deviceAlertSoundEnabled && !!deviceAlertSoundUrl);
+  const shouldPlayDeviceAlertSound =
+    deviceAlertSoundEnabled && !!deviceAlertSoundUrl;
+  const shouldPlayAlertSound =
+    shouldPlayManagerSound || shouldPlayDeviceAlertSound;
   const alertSoundUrl =
     shouldPlayManagerSound && managerSoundUrl
       ? managerSoundUrl
@@ -340,8 +334,6 @@ const DeviceAlertSoundService = () => {
     const incomingMessages = [...collectMessages(orderMessages, orderMessage)].filter(
       message =>
         isRelevantOrderCreatedMessage(message) &&
-        !isBackgroundRuntimeMessage(message) &&
-        (isManagerRuntime || isTruthyValue(message?.alertSound)) &&
         isMessageForCurrentCompany(message, currentCompanyId),
     );
 
