@@ -9,7 +9,7 @@ const commonRoutes = [
     options: {
       headerShown: true,
       headerBackVisible: true,
-      title: 'Historico',
+      title: 'Histórico',
     },
   },
   {

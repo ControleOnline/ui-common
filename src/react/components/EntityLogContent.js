@@ -98,7 +98,7 @@ const formatContextValue = value => {
   }
 
   if (typeof value === 'boolean') {
-    return value ? 'Sim' : 'Nao';
+    return value ? 'Sim' : 'Não';
   }
 
   if (typeof value === 'string') {
@@ -205,7 +205,7 @@ const EntitySummaryCard = ({
 
       {detailState?.status === 'error' ? (
         <Text style={styles.entityStateErrorText}>
-          {detailState?.error || 'Nao foi possivel carregar os detalhes.'}
+          {detailState?.error || 'Não foi possível carregar os detalhes.'}
         </Text>
       ) : null}
     </View>
@@ -668,14 +668,14 @@ const EntityLogBranch = ({
           {logsState.status === 'loading' ? (
             <View style={styles.stateBox}>
               <ActivityIndicator size="small" color="#2563EB" />
-              <Text style={styles.stateText}>Carregando historico...</Text>
+              <Text style={styles.stateText}>Carregando histórico...</Text>
             </View>
           ) : null}
 
           {logsState.status === 'error' ? (
             <View style={styles.stateBox}>
               <Icon name="error-outline" size={20} color="#DC2626" />
-              <Text style={styles.stateTitle}>Nao foi possivel carregar</Text>
+              <Text style={styles.stateTitle}>Não foi possível carregar</Text>
               <Text style={styles.stateText}>{logsState.error || 'Erro desconhecido'}</Text>
             </View>
           ) : null}
@@ -685,7 +685,7 @@ const EntityLogBranch = ({
               <Icon name="history-toggle-off" size={22} color="#94A3B8" />
               <Text style={styles.stateTitle}>Nenhum log encontrado</Text>
               <Text style={styles.stateText}>
-                Ainda nao existem registros para esta entidade.
+                Ainda não existem registros para esta entidade.
               </Text>
             </View>
           ) : null}
