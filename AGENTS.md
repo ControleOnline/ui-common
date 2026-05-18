@@ -41,3 +41,4 @@
 - `DefaultProvider` carrega `menus-people` com `myCompany` e `APP_TYPE` atual e grava o resultado normalizado em `theme.menus`.
 - Normalizacao de payload de menu runtime deve ficar em helper compartilhado neste modulo.
 - O `RuntimeInfoFooter` deve montar o texto como `nome (identificador) / versao`, usando em runtime web o IP externo lido de `/runtime/ip` e persistido na metadata do device, com `location.hostname` apenas como fallback. No nativo, deve priorizar a versao persistida na metadata do device salvo no backend e o mesmo identificador mostrado na lista de devices (`device_config.device.device`), com fallback local quando o backend ainda nao tiver esse valor.
+- O help contextual canônico deve ficar em `ui-common` como componente parametrizado acionado por `?`, com modal proprio e sem reaproveitar `ConfirmModal`. Telas consumidoras nao devem escrever explicacao fixa quando esse padrao estiver disponivel.
