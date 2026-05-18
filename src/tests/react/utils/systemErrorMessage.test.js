@@ -14,6 +14,29 @@ describe('systemErrorMessage', () => {
     ).toBe('Telefone ja cadastrado para outra pessoa.')
   })
 
+  it('reads canonical hydra error envelopes', () => {
+    expect(
+      resolveSystemErrorMessage({
+        '@type': 'Error',
+        'hydra:title': 'An error occurred',
+        'hydra:description': 'Pedido sem endereco de entrega valido.',
+      }),
+    ).toBe('Pedido sem endereco de entrega valido.')
+  })
+
+  it('reads hydra envelopes nested under response data', () => {
+    expect(
+      resolveSystemErrorMessage({
+        response: {
+          data: {
+            '@type': 'Error',
+            'hydra:description': 'Pedido sem endereco de entrega valido.',
+          },
+        },
+      }),
+    ).toBe('Pedido sem endereco de entrega valido.')
+  })
+
   it('formats constraint violations into a readable multiline message', () => {
     expect(
       resolveSystemErrorMessage({

@@ -4,7 +4,9 @@ const resolveMessageList = items =>
   (Array.isArray(items) ? items : [])
     .map(item =>
       normalizeText(
-        item?.message ||
+        item?.['hydra:description'] ||
+          item?.['hydra:title'] ||
+          item?.message ||
           item?.title ||
           item?.detail ||
           item?.description ||
@@ -36,8 +38,24 @@ export const resolveSystemErrorMessage = error => {
     return resolveMessageList(error.violations)
   }
 
+  if (error?.response?.data) {
+    const responseMessage = resolveSystemErrorMessage(error.response.data)
+    if (responseMessage) {
+      return responseMessage
+    }
+  }
+
+  if (error?.body) {
+    const bodyMessage = resolveSystemErrorMessage(error.body)
+    if (bodyMessage) {
+      return bodyMessage
+    }
+  }
+
   return normalizeText(
-    error?.detail ||
+    error?.['hydra:description'] ||
+      error?.['hydra:title'] ||
+      error?.detail ||
       error?.description ||
       error?.errmsg ||
       error?.error ||

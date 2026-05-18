@@ -25,6 +25,7 @@
 - O card/modal transitorio de erro do `MessageService` e a unica UI permitida para esse feedback. Nao criar segunda tela de erro no modulo.
 - Stores compartilhadas tambem devem usar esse fluxo. Quando uma store fizer `SET_ERROR`, o erro visual precisa sair pelo `MessageService`, nunca por caixa local do `StateStore`.
 - Nao criar banners, alerts ou toasts paralelos para erro quando o caso puder usar o `MessageService`.
+- O contrato canonico de erro HTTP do backend e o envelope do `HydratorService` com `@type: Error`, `hydra:title` e `hydra:description`; o `fetch` e os parsers compartilhados devem ler esse formato como fonte principal de mensagem.
 
 ## Regras de runtime em background
 - O `BackgroundRuntimeBridge` deve manter o registro nativo por package/app, device e empresa para permitir varios APKs instalados no mesmo Android.

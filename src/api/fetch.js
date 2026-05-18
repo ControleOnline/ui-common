@@ -1,15 +1,10 @@
 import { APP_ENV } from "../../../../../config/env.js";
+import resolveSystemErrorMessage from '@controleonline/ui-common/src/react/utils/systemErrorMessage';
 
 const buildHttpError = (response, body) => {
   const message =
-    body && typeof body === 'object'
-      ? body.description ||
-        body.detail ||
-        body.message ||
-        body.error ||
-        body.errmsg ||
-        response.statusText
-      : String(body || response.statusText || 'Request failed');
+    resolveSystemErrorMessage(body) ||
+    String(response.statusText || 'Request failed');
 
   return {
     message: message || 'Request failed',
@@ -67,22 +62,8 @@ export default function (resourceEndpoint, options = {}) {
     }
 
     if (body && typeof body === 'object') {
-      if (body["@type"] == "Error") {
-        throw {
-          message: body["description"] || body["message"] || response.statusText,
-          code: response.status,
-          status: response.status,
-          body,
-        };
-      }
-
-      if (body["@type"] == "ConstraintViolationList") {
-        throw {
-          message: body["violations"],
-          code: response.status,
-          status: response.status,
-          body,
-        };
+      if (body["@type"] == "Error" || body["@type"] == "ConstraintViolationList") {
+        throw buildHttpError(response, body);
       }
     }
 
