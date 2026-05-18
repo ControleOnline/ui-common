@@ -3,7 +3,12 @@ import { APP_ENV } from "../../../../../config/env.js";
 const buildHttpError = (response, body) => {
   const message =
     body && typeof body === 'object'
-      ? body.description || body.detail || body.message || body.errmsg || response.statusText
+      ? body.description ||
+        body.detail ||
+        body.message ||
+        body.error ||
+        body.errmsg ||
+        response.statusText
       : String(body || response.statusText || 'Request failed');
 
   return {
