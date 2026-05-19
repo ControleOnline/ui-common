@@ -46,4 +46,18 @@ describe('runtimeMenu', () => {
     expect(userHasRole({roles: ['ROLE_SUPER']}, 'ROLE_SUPER')).toBe(true);
     expect(userHasRole({roles: ['ROLE_MANAGER']}, 'ROLE_SUPER')).toBe(false);
   });
+
+  it('normalizes snake_case menu_key into menuKey for runtime usage', () => {
+    const menus = normalizeRuntimeMenuResponse({
+      modules: {
+        1: {
+          menus: [
+            {menu_key: 'menu_access', route: 'MenuAccessConfigPage'},
+          ],
+        },
+      },
+    });
+
+    expect(menus[0].menus[0].menuKey).toBe('menu_access');
+  });
 });

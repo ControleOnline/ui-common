@@ -16,6 +16,7 @@ export const normalizeRuntimeMenuResponse = result => {
       menus: (Array.isArray(module?.menus) ? module.menus : [])
         .map(menu => ({
           ...menu,
+          menuKey: String(menu?.menuKey || menu?.menu_key || '').trim(),
           routeParams: menu?.routeParams && typeof menu.routeParams === 'object'
             ? menu.routeParams
             : {},

@@ -11,8 +11,12 @@ export default class Translate {
     this.translateActions = translateActions;
     this.companies = companies;
     this.stores = stores;
+    this.bootstrapStores = new Set(this.getStoreList());
+    this.discoveredStores = new Set();
+    this.pendingStoreDiscoveries = new Map();
     this.pendingMissingTranslations = new Set();
     this.t = this.t.bind(this);
+    this.hydrateDiscoveredStores();
   }
 
   getLanguageBucket(createIfMissing = false) {
@@ -110,6 +114,80 @@ export default class Translate {
     return this.stores ? [this.stores] : [];
   }
 
+  getStoreDiscoveryToken(store) {
+    return [
+      this.language,
+      String(store || ""),
+    ].join("::");
+  }
+
+  canDiscoverStore() {
+    return typeof this.translateActions?.getItems === "function";
+  }
+
+  hasCachedBootstrapStore(store) {
+    if (!store || !this.bootstrapStores.has(store)) return false;
+
+    const companies = this.getCompaniesToCache();
+    if (companies.length === 0) return false;
+
+    return companies.every((company) => this.getStoreBucket(company.id, store) != null);
+  }
+
+  hydrateDiscoveredStores() {
+    this.bootstrapStores.forEach((store) => {
+      if (this.hasCachedBootstrapStore(store)) {
+        this.markStoreDiscovered(store);
+      }
+    });
+  }
+
+  hasDiscoveredStore(store) {
+    if (!store) return false;
+
+    return this.discoveredStores.has(this.getStoreDiscoveryToken(store));
+  }
+
+  markStoreDiscovered(store) {
+    if (!store) return;
+
+    this.discoveredStores.add(this.getStoreDiscoveryToken(store));
+  }
+
+  ensureStoreDiscovered(store) {
+    if (!store || !this.canDiscoverStore()) {
+      return Promise.resolve(this.translates);
+    }
+
+    if (this.hasDiscoveredStore(store)) {
+      return Promise.resolve(this.translates);
+    }
+
+    const token = this.getStoreDiscoveryToken(store);
+    if (this.pendingStoreDiscoveries.has(token)) {
+      return this.pendingStoreDiscoveries.get(token);
+    }
+
+    const discoveryPromise = Promise.resolve()
+      .then(() => this.discoveryStoreTranslate(store))
+      .finally(() => {
+        this.pendingStoreDiscoveries.delete(token);
+      });
+
+    this.pendingStoreDiscoveries.set(token, discoveryPromise);
+
+    return discoveryPromise;
+  }
+
+  notifyTranslationsUpdated() {
+    const globalObject =
+      typeof global !== "undefined" ? global : globalThis;
+
+    if (typeof globalObject?.refreshTranslationsUI === "function") {
+      globalObject.refreshTranslationsUI();
+    }
+  }
+
   getMessageFromBuckets(store, type, key) {
     const companyIds = [
       this.currentCompany?.id,
@@ -193,11 +271,35 @@ export default class Translate {
   }
 
   t(store, type, key) {
-    let translate = this.getMessageFromBuckets(store, type, key);
+    const translate = this.getMessageFromBuckets(store, type, key);
+    const fallbackTranslate = this.formatMessage(key);
+    const shouldDiscoverStore =
+      this.canDiscoverStore() && !this.hasDiscoveredStore(store);
+
+    if (shouldDiscoverStore) {
+      this.ensureStoreDiscovered(store)
+        .then(() => {
+          const discoveredTranslate = this.getMessageFromBuckets(store, type, key);
+
+          if (discoveredTranslate) {
+            if (discoveredTranslate !== translate) {
+              this.notifyTranslationsUpdated();
+            }
+
+            return;
+          }
+
+          this.persistMissingTranslate(store, type, key, fallbackTranslate);
+        })
+        .catch(() => {});
+    }
 
     if (!translate) {
-      translate = this.formatMessage(key);
-      this.persistMissingTranslate(store, type, key, translate);
+      if (!shouldDiscoverStore) {
+        this.persistMissingTranslate(store, type, key, fallbackTranslate);
+      }
+
+      return fallbackTranslate;
     }
 
     return translate;
@@ -224,17 +326,21 @@ export default class Translate {
   async discoveryStoreTranslate(store) {
     if (!store) return this.translates;
 
+    if (this.hasDiscoveredStore(store)) {
+      return this.translates;
+    }
+
     const companies = this.getCompaniesToCache();
-    const pendingCompanies = companies.filter((company) => {
-      const companyStoreBucket = this.getStoreBucket(company.id, store);
-      return !companyStoreBucket;
-    });
+    if (companies.length === 0) {
+      this.markStoreDiscovered(store);
+      return this.translates;
+    }
 
-    if (pendingCompanies.length === 0) return this.translates;
-
-    for (const company of pendingCompanies) {
+    for (const company of companies) {
       await this.fetchTranslates(store, company);
     }
+
+    this.markStoreDiscovered(store);
 
     return this.translates;
   }

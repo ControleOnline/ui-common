@@ -22,6 +22,7 @@ const installLocalStorage = (config = {language: 'pt-br'}) => {
 
   localStorage.setItem('config', JSON.stringify(config));
   localStorage.setItem('translates', JSON.stringify({}));
+  delete global.refreshTranslationsUI;
 };
 
 test('prefers the current company translation and falls back to the default company', () => {
@@ -167,4 +168,131 @@ test('loads each requested store only for the current and default companies', as
     {store: 'crm', 'language.language': 'pt-br', people: '/people/5', page: 1},
     {store: 'crm', 'language.language': 'pt-br', people: '/people/1', page: 1},
   ]);
+});
+
+test('discovers non-bootstrapped stores before persisting a fallback translation', async () => {
+  installLocalStorage();
+
+  const discoveryCalls = [];
+  const queued = [];
+  let addToQueueCalls = 0;
+  let initQueueCalls = 0;
+  const savedPayloads = [];
+  const translate = new Translate(
+    [{id: 1}],
+    {id: 1},
+    {id: 1},
+    ['orders'],
+    {
+      getItems: async params => {
+        discoveryCalls.push(params);
+        return [];
+      },
+      addToQueue: fn => {
+        addToQueueCalls += 1;
+        queued.push(fn);
+      },
+      initQueue: () => {
+        initQueueCalls += 1;
+      },
+      save: async payload => {
+        savedPayloads.push(payload);
+        return {};
+      },
+    },
+  );
+
+  assert.equal(translate.t('menu', 'menu', 'orders'), 'Orders');
+  assert.equal(addToQueueCalls, 0);
+  assert.equal(initQueueCalls, 0);
+
+  await Promise.resolve();
+  await new Promise(resolve => setTimeout(resolve, 0));
+  await new Promise(resolve => setTimeout(resolve, 0));
+
+  assert.deepEqual(discoveryCalls, [
+    {store: 'menu', 'language.language': 'pt-br', people: '/people/1', page: 1},
+  ]);
+  assert.equal(addToQueueCalls, 1);
+  assert.equal(initQueueCalls, 1);
+
+  await queued[0]();
+
+  assert.deepEqual(savedPayloads, [
+    {
+      people: '/people/1',
+      language: 'pt-br',
+      store: 'menu',
+      type: 'menu',
+      key: 'orders',
+      translate: 'Orders',
+    },
+  ]);
+});
+
+test('refreshes a discovered store instead of persisting a stale cached fallback', async () => {
+  installLocalStorage();
+
+  localStorage.setItem(
+    'translates',
+    JSON.stringify({
+      'pt-br': {
+        menu: {
+          menu: {
+            orders: 'Orders',
+          },
+        },
+      },
+    }),
+  );
+
+  const discoveryCalls = [];
+  const queued = [];
+  let refreshCalls = 0;
+  global.refreshTranslationsUI = () => {
+    refreshCalls += 1;
+  };
+
+  const translate = new Translate(
+    [{id: 1}],
+    {id: 1},
+    {id: 1},
+    ['orders'],
+    {
+      getItems: async params => {
+        discoveryCalls.push(params);
+        return params.page === 1
+          ? [
+              {
+                store: 'menu',
+                type: 'menu',
+                key: 'orders',
+                translate: 'Pedidos',
+              },
+            ]
+          : [];
+      },
+      addToQueue: fn => {
+        queued.push(fn);
+      },
+      initQueue: () => {},
+      save: async () => {
+        throw new Error('save should not be called when the translation already exists');
+      },
+    },
+  );
+
+  assert.equal(translate.t('menu', 'menu', 'orders'), 'Orders');
+
+  await Promise.resolve();
+  await Promise.resolve();
+  await new Promise(resolve => setTimeout(resolve, 0));
+
+  assert.deepEqual(discoveryCalls, [
+    {store: 'menu', 'language.language': 'pt-br', people: '/people/1', page: 1},
+    {store: 'menu', 'language.language': 'pt-br', people: '/people/1', page: 2},
+  ]);
+  assert.equal(queued.length, 0);
+  assert.equal(refreshCalls, 1);
+  assert.equal(translate.t('menu', 'menu', 'orders'), 'Pedidos');
 });
