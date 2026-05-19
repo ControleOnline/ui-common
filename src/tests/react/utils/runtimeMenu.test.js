@@ -2,6 +2,7 @@
 
 import {
   getRuntimeMenuRoutes,
+  normalizeRuntimeMenuIcon,
   normalizeRuntimeMenuResponse,
   userHasRole,
 } from '../../../react/utils/runtimeMenu';
@@ -59,5 +60,27 @@ describe('runtimeMenu', () => {
     });
 
     expect(menus[0].menus[0].menuKey).toBe('menu_access');
+  });
+
+  it('converts legacy material icon names into feather-compatible names', () => {
+    expect(normalizeRuntimeMenuIcon('shopping_cart')).toBe('shopping-cart');
+    expect(normalizeRuntimeMenuIcon('account_balance')).toBe('dollar-sign');
+
+    const menus = normalizeRuntimeMenuResponse({
+      modules: {
+        1: {
+          icon: 'account_balance',
+          menus: [
+            {
+              icon: 'shopping_cart',
+              route: 'OrderHistoryPage',
+            },
+          ],
+        },
+      },
+    });
+
+    expect(menus[0].icon).toBe('dollar-sign');
+    expect(menus[0].menus[0].icon).toBe('shopping-cart');
   });
 });

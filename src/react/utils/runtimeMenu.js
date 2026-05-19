@@ -3,6 +3,19 @@ export const normalizeAppType = value => {
   return normalized || 'MANAGER';
 };
 
+const RUNTIME_MENU_ICON_ALIASES = {
+  shopping_cart: 'shopping-cart',
+  account_balance: 'dollar-sign',
+  account_balance_wallet: 'credit-card',
+};
+
+export const normalizeRuntimeMenuIcon = value => {
+  const normalized = String(value || '').trim();
+  if (!normalized) return '';
+
+  return RUNTIME_MENU_ICON_ALIASES[normalized.toLowerCase()] || normalized;
+};
+
 export const normalizeRuntimeMenuResponse = result => {
   const modules =
     result?.response?.data?.modules ||
@@ -13,9 +26,11 @@ export const normalizeRuntimeMenuResponse = result => {
   return Object.values(modules)
     .map(module => ({
       ...module,
+      icon: normalizeRuntimeMenuIcon(module?.icon),
       menus: (Array.isArray(module?.menus) ? module.menus : [])
         .map(menu => ({
           ...menu,
+          icon: normalizeRuntimeMenuIcon(menu?.icon),
           menuKey: String(menu?.menuKey || menu?.menu_key || '').trim(),
           routeParams: menu?.routeParams && typeof menu.routeParams === 'object'
             ? menu.routeParams
