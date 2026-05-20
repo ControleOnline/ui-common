@@ -14,6 +14,7 @@ import { useStore } from '@store';
 import AnimatedModal from '@controleonline/ui-crm/src/react/components/AnimatedModal';
 import { api } from '@controleonline/ui-common/src/api';
 import { useMessage } from '@controleonline/ui-common/src/react/components/MessageService';
+import { resolveSystemErrorMessage } from '@controleonline/ui-common/src/react/utils/systemErrorMessage';
 import styles from './AddImportModal.styles';
 
 const AddImportModal = ({ visible, onClose, onSuccess, context = {} }) => {
@@ -90,8 +91,10 @@ const AddImportModal = ({ visible, onClose, onSuccess, context = {} }) => {
             showSuccess(importSuccessLabel);
             if (onSuccess) onSuccess();
             handleClose();
-        } catch {
-            showError(importErrorLabel);
+        } catch (error) {
+            const importFeedback =
+                resolveSystemErrorMessage(error) || importErrorLabel;
+            showError(importFeedback);
         } finally {
             setLoading(false);
         }
