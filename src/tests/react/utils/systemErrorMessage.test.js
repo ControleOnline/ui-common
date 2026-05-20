@@ -33,4 +33,17 @@ describe('systemErrorMessage', () => {
       }),
     ).toBe('Primeiro erro\nSegundo erro')
   })
+
+  it('reads nested axios response payloads before the transport message', () => {
+    expect(
+      resolveSystemErrorMessage({
+        message: 'Request failed with status code 422',
+        response: {
+          data: {
+            'hydra:description': 'Arquivo com colunas invalidas.',
+          },
+        },
+      }),
+    ).toBe('Arquivo com colunas invalidas.')
+  })
 })
