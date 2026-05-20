@@ -16,6 +16,7 @@ import {
   isManagerAppType,
   resolveManagerOrderNotificationPreferences,
 } from '@controleonline/ui-common/src/react/utils/managerOrderNotifications';
+import {syncBackgroundRuntimeRegistration} from '@controleonline/ui-common/src/react/utils/backgroundRuntimeRegistration';
 import {
   DEFAULT_NETWORK_PRINTER_PORT,
   DISPLAY_DEVICE_TYPE,
@@ -30,19 +31,10 @@ import {
 const backgroundRuntimeModule = NativeModules?.BackgroundRuntime;
 
 const safeTrim = value => String(value || '').trim();
-
 const readSessionToken = () => {
   try {
     const session = JSON.parse(localStorage.getItem('session') || '{}');
     return safeTrim(session?.token || session?.api_key);
-  } catch {
-    return '';
-  }
-};
-
-const serializeRegistration = registration => {
-  try {
-    return JSON.stringify(registration);
   } catch {
     return '';
   }
@@ -206,47 +198,14 @@ const BackgroundRuntimeBridge = () => {
   ]);
 
   useEffect(() => {
-    if (!backgroundRuntimeModule) {
-      return;
-    }
-
-    const nextRegistrationId = safeTrim(registration?.registrationId);
-    const nextPayload = registration ? serializeRegistration(registration) : '';
-
-    if (!nextRegistrationId || !nextPayload) {
-      const previousRegistrationId = lastRegistrationIdRef.current;
-      lastRegistrationPayloadRef.current = '';
-      lastRegistrationIdRef.current = '';
-
-      if (previousRegistrationId) {
-        backgroundRuntimeModule.clearRegistration(previousRegistrationId).catch(
-          () => {},
-        );
-      }
-      return;
-    }
-
-    if (
-      lastRegistrationIdRef.current === nextRegistrationId &&
-      lastRegistrationPayloadRef.current === nextPayload
-    ) {
-      return;
-    }
-
-    const previousRegistrationId = lastRegistrationIdRef.current;
-    if (
-      previousRegistrationId &&
-      previousRegistrationId !== nextRegistrationId
-    ) {
-      backgroundRuntimeModule.clearRegistration(previousRegistrationId).catch(
-        () => {},
-      );
-    }
-
-    lastRegistrationIdRef.current = nextRegistrationId;
-    lastRegistrationPayloadRef.current = nextPayload;
-
-    backgroundRuntimeModule.syncRegistration(nextPayload).catch(() => {});
+    syncBackgroundRuntimeRegistration({
+      backgroundRuntimeModule,
+      registration,
+      lastRegistrationIdRef,
+      lastRegistrationPayloadRef,
+    });
+    // Keep the registration alive after this component unmounts.
+    // Explicit logout/device changes are handled by the branches above.
   }, [registration]);
 
   return null;

@@ -30,7 +30,7 @@
 ## Regras de runtime em background
 - O `BackgroundRuntimeBridge` deve manter o registro nativo por package/app, device e empresa para permitir varios APKs instalados no mesmo Android.
 - Em nativo, `WebsocketListener.native.js` deve consumir o stream local exposto pelo `BackgroundRuntimeService`, nao abrir websocket direto no backend.
-- `WebsocketListener.js` permanece como fluxo web e nao deve ser acoplado ao runtime Android.
+- `WebsocketListener.web.js` e o fluxo web e deve usar runtime compartilhado com owner unico no browser via BroadcastChannel; nao abrir websocket direto do backend nem depender do runtime Android.
 - Mensagens entregues pelo runtime nativo devem ser marcadas com `source: 'background-runtime'`, mas todos os apps com som configurado devem continuar processando `order.created` para aviso sonoro mesmo que a notificacao do sistema tambem apareca.
 - O som configurado em `device_config` para `order.created` vale para qualquer `APP_TYPE`, incluindo KDS, Manager e PDV; deve ser enviado ao `BackgroundRuntimeService` como configuracao de device e tocado nativamente para funcionar mesmo com o app fechado.
 - A configuracao de som do Manager e por usuario e separada da configuracao do device; ela tambem deve ser enviada ao `BackgroundRuntimeService` como configuracao de usuario, sem virar regra global dos demais apps.
