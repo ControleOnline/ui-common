@@ -119,6 +119,12 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
   const isPublicRouteActive = isPublicRoute(currentRouteName);
   const shouldRunForegroundRealtimeServices =
     Platform.OS !== 'android' || appState === 'active';
+  const runtimeBridges = (
+    <>
+      <KioskModeBridge appState={appState} />
+      <BackgroundRuntimeBridge appState={appState} />
+    </>
+  );
 
   useEffect(() => {
     global.refreshTranslationsUI = () => {
@@ -652,50 +658,54 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
   }, [actions, baseThemeColors, currentCompany?.id, currentCompany?.theme?.colors]);
   if (!translateReady && isLogged && hasCurrentCompany && !isPublicRouteActive) {
     return (
-      <View style={providerStyles.loadingContainer}>
-        <ActivityIndicator size="large" color="#1B5587" />
-        <Text style={providerStyles.loadingText}>Carregando...</Text>
-      </View>
+      <>
+        {runtimeBridges}
+        <View style={providerStyles.loadingContainer}>
+          <ActivityIndicator size="large" color="#1B5587" />
+          <Text style={providerStyles.loadingText}>Carregando...</Text>
+        </View>
+      </>
     );
   }
   return (
-    device &&
-    device.id && (
-      <ThemeContext.Provider value={{colors, menus}}>
-        <View
-          style={[
-            providerStyles.shell,
-            {
-              backgroundColor: colors?.background || runtimeColors.background,
-            },
-          ]}>
-          <View style={providerStyles.content}>{children}</View>
-          {!isShopClientApp && (
-            <RuntimeInfoFooter
-              appVersion={appVersion}
-              defaultCompany={defaultCompany}
-              device={device}
-              colors={colors}
-            />
-          )}
-        </View>
-        <KioskModeBridge appState={appState} />
-        <BackgroundRuntimeBridge appState={appState} />
-        {!isShopClientApp && (
-          <>
-            {shouldRunForegroundRealtimeServices && (
+    <>
+      {runtimeBridges}
+      {device &&
+        device.id && (
+          <ThemeContext.Provider value={{colors, menus}}>
+            <View
+              style={[
+                providerStyles.shell,
+                {
+                  backgroundColor: colors?.background || runtimeColors.background,
+                },
+              ]}>
+              <View style={providerStyles.content}>{children}</View>
+              {!isShopClientApp && (
+                <RuntimeInfoFooter
+                  appVersion={appVersion}
+                  defaultCompany={defaultCompany}
+                  device={device}
+                  colors={colors}
+                />
+              )}
+            </View>
+            {!isShopClientApp && (
               <>
-                <WebsocketListener />
-                <DeviceAlertSoundService />
-                <ProductCatalogCacheService />
-                <RemoteCheckoutService />
-                <PrintService />
+                {shouldRunForegroundRealtimeServices && (
+                  <>
+                    <WebsocketListener />
+                    <DeviceAlertSoundService />
+                    <ProductCatalogCacheService />
+                    <RemoteCheckoutService />
+                    <PrintService />
+                  </>
+                )}
               </>
             )}
-          </>
+          </ThemeContext.Provider>
         )}
-      </ThemeContext.Provider>
-    )
+    </>
   );
 };
 
