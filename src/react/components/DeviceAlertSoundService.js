@@ -1,5 +1,6 @@
 import React, {useCallback, useEffect, useMemo, useRef} from 'react';
 import {createAudioPlayer} from 'expo-audio';
+import {NativeModules, Platform} from 'react-native';
 import {useStore, useStores} from '@store';
 import {env as APP_ENV} from '@env';
 import {api} from '@controleonline/ui-common/src/api';
@@ -206,6 +207,8 @@ const DeviceAlertSoundService = () => {
     shouldPlayManagerSound && managerSoundUrl
       ? managerSoundUrl
       : deviceAlertSoundUrl;
+  const isAndroidBackgroundRuntime =
+    Platform.OS === 'android' && !!NativeModules?.BackgroundRuntime;
 
   const ensurePlayer = useCallback(
     source => {
@@ -331,6 +334,10 @@ const DeviceAlertSoundService = () => {
   const orderMessage = ordersStore.getters?.message;
 
   useEffect(() => {
+    if (isAndroidBackgroundRuntime) {
+      return;
+    }
+
     const incomingMessages = [...collectMessages(orderMessages, orderMessage)].filter(
       message =>
         isRelevantOrderCreatedMessage(message) &&
@@ -393,6 +400,10 @@ const DeviceAlertSoundService = () => {
   ]);
 
   useEffect(() => {
+    if (isAndroidBackgroundRuntime) {
+      return;
+    }
+
     const incomingMessages = [...collectMessages(orderMessages, orderMessage)].filter(
       message =>
         isRelevantFinancialMessage(message) &&
