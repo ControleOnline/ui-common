@@ -16,11 +16,6 @@ export const DISPLAY_AUTO_PRINT_PRODUCT_CONFIG_KEY =
   'display-auto-print-product';
 export const DISPLAY_ALLOW_PRINTER_CHANGE_CONFIG_KEY =
   'display-allow-printer-change';
-export const DISPLAY_SIZE_CONFIG_KEY = 'display-size';
-export const DISPLAY_SIDE_BREAK_CONFIG_KEY = 'display-side-break';
-export const DISPLAY_SIZE_MIN = 1;
-export const DISPLAY_SIZE_MAX = 10;
-export const DISPLAY_SIZE_DEFAULT = 5;
 export const POS_OPERATION_MODE_CONFIG_KEY = 'pos-operation-mode';
 export const POS_AUTO_PRINT_ENABLED_CONFIG_KEY = 'pos-auto-print-enabled';
 export const POS_CASH_MANAGEMENT_MODE_CONFIG_KEY =
@@ -82,8 +77,6 @@ export const DEFAULT_DEVICE_CONFIGS = {
   [DEVICE_ALERT_SOUND_URL_KEY]: '',
   [DEVICE_RUNTIME_DEBUG_INFO_ENABLED_KEY]: '0',
   [DISPLAY_ALLOW_PRINTER_CHANGE_CONFIG_KEY]: '0',
-  [DISPLAY_SIZE_CONFIG_KEY]: String(DISPLAY_SIZE_DEFAULT),
-  [DISPLAY_SIDE_BREAK_CONFIG_KEY]: '0',
   [POS_CHECK_ORDER_TYPE_CONFIG_KEY]: POS_CHECK_ORDER_TYPE_NONE,
   [POS_CHECK_ORDER_MANAGEMENT_MODE_CONFIG_KEY]:
     POS_CHECK_ORDER_MANAGEMENT_MODE_MANAGE,
@@ -112,33 +105,6 @@ export const parseConfigsObject = configs => {
 
   return typeof configs === 'object' ? {...configs} : {};
 };
-
-export const normalizeDisplaySize = value => {
-  if (isMissingConfigValue(value)) {
-    return DISPLAY_SIZE_DEFAULT;
-  }
-
-  const numericValue = Number(String(value ?? '').trim());
-
-  if (!Number.isFinite(numericValue)) {
-    return DISPLAY_SIZE_DEFAULT;
-  }
-
-  return Math.min(
-    DISPLAY_SIZE_MAX,
-    Math.max(DISPLAY_SIZE_MIN, Math.round(numericValue)),
-  );
-};
-
-export const resolveDisplaySize = configs =>
-  normalizeDisplaySize(
-    parseConfigsObject(configs)?.[DISPLAY_SIZE_CONFIG_KEY],
-  );
-
-export const isDisplaySideBreakEnabled = configs =>
-  isTruthyValue(
-    parseConfigsObject(configs)?.[DISPLAY_SIDE_BREAK_CONFIG_KEY],
-  );
 
 export const normalizePosOperationMode = value => {
   const normalizedValue = String(value || '')
