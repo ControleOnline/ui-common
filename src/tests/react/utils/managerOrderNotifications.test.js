@@ -9,6 +9,7 @@ jest.mock('react-native', () => ({
 const {
   applyManagerOrderNotificationPreferences,
   buildManagerOrderNotificationContent,
+  ensureManagerOrderNotificationPermission,
   hasStoredManagerOrderNotificationPreferences,
   isManagerAppType,
   resolveManagerOrderNotificationPreferences,
@@ -94,5 +95,33 @@ describe('managerOrderNotifications helpers', () => {
     expect(isManagerAppType('MANAGER')).toBe(true);
     expect(isManagerAppType('manager')).toBe(true);
     expect(isManagerAppType('POS')).toBe(false);
+  });
+
+  it('requests notification permission only when the current status is default', async () => {
+    const getPermissionStatus = jest.fn(() => Promise.resolve('default'));
+    const requestPermission = jest.fn(() => Promise.resolve('granted'));
+
+    const status = await ensureManagerOrderNotificationPermission({
+      getPermissionStatus,
+      requestPermission,
+    });
+
+    expect(getPermissionStatus).toHaveBeenCalledTimes(1);
+    expect(requestPermission).toHaveBeenCalledTimes(1);
+    expect(status).toBe('granted');
+  });
+
+  it('keeps the current permission status when it is already resolved', async () => {
+    const getPermissionStatus = jest.fn(() => Promise.resolve('granted'));
+    const requestPermission = jest.fn(() => Promise.resolve('default'));
+
+    const status = await ensureManagerOrderNotificationPermission({
+      getPermissionStatus,
+      requestPermission,
+    });
+
+    expect(getPermissionStatus).toHaveBeenCalledTimes(1);
+    expect(requestPermission).not.toHaveBeenCalled();
+    expect(status).toBe('granted');
   });
 });

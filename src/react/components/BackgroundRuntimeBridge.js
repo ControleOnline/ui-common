@@ -1,5 +1,5 @@
 import React, {useEffect, useMemo, useRef} from 'react';
-import {NativeModules} from 'react-native';
+import {NativeModules, Platform} from 'react-native';
 import {env as APP_ENV} from '@env';
 import {useStore} from '@store';
 import DeviceInfo from 'react-native-device-info';
@@ -9,11 +9,13 @@ import {normalizeDeviceId} from '@controleonline/ui-common/src/react/utils/payme
 import {
   DEVICE_ALERT_SOUND_ENABLED_KEY,
   DEVICE_ALERT_SOUND_URL_KEY,
+  DEVICE_RUNTIME_DEBUG_INFO_ENABLED_KEY,
   isTruthyValue,
   parseConfigsObject,
 } from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
 import {
   isManagerAppType,
+  ensureManagerOrderNotificationPermission,
   resolveManagerOrderNotificationPreferences,
 } from '@controleonline/ui-common/src/react/utils/managerOrderNotifications';
 import {syncBackgroundRuntimeRegistration} from '@controleonline/ui-common/src/react/utils/backgroundRuntimeRegistration';
@@ -56,6 +58,7 @@ const BackgroundRuntimeBridge = () => {
 
   const lastRegistrationIdRef = useRef('');
   const lastRegistrationPayloadRef = useRef('');
+  const notificationPermissionBootstrapRef = useRef(false);
 
   const bundleId = safeTrim(DeviceInfo.getBundleId());
   const runtimeAppKey =
@@ -85,6 +88,9 @@ const BackgroundRuntimeBridge = () => {
   );
   const deviceAlertSoundUrl = safeTrim(
     runtimeDeviceConfigs?.[DEVICE_ALERT_SOUND_URL_KEY],
+  );
+  const runtimeDebugInfoEnabled = isTruthyValue(
+    runtimeDeviceConfigs?.[DEVICE_RUNTIME_DEBUG_INFO_ENABLED_KEY],
   );
   const alertSoundEnabled =
     userAlertSoundEnabled ||
@@ -171,6 +177,7 @@ const BackgroundRuntimeBridge = () => {
       deviceAlertSoundUrl,
       userAlertSoundEnabled,
       userAlertSoundUrl,
+      runtimeDebugInfoEnabled,
       printEnabled: spoolDeviceIds.length > 0 && managedPrinters.length > 0,
       managedPrinters,
       socketUrl: safeTrim(APP_ENV.SOCKET),
@@ -195,6 +202,7 @@ const BackgroundRuntimeBridge = () => {
     spoolDeviceIds,
     userAlertSoundEnabled,
     userAlertSoundUrl,
+    runtimeDebugInfoEnabled,
   ]);
 
   useEffect(() => {
@@ -206,6 +214,22 @@ const BackgroundRuntimeBridge = () => {
     });
     // Keep the registration alive after this component unmounts.
     // Explicit logout/device changes are handled by the branches above.
+  }, [registration]);
+
+  useEffect(() => {
+    if (
+      Platform.OS !== 'android' ||
+      !registration ||
+      notificationPermissionBootstrapRef.current
+    ) {
+      return;
+    }
+
+    notificationPermissionBootstrapRef.current = true;
+
+    ensureManagerOrderNotificationPermission().catch(() => {
+      // The runtime still keeps playing sound if the user has not granted the popup permission yet.
+    });
   }, [registration]);
 
   return null;

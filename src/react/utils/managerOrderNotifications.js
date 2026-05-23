@@ -394,6 +394,19 @@ export const requestManagerOrderNotificationPermission = async () => {
   }
 };
 
+export const ensureManagerOrderNotificationPermission = async ({
+  getPermissionStatus = getManagerOrderNotificationPermissionStatus,
+  requestPermission = requestManagerOrderNotificationPermission,
+} = {}) => {
+  const currentPermissionStatus = await getPermissionStatus();
+
+  if (currentPermissionStatus !== 'default') {
+    return currentPermissionStatus;
+  }
+
+  return requestPermission();
+};
+
 export const showManagerOrderNotification = async ({
   messages = [],
   currentCompany = null,
