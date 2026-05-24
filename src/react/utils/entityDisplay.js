@@ -85,6 +85,30 @@ export const formatHumanLabel = value => {
   return normalized.replace(/\b\w/g, char => char.toUpperCase());
 };
 
+export const uppercaseText = (value, locale = 'pt-BR') => {
+  if (value === null || value === undefined) {
+    return '';
+  }
+
+  const normalized = String(value);
+
+  try {
+    return normalized.toLocaleUpperCase(locale);
+  } catch {
+    return normalized.toUpperCase();
+  }
+};
+
+export const formatDisplayUppercase = (value, locale = 'pt-BR') => {
+  const normalized = normalizeText(value);
+
+  if (!normalized) {
+    return '';
+  }
+
+  return uppercaseText(normalized, locale);
+};
+
 export const formatPhoneDisplay = phoneEntry => {
   if (!phoneEntry) return '';
 
