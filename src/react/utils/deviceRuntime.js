@@ -14,6 +14,8 @@ const APP_TYPE_DEVICE_MAP = {
 export const WEB_DEVICE_INSTANCE_STORAGE_KEY = 'web-device-instance-id';
 
 const safeTrim = value => String(value || '').trim();
+const isPlainObject = value =>
+  !!value && typeof value === 'object' && !Array.isArray(value);
 const normalizeWebUserId = userId => safeTrim(userId).replace(/^web-/, '');
 
 const resolveStoredWebUserId = () => {
@@ -104,6 +106,9 @@ export const buildDeviceAlias = ({deviceInfo, appType}) => {
 
 export const buildDeviceMetadata = ({deviceInfo, appType}) => {
   const screen = buildScreenMetrics();
+  const existingMetadata = isPlainObject(deviceInfo?.metadata)
+    ? deviceInfo.metadata
+    : {};
   const navigatorData =
     typeof navigator !== 'undefined'
       ? {
@@ -144,6 +149,11 @@ export const buildDeviceMetadata = ({deviceInfo, appType}) => {
           : Number(deviceInfo.batteryLevel),
     },
     browser: navigatorData,
+    ...Object.fromEntries(
+      Object.entries(existingMetadata).filter(([key]) =>
+        !['runtime', 'appType', 'app', 'screen', 'network', 'system', 'browser'].includes(key),
+      ),
+    ),
   };
 };
 

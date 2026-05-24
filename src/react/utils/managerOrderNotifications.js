@@ -19,6 +19,7 @@ export const DEFAULT_MANAGER_FINANCIAL_NOTIFICATION_PREFERENCES = {
 };
 
 const ANDROID_MANAGER_ORDERS_CHANNEL_ID = 'manager-orders';
+const ANDROID_MANAGER_PUSH_CHANNEL_ID = 'manager-orders-push';
 let notificationsModulePromise = null;
 let nativeNotificationHandlerConfigured = false;
 let nativeNotificationChannelConfigured = false;
@@ -143,7 +144,7 @@ const ensureNativeNotificationsReady = async () => {
   ) {
     Notifications.setNotificationHandler({
       handleNotification: async () => ({
-        shouldPlaySound: false,
+        shouldPlaySound: true,
         shouldSetBadge: false,
         shouldShowBanner: true,
         shouldShowList: true,
@@ -165,6 +166,18 @@ const ensureNativeNotificationsReady = async () => {
         vibrationPattern: [0, 250, 250, 250],
         lightColor: '#2563EB',
         sound: null,
+        showBadge: false,
+      },
+    );
+
+    await Notifications.setNotificationChannelAsync(
+      ANDROID_MANAGER_PUSH_CHANNEL_ID,
+      {
+        name: 'Pedidos do Gestor Push',
+        importance: Notifications.AndroidImportance?.HIGH ?? 4,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#2563EB',
+        sound: 'default',
         showBadge: false,
       },
     );
@@ -470,6 +483,10 @@ export const showManagerOrderNotification = async ({
       content: {
         title,
         body,
+        channelId:
+          Platform.OS === 'android'
+            ? ANDROID_MANAGER_ORDERS_CHANNEL_ID
+            : undefined,
         data: {
           store,
           event,

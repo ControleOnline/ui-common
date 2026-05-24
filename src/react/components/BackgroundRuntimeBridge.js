@@ -1,5 +1,5 @@
 import React, {useEffect, useMemo, useRef} from 'react';
-import {NativeModules, Platform} from 'react-native';
+import {NativeModules} from 'react-native';
 import {env as APP_ENV} from '@env';
 import {useStore} from '@store';
 import DeviceInfo from 'react-native-device-info';
@@ -15,7 +15,6 @@ import {
 } from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
 import {
   isManagerAppType,
-  ensureManagerOrderNotificationPermission,
   resolveManagerOrderNotificationPreferences,
 } from '@controleonline/ui-common/src/react/utils/managerOrderNotifications';
 import {syncBackgroundRuntimeRegistration} from '@controleonline/ui-common/src/react/utils/backgroundRuntimeRegistration';
@@ -58,7 +57,6 @@ const BackgroundRuntimeBridge = () => {
 
   const lastRegistrationIdRef = useRef('');
   const lastRegistrationPayloadRef = useRef('');
-  const notificationPermissionBootstrapRef = useRef(false);
 
   const bundleId = safeTrim(DeviceInfo.getBundleId());
   const runtimeAppKey =
@@ -167,7 +165,7 @@ const BackgroundRuntimeBridge = () => {
       backgroundEnabled: true,
       deviceId: runtimeDeviceId,
       deviceType: runtimeDeviceType,
-      notificationEnabled: true,
+      notificationEnabled: !isManagerRuntime,
       alertSoundEnabled,
       alertSoundUrl,
       deviceAlertSoundEnabled,
@@ -192,6 +190,7 @@ const BackgroundRuntimeBridge = () => {
     deviceAlertSoundUrl,
     runtimeAppKey,
     isLogged,
+    isManagerRuntime,
     managedPrinters,
     runtimeDeviceId,
     runtimeDeviceType,
@@ -211,22 +210,6 @@ const BackgroundRuntimeBridge = () => {
     });
     // Keep the registration alive after this component unmounts.
     // Explicit logout/device changes are handled by the branches above.
-  }, [registration]);
-
-  useEffect(() => {
-    if (
-      Platform.OS !== 'android' ||
-      !registration ||
-      notificationPermissionBootstrapRef.current
-    ) {
-      return;
-    }
-
-    notificationPermissionBootstrapRef.current = true;
-
-    ensureManagerOrderNotificationPermission().catch(() => {
-      // The runtime still keeps playing sound if the user has not granted the popup permission yet.
-    });
   }, [registration]);
 
   return null;

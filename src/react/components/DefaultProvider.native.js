@@ -6,6 +6,7 @@ import {WebsocketListener} from '@controleonline/ui-common/src/react/components/
 import BackgroundRuntimeBridge from '@controleonline/ui-common/src/react/components/BackgroundRuntimeBridge';
 import DeviceAlertSoundService from '@controleonline/ui-common/src/react/components/DeviceAlertSoundService';
 import KioskModeBridge from '@controleonline/ui-common/src/react/components/KioskModeBridge';
+import ManagerPushBridge from '@controleonline/ui-common/src/react/components/ManagerPushBridge';
 import PrintService from '@controleonline/ui-common/src/react/components/PrintService';
 import RemoteCheckoutService from '@controleonline/ui-common/src/react/components/RemoteCheckoutService';
 import ProductCatalogCacheService from '@controleonline/ui-common/src/react/components/ProductCatalogCacheService';
@@ -94,7 +95,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
   const {colors, menus} = getters;
   const {currentCompany, defaultCompany, companies} = peopleGetters;
   const {item: device_config} = deviceConfigsGetters;
-  const {isLogged} = authGetters;
+  const {isLogged, sessionChecked} = authGetters;
   const hasCurrentCompany =
     !!currentCompany && Object.entries(currentCompany).length > 0;
   const [translateReady, setTranslateReady] = useState(false);
@@ -123,6 +124,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
     <>
       <KioskModeBridge appState={appState} />
       <BackgroundRuntimeBridge appState={appState} />
+      <ManagerPushBridge device={device} setDevice={setDevice} />
     </>
   );
 
@@ -207,6 +209,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
           isEmulator: isEmulator,
           appVersion: appVersion,
           buildNumber: buildNumber,
+          metadata: device?.metadata,
         },
       });
       setDevice(ld);
@@ -245,7 +248,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
   }, [device?.id]);
 
   useEffect(() => {
-    if (!isLogged || !device?.id) {
+    if (!sessionChecked || !isLogged || !device?.id) {
       return;
     }
 
@@ -279,7 +282,10 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
             (existingDevice?.id ? `/devices/${existingDevice.id}` : null),
           alias: existingDevice?.alias || nextDevice.alias,
           type: device?.type || runtimeDeviceType,
-          metadata: existingDevice?.metadata || nextDevice.metadata,
+          metadata: {
+            ...(existingDevice?.metadata || {}),
+            ...(nextDevice.metadata || {}),
+          },
         };
 
         if (JSON.stringify(nextLocalDevice) !== JSON.stringify(device)) {
@@ -304,7 +310,10 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
           (savedDevice?.id ? `/devices/${savedDevice.id}` : null),
         alias: savedDevice.alias || nextDevice.alias,
         type: device?.type || runtimeDeviceType,
-        metadata: savedDevice.metadata || nextDevice.metadata,
+        metadata: {
+          ...(savedDevice?.metadata || {}),
+          ...(nextDevice.metadata || {}),
+        },
       };
 
       if (JSON.stringify(nextLocalDevice) !== JSON.stringify(device)) {
@@ -325,10 +334,12 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
     device?.buildNumber,
     device?.deviceType,
     device?.id,
+    device?.metadata,
     device?.manufacturer,
     device?.model,
     device?.systemVersion,
     isLogged,
+    sessionChecked,
     runtimeDeviceType,
   ]);
 

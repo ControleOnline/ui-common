@@ -342,6 +342,10 @@ const DeviceAlertSoundService = () => {
   const orderMessage = ordersStore.getters?.message;
 
   useEffect(() => {
+    if (isManagerRuntime && Platform.OS === 'android') {
+      return;
+    }
+
     if (isAndroidBackgroundRuntime) {
       return;
     }
