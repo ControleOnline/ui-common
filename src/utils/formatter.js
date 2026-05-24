@@ -287,6 +287,70 @@ export default class Formatter {
     return `${currency} ${formatter.format(numericValue)}`;
   }
 
+  static formatInteger(value, locale = 'pt-BR') {
+
+    const numericValue = Number(value || 0);
+
+    return new Intl.NumberFormat(locale, {
+      maximumFractionDigits: 0,
+    }).format(Number.isFinite(numericValue) ? numericValue : 0);
+  }
+
+  static formatDecimal(value, locale = 'pt-BR', maximumFractionDigits = 1) {
+
+    const numericValue = Number(value || 0);
+
+    return new Intl.NumberFormat(locale, {
+      maximumFractionDigits,
+    }).format(Number.isFinite(numericValue) ? numericValue : 0);
+  }
+
+  static formatPercent(value, locale = 'pt-BR', maximumFractionDigits = 1) {
+
+    return `${Formatter.formatDecimal(value, locale, maximumFractionDigits)}%`;
+  }
+
+  static formatSignedInteger(value, locale = 'pt-BR') {
+
+    const numericValue = Number(value || 0);
+
+    if (numericValue > 0)
+      return `+${Formatter.formatInteger(numericValue, locale)}`;
+
+    if (numericValue < 0)
+      return `-${Formatter.formatInteger(Math.abs(numericValue), locale)}`;
+
+    return '0';
+  }
+
+  static formatSignedPercent(value, locale = 'pt-BR', maximumFractionDigits = 1) {
+
+    const numericValue = Number(value || 0);
+
+    if (numericValue > 0)
+      return `+${Formatter.formatPercent(numericValue, locale, maximumFractionDigits)}`;
+
+    if (numericValue < 0)
+      return `-${Formatter.formatPercent(Math.abs(numericValue), locale, maximumFractionDigits)}`;
+
+    return '0%';
+  }
+
+  static formatDateShort(value) {
+
+    if (!value) return '';
+
+    const date = new Date(value);
+
+    if (isNaN(date.getTime()))
+      return '';
+
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+
+    return `${day}/${month}`;
+  }
+
   /* ================= DATAS AUX ================= */
 
   static buildAmericanDate(dateString) {
