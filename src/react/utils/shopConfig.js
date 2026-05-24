@@ -30,8 +30,6 @@ export const SHOP_BOTTOM_BAR_ENABLED_CONFIG_KEY =
   'shop-bottom-bar-enabled';
 export const SHOP_CHARGE_ON_DELIVERY_ENABLED_CONFIG_KEY =
   'shop-charge-on-delivery-enabled';
-export const SHOP_GOOGLE_MAPS_API_KEY_CONFIG_KEY =
-  'shop-google-maps-api-key';
 export const SHOP_FRANCHISE_PIN_ICON_URL_CONFIG_KEY =
   'shop-franchise-pin-icon-url';
 export const SHOP_FRANCHISE_VISIBLE_COMPANY_IDS_CONFIG_KEY =
@@ -214,9 +212,6 @@ export const resolveShopSettings = configs => {
     ),
     chargeOnDeliveryEnabled: normalizeBooleanConfig(
       configMap[SHOP_CHARGE_ON_DELIVERY_ENABLED_CONFIG_KEY],
-    ),
-    googleMapsApiKey: normalizeShopTextConfig(
-      configMap[SHOP_GOOGLE_MAPS_API_KEY_CONFIG_KEY],
     ),
     franchisePinIconUrl: normalizeShopTextConfig(
       configMap[SHOP_FRANCHISE_PIN_ICON_URL_CONFIG_KEY],
