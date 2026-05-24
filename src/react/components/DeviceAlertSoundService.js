@@ -19,6 +19,7 @@ import {
   showManagerFinancialNotification,
   showManagerOrderNotification,
 } from '@controleonline/ui-common/src/react/utils/managerOrderNotifications';
+import {resolveNotificationSoundSource} from '@controleonline/ui-common/src/react/utils/notificationSound';
 
 const MAX_PROCESSED_EVENTS = 200;
 const ORDER_CREATED_EVENT = 'order.created';
@@ -44,6 +45,7 @@ const normalizeEntityId = value => {
 };
 
 const normalizeText = value => String(value || '').trim();
+const DEFAULT_ALERT_SOUND_SOURCE = resolveNotificationSoundSource('');
 
 const parseNumericValue = value => {
   if (typeof value === 'number') {
@@ -198,15 +200,21 @@ const DeviceAlertSoundService = () => {
   const deviceAlertSoundUrl = normalizeText(
     deviceConfig?.[DEVICE_ALERT_SOUND_URL_KEY],
   );
-  const shouldPlayManagerSound = managerSoundEnabled && !!managerSoundUrl;
-  const shouldPlayDeviceAlertSound =
-    deviceAlertSoundEnabled && !!deviceAlertSoundUrl;
+  const shouldPlayManagerSound = managerSoundEnabled;
+  const shouldPlayDeviceAlertSound = deviceAlertSoundEnabled;
   const shouldPlayAlertSound =
     shouldPlayManagerSound || shouldPlayDeviceAlertSound;
-  const alertSoundUrl =
-    shouldPlayManagerSound && managerSoundUrl
-      ? managerSoundUrl
-      : deviceAlertSoundUrl;
+  const alertSoundSource = shouldPlayManagerSound
+    ? resolveNotificationSoundSource(
+        managerSoundUrl,
+        DEFAULT_ALERT_SOUND_SOURCE,
+      )
+    : shouldPlayDeviceAlertSound
+      ? resolveNotificationSoundSource(
+          deviceAlertSoundUrl,
+          DEFAULT_ALERT_SOUND_SOURCE,
+        )
+      : null;
   const isAndroidBackgroundRuntime =
     Platform.OS === 'android' && !!NativeModules?.BackgroundRuntime;
 
@@ -238,7 +246,7 @@ const DeviceAlertSoundService = () => {
   );
 
   const playAlertSound = useCallback(async () => {
-    const player = ensurePlayer(alertSoundUrl);
+    const player = ensurePlayer(alertSoundSource);
 
     if (!player) {
       return;
@@ -257,7 +265,7 @@ const DeviceAlertSoundService = () => {
     } catch (error) {
       console.warn('Erro ao tocar aviso sonoro do websocket', error);
     }
-  }, [alertSoundUrl, ensurePlayer]);
+  }, [alertSoundSource, ensurePlayer]);
 
   const enrichNotificationMessages = useCallback(async messages => {
     const messageList = Array.isArray(messages) ? messages : [];
@@ -364,7 +372,7 @@ const DeviceAlertSoundService = () => {
 
     markProcessedKeys(unseenKeys);
 
-    if (!managerPushEnabled && (!shouldPlayAlertSound || !alertSoundUrl)) {
+    if (!managerPushEnabled && !shouldPlayAlertSound) {
       return;
     }
 
@@ -380,13 +388,13 @@ const DeviceAlertSoundService = () => {
               currentCompany,
             })
           : Promise.resolve(false),
-        shouldPlayAlertSound && alertSoundUrl
+        shouldPlayAlertSound && alertSoundSource
           ? playAlertSound()
           : Promise.resolve(),
       ]),
     );
   }, [
-    alertSoundUrl,
+    alertSoundSource,
     currentCompanyId,
     currentCompany,
     enrichNotificationMessages,

@@ -51,6 +51,7 @@ import {
 } from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
 
 import {isWebRuntimeDevice as resolveIsWebRuntimeDevice} from '@controleonline/ui-common/src/react/utils/deviceRuntime';
+import {DEFAULT_NOTIFICATION_SOUND_FILE} from '@controleonline/ui-common/src/react/utils/notificationSound';
 
 import {
   inlineStyle_565_16,
@@ -903,6 +904,10 @@ const Settings = () => {
               returnKeyType="done"
               style={inlineStyle_783_14}
             />
+            <Text style={inlineStyle_818_14}>
+              Se a URL ficar vazia, o runtime usa o som padrão do app
+              ({DEFAULT_NOTIFICATION_SOUND_FILE}).
+            </Text>
           </View>
 
           <View

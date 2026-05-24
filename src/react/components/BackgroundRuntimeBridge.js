@@ -80,8 +80,7 @@ const BackgroundRuntimeBridge = () => {
   const userAlertSoundEnabled =
     isManagerRuntime &&
     managerOrderNotificationPreferences.pushEnabled &&
-    managerOrderNotificationPreferences.soundEnabled &&
-    !!userAlertSoundUrl;
+    managerOrderNotificationPreferences.soundEnabled;
   const runtimeDeviceConfigs = parseConfigsObject(runtimeDeviceConfig?.configs);
   const deviceAlertSoundEnabled = isTruthyValue(
     runtimeDeviceConfigs?.[DEVICE_ALERT_SOUND_ENABLED_KEY],
@@ -92,9 +91,7 @@ const BackgroundRuntimeBridge = () => {
   const runtimeDebugInfoEnabled = isTruthyValue(
     runtimeDeviceConfigs?.[DEVICE_RUNTIME_DEBUG_INFO_ENABLED_KEY],
   );
-  const alertSoundEnabled =
-    userAlertSoundEnabled ||
-    (deviceAlertSoundEnabled && !!deviceAlertSoundUrl);
+  const alertSoundEnabled = userAlertSoundEnabled || deviceAlertSoundEnabled;
   const alertSoundUrl = userAlertSoundEnabled
     ? userAlertSoundUrl
     : deviceAlertSoundUrl;
