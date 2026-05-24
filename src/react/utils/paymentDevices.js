@@ -149,6 +149,10 @@ export const getPaymentGatewayFromConfigs = configs =>
 export const getPaymentGateway = deviceConfig =>
   getPaymentGatewayFromConfigs(deviceConfig);
 
+export const isLocalCieloPrintCapableDeviceConfig = deviceConfig =>
+  getDeviceConfigType(deviceConfig) === 'PDV' &&
+  getPaymentGateway(deviceConfig) === PAYMENT_GATEWAY_CIELO;
+
 export const isPdvPrinterEnabled = configs => {
   const parsedConfigs = parseConfigsObject(resolveConfigsSource(configs));
   const printerEnabled = parsedConfigs?.[PDV_PRINTER_ENABLED_CONFIG_KEY];

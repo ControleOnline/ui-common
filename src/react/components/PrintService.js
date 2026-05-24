@@ -14,7 +14,10 @@ import {
   normalizePrinterPort,
 } from '@controleonline/ui-common/src/react/utils/printerDevices';
 import {isWebRuntimeDevice} from '@controleonline/ui-common/src/react/utils/deviceRuntime';
-import {normalizeDeviceId} from '@controleonline/ui-common/src/react/utils/paymentDevices';
+import {
+  isLocalCieloPrintCapableDeviceConfig,
+  normalizeDeviceId,
+} from '@controleonline/ui-common/src/react/utils/paymentDevices';
 import {
   forgetTrackedSpool,
   hasTrackedSpool,
@@ -181,6 +184,11 @@ const PrintService = () => {
     [runtimeDeviceConfig?.device?.type, runtimeDeviceConfig?.type, storagedDevice?.type],
   );
 
+  const canUseLocalCieloPrint = useMemo(
+    () => isLocalCieloPrintCapableDeviceConfig(runtimeDeviceConfig),
+    [runtimeDeviceConfig],
+  );
+
   const managedPrinters = useMemo(
     () =>
       getManagedPrinterDevices({
@@ -220,7 +228,12 @@ const PrintService = () => {
     if (runtimeDeviceType === PDV_DEVICE_TYPE) {
       const deviceId = normalizeDeviceId(storagedDevice.id);
       return Array.from(
-        new Set([deviceId, ...managedPrinterDeviceIds].filter(Boolean)),
+        new Set(
+          [
+            ...(canUseLocalCieloPrint ? [deviceId] : []),
+            ...managedPrinterDeviceIds,
+          ].filter(Boolean),
+        ),
       );
     }
 
@@ -231,6 +244,7 @@ const PrintService = () => {
     return [];
   }, [
     isWebDevice,
+    canUseLocalCieloPrint,
     managedPrinterDeviceIds,
     runtimeDeviceType,
     storagedDevice?.id,
@@ -423,6 +437,13 @@ const PrintService = () => {
       const managedPrinterPrinted = await printManagedSpool(printJob, spoolData);
 
       if (!managedPrinterPrinted) {
+        if (!canUseLocalCieloPrint) {
+          throw new Error(
+            global.t?.t('orders', 'message', 'localPrintUnavailable') ||
+              'Este equipamento nao pode imprimir localmente. Configure uma impressora de rede.',
+          );
+        }
+
         await printOnLocalCielo(spoolData.file.content);
       }
 
@@ -450,6 +471,7 @@ const PrintService = () => {
     [
       finalizeSpoolAck,
       hasPendingSpoolAck,
+      canUseLocalCieloPrint,
       printManagedSpool,
       removeSpoolFromQueue,
       rememberPendingSpoolAck,
