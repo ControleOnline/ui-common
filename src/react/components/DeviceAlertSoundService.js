@@ -412,6 +412,10 @@ const DeviceAlertSoundService = () => {
   ]);
 
   useEffect(() => {
+    if (isManagerRuntime && Platform.OS === 'android') {
+      return;
+    }
+
     if (isAndroidBackgroundRuntime) {
       return;
     }
@@ -478,6 +482,7 @@ const DeviceAlertSoundService = () => {
     markProcessedKeys,
     orderMessage,
     orderMessages,
+    isManagerRuntime,
   ]);
 
   return null;

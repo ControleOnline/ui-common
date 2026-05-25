@@ -19,7 +19,7 @@ export const DEFAULT_MANAGER_FINANCIAL_NOTIFICATION_PREFERENCES = {
 };
 
 const ANDROID_MANAGER_ORDERS_CHANNEL_ID = 'manager-orders';
-const ANDROID_MANAGER_PUSH_CHANNEL_ID = 'manager-orders-push';
+const ANDROID_MANAGER_PUSH_CHANNEL_ID = 'manager-orders-push-caixa-v1';
 let notificationsModulePromise = null;
 let nativeNotificationHandlerConfigured = false;
 let nativeNotificationChannelConfigured = false;
@@ -177,7 +177,7 @@ const ensureNativeNotificationsReady = async () => {
         importance: Notifications.AndroidImportance?.HIGH ?? 4,
         vibrationPattern: [0, 250, 250, 250],
         lightColor: '#2563EB',
-        sound: 'default',
+        sound: 'caixa.m4a',
         showBadge: false,
       },
     );

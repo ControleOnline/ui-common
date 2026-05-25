@@ -36,6 +36,7 @@
 - O som configurado em `device_config` para `order.created` vale para qualquer `APP_TYPE`, incluindo KDS, Manager e PDV; deve ser enviado ao `BackgroundRuntimeService` como configuracao de device e tocado nativamente para funcionar mesmo com o app fechado.
 - A configuracao de som do Manager e por usuario e separada da configuracao do device; ela tambem deve ser enviada ao `BackgroundRuntimeService` como configuracao de usuario, sem virar regra global dos demais apps.
 - Quando a URL personalizada de audio estiver vazia, o runtime deve cair para o asset `src/assets/sound/caixa.m4a` empacotado no app. URL personalizada continua vencendo o fallback.
+- No `MANAGER` Android, o push FCM humano usa canal nativo com `caixa.m4a`; URL personalizada nao pode tocar quando a notificacao chega com o app fechado.
 - Alteracoes no protocolo local do runtime precisam manter compatibilidade entre o template do plugin e qualquer arquivo Android gerado.
 
 ## Regras de UI compartilhada
