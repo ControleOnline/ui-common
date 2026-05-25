@@ -228,7 +228,7 @@ const ManagerPushBridge = ({device, setDevice}) => {
         );
 
         if (currentToken) {
-          await applyManagerPushToken('', {persistImmediately: false});
+          await applyManagerPushToken('', {persistImmediately: true});
         }
 
         return;
@@ -241,7 +241,7 @@ const ManagerPushBridge = ({device, setDevice}) => {
       }
 
       if (permissionStatus !== 'granted') {
-        await applyManagerPushToken('', {persistImmediately: false});
+        await applyManagerPushToken('', {persistImmediately: true});
         return;
       }
 
@@ -251,7 +251,7 @@ const ManagerPushBridge = ({device, setDevice}) => {
         );
 
         if (currentToken) {
-          await applyManagerPushToken('', {persistImmediately: false});
+          await applyManagerPushToken('', {persistImmediately: true});
         }
 
         return;
@@ -265,9 +265,9 @@ const ManagerPushBridge = ({device, setDevice}) => {
       }
 
       if (!nextToken) {
-        await applyManagerPushToken('', {persistImmediately: false});
+        await applyManagerPushToken('', {persistImmediately: true});
       } else {
-        await applyManagerPushToken(nextToken, {persistImmediately: false});
+        await applyManagerPushToken(nextToken, {persistImmediately: true});
       }
 
       if (!pushTokenListenerRef.current) {
@@ -279,7 +279,7 @@ const ManagerPushBridge = ({device, setDevice}) => {
             }
 
             void applyManagerPushToken(nextListenerToken, {
-              persistImmediately: false,
+              persistImmediately: true,
             });
           },
         );
