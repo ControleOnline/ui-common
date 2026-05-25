@@ -278,7 +278,7 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
   };
 
   useEffect(() => {
-    if (!isLogged && (!device || !device.id)) {
+    if (!isLogged && !isShopClientApp && (!device || !device.id)) {
       return;
     }
 
@@ -308,7 +308,7 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
     }
 
     deviceActions.setItem(device);
-  }, [device, deviceActions, isLogged, packageVersion, user?.id, webRuntimeIp]);
+  }, [device, deviceActions, isLogged, isShopClientApp, packageVersion, user?.id, webRuntimeIp]);
 
   useEffect(() => {
     if (device && device.id) {
@@ -721,8 +721,9 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
   }, [actions, appType, currentCompany?.id, isLogged]);
 
   useEffect(() => {
-    const companyThemeColors =
-      currentCompany?.theme?.colors || defaultCompany?.theme?.colors || {};
+    const companyThemeColors = isShopClientApp
+      ? defaultCompany?.theme?.colors || {}
+      : currentCompany?.theme?.colors || defaultCompany?.theme?.colors || {};
     const mergedThemeColors = {
       ...(baseThemeColors || {}),
       ...(companyThemeColors || {}),
@@ -736,7 +737,15 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
     });
 
     actions.setColors(mergedThemeColors);
-  }, [actions, baseThemeColors, currentCompany?.id, currentCompany?.theme?.colors]);
+  }, [
+    actions,
+    baseThemeColors,
+    currentCompany?.id,
+    currentCompany?.theme?.colors,
+    defaultCompany?.id,
+    defaultCompany?.theme?.colors,
+    isShopClientApp,
+  ]);
 
   if (!translateReady && isLogged && hasCurrentCompany && !isPublicRouteActive) {
     return (

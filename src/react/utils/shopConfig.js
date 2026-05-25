@@ -30,6 +30,14 @@ export const SHOP_BOTTOM_BAR_ENABLED_CONFIG_KEY =
   'shop-bottom-bar-enabled';
 export const SHOP_CHARGE_ON_DELIVERY_ENABLED_CONFIG_KEY =
   'shop-charge-on-delivery-enabled';
+export const SHOP_DELIVERY_FEE_ENABLED_CONFIG_KEY =
+  'shop-delivery-fee-enabled';
+export const SHOP_DELIVERY_FEE_VALUE_CONFIG_KEY =
+  'shop-delivery-fee-value';
+export const SHOP_CATALOG_PRODUCT_TYPES_CONFIG_KEY =
+  'shop-catalog-product-types';
+export const SHOP_GOOGLE_MAPS_API_KEY_CONFIG_KEY =
+  'shop-google-maps-api-key';
 export const SHOP_FRANCHISE_PIN_ICON_URL_CONFIG_KEY =
   'shop-franchise-pin-icon-url';
 export const SHOP_FRANCHISE_VISIBLE_COMPANY_IDS_CONFIG_KEY =
@@ -123,6 +131,32 @@ export const normalizeShopEntityIds = value => {
 
 export const normalizeShopProductIds = value => normalizeShopEntityIds(value);
 
+export const SHOP_CATALOG_DEFAULT_PRODUCT_TYPES = [
+  'product',
+  'manufactured',
+  'custom',
+  'service',
+];
+
+export const normalizeShopCatalogProductTypes = value => {
+  const parsed = parseJsonValue(value, SHOP_CATALOG_DEFAULT_PRODUCT_TYPES);
+  const source = Array.isArray(parsed)
+    ? parsed
+    : String(value || '').split(/\r?\n|,/);
+  const allowed = new Set(SHOP_CATALOG_DEFAULT_PRODUCT_TYPES);
+  const normalized = Array.from(
+    new Set(
+      source
+        .map(item => String(item || '').trim().toLowerCase())
+        .filter(item => allowed.has(item)),
+    ),
+  );
+
+  return normalized.length > 0
+    ? normalized
+    : SHOP_CATALOG_DEFAULT_PRODUCT_TYPES;
+};
+
 export const normalizeShopLoyaltyRequiredSales = (value, fallback = 0) => {
   const parsed = parseJsonValue(value, fallback);
   const normalizedNumber = Number(parsed);
@@ -132,6 +166,19 @@ export const normalizeShopLoyaltyRequiredSales = (value, fallback = 0) => {
   }
 
   return Math.max(0, Math.trunc(normalizedNumber));
+};
+
+export const normalizeShopMoneyConfig = (value, fallback = 0) => {
+  const parsed = parseJsonValue(value, value);
+  const rawValue = String(parsed ?? '').trim();
+  const numericText = rawValue.includes(',')
+    ? rawValue.replace(/\./g, '').replace(',', '.')
+    : rawValue;
+  const normalized = Number(
+    numericText.replace(/[^\d.-]/g, ''),
+  );
+
+  return Number.isFinite(normalized) ? Math.max(0, normalized) : fallback;
 };
 
 export const getEnabledShopHomeOptions = ({
@@ -212,6 +259,18 @@ export const resolveShopSettings = configs => {
     ),
     chargeOnDeliveryEnabled: normalizeBooleanConfig(
       configMap[SHOP_CHARGE_ON_DELIVERY_ENABLED_CONFIG_KEY],
+    ),
+    deliveryFeeEnabled: normalizeBooleanConfig(
+      configMap[SHOP_DELIVERY_FEE_ENABLED_CONFIG_KEY],
+    ),
+    deliveryFeeValue: normalizeShopMoneyConfig(
+      configMap[SHOP_DELIVERY_FEE_VALUE_CONFIG_KEY],
+    ),
+    catalogProductTypes: normalizeShopCatalogProductTypes(
+      configMap[SHOP_CATALOG_PRODUCT_TYPES_CONFIG_KEY],
+    ),
+    googleMapsApiKey: normalizeShopTextConfig(
+      configMap[SHOP_GOOGLE_MAPS_API_KEY_CONFIG_KEY],
     ),
     franchisePinIconUrl: normalizeShopTextConfig(
       configMap[SHOP_FRANCHISE_PIN_ICON_URL_CONFIG_KEY],
