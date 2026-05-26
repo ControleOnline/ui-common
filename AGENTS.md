@@ -24,6 +24,8 @@
 - `showError` e o ponto canonico para esse feedback. Ele recebe string ou objeto de erro, exibe por alguns segundos e some sozinho.
 - O card/modal transitorio de erro do `MessageService` e a unica UI permitida para esse feedback. Nao criar segunda tela de erro no modulo.
 - Stores compartilhadas tambem devem usar esse fluxo. Quando uma store fizer `SET_ERROR`, o erro visual precisa sair pelo `MessageService`, nunca por caixa local do `StateStore`.
+- `StateStore` e o componente canonico de loading/saving. Ele pode receber `store` e `stores` para configurar quais estados acompanhar, mas nao deve ser substituido por loaders locais nas telas consumidoras.
+- O `StateStore` deve ler `isLoading` e `isSaving` diretamente dos stores; o erro deve entrar pelo contrato de `SET_ERROR` e ser publicado pelo `storeErrorBridge`, que alimenta o `MessageService`.
 - Nao criar banners, alerts ou toasts paralelos para erro quando o caso puder usar o `MessageService`.
 - O contrato canonico de erro HTTP do backend e o envelope do `HydratorService` com `@type: Error`, `hydra:title` e `hydra:description`; o `fetch` e os parsers compartilhados devem ler esse formato como fonte principal de mensagem.
 
