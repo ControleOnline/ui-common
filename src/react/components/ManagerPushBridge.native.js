@@ -32,9 +32,7 @@ const extractOrderIdFromResponse = response => {
 
 const extractManagerPushToken = metadata =>
   normalizeText(
-    metadata?.pushTokens?.manager?.android?.deviceToken ||
-      metadata?.push_tokens?.manager?.android?.deviceToken ||
-      '',
+    metadata?.pushTokens?.manager?.android?.deviceToken || '',
   );
 
 const resolvePersistableDeviceEntityId = deviceInfo =>
