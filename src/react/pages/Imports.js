@@ -26,13 +26,12 @@ const {
 
 const formatDate = (dateString) => {
     const d = new Date(dateString);
-    return d.toLocaleString(); // Formato local legível
+    return d.toLocaleString();
 };
 
 const Imports = ({ context = {}, onClose }) => {
     const peopleStore = useStore('people');
-    const { getters: peopleGetters } = peopleStore.getters;
-    const { currentCompany } = peopleGetters;
+    const { currentCompany } = peopleStore.getters;
 
     const importType = context.context;
     const title = context.title;
@@ -44,7 +43,7 @@ const Imports = ({ context = {}, onClose }) => {
         doneLabel,
         noStatusLabel,
         processingHelpLabel,
-    } = resolveImportLabels(global.t?.t);
+    } = resolveImportLabels(global.t ? (...args) => global.t.t(...args) : undefined);
 
     const navigation = useNavigation();
 
@@ -241,7 +240,6 @@ const Imports = ({ context = {}, onClose }) => {
 
             if (!csvText) throw new Error('CSV vazio');
 
-            // mobile: verifica se o diretório está disponível
             const dirUri = Directory?.cacheDocumentDirectory || Directory?.documentDirectory;
 
             if (dirUri) {
@@ -257,7 +255,6 @@ const Imports = ({ context = {}, onClose }) => {
                 console.log(`Arquivo CSV criado em: ${fileUri}`);
                 return fileUri;
             } else if (typeof window !== 'undefined') {
-                // fallback web
                 const blob = new Blob([csvText], { type: 'text/csv' });
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
