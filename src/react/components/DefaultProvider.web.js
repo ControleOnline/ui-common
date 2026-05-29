@@ -706,12 +706,12 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
       })
       .then(result => {
         if (!cancelled) {
-          actions.setMenus(normalizeRuntimeMenuResponse(result));
+          actions.setMenus(normalizeRuntimeMenuResponse(result, {appType}));
         }
       })
       .catch(() => {
         if (!cancelled) {
-          actions.setMenus([]);
+          actions.setMenus(normalizeRuntimeMenuResponse(null, {appType}));
         }
       });
 

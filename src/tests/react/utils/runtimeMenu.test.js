@@ -83,4 +83,41 @@ describe('runtimeMenu', () => {
     expect(menus[0].icon).toBe('dollar-sign');
     expect(menus[0].menus[0].icon).toBe('shopping-cart');
   });
+
+  it('falls back to the manager core menu when the runtime menu is empty', () => {
+    const menus = normalizeRuntimeMenuResponse({}, {appType: 'MANAGER'});
+
+    expect(menus).toHaveLength(4);
+    expect(menus.map(module => module.label)).toEqual([
+      'Financeiro',
+      'Operacoes',
+      'Comercial',
+      'Configuracoes',
+    ]);
+    expect(menus[0].menus[0]).toMatchObject({
+      label: 'Financeiro',
+      menuKey: 'financial_hub',
+      route: 'FinancialHubPage',
+    });
+    expect(menus[1].menus[0]).toMatchObject({
+      label: 'Pedidos',
+      menuKey: 'orders',
+      route: 'OrderHistoryPage',
+    });
+    expect(menus[2].menus[0]).toMatchObject({
+      label: 'Cadastro de clientes',
+      menuKey: 'clients',
+      route: 'ClientsIndex',
+    });
+    expect(menus[3].menus.map(item => item.route)).toEqual([
+      'DevicesIndex',
+      'ConfiguratorPage',
+    ]);
+  });
+
+  it('does not invent a fallback menu for non-manager apps', () => {
+    expect(
+      normalizeRuntimeMenuResponse({}, {appType: 'SHOP'}),
+    ).toEqual([]);
+  });
 });
