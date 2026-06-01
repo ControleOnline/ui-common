@@ -56,6 +56,15 @@ const MANAGER_RUNTIME_MENU_FALLBACK = [
         color: '#16A34A',
         sortOrder: 30,
       },
+      {
+        id: 'franchisees',
+        menuKey: 'franchisees',
+        label: 'Cadastro de franquias',
+        route: 'FranchiseesIndex',
+        icon: 'map-pin',
+        color: '#0EA5E9',
+        sortOrder: 35,
+      },
     ],
   },
   {

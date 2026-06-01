@@ -109,6 +109,11 @@ describe('runtimeMenu', () => {
       menuKey: 'clients',
       route: 'ClientsIndex',
     });
+    expect(menus[2].menus[1]).toMatchObject({
+      label: 'Cadastro de franquias',
+      menuKey: 'franchisees',
+      route: 'FranchiseesIndex',
+    });
     expect(menus[3].menus.map(item => item.route)).toEqual([
       'DevicesIndex',
       'ConfiguratorPage',
