@@ -406,10 +406,14 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
   ]);
 
   useEffect(() => {
-    if (currentCompany && currentCompany.id) {
-      printerActions.ensureCompanyPrintersLoaded({people: currentCompany.id});
+    if (isShopClientApp || !isLogged || !currentCompany?.id) {
+      return;
     }
-  }, [currentCompany?.id, printerActions]);
+
+    printerActions
+      .ensureCompanyPrintersLoaded({people: currentCompany.id})
+      .catch(() => {});
+  }, [currentCompany?.id, isLogged, isShopClientApp, printerActions]);
 
   useEffect(() => {
     if (
