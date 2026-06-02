@@ -99,6 +99,11 @@ describe('runtimeMenu', () => {
       menuKey: 'financial_hub',
       route: 'FinancialHubPage',
     });
+    expect(menus[0].menus[1]).toMatchObject({
+      label: 'Demonstracao de resultados',
+      menuKey: 'income_statement',
+      route: 'IncomeStatement',
+    });
     expect(menus[1].menus[0]).toMatchObject({
       label: 'Pedidos',
       menuKey: 'orders',
@@ -110,6 +115,20 @@ describe('runtimeMenu', () => {
       route: 'ClientsIndex',
     });
     expect(menus[2].menus[1]).toMatchObject({
+      label: 'Produtos',
+      menuKey: 'products',
+      route: 'CategoriesPage',
+      routeParams: {
+        context: 'products',
+        interactionMode: 'manager',
+      },
+    });
+    expect(menus[2].menus[2]).toMatchObject({
+      label: 'Fornecedores',
+      menuKey: 'providers',
+      route: 'ProvidersIndex',
+    });
+    expect(menus[2].menus[3]).toMatchObject({
       label: 'Cadastro de franquias',
       menuKey: 'franchisees',
       route: 'FranchiseesIndex',
