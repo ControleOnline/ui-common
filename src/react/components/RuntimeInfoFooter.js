@@ -107,7 +107,7 @@ const RuntimeInfoFooter = ({appVersion, defaultCompany, device, colors}) => {
     () => footerEntries.flatMap(entry => entry?.lines || []),
     [footerEntries],
   );
-  const socketIndicatorColor = socketEntry?.indicatorColor || '#EF4444';
+  const socketIndicatorColor = socketEntry?.indicatorColor;
 
   useEffect(() => {
     if (!shouldRotate || entries.length <= 1) {

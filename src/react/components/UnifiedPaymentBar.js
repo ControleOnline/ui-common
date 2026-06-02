@@ -10,7 +10,7 @@ const getStatusPresentation = (theme, totalAmount, paidAmount, pendingAmount) =>
   if (pendingAmount <= 0.009 && totalAmount > 0) {
     return {
       label: 'Pago',
-      color: theme?.success || '#16A34A',
+      color: theme?.success,
       icon: 'check-circle',
     };
   }
@@ -18,14 +18,14 @@ const getStatusPresentation = (theme, totalAmount, paidAmount, pendingAmount) =>
   if (paidAmount > 0.009) {
     return {
       label: 'Saldo pendente',
-      color: theme?.warning || '#D97706',
+      color: theme?.warning,
       icon: 'schedule',
     };
   }
 
   return {
     label: 'Aguardando pagamento',
-    color: theme?.primary || '#1D4ED8',
+    color: theme?.primary,
     icon: 'payments',
   };
 };

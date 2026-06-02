@@ -3,14 +3,14 @@ import { StyleSheet } from 'react-native';
 const withAlpha = (hexColor, alphaHex) => {
   const normalized = String(hexColor || '').trim();
   if (!/^#([A-Fa-f0-9]{6})$/.test(normalized)) {
-    return hexColor || '#2563EB';
+    return hexColor;
   }
 
   return `${normalized}${alphaHex}`;
 };
 
 const createStyles = palette => {
-  const accent = palette?.accent || '#2563EB';
+  const accent = palette?.accent;
 
   return StyleSheet.create({
     modalSheetRoot: {
@@ -389,12 +389,12 @@ const createStyles = palette => {
 };
 
 export const buildEntityLogPalette = theme => ({
-  accent: theme?.accentInfo || theme?.primary || '#2563EB',
-  border: theme?.border || '#E2E8F0',
-  surface: theme?.modalBg || '#FFFFFF',
-  surfaceSoft: theme?.cardBgSoft || '#F8FAFC',
-  textPrimary: theme?.textPrimary || '#0F172A',
-  textSecondary: theme?.textSecondary || '#64748B',
+  accent: theme?.accentInfo || theme?.primary,
+  border: theme?.border,
+  surface: theme?.modalBg,
+  surfaceSoft: theme?.cardBgSoft,
+  textPrimary: theme?.textPrimary,
+  textSecondary: theme?.textSecondary,
 });
 
 export default createStyles;

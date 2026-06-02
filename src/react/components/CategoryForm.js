@@ -133,9 +133,9 @@ const BottomModal = ({ visible, onClose, title, children }) => (
 /* ─── Seletor de cor ─── */
 const ColorPicker = ({ value, onChange }) => {
   const [open, setOpen] = useState(false);
-  const [hexInput, setHexInput] = useState(value || '#000000');
+  const [hexInput, setHexInput] = useState(value);
 
-  useEffect(() => { setHexInput(value || '#000000'); }, [value]);
+  useEffect(() => { setHexInput(value); }, [value]);
 
   const applyHex = () => {
     const v = hexInput.startsWith('#') ? hexInput : `#${hexInput}`;
@@ -152,8 +152,8 @@ const ColorPicker = ({ value, onChange }) => {
         onPress={() => setOpen(true)}
         activeOpacity={0.7}
       >
-        <View style={[styles.colorSwatch, { backgroundColor: value || '#000000' }]} />
-        <Text style={styles.colorButtonText}>{value || '#000000'}</Text>
+        <View style={[styles.colorSwatch, { backgroundColor: value }]} />
+        <Text style={styles.colorButtonText}>{value}</Text>
         <MaterialCommunityIcons name="palette-outline" size={18} color="#94A3B8" />
       </TouchableOpacity>
 
@@ -370,7 +370,7 @@ const ParentCategoryPicker = ({ value, onChange, categories, currentId }) => {
                 onPress={() => { onChange(cat.id); setOpen(false); setSearch(''); }}
                 activeOpacity={0.7}
               >
-                <View style={[styles.parentColorDot, styles.parentColorDotSpacing, { backgroundColor: cat.color || '#CBD5E1' }]} />
+                <View style={[styles.parentColorDot, styles.parentColorDotSpacing, { backgroundColor: cat.color }]} />
                 {!!cat.icon && (
                   <MaterialCommunityIcons name={cat.icon} size={16} color="#475569" style={styles.parentIconSpacing} />
                 )}
@@ -463,7 +463,7 @@ const CategoryForm = forwardRef(({ category, context = 'products', onClose, onSa
   useEffect(() => {
     if (category) {
       setName(category.name || '');
-      setColor(category.color || '#CBD5E1');
+      setColor(category.color);
       setIcon(category.icon || '');
       setParent(category.parent?.id || null);
       setSortOrder(String(category?.extraData?.sortOrder || ''));
