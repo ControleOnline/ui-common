@@ -4,7 +4,7 @@
   "author": "ControleOnline",
   "description": "ControleOnline Common Quasar UI Component",
   "license": "MIT",
-  "main": "src/vue/index.js",
+  "main": "src/react/index.js",
   "scripts": {
     "test": "npm run test:imports-status && npm run test:runtime-language && npm run test:runtime-footer && npm run test:invoice-presentation",
     "test:imports-status": "mkdir -p node_modules/@controleonline && ln -sfn ../.. node_modules/@controleonline/ui-common && node --test src/tests/react/utils/importStatus.test.js",
