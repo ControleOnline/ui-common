@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
-import { View, ActivityIndicator, Text } from 'react-native';
+import { View } from 'react-native';
 import Translate from '@controleonline/ui-common/src/utils/translate';
 import { WebsocketListener } from '@controleonline/ui-common/src/react/components/WebsocketListener';
 import DeviceAlertSoundService from '@controleonline/ui-common/src/react/components/DeviceAlertSoundService';
@@ -153,7 +153,7 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
   const hasCurrentCompany =
     !!currentCompany && Object.entries(currentCompany).length > 0;
 
-  const [translateReady, setTranslateReady] = useState(false);
+  const [translateReady, setTranslateReady] = useState(true);
   const [deviceConfigFetched, setDeviceConfigFetched] = useState(false);
   const [mainConfigsDiscovered, setMainConfigsDiscovered] = useState(false);
   const [deviceRuntimeConfigSynced, setDeviceRuntimeConfigSynced] =
@@ -634,13 +634,12 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
     }
 
     translateBootstrapKeyRef.current = nextTranslateBootstrapKey;
-    setTranslateReady(false);
     global.t = new Translate(
       companies,
       defaultCompany,
       currentCompany,
       Object.keys(stores),
-      translateActions,
+      translateStore,
     );
 
     global.t.discoveryAll().then(() => {
@@ -750,15 +749,6 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
     defaultCompany?.theme?.colors,
     isShopClientApp,
   ]);
-
-  if (!translateReady && isLogged && hasCurrentCompany && !isPublicRouteActive) {
-    return (
-      <View style={providerStyles.loadingContainer}>
-        <ActivityIndicator size="large" color="#1B5587" />
-        <Text style={providerStyles.loadingText}>Carregando...</Text>
-      </View>
-    );
-  }
 
   return (
     <ThemeContext.Provider value={{ colors, menus }}>

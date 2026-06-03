@@ -1,5 +1,5 @@
 import React, {createContext, useContext, useEffect, useRef, useState} from 'react';
-import {View, ActivityIndicator, Text, AppState, Platform} from 'react-native';
+import {View, AppState, Platform} from 'react-native';
 import DeviceInfo from 'react-native-device-info';
 import Translate from '@controleonline/ui-common/src/utils/translate';
 import {WebsocketListener} from '@controleonline/ui-common/src/react/components/WebsocketListener';
@@ -98,7 +98,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
   const {isLogged, sessionChecked} = authGetters;
   const hasCurrentCompany =
     !!currentCompany && Object.entries(currentCompany).length > 0;
-  const [translateReady, setTranslateReady] = useState(false);
+  const [translateReady, setTranslateReady] = useState(true);
   const [deviceConfigFetched, setDeviceConfigFetched] = useState(false);
   const [mainConfigsDiscovered, setMainConfigsDiscovered] = useState(false);
   const [deviceRuntimeConfigSynced, setDeviceRuntimeConfigSynced] =
@@ -558,13 +558,12 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
     }
 
     translateBootstrapKeyRef.current = nextTranslateBootstrapKey;
-    setTranslateReady(false);
     global.t = new Translate(
       companies,
       defaultCompany,
       currentCompany,
       Object.keys(stores),
-      translateActions,
+      translateStore,
     );
 
     global.t.discoveryAll().then(() => {
@@ -671,17 +670,6 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
 
     actions.setColors(mergedThemeColors);
   }, [actions, baseThemeColors, currentCompany?.id, currentCompany?.theme?.colors]);
-  if (!translateReady && isLogged && hasCurrentCompany && !isPublicRouteActive) {
-    return (
-      <>
-        {runtimeBridges}
-        <View style={providerStyles.loadingContainer}>
-          <ActivityIndicator size="large" color="#1B5587" />
-          <Text style={providerStyles.loadingText}>Carregando...</Text>
-        </View>
-      </>
-    );
-  }
   return (
     <>
       {runtimeBridges}

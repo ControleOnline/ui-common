@@ -16,11 +16,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  statusIndicators: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+    minWidth: 22,
+    marginRight: 8,
+  },
+  loadingIndicator: {
+    marginRight: 5,
+  },
   statusDot: {
     width: 7,
     height: 7,
     borderRadius: 999,
-    marginRight: 8,
     flexShrink: 0,
   },
   primaryText: {

@@ -1,6 +1,6 @@
 import React, {useEffect, useMemo, useState} from 'react';
-import {Text, View, useWindowDimensions} from 'react-native';
-import {useStore} from '@store';
+import {ActivityIndicator, Text, View, useWindowDimensions} from 'react-native';
+import {useStore, useStores} from '@store';
 import {colors as runtimeColors} from '@controleonline/../../src/styles/colors';
 import {
   DEVICE_RUNTIME_DEBUG_INFO_ENABLED_KEY,
@@ -21,6 +21,7 @@ const MAX_INLINE_TEXT_LENGTH = 84;
 const RuntimeInfoFooter = ({appVersion, defaultCompany, device, colors}) => {
   const {width} = useWindowDimensions();
   const [activeIndex, setActiveIndex] = useState(0);
+  const allStores = useStores(state => state);
   const deviceConfigStore = useStore('device_config');
   const runtimeDebugStore = useStore('runtime_debug');
   const deviceConfigItem = deviceConfigStore?.getters?.item || {};
@@ -108,6 +109,15 @@ const RuntimeInfoFooter = ({appVersion, defaultCompany, device, colors}) => {
     [footerEntries],
   );
   const socketIndicatorColor = socketEntry?.indicatorColor;
+  const hasStoreLoading = useMemo(
+    () =>
+      Object.values(allStores || {}).some(
+        store =>
+          store?.getters?.isLoading === true ||
+          store?.getters?.isSaving === true,
+      ),
+    [allStores],
+  );
 
   useEffect(() => {
     if (!shouldRotate || entries.length <= 1) {
@@ -139,6 +149,7 @@ const RuntimeInfoFooter = ({appVersion, defaultCompany, device, colors}) => {
   const backgroundColor = colors?.background || runtimeColors.background;
   const borderColor = colors?.border || runtimeColors.border;
   const textColor = colors?.textSecondary || runtimeColors.textSecondary;
+  const loadingColor = colors?.primary || runtimeColors.primary || textColor;
 
   return (
     <View
@@ -152,14 +163,23 @@ const RuntimeInfoFooter = ({appVersion, defaultCompany, device, colors}) => {
         },
       ]}>
       <View style={styles.primaryRow}>
-        <View
-          style={[
-            styles.statusDot,
-            {
-              backgroundColor: socketIndicatorColor,
-            },
-          ]}
-        />
+        <View style={styles.statusIndicators}>
+          {hasStoreLoading && (
+            <ActivityIndicator
+              color={loadingColor}
+              size="small"
+              style={styles.loadingIndicator}
+            />
+          )}
+          <View
+            style={[
+              styles.statusDot,
+              {
+                backgroundColor: socketIndicatorColor,
+              },
+            ]}
+          />
+        </View>
         <Text
           numberOfLines={1}
           ellipsizeMode="tail"

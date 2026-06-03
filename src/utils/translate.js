@@ -1,6 +1,8 @@
+const TRANSLATES_STORAGE_KEY = "translates";
+
 export default class Translate {
-  constructor(companies, defaultCompany, currentCompany, stores, translateActions) {
-    this.translates = JSON.parse(localStorage.getItem("translates") || "{}");
+  constructor(companies, defaultCompany, currentCompany, stores, translateStore) {
+    this.translates = this.loadStorageObject(TRANSLATES_STORAGE_KEY);
 
     this.language = this.normalizeLanguageCode(
       JSON.parse(localStorage.getItem("config") || "{}").language
@@ -8,15 +10,31 @@ export default class Translate {
 
     this.defaultCompany = defaultCompany;
     this.currentCompany = currentCompany;
-    this.translateActions = translateActions;
+    this.translateStore = translateStore || {};
+    this.translateActions = this.translateStore?.actions || {};
     this.companies = companies;
     this.stores = stores;
     this.bootstrapStores = new Set(this.getStoreList());
     this.discoveredStores = new Set();
     this.pendingStoreDiscoveries = new Map();
-    this.pendingMissingTranslations = new Set();
     this.t = this.t.bind(this);
     this.hydrateDiscoveredStores();
+  }
+
+  loadStorageObject(key) {
+    if (typeof localStorage === "undefined") {
+      return {};
+    }
+
+    try {
+      const value = localStorage.getItem(key);
+      if (!value) return {};
+
+      const parsed = JSON.parse(value);
+      return parsed && typeof parsed === "object" ? parsed : {};
+    } catch {
+      return {};
+    }
   }
 
   getLanguageBucket(createIfMissing = false) {
@@ -114,6 +132,58 @@ export default class Translate {
     return this.stores ? [this.stores] : [];
   }
 
+  getPendingMessages() {
+    const messages = this.translateStore?.getters?.messages;
+    if (!messages || typeof messages !== "object" || Array.isArray(messages)) {
+      return {};
+    }
+
+    return messages;
+  }
+
+  getPendingLanguageBucket(language = this.language) {
+    const pendingMessages = this.getPendingMessages();
+    const normalizedLanguage = this.normalizeLanguageCode(language);
+    if (!normalizedLanguage) return null;
+
+    return pendingMessages[normalizedLanguage] || null;
+  }
+
+  getPendingCompanyBucket(companyId, language = this.language) {
+    const normalizedCompanyId = this.normalizeId(companyId);
+    if (!normalizedCompanyId) return null;
+
+    const languageBucket = this.getPendingLanguageBucket(language);
+    if (!languageBucket) return null;
+
+    const companiesBucket = languageBucket.companies;
+    if (!companiesBucket || typeof companiesBucket !== "object") {
+      return null;
+    }
+
+    return companiesBucket[normalizedCompanyId] || null;
+  }
+
+  getPendingStoreBucket(companyId, store, language = this.language) {
+    const normalizedStore = String(store || "").trim();
+    if (!normalizedStore) return null;
+
+    const companyBucket = this.getPendingCompanyBucket(companyId, language);
+    if (!companyBucket) return null;
+
+    return companyBucket[normalizedStore] || null;
+  }
+
+  hasPendingTranslate(store, type, key) {
+    const pendingStoreBucket = this.getPendingStoreBucket(
+      this.defaultCompany?.id,
+      store,
+      this.language,
+    );
+
+    return Boolean(pendingStoreBucket?.[type]?.[key]);
+  }
+
   getStoreDiscoveryToken(store) {
     return [
       this.language,
@@ -208,66 +278,49 @@ export default class Translate {
     return this.getStoreBucket(null, store)?.[type]?.[key];
   }
 
-  getMissingTranslateToken(store, type, key) {
-    return [
-      this.language,
-      this.normalizeId(this.defaultCompany?.id) || "",
-      String(store || ""),
-      String(type || ""),
-      String(key || ""),
-    ].join("::");
-  }
-
   persistMissingTranslate(store, type, key, translate) {
     if (!store || !type || !key || !this.defaultCompany?.id) return;
-    if (
-      typeof this.translateActions?.addToQueue !== "function" ||
-      typeof this.translateActions?.initQueue !== "function" ||
-      typeof this.translateActions?.save !== "function"
-    )
-      return;
 
     // verifica se tenho acesso ao defaultCompany
+    const defaultCompanyId = this.normalizeId(this.defaultCompany?.id);
     if (
       !Array.isArray(this.companies) ||
-      !this.companies.some((company) => company.id === this.defaultCompany.id)
+      !this.companies.some((company) => this.normalizeId(company?.id) === defaultCompanyId)
     )
       return;
 
-    const pendingToken = this.getMissingTranslateToken(store, type, key);
-    if (this.pendingMissingTranslations.has(pendingToken)) return;
+    if (this.hasPendingTranslate(store, type, key)) {
+      return;
+    }
 
-    this.pendingMissingTranslations.add(pendingToken);
+    if (typeof this.translateActions?.queueMissingTranslate !== "function") {
+      return;
+    }
 
-    // Persist missing translations in the same runtime language being rendered.
-    const payload = {
-      people: "/people/" + this.defaultCompany.id,
+    this.translateActions.queueMissingTranslate({
       language: this.language,
+      companyId: this.defaultCompany.id,
       store,
       type,
       key,
       translate,
-    };
+    });
+  }
 
-    setTimeout(() => {
-      try {
-        this.translateActions.addToQueue(() => {
-          return Promise.resolve()
-            .then(() => this.translateActions.save(payload))
-            .then(() => {
-              this.findMessage(store, type, key, translate);
-              this.persist();
-            })
-            .finally(() => {
-              this.pendingMissingTranslations.delete(pendingToken);
-            });
-        });
+  removePendingTranslate(store, type, key) {
+    if (!store || !type || !key || !this.defaultCompany?.id) return;
 
-        this.translateActions.initQueue();
-      } catch (e) {
-        this.pendingMissingTranslations.delete(pendingToken);
-      }
-    }, 0);
+    if (typeof this.translateActions?.removePendingTranslate !== "function") {
+      return;
+    }
+
+    this.translateActions.removePendingTranslate({
+      language: this.language,
+      companyId: this.defaultCompany.id,
+      store,
+      type,
+      key,
+    });
   }
 
   t(store, type, key) {
@@ -391,6 +444,7 @@ export default class Translate {
         element.translate || this.formatMessage(element.key),
         companyId
       );
+      this.removePendingTranslate(element.store, element.type, element.key);
     });
 
     this.persist();

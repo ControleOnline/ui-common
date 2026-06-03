@@ -25,15 +25,118 @@ const installLocalStorage = (config = {language: 'pt-br'}) => {
   delete global.refreshTranslationsUI;
 };
 
+const flushAsync = async () => {
+  await Promise.resolve();
+  await new Promise(resolve => setTimeout(resolve, 0));
+  await new Promise(resolve => setTimeout(resolve, 0));
+};
+
+const normalizeLanguage = value =>
+  String(value || '')
+    .trim()
+    .replace(/_/g, '-')
+    .toLowerCase();
+
+const normalizeId = value =>
+  String(value || '')
+    .replace(/\D+/g, '')
+    .trim();
+
+const createPendingTranslateStore = ({getItems} = {}) => {
+  const pendingMessages = {};
+  const translateActions = {
+    getItems: getItems || (async () => []),
+    queueMissingTranslate: ({language, companyId, store, type, key, translate}) => {
+      const normalizedLanguage = normalizeLanguage(language);
+      const normalizedCompanyId = normalizeId(companyId);
+
+      if (!pendingMessages[normalizedLanguage]) {
+        pendingMessages[normalizedLanguage] = {};
+      }
+
+      if (!pendingMessages[normalizedLanguage].companies) {
+        pendingMessages[normalizedLanguage].companies = {};
+      }
+
+      if (!pendingMessages[normalizedLanguage].companies[normalizedCompanyId]) {
+        pendingMessages[normalizedLanguage].companies[normalizedCompanyId] = {};
+      }
+
+      if (!pendingMessages[normalizedLanguage].companies[normalizedCompanyId][store]) {
+        pendingMessages[normalizedLanguage].companies[normalizedCompanyId][store] = {};
+      }
+
+      if (
+        !pendingMessages[normalizedLanguage].companies[normalizedCompanyId][store][type]
+      ) {
+        pendingMessages[normalizedLanguage].companies[normalizedCompanyId][store][type] =
+          {};
+      }
+
+      pendingMessages[normalizedLanguage].companies[normalizedCompanyId][store][type][
+        key
+      ] = translate;
+
+      return pendingMessages;
+    },
+    removePendingTranslate: ({language, companyId, store, type, key}) => {
+      const normalizedLanguage = normalizeLanguage(language);
+      const normalizedCompanyId = normalizeId(companyId);
+      const languageBucket = pendingMessages[normalizedLanguage];
+      const companyBucket = languageBucket?.companies?.[normalizedCompanyId];
+      const storeBucket = companyBucket?.[store];
+      const typeBucket = storeBucket?.[type];
+
+      if (!typeBucket || !Object.prototype.hasOwnProperty.call(typeBucket, key)) {
+        return pendingMessages;
+      }
+
+      delete typeBucket[key];
+
+      if (Object.keys(typeBucket).length === 0) {
+        delete storeBucket[type];
+      }
+
+      if (Object.keys(storeBucket).length === 0) {
+        delete companyBucket[store];
+      }
+
+      if (Object.keys(companyBucket).length === 0) {
+        delete languageBucket.companies[normalizedCompanyId];
+      }
+
+      if (Object.keys(languageBucket.companies || {}).length === 0) {
+        delete languageBucket.companies;
+      }
+
+      if (Object.keys(languageBucket).length === 0) {
+        delete pendingMessages[normalizedLanguage];
+      }
+
+      return pendingMessages;
+    },
+  };
+
+  return {
+    getters: {
+      messages: pendingMessages,
+    },
+    actions: translateActions,
+    pendingMessages,
+    translateActions,
+  };
+};
+
 test('prefers the current company translation and falls back to the default company', () => {
   installLocalStorage();
 
+  const translateStore = createPendingTranslateStore();
   const translate = new Translate(
     [{id: 1}, {id: 5}],
     {id: 1},
     {id: 5},
     ['orders'],
-    {},
+    translateStore,
   );
 
   translate.findMessage('orders', 'label', 'save', 'Salvar', 1);
@@ -47,7 +150,7 @@ test('prefers the current company translation and falls back to the default comp
     {id: 1},
     {id: 9},
     ['orders'],
-    {},
+    createPendingTranslateStore(),
   );
 
   assert.equal(fallbackTranslate.t('orders', 'label', 'save'), 'Salvar');
@@ -61,7 +164,7 @@ test('keeps the translate method bound when passed as a standalone function', ()
     {id: 1},
     {id: 1},
     ['orders'],
-    {},
+    createPendingTranslateStore(),
   );
 
   translate.findMessage('orders', 'label', 'save', 'Salvar', 1);
@@ -71,27 +174,22 @@ test('keeps the translate method bound when passed as a standalone function', ()
   assert.equal(detachedTranslate('orders', 'label', 'save'), 'Salvar');
 });
 
-test('defers missing translation persistence and deduplicates repeated renders', async () => {
+test('queues missing translations in the translate store without posting to the backend', async () => {
   installLocalStorage();
 
-  let addToQueueCalls = 0;
-  let initQueueCalls = 0;
-  const queued = [];
+  const discoveryCalls = [];
+  const translateStore = createPendingTranslateStore({
+    getItems: async params => {
+      discoveryCalls.push(params);
+      return [];
+    },
+  });
   const translate = new Translate(
     [{id: 1}],
     {id: 1},
     {id: 1},
     ['contract'],
-    {
-      addToQueue: fn => {
-        addToQueueCalls += 1;
-        queued.push(fn);
-      },
-      initQueue: () => {
-        initQueueCalls += 1;
-      },
-      save: async () => ({}),
-    },
+    translateStore,
   );
 
   const firstValue = translate.t('contract', 'empty', 'none_registered_title');
@@ -99,46 +197,49 @@ test('defers missing translation persistence and deduplicates repeated renders',
 
   assert.equal(firstValue, 'None registered title');
   assert.equal(secondValue, 'None registered title');
-  assert.equal(addToQueueCalls, 0);
-  assert.equal(initQueueCalls, 0);
 
-  await new Promise(resolve => setTimeout(resolve, 0));
+  await flushAsync();
 
-  assert.equal(addToQueueCalls, 1);
-  assert.equal(initQueueCalls, 1);
-  assert.equal(queued.length, 1);
+  assert.deepEqual(discoveryCalls, [
+    {store: 'contract', 'language.language': 'pt-br', people: '/people/1', page: 1},
+  ]);
+  assert.deepEqual(translateStore.pendingMessages, {
+    'pt-br': {
+      companies: {
+        1: {
+          contract: {
+            empty: {
+              none_registered_title: 'None registered title',
+            },
+          },
+        },
+      },
+    },
+  });
 });
 
 test('persists missing translations with the normalized configured language', async () => {
   installLocalStorage({language: 'en_US'});
 
-  const savedPayloads = [];
-  const queued = [];
+  const translateStore = createPendingTranslateStore({
+    getItems: async () => [],
+  });
   const translate = new Translate(
     [{id: 1}],
     {id: 1},
     {id: 1},
     ['contract'],
-    {
-      addToQueue: fn => {
-        queued.push(fn);
-      },
-      initQueue: () => {},
-      save: async payload => {
-        savedPayloads.push(payload);
-        return {};
-      },
-    },
+    translateStore,
   );
 
   translate.t('contract', 'empty', 'none_registered_title');
 
-  await new Promise(resolve => setTimeout(resolve, 0));
-  await queued[0]();
+  await flushAsync();
 
-  assert.equal(savedPayloads.length, 1);
-  assert.equal(savedPayloads[0].language, 'en-us');
-  assert.equal(savedPayloads[0].people, '/people/1');
+  assert.equal(
+    translateStore.pendingMessages['en-us'].companies[1].contract.empty.none_registered_title,
+    'None registered title',
+  );
 });
 
 test('loads each requested store only for the current and default companies', async () => {
@@ -150,14 +251,12 @@ test('loads each requested store only for the current and default companies', as
     {id: 1},
     {id: 5},
     ['orders', 'crm'],
-    {
+    createPendingTranslateStore({
       getItems: async params => {
         calls.push(params);
         return [];
       },
-      addToQueue: () => {},
-      initQueue: () => {},
-    },
+    }),
   );
 
   await translate.discoveryAll();
@@ -170,84 +269,38 @@ test('loads each requested store only for the current and default companies', as
   ]);
 });
 
-test('discovers non-bootstrapped stores before persisting a fallback translation', async () => {
+test('removes stale pending entries once a discovered store returns the real translation', async () => {
   installLocalStorage();
 
-  const discoveryCalls = [];
-  const queued = [];
-  let addToQueueCalls = 0;
-  let initQueueCalls = 0;
-  const savedPayloads = [];
-  const translate = new Translate(
-    [{id: 1}],
-    {id: 1},
-    {id: 1},
-    ['orders'],
-    {
-      getItems: async params => {
-        discoveryCalls.push(params);
-        return [];
-      },
-      addToQueue: fn => {
-        addToQueueCalls += 1;
-        queued.push(fn);
-      },
-      initQueue: () => {
-        initQueueCalls += 1;
-      },
-      save: async payload => {
-        savedPayloads.push(payload);
-        return {};
-      },
+  const translateStore = createPendingTranslateStore({
+    getItems: async params => {
+      if (params.page === 1) {
+        return [
+          {
+            store: 'menu',
+            type: 'menu',
+            key: 'orders',
+            translate: 'Pedidos',
+          },
+        ];
+      }
+
+      return [];
     },
-  );
+  });
 
-  assert.equal(translate.t('menu', 'menu', 'orders'), 'Orders');
-  assert.equal(addToQueueCalls, 0);
-  assert.equal(initQueueCalls, 0);
-
-  await Promise.resolve();
-  await new Promise(resolve => setTimeout(resolve, 0));
-  await new Promise(resolve => setTimeout(resolve, 0));
-
-  assert.deepEqual(discoveryCalls, [
-    {store: 'menu', 'language.language': 'pt-br', people: '/people/1', page: 1},
-  ]);
-  assert.equal(addToQueueCalls, 1);
-  assert.equal(initQueueCalls, 1);
-
-  await queued[0]();
-
-  assert.deepEqual(savedPayloads, [
-    {
-      people: '/people/1',
-      language: 'pt-br',
-      store: 'menu',
-      type: 'menu',
-      key: 'orders',
-      translate: 'Orders',
-    },
-  ]);
-});
-
-test('refreshes a discovered store instead of persisting a stale cached fallback', async () => {
-  installLocalStorage();
-
-  localStorage.setItem(
-    'translates',
-    JSON.stringify({
-      'pt-br': {
+  translateStore.pendingMessages['pt-br'] = {
+    companies: {
+      1: {
         menu: {
           menu: {
             orders: 'Orders',
           },
         },
       },
-    }),
-  );
+    },
+  };
 
-  const discoveryCalls = [];
-  const queued = [];
   let refreshCalls = 0;
   global.refreshTranslationsUI = () => {
     refreshCalls += 1;
@@ -258,41 +311,14 @@ test('refreshes a discovered store instead of persisting a stale cached fallback
     {id: 1},
     {id: 1},
     ['orders'],
-    {
-      getItems: async params => {
-        discoveryCalls.push(params);
-        return params.page === 1
-          ? [
-              {
-                store: 'menu',
-                type: 'menu',
-                key: 'orders',
-                translate: 'Pedidos',
-              },
-            ]
-          : [];
-      },
-      addToQueue: fn => {
-        queued.push(fn);
-      },
-      initQueue: () => {},
-      save: async () => {
-        throw new Error('save should not be called when the translation already exists');
-      },
-    },
+    translateStore,
   );
 
   assert.equal(translate.t('menu', 'menu', 'orders'), 'Orders');
 
-  await Promise.resolve();
-  await Promise.resolve();
-  await new Promise(resolve => setTimeout(resolve, 0));
+  await flushAsync();
 
-  assert.deepEqual(discoveryCalls, [
-    {store: 'menu', 'language.language': 'pt-br', people: '/people/1', page: 1},
-    {store: 'menu', 'language.language': 'pt-br', people: '/people/1', page: 2},
-  ]);
-  assert.equal(queued.length, 0);
+  assert.deepEqual(translateStore.pendingMessages, {});
   assert.equal(refreshCalls, 1);
   assert.equal(translate.t('menu', 'menu', 'orders'), 'Pedidos');
 });
