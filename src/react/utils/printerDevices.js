@@ -17,10 +17,12 @@ export const NETWORK_PRINTER_PORT_CONFIG_KEY = 'print-network-port';
 export const NETWORK_PRINTER_COLUMNS_CONFIG_KEY = 'print-network-columns';
 export const NETWORK_PRINTER_TRANSPORT_CONFIG_KEY =
   'print-network-transport';
+export const NETWORK_PRINTER_CODE_PAGE_CONFIG_KEY = 'print-network-code-page';
 
 export const DEFAULT_NETWORK_PRINTER_PORT = '9100';
 export const DEFAULT_NETWORK_PRINTER_COLUMNS = '48';
 export const DEFAULT_NETWORK_PRINTER_TRANSPORT = 'tcp-raw';
+export const DEFAULT_NETWORK_PRINTER_CODE_PAGE = 'cp850';
 export const DEFAULT_NETWORK_PRINTER_MANUFACTURER = 'Bematech';
 export const DEFAULT_NETWORK_PRINTER_MODEL = 'MP-2800 TH';
 

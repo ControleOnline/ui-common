@@ -6,10 +6,12 @@ import {
 } from '@controleonline/ui-common/src/react/services/NetworkPrinterService';
 import {
   DEFAULT_NETWORK_PRINTER_PORT,
+  DEFAULT_NETWORK_PRINTER_CODE_PAGE,
   DISPLAY_DEVICE_TYPE,
   PDV_DEVICE_TYPE,
   getManagedPrinterDevices,
   getPrinterHost,
+  NETWORK_PRINTER_CODE_PAGE_CONFIG_KEY,
   NETWORK_PRINTER_PORT_CONFIG_KEY,
   normalizePrinterPort,
 } from '@controleonline/ui-common/src/react/utils/printerDevices';
@@ -394,11 +396,17 @@ const PrintService = () => {
         managedPrinter?.configs?.[NETWORK_PRINTER_PORT_CONFIG_KEY] ||
           DEFAULT_NETWORK_PRINTER_PORT,
       );
+      const printerCodePage =
+        managedPrinter?.configs?.[NETWORK_PRINTER_CODE_PAGE_CONFIG_KEY] ||
+        DEFAULT_NETWORK_PRINTER_CODE_PAGE;
 
       await printOnNetworkPrinter({
         host: printerHost,
         port: printerPort,
-        payload: decodeNetworkPrinterPayload(spoolData?.file?.content),
+        codePage: printerCodePage,
+        payload: decodeNetworkPrinterPayload(spoolData?.file?.content, {
+          codePage: printerCodePage,
+        }),
       });
 
       return true;
