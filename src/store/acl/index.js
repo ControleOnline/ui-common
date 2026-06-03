@@ -7,7 +7,7 @@ export default {
   state: {
     item: {},
     items: [],
-    isLoading: true,
+    isLoading: false,
     summary: {},
     permissions: [],
     disabled: true,
