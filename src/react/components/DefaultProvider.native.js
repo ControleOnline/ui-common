@@ -165,6 +165,8 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
 
     setTranslateReady(true);
     translateBootstrapKeyRef.current = '';
+    translateActions.setMessages({});
+    translateActions.setPendingMessages?.({});
 
     if (global.t) {
       delete global.t;
@@ -565,11 +567,9 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
       Object.keys(stores),
       translateStore,
     );
-
-    global.t.discoveryAll().then(() => {
-      setTranslateReady(true);
-      global.refreshTranslationsUI?.();
-    });
+    setTranslateReady(true);
+    global.refreshTranslationsUI?.();
+    global.t.discoveryAll().catch(() => {});
   }, [
     companies,
     currentCompany,

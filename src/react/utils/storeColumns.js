@@ -137,6 +137,36 @@ const translateColumnValue = ({column, storeName, value}) => {
   return translateFn ? translateFn(storeName, 'span', value) : value;
 };
 
+const translateColumnLabel = ({column, fieldName, storeName, fallbackLabel = ''}) => {
+  if (!normalizeText(storeName)) {
+    return fallbackLabel;
+  }
+
+  const translateFn =
+    typeof globalThis !== 'undefined' && typeof globalThis?.t?.t === 'function'
+      ? globalThis.t.t.bind(globalThis.t)
+      : null;
+  if (!translateFn) {
+    return fallbackLabel;
+  }
+
+  const candidates = [
+    normalizeText(fieldName),
+    normalizeText(column?.name),
+    normalizeText(column?.key),
+    normalizeText(column?.label),
+  ].filter(Boolean);
+
+  for (const candidate of candidates) {
+    const translated = translateFn(storeName, 'label', candidate);
+    if (normalizeText(translated) && normalizeText(translated) !== formatHumanLabel(candidate)) {
+      return translated;
+    }
+  }
+
+  return fallbackLabel;
+};
+
 export const resolveStoreConfigByName = storeName => {
   const normalizedStoreName = normalizeText(storeName);
   const stores = getAllStores();
@@ -310,6 +340,16 @@ export const formatStoreColumnLabel = ({
   const normalizedLabel = normalizeText(column.label);
   if (!normalizedLabel) {
     return fallbackLabel;
+  }
+
+  const directTranslatedLabel = translateColumnLabel({
+    column,
+    fallbackLabel,
+    fieldName,
+    storeName,
+  });
+  if (directTranslatedLabel) {
+    return formatHumanLabel(directTranslatedLabel) || directTranslatedLabel;
   }
 
   const resolvedLabel = translateColumnValue({

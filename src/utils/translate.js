@@ -17,7 +17,12 @@ export default class Translate {
     this.bootstrapStores = new Set(this.getStoreList());
     this.discoveredStores = new Set();
     this.pendingStoreDiscoveries = new Map();
+    this.pendingPersistRequests = new Map();
     this.t = this.t.bind(this);
+    if (typeof this.translateActions?.setPendingMessages === "function") {
+      this.translateActions.setPendingMessages({});
+    }
+    this.syncCachedMessagesToStore();
     this.hydrateDiscoveredStores();
   }
 
@@ -37,19 +42,22 @@ export default class Translate {
     }
   }
 
-  getLanguageBucket(createIfMissing = false) {
-    if (!this.translates[this.language] && createIfMissing) {
-      this.translates[this.language] = {};
+  getLanguageBucket(language = this.language, createIfMissing = false) {
+    const normalizedLanguage = this.normalizeLanguageCode(language);
+    if (!normalizedLanguage) return null;
+
+    if (!this.translates[normalizedLanguage] && createIfMissing) {
+      this.translates[normalizedLanguage] = {};
     }
 
-    return this.translates[this.language] || null;
+    return this.translates[normalizedLanguage] || null;
   }
 
-  getCompanyBucket(companyId, createIfMissing = false) {
+  getCompanyBucket(companyId, createIfMissing = false, language = this.language) {
     const normalizedCompanyId = this.normalizeId(companyId);
     if (!normalizedCompanyId) return null;
 
-    const languageBucket = this.getLanguageBucket(createIfMissing);
+    const languageBucket = this.getLanguageBucket(language, createIfMissing);
     if (!languageBucket) return null;
 
     if (!languageBucket.companies && createIfMissing) {
@@ -67,11 +75,11 @@ export default class Translate {
     return languageBucket.companies?.[normalizedCompanyId] || null;
   }
 
-  getStoreBucket(companyId, store, createIfMissing = false) {
+  getStoreBucket(companyId, store, createIfMissing = false, language = this.language) {
     if (!store) return null;
 
     if (companyId) {
-      const companyBucket = this.getCompanyBucket(companyId, createIfMissing);
+      const companyBucket = this.getCompanyBucket(companyId, createIfMissing, language);
       if (!companyBucket) return null;
 
       if (createIfMissing && !companyBucket[store]) {
@@ -81,7 +89,7 @@ export default class Translate {
       return companyBucket[store] || null;
     }
 
-    const languageBucket = this.getLanguageBucket(createIfMissing);
+    const languageBucket = this.getLanguageBucket(language, createIfMissing);
     if (!languageBucket) return null;
 
     if (createIfMissing && !languageBucket[store]) {
@@ -106,8 +114,8 @@ export default class Translate {
 
   getCompaniesToCache() {
     const candidates = [
-      this.currentCompany,
       this.defaultCompany,
+      this.currentCompany,
     ].filter((company) => company?.id);
 
     const unique = [];
@@ -133,7 +141,7 @@ export default class Translate {
   }
 
   getPendingMessages() {
-    const messages = this.translateStore?.getters?.messages;
+    const messages = this.translateStore?.getters?.pendingMessages;
     if (!messages || typeof messages !== "object" || Array.isArray(messages)) {
       return {};
     }
@@ -196,7 +204,7 @@ export default class Translate {
   }
 
   hasCachedBootstrapStore(store) {
-    if (!store || !this.bootstrapStores.has(store)) return false;
+    if (!store) return false;
 
     const companies = this.getCompaniesToCache();
     if (companies.length === 0) return false;
@@ -258,6 +266,56 @@ export default class Translate {
     }
   }
 
+  syncCachedMessagesToStore() {
+    if (typeof this.translateActions?.setMessages !== "function") {
+      return;
+    }
+
+    this.translateActions.setMessages({
+      ...this.translates,
+    });
+  }
+
+  getPersistRequestToken(store, type, key) {
+    return [
+      this.language,
+      this.normalizeId(this.defaultCompany?.id),
+      String(store || "").trim(),
+      String(type || "").trim(),
+      String(key || "").trim(),
+    ].join("::");
+  }
+
+  resolveReferenceId(value) {
+    if (!value) return null;
+
+    if (typeof value === "object") {
+      return this.normalizeId(value.id || value["@id"] || value.people || value.language);
+    }
+
+    return this.normalizeId(value);
+  }
+
+  cacheTranslateRecord(record, fallbackCompanyId = null, fallbackLanguage = this.language) {
+    const companyId = this.resolveReferenceId(record?.people) || this.normalizeId(fallbackCompanyId);
+    const language =
+      this.normalizeLanguageCode(record?.language?.language || record?.language?.locale || fallbackLanguage) ||
+      this.language;
+    const store = String(record?.store || "").trim();
+    const type = String(record?.type || "").trim();
+    const key = String(record?.key || "").trim();
+    const message = record?.translate ?? this.formatMessage(key);
+
+    if (!companyId || !store || !type || !key) {
+      return false;
+    }
+
+    const previousMessage = this.getStoreBucket(companyId, store, false, language)?.[type]?.[key];
+    this.findMessage(store, type, key, message, companyId, language);
+
+    return previousMessage !== message;
+  }
+
   getMessageFromBuckets(store, type, key) {
     const companyIds = [
       this.currentCompany?.id,
@@ -293,7 +351,15 @@ export default class Translate {
       return;
     }
 
-    if (typeof this.translateActions?.queueMissingTranslate !== "function") {
+    const requestToken = this.getPersistRequestToken(store, type, key);
+    if (this.pendingPersistRequests.has(requestToken)) {
+      return;
+    }
+
+    if (
+      typeof this.translateActions?.queueMissingTranslate !== "function" ||
+      typeof this.translateActions?.save !== "function"
+    ) {
       return;
     }
 
@@ -305,6 +371,33 @@ export default class Translate {
       key,
       translate,
     });
+
+    const request = Promise.resolve(
+      this.translateActions.save({
+        people: "/people/" + defaultCompanyId,
+        language: this.language,
+        store,
+        type,
+        key,
+        translate,
+        revised: false,
+      })
+    )
+      .then((result) => {
+        const changed = this.cacheTranslateRecord(result, defaultCompanyId, this.language);
+        this.removePendingTranslate(store, type, key);
+        this.persist();
+        if (changed) {
+          this.notifyTranslationsUpdated();
+        }
+        return result;
+      })
+      .catch(() => {})
+      .finally(() => {
+        this.pendingPersistRequests.delete(requestToken);
+      });
+
+    this.pendingPersistRequests.set(requestToken, request);
   }
 
   removePendingTranslate(store, type, key) {
@@ -335,10 +428,6 @@ export default class Translate {
           const discoveredTranslate = this.getMessageFromBuckets(store, type, key);
 
           if (discoveredTranslate) {
-            if (discoveredTranslate !== translate) {
-              this.notifyTranslationsUpdated();
-            }
-
             return;
           }
 
@@ -360,46 +449,86 @@ export default class Translate {
 
   reload() {
     this.clear();
-    this.discoveryAll();
+    return this.discoveryAll({ force: true });
   }
 
   clear() {
     this.translates = {};
+    this.discoveredStores.clear();
+    this.pendingStoreDiscoveries.clear();
+    this.pendingPersistRequests.clear();
+    if (typeof this.translateActions?.setPendingMessages === "function") {
+      this.translateActions.setPendingMessages({});
+    }
     this.persist();
   }
 
-  async discoveryAll() {
-    for (const store of this.getStoreList()) {
-      await this.discoveryStoreTranslate(store);
+  shouldFetchStoreForCompany(store, company, force = false) {
+    if (force) return true;
+
+    const companyId = this.normalizeId(company?.id);
+    if (!companyId || !store) return false;
+
+    const storeBucket = this.getStoreBucket(companyId, store, false, this.language);
+    return storeBucket == null;
+  }
+
+  async discoveryAll(options = {}) {
+    const companies = this.getCompaniesToCache();
+
+    for (const company of companies) {
+      for (const store of this.getStoreList()) {
+        await this.discoveryStoreTranslate(store, {
+          ...options,
+          companies: [company],
+        });
+      }
     }
 
     return this.translates;
   }
 
-  async discoveryStoreTranslate(store) {
+  async discoveryStoreTranslate(store, options = {}) {
     if (!store) return this.translates;
 
-    if (this.hasDiscoveredStore(store)) {
+    const force = options.force === true;
+    if (!force && this.hasDiscoveredStore(store)) {
       return this.translates;
     }
 
-    const companies = this.getCompaniesToCache();
+    const companies = Array.isArray(options.companies) && options.companies.length > 0
+      ? options.companies
+      : this.getCompaniesToCache();
     if (companies.length === 0) {
       this.markStoreDiscovered(store);
       return this.translates;
     }
 
+    let hasChanges = false;
     for (const company of companies) {
-      await this.fetchTranslates(store, company);
+      const changed = await this.fetchTranslates(store, company, { force });
+      hasChanges = changed || hasChanges;
     }
 
-    this.markStoreDiscovered(store);
+    if (this.hasCachedBootstrapStore(store)) {
+      this.markStoreDiscovered(store);
+    }
+
+    if (hasChanges) {
+      this.persist();
+      this.notifyTranslationsUpdated();
+    }
 
     return this.translates;
   }
 
-  async fetchTranslates(store, company) {
-    if (!company?.id) return Promise.resolve();
+  async fetchTranslates(store, company, options = {}) {
+    if (!company?.id) return false;
+
+    const force = options.force === true;
+    if (!this.shouldFetchStoreForCompany(store, company, force)) {
+      return false;
+    }
 
     const params = {
       store: store,
@@ -429,33 +558,42 @@ export default class Translate {
 
     const companyId = this.normalizeId(company?.id);
     const storeBucket = this.getStoreBucket(companyId, store, true);
+    let changed = false;
 
     if (storeBucket) {
+      if (Object.keys(storeBucket).length > 0) {
+        changed = true;
+      }
       Object.keys(storeBucket).forEach((type) => {
         delete storeBucket[type];
       });
     }
 
     storeTranslates.forEach((element) => {
-      this.findMessage(
-        element.store,
-        element.type,
-        element.key,
-        element.translate || this.formatMessage(element.key),
-        companyId
-      );
+      changed = this.cacheTranslateRecord(
+        {
+          ...element,
+          people: element.people || companyId,
+        },
+        companyId,
+        this.language,
+      ) || changed;
       this.removePendingTranslate(element.store, element.type, element.key);
     });
 
-    this.persist();
+    return changed || storeTranslates.length === 0;
   }
 
   persist() {
-    localStorage.setItem("translates", JSON.stringify(this.translates));
+    if (typeof localStorage !== "undefined") {
+      localStorage.setItem("translates", JSON.stringify(this.translates));
+    }
+
+    this.syncCachedMessagesToStore();
   }
 
-  findMessage(store, type, key, message, companyId = null) {
-    const storeBucket = this.getStoreBucket(companyId, store, true);
+  findMessage(store, type, key, message, companyId = null, language = this.language) {
+    const storeBucket = this.getStoreBucket(companyId, store, true, language);
     if (!storeBucket) {
       return this.formatMessage(key);
     }
