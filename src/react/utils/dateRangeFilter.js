@@ -12,26 +12,13 @@ const DATE_FILTER_LABEL_KEYS = {
   custom: 'period_custom',
 };
 
-const DATE_FILTER_FALLBACK_LABELS = {
-  period: 'Período',
-  current_date: 'Período atual',
-  period_all: 'Todos',
-  period_today: 'Hoje',
-  period_yesterday: 'Ontem',
-  period_7d: '7 dias',
-  period_30d: '30 dias',
-  period_this_month: 'Este mês',
-  period_last_month: 'Mês anterior',
-  period_custom: 'Período personalizado',
-};
-
 const pad2 = value => String(value).padStart(2, '0');
 
 const formatDateToApi = date =>
   `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())} ${pad2(date.getHours())}:${pad2(date.getMinutes())}:${pad2(date.getSeconds())}`;
 
-const resolveOrderLabel = key => global.t?.t('orders', 'label', key) || DATE_FILTER_FALLBACK_LABELS[key] || '';
-const resolveYesterdayLabel = () => global.t?.t('users', 'date', 'yesterday', 'Ontem') || 'Ontem';
+const resolveOrderLabel = key => global.t?.t('orders', 'label', key);
+const resolveYesterdayLabel = () => global.t?.t('users', 'date', 'yesterday');
 
 const createDayStart = date =>
   new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
