@@ -82,7 +82,10 @@ export const formatHumanLabel = value => {
     return '';
   }
 
-  return normalized.replace(/\b\w/g, char => char.toUpperCase());
+  return normalized.replace(
+    /(^|[\s([{'"“”‘’])(\p{L})/gu,
+    (match, prefix, char) => `${prefix}${char.toLocaleUpperCase('pt-BR')}`,
+  );
 };
 
 export const uppercaseText = (value, locale = 'pt-BR') => {
