@@ -58,6 +58,7 @@ export default {
       {
         externalFilter: false,
         sortable: true,
+        translate: true,
         name: "type",
         align: "left",
         label: "type",
@@ -83,6 +84,7 @@ export default {
       {
         sortable: true,
         editable: false,
+        translate: true,
         name: "channel",
         align: "left",
         label: "channel",
@@ -100,6 +102,7 @@ export default {
         editable: false,
         externalFilter: false,
         sortable: true,
+        translate: true,
         name: "status",
         align: "left",
         label: "status",
