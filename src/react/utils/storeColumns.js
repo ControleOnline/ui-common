@@ -124,8 +124,41 @@ const normalizeFormattedValue = value => {
   return value;
 };
 
+const DEFAULT_TRANSLATABLE_FIELDS = new Set([
+  'active',
+  'app',
+  'channel',
+  'displaytype',
+  'featured',
+  'frequency',
+  'invoicetype',
+  'installments',
+  'ordertype',
+  'peopletype',
+  'pricecalculation',
+  'productcondition',
+  'realstatus',
+  'status',
+]);
+
+const shouldTranslateColumnValue = ({column, storeName, value}) => {
+  if (column?.translate === false || typeof value !== 'string' || !normalizeText(storeName)) {
+    return false;
+  }
+
+  if (column?.translate === true || Array.isArray(column?.list)) {
+    return true;
+  }
+
+  const candidates = [column?.key, column?.name, column?.label]
+    .map(normalizeKey)
+    .filter(Boolean);
+
+  return candidates.some(candidate => DEFAULT_TRANSLATABLE_FIELDS.has(candidate));
+};
+
 const translateColumnValue = ({column, storeName, value}) => {
-  if (!column?.translate || typeof value !== 'string' || !normalizeText(storeName)) {
+  if (!shouldTranslateColumnValue({column, storeName, value})) {
     return value;
   }
 

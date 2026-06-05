@@ -28,7 +28,6 @@ export default {
         },
       },
       {
-        translate: true,
         externalFilter: false,
         sortable: true,
         name: "status",
@@ -50,7 +49,6 @@ export default {
         },
       },
       {
-        translate: true,
         sortable: true,
         name: "realStatus",
         align: "left",
