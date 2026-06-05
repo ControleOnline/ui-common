@@ -389,12 +389,12 @@ const createStyles = palette => {
 };
 
 export const buildEntityLogPalette = theme => ({
-  accent: theme?.accentInfo || theme?.primary,
-  border: theme?.border,
-  surface: theme?.modalBg,
-  surfaceSoft: theme?.cardBgSoft,
-  textPrimary: theme?.textPrimary,
-  textSecondary: theme?.textSecondary,
+  accent: theme?.accentInfo || theme?.primary || '#2563EB',
+  border: theme?.border || '#D8E0EA',
+  surface: theme?.modalBg || '#FFFFFF',
+  surfaceSoft: theme?.cardBgSoft || '#F8FAFC',
+  textPrimary: theme?.textPrimary || '#0F172A',
+  textSecondary: theme?.textSecondary || '#64748B',
 });
 
 export default createStyles;

@@ -22,17 +22,17 @@ export const resolveActionPalette = (
   variant = 'primary',
   disabled = false,
 ) => {
-  const primaryColor = theme?.primary;
-  const successColor = theme?.success;
-  const surfaceColor = theme?.surface;
-  const borderColor = theme?.cardBorder;
-  const mutedColor = theme?.muted;
+  const primaryColor = theme?.primary || '#1D4ED8';
+  const successColor = theme?.success || '#16A34A';
+  const surfaceColor = theme?.surface || '#FFFFFF';
+  const borderColor = theme?.cardBorder || '#D6DEE8';
+  const mutedColor = theme?.muted || '#64748B';
 
   const palettes = {
     primary: {
       backgroundColor: primaryColor,
       borderColor: primaryColor,
-      textColor: theme?.onPrimary,
+      textColor: theme?.onPrimary || '#FFFFFF',
     },
     success: {
       backgroundColor: successColor,
@@ -42,7 +42,7 @@ export const resolveActionPalette = (
     outline: {
       backgroundColor: surfaceColor,
       borderColor,
-      textColor: theme?.text,
+      textColor: theme?.text || '#0F172A',
     },
   };
 
@@ -70,8 +70,8 @@ const createStyles = theme =>
     card: {
       borderRadius: 18,
       borderWidth: 1,
-      borderColor: theme?.cardBorder,
-      backgroundColor: theme?.surface,
+      borderColor: theme?.cardBorder || '#D6DEE8',
+      backgroundColor: theme?.surface || '#FFFFFF',
       paddingHorizontal: 14,
       paddingVertical: 12,
       shadowColor: '#0F172A',
@@ -90,7 +90,7 @@ const createStyles = theme =>
       justifyContent: 'flex-end',
     },
     title: {
-      color: theme?.text,
+      color: theme?.text || '#0F172A',
       fontSize: 16,
       fontWeight: '800',
     },
@@ -115,8 +115,8 @@ const createStyles = theme =>
       flex: 1,
       borderRadius: 14,
       borderWidth: 1,
-      borderColor: theme?.cardBorder,
-      backgroundColor: theme?.background,
+      borderColor: theme?.cardBorder || '#D6DEE8',
+      backgroundColor: theme?.background || '#F8FAFC',
       paddingHorizontal: 10,
       paddingVertical: 9,
     },
@@ -125,19 +125,19 @@ const createStyles = theme =>
       alignSelf: 'stretch',
     },
     metricLabel: {
-      color: theme?.muted,
+      color: theme?.muted || '#64748B',
       fontSize: 11,
       fontWeight: '700',
       textTransform: 'uppercase',
     },
     metricValue: {
       marginTop: 4,
-      color: theme?.text,
+      color: theme?.text || '#0F172A',
       fontSize: 14,
       fontWeight: '800',
     },
     metricValueStrong: {
-      color: theme?.primary,
+      color: theme?.primary || '#1D4ED8',
     },
     actionsRow: {
       marginTop: 12,

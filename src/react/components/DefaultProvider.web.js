@@ -224,6 +224,10 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
   }, [isLogged, isPublicRouteActive]);
 
   useEffect(() => {
+    if (!isLogged) {
+      return;
+    }
+
     let cancelled = false;
 
     api
@@ -245,7 +249,7 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
     return () => {
       cancelled = true;
     };
-  }, [user?.id]);
+  }, [isLogged, user?.id]);
 
   const buildWebDevice = () => {
     const webDeviceId = getOrCreateWebDeviceInstanceId();
@@ -313,10 +317,10 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
   }, [device, deviceActions, isLogged, isShopClientApp, packageVersion, user?.id, webRuntimeIp]);
 
   useEffect(() => {
-    if (device && device.id) {
-      peopleActions.defaultCompany();
+    if (isShopClientApp || device?.id) {
+      peopleActions.defaultCompany().catch(() => {});
     }
-  }, [device?.id]);
+  }, [device?.id, isShopClientApp, peopleActions]);
 
   useEffect(() => {
     if (!isLogged || !device?.id) {
