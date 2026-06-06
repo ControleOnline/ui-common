@@ -17,7 +17,7 @@ import { inlineStyle_240_75 } from './CategoryForm.styles';
 
 /* ─── Paleta de cores predefinidas ─── */
 const PRESET_COLORS = [
-  '#EF4444', '#F97316', '#F59E0B', '#84CC16', '#22C55E',
+  '#c10015', '#F97316', '#e67e22', '#84CC16', '#10b981',
   '#14B8A6', '#06B6D4', '#3B82F6', '#6366F1', '#8B5CF6',
   '#EC4899', '#F43F5E', '#64748B', '#0F172A', '#FFFFFF',
   '#FCA5A5', '#FED7AA', '#FEF08A', '#BBF7D0', '#A7F3D0',
@@ -264,7 +264,7 @@ const IconPicker = ({ value, onChange }) => {
             <MaterialCommunityIcons name="close" size={16} color="#94A3B8" />
           </View>
           <Text style={styles.iconNoneText}>Nenhum ícone</Text>
-          {!value && <MaterialCommunityIcons name="check-circle" size={18} color="#22C55E" />}
+          {!value && <MaterialCommunityIcons name="check-circle" size={18} color="#10b981" />}
         </TouchableOpacity>
 
         <FlatList
@@ -358,7 +358,7 @@ const ParentCategoryPicker = ({ value, onChange, categories, currentId }) => {
           >
             <MaterialCommunityIcons name="close-circle-outline" size={18} color="#94A3B8" style={styles.parentLeadingIcon} />
             <Text style={[styles.parentRowText, styles.parentRowTextMuted]}>Nenhuma</Text>
-            {!value && <MaterialCommunityIcons name="check-circle" size={18} color="#22C55E" />}
+            {!value && <MaterialCommunityIcons name="check-circle" size={18} color="#10b981" />}
           </TouchableOpacity>
 
           {available.map(cat => {

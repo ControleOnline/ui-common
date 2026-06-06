@@ -76,10 +76,10 @@ export const WebsocketListener = () => {
 
     const indicatorColor =
       socketConnected && socketIdentified
-        ? '#22C55E'
+        ? '#10b981'
         : (socketConnected || ['connecting', 'identifying', 'open', 'reconnecting'].includes(normalizedStatus))
-          ? '#F59E0B'
-          : '#EF4444';
+          ? '#e67e22'
+          : '#c10015';
     const lastSocketStores = Array.isArray(state?.lastStores)
       ? state.lastStores.filter(Boolean).join(', ')
       : '';

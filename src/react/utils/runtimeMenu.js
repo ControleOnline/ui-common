@@ -96,7 +96,7 @@ const MANAGER_RUNTIME_MENU_FALLBACK = [
         label: 'Dispositivos',
         route: 'DevicesIndex',
         icon: 'credit-card',
-        color: '#F59E0B',
+        color: '#e67e22',
         sortOrder: 50,
       },
       {

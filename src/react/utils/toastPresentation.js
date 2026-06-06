@@ -16,7 +16,7 @@ export const TOAST_ERROR_STYLES = {
 
 export const TOAST_WARNING_STYLES = {
   indicator: {
-    backgroundColor: '#F59E0B',
+    backgroundColor: '#e67e22',
   },
 }
 
