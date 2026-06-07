@@ -1,3 +1,10 @@
+/*
+ * Regra do fallback de audio operacional
+ * - O som padrao dos alertas e `caixa.m4a`.
+ * - Quando nao houver URL customizada, este helper precisa resolver o asset
+ *   empacotado para manter o aviso sonoro dos novos pedidos.
+ */
+
 const DEFAULT_NOTIFICATION_SOUND_FILE = 'caixa.m4a';
 
 let defaultNotificationSoundSource = null;

@@ -1,3 +1,11 @@
+/*
+ * Regra transversal dos displays de pedidos
+ * - `orders`, `tv` e `products` precisam refletir novos pedidos em tempo real.
+ * - O websocket compartilhado e a fonte canonica: ele distribui as mensagens
+ *   para os stores e alimenta o fluxo de alerta operacional.
+ * - Nao criar websocket paralelo, refresh manual ou audio fora desse contrato.
+ */
+
 const normalizeText = value => String(value ?? '').trim();
 
 const formatClock = value => {

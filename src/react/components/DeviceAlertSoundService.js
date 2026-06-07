@@ -1,3 +1,10 @@
+/*
+ * Regra do alerta operacional
+ * - `order.created` toca o som configurado para o device ou usuario.
+ * - Sem URL customizada, usar o fallback empacotado `caixa.m4a`.
+ * - O aviso sonoro faz parte do mesmo evento que atualiza os displays.
+ */
+
 import React, {useCallback, useEffect, useMemo, useRef} from 'react';
 import {createAudioPlayer} from 'expo-audio';
 import {NativeModules, Platform} from 'react-native';
