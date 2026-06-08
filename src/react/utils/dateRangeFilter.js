@@ -7,9 +7,14 @@ const DATE_FILTER_LABEL_KEYS = {
   yesterday: 'period_yesterday',
   '7d': 'period_7d',
   '30d': 'period_30d',
+  '90d': 'period_90d',
   this_month: 'period_this_month',
   last_month: 'period_last_month',
   custom: 'period_custom',
+};
+
+const DATE_FILTER_OPTION_LABELS = {
+  '90d': '90 dias',
 };
 
 const pad2 = value => String(value).padStart(2, '0');
@@ -141,6 +146,13 @@ const resolveDateObjectsRange = (dateFilterKey, customRange = null, options = {}
     };
   }
 
+  if (dateFilterKey === '90d') {
+    return {
+      afterDate: resolveRelativeStart(now, 90, relativeMode),
+      beforeDate: createRangeEnd(now, useCurrentMoment),
+    };
+  }
+
   if (dateFilterKey === 'this_month') {
     return {
       afterDate: new Date(now.getFullYear(), now.getMonth(), 1, 0, 0, 0, 0),
@@ -196,9 +208,11 @@ export const buildDateFilterOptions = (
   optionKeys = DEFAULT_DATE_FILTER_OPTION_KEYS,
 ) => optionKeys.map(key => ({
   key,
-  label: key === 'yesterday'
-    ? resolveYesterdayLabel()
-    : resolveOrderLabel(DATE_FILTER_LABEL_KEYS[key] || key),
+  label: DATE_FILTER_OPTION_LABELS[key] || (
+    key === 'yesterday'
+      ? resolveYesterdayLabel()
+      : resolveOrderLabel(DATE_FILTER_LABEL_KEYS[key] || key)
+  ),
 }));
 
 export const getDateRange = (
