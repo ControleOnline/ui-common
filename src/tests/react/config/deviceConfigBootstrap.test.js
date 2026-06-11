@@ -6,6 +6,11 @@ jest.mock('../../../react/utils/screenMetrics', () => ({
 }))
 
 const {
+  DISPLAY_SIZE_CONFIG_KEY,
+  DISPLAY_SIZE_DEFAULT,
+  DISPLAY_SIZE_MAX,
+  DISPLAY_SIZE_MIN,
+  DISPLAY_SIDE_BREAK_CONFIG_KEY,
   POS_AUTO_PRINT_ENABLED_CONFIG_KEY,
   POS_CASH_MANAGEMENT_MODE_CONFIG_KEY,
   POS_DELIVERY_ENABLED_CONFIG_KEY,
@@ -17,6 +22,9 @@ const {
   isPosCounterMode,
   isPosDeliveryEnabled,
   isPosSelfServiceMode,
+  isDisplaySideBreakEnabled,
+  normalizeDisplaySize,
+  resolveDisplaySize,
   resolvePosCashManagementMode,
   resolvePosOperationMode,
   resolvePosPrintMode,
@@ -124,6 +132,27 @@ describe('deviceConfigBootstrap POS operation helpers', () => {
 
     expect(shouldUsePosCashRegisterLifecycle(configs)).toBe(false)
     expect(resolvePosPrintMode(configs)).toBe('form')
+  })
+
+  it('defaults display size to 5 and clamps the configured range to 1..10', () => {
+    expect(resolveDisplaySize({})).toBe(DISPLAY_SIZE_DEFAULT)
+    expect(
+      resolveDisplaySize({
+        [DISPLAY_SIZE_CONFIG_KEY]: '1',
+      }),
+    ).toBe(DISPLAY_SIZE_MIN)
+    expect(
+      normalizeDisplaySize('18'),
+    ).toBe(DISPLAY_SIZE_MAX)
+  })
+
+  it('treats display side break as an explicit boolean flag', () => {
+    expect(isDisplaySideBreakEnabled({})).toBe(false)
+    expect(
+      isDisplaySideBreakEnabled({
+        [DISPLAY_SIDE_BREAK_CONFIG_KEY]: '1',
+      }),
+    ).toBe(true)
   })
 
   it('enables Android kiosk only for POS kiosk runtime', () => {

@@ -23,6 +23,34 @@ export const WebsocketListener = () => {
   const pipelineRef = useRef(null);
   const runtimeRef = useRef(null);
 
+  useEffect(() => {
+    if (typeof global === 'undefined') {
+      return undefined;
+    }
+
+    global.__codexInjectInvoiceMessage = message => {
+      const stores = getAllStores();
+      const invoiceStore = stores?.invoice;
+
+      if (!invoiceStore?.actions?.setMessages) {
+        return false;
+      }
+
+      const currentMessages = Array.isArray(invoiceStore.getters?.messages)
+        ? invoiceStore.getters.messages
+        : [];
+
+      invoiceStore.actions.setMessages([...currentMessages, message]);
+      return true;
+    };
+
+    return () => {
+      if (global.__codexInjectInvoiceMessage) {
+        delete global.__codexInjectInvoiceMessage;
+      }
+    };
+  }, []);
+
   contextRef.current = {
     deviceId: String(device?.id || '').trim(),
     companyId: String(currentCompany?.id || '').trim(),
