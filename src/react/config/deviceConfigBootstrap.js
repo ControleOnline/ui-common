@@ -26,6 +26,7 @@ export const POS_CHECK_ORDER_MANAGEMENT_MODE_CONFIG_KEY =
 export const POS_OPERATION_MODE_COUNTER = 'counter';
 export const POS_OPERATION_MODE_WAITER = 'waiter';
 export const POS_OPERATION_MODE_KIOSK = 'kiosk';
+export const POS_OPERATION_MODE_SINGLE_ITEM = 'single-item';
 export const POS_OPERATION_MODE_CASHIER = 'cashier';
 export const POS_CHECK_ORDER_TYPE_NONE = 'none';
 export const POS_CHECK_ORDER_TYPE_TAB = 'tab';
@@ -55,6 +56,11 @@ export const POS_OPERATION_MODE_OPTIONS = [
     value: POS_OPERATION_MODE_KIOSK,
     translationKey: 'selfServiceKiosk',
     descriptionKey: 'selfServiceKioskDescription',
+  },
+  {
+    value: POS_OPERATION_MODE_SINGLE_ITEM,
+    translationKey: 'singleItemSale',
+    descriptionKey: 'singleItemSaleDescription',
   },
   {
     value: POS_OPERATION_MODE_CASHIER,
@@ -145,6 +151,23 @@ export const normalizePosOperationMode = value => {
     ].includes(normalizedValue)
   ) {
     return POS_OPERATION_MODE_KIOSK;
+  }
+
+  if (
+    [
+      POS_OPERATION_MODE_SINGLE_ITEM,
+      'single-sale',
+      'single-item-sale',
+      'sale-unit',
+      'sale-single',
+      'venda-unitaria',
+      'venda-unica',
+      'item-unico',
+      'unit-sale',
+      'unitary-sale',
+    ].includes(normalizedValue)
+  ) {
+    return POS_OPERATION_MODE_SINGLE_ITEM;
   }
 
   if (
@@ -253,6 +276,9 @@ export const usesPosCheckLinkedOrder = configs =>
 export const isPosKioskMode = configs =>
   resolvePosOperationMode(configs) === POS_OPERATION_MODE_KIOSK;
 
+export const isPosSingleItemMode = configs =>
+  resolvePosOperationMode(configs) === POS_OPERATION_MODE_SINGLE_ITEM;
+
 export const shouldEnableAndroidKioskMode = ({
   appType,
   configs,
@@ -348,8 +374,17 @@ export const isPosCashRegisterOpen = configs => {
     return true;
   }
 
-  const closedValue =
-    parseConfigsObject(configs)?.['cash-wallet-closed-id'];
+  const parsedConfigs = parseConfigsObject(configs);
+
+  if (Object.keys(parsedConfigs).length === 0) {
+    return true;
+  }
+
+  const closedValue = parsedConfigs?.['cash-wallet-closed-id'];
+
+  if (closedValue === undefined || closedValue === null || closedValue === '') {
+    return true;
+  }
 
   return closedValue === 0 || closedValue === '0';
 };

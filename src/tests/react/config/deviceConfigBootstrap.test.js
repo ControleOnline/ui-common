@@ -10,6 +10,7 @@ const {
   POS_CASH_MANAGEMENT_MODE_CONFIG_KEY,
   POS_DELIVERY_ENABLED_CONFIG_KEY,
   POS_OPERATION_MODE_CONFIG_KEY,
+  isPosSingleItemMode,
   isPosAutoPrintEnabled,
   isPosCashRegisterClosed,
   isPosCashRegisterOpen,
@@ -34,6 +35,16 @@ describe('deviceConfigBootstrap POS operation helpers', () => {
     expect(resolvePosOperationMode(configs)).toBe('counter')
     expect(isPosCounterMode(configs)).toBe(true)
     expect(isPosSelfServiceMode(configs)).toBe(true)
+  })
+
+  it('normalizes venda unitaria as single-item mode', () => {
+    const configs = {
+      [POS_OPERATION_MODE_CONFIG_KEY]: 'venda unitaria',
+    }
+
+    expect(resolvePosOperationMode(configs)).toBe('single-item')
+    expect(isPosSingleItemMode(configs)).toBe(true)
+    expect(isPosSelfServiceMode(configs)).toBe(false)
   })
 
   it('keeps counter auto print disabled by default and allows explicit enablement', () => {
@@ -75,6 +86,7 @@ describe('deviceConfigBootstrap POS operation helpers', () => {
     const closedConfigs = {
       [POS_OPERATION_MODE_CONFIG_KEY]: 'counter',
       [POS_CASH_MANAGEMENT_MODE_CONFIG_KEY]: 'cash-register',
+      'cash-wallet-closed-id': 1,
     }
 
     expect(shouldUsePosCashRegisterLifecycle(closedConfigs)).toBe(true)
@@ -86,6 +98,22 @@ describe('deviceConfigBootstrap POS operation helpers', () => {
         'cash-wallet-closed-id': 0,
       }),
     ).toBe(true)
+  })
+
+  it('keeps empty configs open until the runtime loads the real cash register state', () => {
+    expect(isPosCashRegisterOpen({})).toBe(true)
+    expect(isPosCashRegisterClosed({})).toBe(false)
+  })
+
+  it('keeps configs without cash-wallet-closed-id open during provider bootstrap', () => {
+    const configs = {
+      [POS_OPERATION_MODE_CONFIG_KEY]: 'cashier',
+      'config-version': '1.0.0',
+      'pos-gateway': 'cielo',
+    }
+
+    expect(isPosCashRegisterOpen(configs)).toBe(true)
+    expect(isPosCashRegisterClosed(configs)).toBe(false)
   })
 
   it('keeps kiosk without cash register lifecycle and normalizes print mode', () => {
