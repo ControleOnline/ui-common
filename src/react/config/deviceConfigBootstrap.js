@@ -4,6 +4,7 @@ import {
 } from '@controleonline/ui-common/src/react/utils/screenMetrics';
 
 export const CIELO_DEVICES = ['quantum', 'ingenico', 'positivo'];
+export const SUPPORTED_POS_GATEWAYS = ['cielo', 'infinite-pay'];
 export const DEVICE_ALERT_SOUND_ENABLED_KEY = 'notification-sound-enabled';
 export const DEVICE_ALERT_SOUND_URL_KEY = 'notification-sound-url';
 export const DEVICE_ORDER_VISIBILITY_KEY = 'pos-order-visibility';
@@ -483,6 +484,17 @@ export const resolveDefaultGateway = deviceInfo => {
     : 'infinite-pay';
 };
 
+export const normalizePersistedGateway = value => {
+  const normalizedValue = String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_]/g, '-');
+
+  return SUPPORTED_POS_GATEWAYS.includes(normalizedValue)
+    ? normalizedValue
+    : '';
+};
+
 export const buildDefaultDeviceConfigs = ({configs, appVersion, deviceInfo}) => {
   let nextConfigs = parseConfigsObject(configs);
   let needsUpdate = false;
@@ -533,7 +545,8 @@ export const buildProviderManagedDeviceConfigs = ({
     needsUpdate = true;
   }
 
-  const nextGateway = resolveDefaultGateway(deviceInfo);
+  const persistedGateway = normalizePersistedGateway(nextConfigs['pos-gateway']);
+  const nextGateway = persistedGateway || resolveDefaultGateway(deviceInfo);
   if (nextGateway && nextConfigs['pos-gateway'] !== nextGateway) {
     nextConfigs['pos-gateway'] = nextGateway;
     needsUpdate = true;

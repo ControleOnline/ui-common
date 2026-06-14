@@ -6,6 +6,7 @@ jest.mock('../../../react/utils/screenMetrics', () => ({
 }))
 
 const {
+  buildProviderManagedDeviceConfigs,
   DISPLAY_SIZE_CONFIG_KEY,
   DISPLAY_SIZE_DEFAULT,
   DISPLAY_SIZE_MAX,
@@ -122,6 +123,23 @@ describe('deviceConfigBootstrap POS operation helpers', () => {
 
     expect(isPosCashRegisterOpen(configs)).toBe(true)
     expect(isPosCashRegisterClosed(configs)).toBe(false)
+  })
+
+  it('preserves a manually configured pos gateway during provider sync', () => {
+    const {nextConfigs, needsUpdate} = buildProviderManagedDeviceConfigs({
+      appVersion: '1.3.74',
+      configs: {
+        'config-version': '1.3.74',
+        'pos-gateway': 'cielo',
+      },
+      deviceInfo: {
+        isEmulator: true,
+        manufacturer: 'Google',
+      },
+    })
+
+    expect(nextConfigs['pos-gateway']).toBe('cielo')
+    expect(needsUpdate).toBe(false)
   })
 
   it('keeps kiosk without cash register lifecycle and normalizes print mode', () => {
