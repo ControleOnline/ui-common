@@ -50,13 +50,25 @@ export const resolveCashPaymentDetails = ({
   };
 };
 
-const normalizePaymentCode = value => String(value || '').trim();
+const GATEWAY_BYPASS_PAYMENT_CODES = ['DINHEIRO', 'VOUCHER_CORTESIA'];
+
+const normalizePaymentCode = value =>
+  String(value || '')
+    .trim()
+    .toUpperCase();
 
 export const hasIntegratedPaymentCode = payment =>
   normalizePaymentCode(payment?.paymentCode) !== '';
 
+export const shouldBypassGatewayForPayment = payment =>
+  GATEWAY_BYPASS_PAYMENT_CODES.includes(
+    normalizePaymentCode(payment?.paymentCode),
+  );
+
 export const isGatewayFreePayment = payment =>
-  !!payment?.wallet && !!payment?.paymentType && !hasIntegratedPaymentCode(payment);
+  !!payment?.wallet &&
+  !!payment?.paymentType &&
+  (!hasIntegratedPaymentCode(payment) || shouldBypassGatewayForPayment(payment));
 
 export const isCashPaymentWithoutGateway = payment =>
   isCashPaymentOption(payment) && isGatewayFreePayment(payment);
