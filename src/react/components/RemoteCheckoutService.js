@@ -96,7 +96,9 @@ const Checkout = () => {
 
   const clear = useCallback(() => {
     localStorage.removeItem('master-device');
+    invoiceActions.setError('');
     invoiceActions.setMessage(null);
+    invoiceActions.setMessages([]);
     categoryActions.setItems(null);
     ordersActions.setItem(null);
     orderProductsActions.setItems([]);
