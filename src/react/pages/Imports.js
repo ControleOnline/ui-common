@@ -55,7 +55,6 @@ const Imports = ({ context = {}, onClose }) => {
     const { items, isLoading } = getters;
 
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage] = useState(10);
 
     const [searchText, setSearchText] = useState('');
     const [searchQuery, setSearchQuery] = useState('');
@@ -71,7 +70,6 @@ const Imports = ({ context = {}, onClose }) => {
                 people: currentCompany ? '/people/' + currentCompany.id : null,
                 importType: importType,
                 page: page ?? currentPage,
-                itemsPerPage,
             };
 
             if (String(query ?? searchQuery).trim()) {
@@ -80,7 +78,7 @@ const Imports = ({ context = {}, onClose }) => {
 
             return actions.getItems(params);
         },
-        [actions, currentCompany, currentPage, itemsPerPage, searchQuery, importType],
+        [actions, currentCompany, currentPage, searchQuery, importType],
     );
 
     useLayoutEffect(() => {
@@ -360,3 +358,4 @@ const Imports = ({ context = {}, onClose }) => {
 };
 
 export default Imports;
+// TODO(store-first): quando este arquivo for mexido, mover a leitura para stores, remover api.fetch e evitar repassar dados em objetos quando o store ja resolver isso.

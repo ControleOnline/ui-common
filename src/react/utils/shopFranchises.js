@@ -19,7 +19,6 @@ export const resolveFranchiseCompanyLabel = company =>
 
 export const fetchShopFranchiseCompanies = async ({
   companyId,
-  itemsPerPage = 200,
   search = '',
 } = {}) => {
   if (!companyId) {
@@ -29,7 +28,6 @@ export const fetchShopFranchiseCompanies = async ({
   const params = {
     'link.company': toEntityIri(companyId, 'people'),
     'link.linkType': SHOP_FRANCHISE_LINK_TYPE,
-    itemsPerPage,
   };
 
   if (String(search || '').trim()) {
@@ -49,7 +47,6 @@ export const fetchShopFranchiseCompanies = async ({
 
 export const fetchShopFranchiseAddresses = async ({
   peopleId,
-  itemsPerPage = 100,
   search = '',
 } = {}) => {
   if (!peopleId) {
@@ -58,7 +55,6 @@ export const fetchShopFranchiseAddresses = async ({
 
   const params = {
     people: toEntityIri(peopleId, 'people'),
-    itemsPerPage,
   };
 
   if (String(search || '').trim()) {
@@ -71,11 +67,9 @@ export const fetchShopFranchiseAddresses = async ({
 
 export const fetchShopFranchiseDirectory = async ({
   companyId,
-  companyItemsPerPage = 200,
 } = {}) => {
   const companies = await fetchShopFranchiseCompanies({
     companyId,
-    itemsPerPage: companyItemsPerPage,
   });
 
   return companies.map(company => ({
@@ -83,3 +77,4 @@ export const fetchShopFranchiseDirectory = async ({
     shopAddresses: Array.isArray(company?.address) ? company.address : [],
   }));
 };
+// TODO(store-first): quando este arquivo for mexido, mover a leitura para stores, remover api.fetch e evitar repassar dados em objetos quando o store ja resolver isso.

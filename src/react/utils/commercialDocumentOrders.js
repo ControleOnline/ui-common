@@ -64,7 +64,6 @@ export const resolveOpenOrderStatusIri = async fallbackStatusId => {
         context: 'order',
         realStatus: 'open',
         status: 'open',
-        itemsPerPage: 10,
       },
     });
     const items = extractCollectionItems(response);
@@ -101,7 +100,6 @@ export const fetchLinkedOrder = async contractRef => {
   const response = await api.fetch('orders', {
     params: {
       contract: toEntityIri(contractRef, 'contracts'),
-      itemsPerPage: 1,
       'order[alterDate]': 'DESC',
     },
   });
@@ -117,14 +115,13 @@ export const fetchOrderProducts = async orderRef => {
   const response = await api.fetch('order_products', {
     params: {
       order: toEntityIri(orderRef, 'orders'),
-      itemsPerPage: 500,
     },
   });
 
   return extractCollectionItems(response);
 };
 
-export const searchCompanyProducts = async ({ companyId, query = '', itemsPerPage = 8 }) => {
+export const searchCompanyProducts = async ({ companyId, query = '' }) => {
   if (!companyId) {
     return [];
   }
@@ -132,7 +129,6 @@ export const searchCompanyProducts = async ({ companyId, query = '', itemsPerPag
   const params = {
     company: toEntityIri(companyId, 'people'),
     active: 1,
-    itemsPerPage,
     'order[product]': 'ASC',
   };
 
@@ -264,10 +260,10 @@ export const fetchLatestProposalForClient = async ({ provider, client }) => {
       provider: providerIri,
       client: clientIri,
       'contractModel.context': 'proposal',
-      itemsPerPage: 1,
       'order[alterDate]': 'DESC',
     },
   });
 
   return extractCollectionItems(response)[0] || null;
 };
+// TODO(store-first): quando este arquivo for mexido, mover a leitura para stores, remover api.fetch e evitar repassar dados em objetos quando o store ja resolver isso.

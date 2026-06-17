@@ -154,3 +154,4 @@ const AddImportModal = ({ visible, onClose, onSuccess, context = {} }) => {
 };
 
 export default AddImportModal;
+// TODO(store-first): quando este arquivo for mexido, mover a leitura para stores e evitar chamadas HTTP diretas quando o store ja resolver isso.

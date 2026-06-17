@@ -26,7 +26,6 @@ export const getPeopleDisplayName = person => {
 
 export const buildOwnedClientsParams = ({
   currentCompanyId,
-  itemsPerPage = 100,
 }) => {
   const ownerId = normalizeEntityId(currentCompanyId);
   if (!ownerId) {
@@ -36,6 +35,5 @@ export const buildOwnedClientsParams = ({
   return {
     'link.company': `/people/${ownerId}`,
     'link.linkType': 'client',
-    itemsPerPage,
   };
 };

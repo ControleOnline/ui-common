@@ -128,7 +128,6 @@ const LinkedOrderProductsTab = ({
         const results = await searchCompanyProducts({
           companyId: currentCompany.id,
           query: trimmedQuery,
-          itemsPerPage: 8,
         });
 
         if (!cancelled) {

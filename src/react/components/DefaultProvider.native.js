@@ -259,7 +259,6 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
     const syncDeviceRegistration = async () => {
       const items = await deviceActions.getItems({
         device: device.id,
-        itemsPerPage: 1,
       });
 
       if (cancelled) {
@@ -713,3 +712,4 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
 };
 
 export const useTheme = () => useContext(ThemeContext);
+// TODO(store-first): quando este arquivo for mexido, mover a leitura para stores, remover api.fetch e evitar repassar dados em objetos quando o store ja resolver isso.

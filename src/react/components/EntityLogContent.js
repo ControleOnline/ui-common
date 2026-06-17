@@ -24,8 +24,6 @@ import createStyles, {
   buildEntityLogPalette,
 } from './EntityLogContent.styles';
 
-const DEFAULT_ITEMS_PER_PAGE = 100;
-
 const ACTION_META = {
   insert: {
     color: '#16A34A',
@@ -716,7 +714,6 @@ const EntityLogContent = ({
   entityId = null,
   entityIri = '',
   entityLabel = '',
-  itemsPerPage = DEFAULT_ITEMS_PER_PAGE,
   relationConfig = {},
   theme,
 }) => {
@@ -785,7 +782,6 @@ const EntityLogContent = ({
       const response = await entityLogActions.getTimeline({
         ...(className ? { class: className } : {}),
         ...(targetEntityIri ? { entity: targetEntityIri } : {}),
-        itemsPerPage,
         row: rowId,
       });
       const items = Array.isArray(response?.items) ? response.items : [];
@@ -807,7 +803,7 @@ const EntityLogContent = ({
       });
       setCacheVersion(version => version + 1);
     }
-  }, [entityLogActions, itemsPerPage]);
+  }, [entityLogActions]);
 
   const fetchEntityDetails = useCallback(async ({
     className,

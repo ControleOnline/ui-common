@@ -45,7 +45,6 @@ const resolvePosPaidInvoiceStatusIri = async fallbackStatusId => {
         context: 'invoice',
         realStatus: 'closed',
         status: 'paid',
-        itemsPerPage: 10,
       },
     });
     const items = extractCollectionItems(response);
@@ -213,7 +212,6 @@ const Checkout = () => {
           ? await orderProductsActions
               .getItems({
                 order: orderIri,
-                itemsPerPage: 500,
               })
               .catch(() => [])
           : [];
@@ -291,3 +289,4 @@ const Checkout = () => {
 };
 
 export default Checkout;
+// TODO(store-first): quando este arquivo for mexido, mover a leitura para stores, remover api.fetch e evitar repassar dados em objetos quando o store ja resolver isso.

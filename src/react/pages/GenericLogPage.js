@@ -346,7 +346,6 @@ function EntityLogCard({
             entityId={Number(log?.row) || null}
             entityIri={entityIri}
             entityLabel={entityTitle}
-            itemsPerPage={40}
           />
         </View>
       ) : null}
@@ -444,7 +443,6 @@ export default function GenericLogPage({navigation}) {
 
     try {
       const response = await entityLogActions.getTimeline({
-        itemsPerPage: 200,
         ...(selectedType !== 'all' ? {type: selectedType} : {}),
         ...(after ? {'createdAt[after]': after} : {}),
         ...(before ? {'createdAt[before]': before} : {}),
