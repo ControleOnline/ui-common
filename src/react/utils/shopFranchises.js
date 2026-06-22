@@ -6,6 +6,10 @@ import {
 import {normalizeShopEntityId} from '@controleonline/ui-common/src/react/utils/shopConfig';
 
 export const SHOP_FRANCHISE_LINK_TYPE = 'franchisee';
+export const SHOP_FRANCHISE_PAGE_SIZE = 50;
+
+const normalizeItemsPerPage = value =>
+  Math.max(1, Math.min(SHOP_FRANCHISE_PAGE_SIZE, Number(value) || SHOP_FRANCHISE_PAGE_SIZE));
 
 const sortByLabel = (left, right) =>
   String(left || '')
@@ -18,17 +22,30 @@ export const resolveFranchiseCompanyLabel = company =>
   `Franquia #${normalizeShopEntityId(company) || ''}`.trim();
 
 export const fetchShopFranchiseCompanies = async ({
+  companyId,
   search = '',
+  page = 1,
+  itemsPerPage = SHOP_FRANCHISE_PAGE_SIZE,
+  publicDirectory = false,
 } = {}) => {
-  const params = {};
+  const params = {
+    page: Math.max(1, Number(page) || 1),
+    itemsPerPage: normalizeItemsPerPage(itemsPerPage),
+  };
 
   if (String(search || '').trim()) {
     params.search = String(search).trim();
   }
 
-  const response = await api.fetch('/shop/franchises', {
-    params,
-  });
+  const response = publicDirectory
+    ? await api.fetch('/shop/franchises', {params})
+    : await api.fetch('people', {
+        params: {
+          ...params,
+          'link.company': toEntityIri(companyId, 'people'),
+          'link.linkType': SHOP_FRANCHISE_LINK_TYPE,
+        },
+      });
   const items = extractCollectionItems(response);
 
   return items
@@ -58,6 +75,8 @@ export const fetchShopFranchiseAddresses = async ({
 
   const params = {
     people: toEntityIri(peopleId, 'people'),
+    itemsPerPage: SHOP_FRANCHISE_PAGE_SIZE,
+    page: 1,
   };
 
   if (String(search || '').trim()) {
@@ -69,9 +88,19 @@ export const fetchShopFranchiseAddresses = async ({
 };
 
 export const fetchShopFranchiseDirectory = async ({
-  companyId: _companyId,
+  companyId,
+  publicDirectory = false,
+  search = '',
+  page = 1,
+  itemsPerPage = SHOP_FRANCHISE_PAGE_SIZE,
 } = {}) => {
-  const companies = await fetchShopFranchiseCompanies();
+  const companies = await fetchShopFranchiseCompanies({
+    companyId,
+    publicDirectory,
+    search,
+    page,
+    itemsPerPage,
+  });
 
   return companies.map(company => ({
     ...company,

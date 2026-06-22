@@ -34,10 +34,16 @@ describe('shopFranchises', () => {
       ],
     });
 
-    const directory = await fetchShopFranchiseDirectory({companyId: 10});
+    const directory = await fetchShopFranchiseDirectory({
+      companyId: 10,
+      publicDirectory: true,
+    });
 
     expect(api.fetch).toHaveBeenCalledWith('/shop/franchises', {
-      params: {},
+      params: {
+        itemsPerPage: 50,
+        page: 1,
+      },
     });
     expect(directory).toEqual([
       {
@@ -45,6 +51,32 @@ describe('shopFranchises', () => {
         alias: 'Centro',
         shopAddresses: [{id: 501, nickname: 'Loja Centro'}],
       },
+    ]);
+  });
+
+  it('keeps authenticated management lookup scoped by company', async () => {
+    api.fetch.mockResolvedValueOnce({
+      member: [
+        {
+          id: 22,
+          alias: 'Norte',
+          address: [{id: 601, nickname: 'Loja Norte'}],
+        },
+      ],
+    });
+
+    const directory = await fetchShopFranchiseDirectory({companyId: 10});
+
+    expect(api.fetch).toHaveBeenCalledWith('people', {
+      params: {
+        'link.company': '/people/10',
+        'link.linkType': 'franchisee',
+        itemsPerPage: 50,
+        page: 1,
+      },
+    });
+    expect(directory[0].shopAddresses).toEqual([
+      {id: 601, nickname: 'Loja Norte'},
     ]);
   });
 });
