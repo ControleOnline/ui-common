@@ -18,31 +18,34 @@ export const resolveFranchiseCompanyLabel = company =>
   `Franquia #${normalizeShopEntityId(company) || ''}`.trim();
 
 export const fetchShopFranchiseCompanies = async ({
-  companyId,
   search = '',
 } = {}) => {
-  if (!companyId) {
-    return [];
-  }
-
-  const params = {
-    'link.company': toEntityIri(companyId, 'people'),
-    'link.linkType': SHOP_FRANCHISE_LINK_TYPE,
-  };
+  const params = {};
 
   if (String(search || '').trim()) {
     params.search = String(search).trim();
   }
 
-  const response = await api.fetch('people', {params});
+  const response = await api.fetch('/shop/franchises', {
+    params,
+  });
   const items = extractCollectionItems(response);
 
-  return items.sort((left, right) =>
-    sortByLabel(
-      resolveFranchiseCompanyLabel(left),
-      resolveFranchiseCompanyLabel(right),
-    ),
-  );
+  return items
+    .map(company => ({
+      ...company,
+      shopAddresses: Array.isArray(company?.shopAddresses)
+        ? company.shopAddresses
+        : Array.isArray(company?.address)
+          ? company.address
+          : [],
+    }))
+    .sort((left, right) =>
+      sortByLabel(
+        resolveFranchiseCompanyLabel(left),
+        resolveFranchiseCompanyLabel(right),
+      ),
+    );
 };
 
 export const fetchShopFranchiseAddresses = async ({
@@ -66,15 +69,17 @@ export const fetchShopFranchiseAddresses = async ({
 };
 
 export const fetchShopFranchiseDirectory = async ({
-  companyId,
+  companyId: _companyId,
 } = {}) => {
-  const companies = await fetchShopFranchiseCompanies({
-    companyId,
-  });
+  const companies = await fetchShopFranchiseCompanies();
 
   return companies.map(company => ({
     ...company,
-    shopAddresses: Array.isArray(company?.address) ? company.address : [],
+    shopAddresses: Array.isArray(company?.shopAddresses)
+      ? company.shopAddresses
+      : Array.isArray(company?.address)
+        ? company.address
+        : [],
   }));
 };
 // TODO(store-first): quando este arquivo for mexido, mover a leitura para stores, remover api.fetch e evitar repassar dados em objetos quando o store ja resolver isso.
