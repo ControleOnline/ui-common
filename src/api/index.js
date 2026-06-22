@@ -2,6 +2,7 @@ import myFetch from '@controleonline/ui-common/src/api/fetch';
 import axios from 'axios';
 import { APP_ENV } from '../../../../../config/env';
 import { resolveAppDomain } from '@controleonline/ui-common/src/utils/appDomain';
+import { resolveApiEntryPoint } from '@controleonline/ui-common/src/utils/apiEntryPoint';
 
 const MIME_TYPE = 'application/ld+json';
 
@@ -13,7 +14,8 @@ export const api = {
   upload: async function (uri, formData) {
     const token = await this.getToken();
     const appDomain = resolveAppDomain(APP_ENV.DOMAIN);
-    const entryPoint = APP_ENV.API_ENTRYPOINT + (APP_ENV.API_ENTRYPOINT.endsWith("/") ? "" : "/");
+    const apiEntryPoint = resolveApiEntryPoint(APP_ENV.API_ENTRYPOINT);
+    const entryPoint = apiEntryPoint + (apiEntryPoint.endsWith("/") ? "" : "/");
     const url = new URL(uri.startsWith('/') ? uri.substring(1) : uri, entryPoint).href;
 
     return axios.post(url, formData, {

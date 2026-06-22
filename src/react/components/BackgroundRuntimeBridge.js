@@ -4,6 +4,7 @@ import {env as APP_ENV} from '@env';
 import {useStore} from '@store';
 import DeviceInfo from 'react-native-device-info';
 import {resolveAppDomain} from '@controleonline/ui-common/src/utils/appDomain';
+import {resolveApiEntryPoint} from '@controleonline/ui-common/src/utils/apiEntryPoint';
 import {isWebRuntimeDevice} from '@controleonline/ui-common/src/react/utils/deviceRuntime';
 import {normalizeDeviceId} from '@controleonline/ui-common/src/react/utils/paymentDevices';
 import {
@@ -178,7 +179,7 @@ const BackgroundRuntimeBridge = () => {
       socketUrl: safeTrim(APP_ENV.SOCKET),
       spoolDeviceIds,
       token: sessionToken,
-      apiBaseUrl: safeTrim(APP_ENV.API_ENTRYPOINT),
+      apiBaseUrl: safeTrim(resolveApiEntryPoint(APP_ENV.API_ENTRYPOINT)),
     };
   }, [
     currentCompany?.alias,

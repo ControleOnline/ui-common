@@ -1,5 +1,6 @@
 import { APP_ENV } from "../../../../../config/env.js";
 import resolveSystemErrorMessage from '@controleonline/ui-common/src/react/utils/systemErrorMessage';
+import {resolveApiEntryPoint} from '@controleonline/ui-common/src/utils/apiEntryPoint';
 
 const buildHttpError = (response, body) => {
   const message =
@@ -32,8 +33,9 @@ const readResponseBody = async (response, responseType) => {
 };
 
 export default function (resourceEndpoint, options = {}) {
+  const apiEntryPoint = resolveApiEntryPoint(APP_ENV.API_ENTRYPOINT);
   const entryPoint =
-    APP_ENV.API_ENTRYPOINT + (APP_ENV.API_ENTRYPOINT.endsWith("/") ? "" : "/");
+    apiEntryPoint + (apiEntryPoint.endsWith("/") ? "" : "/");
 
   if (!resourceEndpoint || !entryPoint) return;
 
