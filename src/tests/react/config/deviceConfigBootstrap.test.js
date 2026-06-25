@@ -7,6 +7,7 @@ jest.mock('../../../react/utils/screenMetrics', () => ({
 
 const {
   buildProviderManagedDeviceConfigs,
+  DEVICE_ANDROID_KIOSK_ENABLED_CONFIG_KEY,
   DISPLAY_SIZE_CONFIG_KEY,
   DISPLAY_SIZE_DEFAULT,
   DISPLAY_SIZE_MAX,
@@ -173,23 +174,58 @@ describe('deviceConfigBootstrap POS operation helpers', () => {
     ).toBe(true)
   })
 
-  it('enables Android kiosk only for POS kiosk runtime', () => {
-    const configs = {
-      [POS_OPERATION_MODE_CONFIG_KEY]: 'kiosk',
-    }
-
+  it('falls back to kiosk mode when the explicit Android kiosk flag is missing', () => {
     expect(
       shouldEnableAndroidKioskMode({
         appType: 'POS',
-        configs,
+        configs: {
+          [POS_OPERATION_MODE_CONFIG_KEY]: 'kiosk',
+        },
         platform: 'android',
       }),
     ).toBe(true)
 
     expect(
       shouldEnableAndroidKioskMode({
+        appType: 'POS',
+        configs: {
+          [POS_OPERATION_MODE_CONFIG_KEY]: 'counter',
+        },
+        platform: 'android',
+      }),
+    ).toBe(false)
+  })
+
+  it('respects the explicit Android kiosk flag independently of the operation mode', () => {
+    expect(
+      shouldEnableAndroidKioskMode({
+        appType: 'POS',
+        configs: {
+          [POS_OPERATION_MODE_CONFIG_KEY]: 'counter',
+          [DEVICE_ANDROID_KIOSK_ENABLED_CONFIG_KEY]: '1',
+        },
+        platform: 'android',
+      }),
+    ).toBe(true)
+
+    expect(
+      shouldEnableAndroidKioskMode({
+        appType: 'POS',
+        configs: {
+          [POS_OPERATION_MODE_CONFIG_KEY]: 'kiosk',
+          [DEVICE_ANDROID_KIOSK_ENABLED_CONFIG_KEY]: '0',
+        },
+        platform: 'android',
+      }),
+    ).toBe(false)
+
+    expect(
+      shouldEnableAndroidKioskMode({
         appType: 'MANAGER',
-        configs,
+        configs: {
+          [POS_OPERATION_MODE_CONFIG_KEY]: 'counter',
+          [DEVICE_ANDROID_KIOSK_ENABLED_CONFIG_KEY]: '1',
+        },
         platform: 'android',
       }),
     ).toBe(false)
@@ -197,7 +233,10 @@ describe('deviceConfigBootstrap POS operation helpers', () => {
     expect(
       shouldEnableAndroidKioskMode({
         appType: 'POS',
-        configs,
+        configs: {
+          [POS_OPERATION_MODE_CONFIG_KEY]: 'counter',
+          [DEVICE_ANDROID_KIOSK_ENABLED_CONFIG_KEY]: '1',
+        },
         platform: 'web',
       }),
     ).toBe(false)

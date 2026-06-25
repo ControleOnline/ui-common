@@ -12,7 +12,7 @@
  * - O helper compartilhado de dinheiro/manual fica aqui e pode ser reutilizado por `ui-orders`, listeners remotos e outros gateways.
  * - A execucao tecnica dos gateways operacionais compartilhados, como `Cielo` e `Infinite Pay`, pode ficar aqui para ser reutilizada pelo checkout principal e pelo listener remoto.
  * - O protocolo de ida e volta do pagamento remoto entre web e device deve ficar centralizado aqui, para que checkout e listener remoto compartilhem a mesma chave de requisicao e o mesmo formato de resposta.
- * - O bridge nativo de kiosk fica aqui e deve apenas ligar/desligar a infraestrutura Android quando `APP_TYPE=POS` e `pos-operation-mode=kiosk`; regra de fluxo do totem continua no modulo dono.
+ * - O bridge nativo de kiosk fica aqui e deve apenas ligar/desligar a infraestrutura Android quando `APP_TYPE=POS` e a configuracao `android-kiosk-enabled` estiver ligada; na falta da chave, o runtime ainda respeita o fallback historico de `pos-operation-mode=kiosk`. A regra de fluxo do totem continua no modulo dono.
  *
  * ## Limites
  * - Nao mover para `ui-common` regra de negocio que pertence claramente a `ui-orders`, `ui-shop`, `ui-manager` ou outro modulo dono.

@@ -23,6 +23,8 @@ export const DISPLAY_SIZE_MIN = 1;
 export const DISPLAY_SIZE_MAX = 10;
 export const DISPLAY_SIZE_DEFAULT = 5;
 export const POS_OPERATION_MODE_CONFIG_KEY = 'pos-operation-mode';
+export const DEVICE_ANDROID_KIOSK_ENABLED_CONFIG_KEY =
+  'android-kiosk-enabled';
 export const POS_AUTO_PRINT_ENABLED_CONFIG_KEY = 'pos-auto-print-enabled';
 export const POS_CASH_MANAGEMENT_MODE_CONFIG_KEY =
   'pos-cash-management-mode';
@@ -313,6 +315,18 @@ export const usesPosCheckLinkedOrder = configs =>
 export const isPosKioskMode = configs =>
   resolvePosOperationMode(configs) === POS_OPERATION_MODE_KIOSK;
 
+export const isAndroidKioskEnabled = configs => {
+  const parsedConfigs = parseConfigsObject(configs);
+  const storedValue =
+    parsedConfigs?.[DEVICE_ANDROID_KIOSK_ENABLED_CONFIG_KEY];
+
+  if (isMissingConfigValue(storedValue)) {
+    return isPosKioskMode(parsedConfigs);
+  }
+
+  return isTruthyValue(storedValue);
+};
+
 export const isPosSingleItemMode = configs =>
   resolvePosOperationMode(configs) === POS_OPERATION_MODE_SINGLE_ITEM;
 
@@ -323,7 +337,7 @@ export const shouldEnableAndroidKioskMode = ({
 }) =>
   String(appType || '').trim().toUpperCase() === 'POS' &&
   platform === 'android' &&
-  isPosKioskMode(configs);
+  isAndroidKioskEnabled(configs);
 
 export const isPosCounterMode = configs =>
   resolvePosOperationMode(configs) === POS_OPERATION_MODE_COUNTER;
