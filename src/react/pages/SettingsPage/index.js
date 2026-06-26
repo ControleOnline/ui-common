@@ -73,6 +73,7 @@ import {Picker} from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import StateStore from '@controleonline/ui-layout/src/react/components/StateStore';
 import packageJson from '@package';
+import PaymentTypesByWalletTab from './PaymentTypesByWalletTab';
 
 import {
   appendScreenMetrics,
@@ -102,6 +103,9 @@ import {
   resolvePosCheckOrderManagementMode,
   resolvePosCheckOrderType,
 } from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
+import {
+  PAYMENT_TYPE_IDS_CONFIG_KEY,
+} from '@controleonline/ui-common/src/react/utils/paymentDevices';
 
 import {isWebRuntimeDevice as resolveIsWebRuntimeDevice} from '@controleonline/ui-common/src/react/utils/deviceRuntime';
 import {DEFAULT_NOTIFICATION_SOUND_FILE} from '@controleonline/ui-common/src/react/utils/notificationSound';
@@ -142,7 +146,7 @@ const Settings = () => {
   const device_configStore = useStore('device_config');
   const deviceConfigGetters = device_configStore.getters;
   const deviceConfigsActions = device_configStore.actions;
-  const {item: device} = deviceConfigGetters;
+  const {item: device, isSaving: isDeviceConfigSaving} = deviceConfigGetters;
   const {currentCompany} = peopleGetters;
   const {isLoading: walletLoading} = walletGetters;
   const {items: companyConfigs, isSaving} = configsGetters;
@@ -175,7 +179,38 @@ const Settings = () => {
   const [showRuntimeDebugInfo, setShowRuntimeDebugInfo] = useState(false);
   const [configsLoaded, setConfigsLoaded] = useState(false);
   const [deviceConfigsLoaded, setDeviceConfigsLoaded] = useState(false);
+  const [activeSettingsTab, setActiveSettingsTab] = useState('general');
   const pickerMode = Platform.OS === 'android' ? 'dropdown' : undefined;
+  const settingsTabStyles = {
+    tabRow: {
+      flexDirection: 'row',
+      marginTop: 16,
+      marginBottom: 12,
+      borderRadius: 12,
+      borderColor: '#D6E4F0',
+      borderWidth: 1,
+      overflow: 'hidden',
+      backgroundColor: '#F8FAFC',
+    },
+    tabButton: {
+      alignItems: 'center',
+      backgroundColor: '#F8FAFC',
+      flex: 1,
+      justifyContent: 'center',
+      paddingVertical: 12,
+    },
+    tabButtonActive: {
+      backgroundColor: '#1B5587',
+    },
+    tabLabel: {
+      color: '#334155',
+      fontSize: 13,
+      fontWeight: '700',
+    },
+    tabLabelActive: {
+      color: '#FFFFFF',
+    },
+  };
 
   const defaultGateway = resolveDefaultGateway(storagedDevice);
   const deviceManufacturer = String(storagedDevice?.manufacturer || '').toLowerCase();
@@ -232,6 +267,30 @@ const Settings = () => {
       currentCompany?.id,
       deviceConfigsActions,
     ],
+  );
+
+  const persistCompanyPaymentConfigs = useCallback(
+    nextSelectedPaymentTypeIds => {
+      if (!currentCompany?.id) {
+        return Promise.resolve(null);
+      }
+
+      return configActions
+        .addConfigs({
+          configKey: PAYMENT_TYPE_IDS_CONFIG_KEY,
+          configValue: JSON.stringify(nextSelectedPaymentTypeIds || []),
+          people: '/people/' + currentCompany.id,
+          module: 4,
+          visibility: 'public',
+        })
+        .then(async data => {
+          await configActions.discoveryMainConfigs({
+            people: '/people/' + currentCompany.id,
+          });
+          return data;
+        });
+    },
+    [configActions, currentCompany?.id],
   );
 
   const createDefaultConfigs = useCallback(() => {
@@ -755,7 +814,7 @@ const Settings = () => {
                 <Text style={styles.Settings.walletValue}>
                   {companyConfigs?.['pos-cash-wallet']}
                 </Text>
-                {walletLoading || isSaving ? (
+                {walletLoading || isDeviceConfigSaving ? (
                   <ActivityIndicator size={22} color={styles.Settings.label} />
                 ) : companyConfigs?.['pos-cash-wallet'] ? (
                   <Icon name={'check'} size={22} color="green" />
@@ -770,7 +829,7 @@ const Settings = () => {
                 <Text style={styles.Settings.walletValue}>
                   {withdrawWallet}
                 </Text>
-                {walletLoading || isSaving ? (
+                {walletLoading || isDeviceConfigSaving ? (
                   <ActivityIndicator size={22} color={styles.Settings.label} />
                 ) : withdrawWallet ? (
                   <Icon name={'check'} size={22} color="green" />
@@ -781,62 +840,110 @@ const Settings = () => {
             </View>
           </View>
 
-          {isWebRuntimeDevice && (
-            <View
-              style={inlineStyle_639_14}>
-              <Text style={[styles.Settings.label, {marginBottom: 4}]}>
-                Configuração sincronizada
+          <View style={settingsTabStyles.tabRow}>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => setActiveSettingsTab('general')}
+              style={[
+                settingsTabStyles.tabButton,
+                activeSettingsTab === 'general' && settingsTabStyles.tabButtonActive,
+              ]}>
+              <Text
+                style={[
+                  settingsTabStyles.tabLabel,
+                  activeSettingsTab === 'general' && settingsTabStyles.tabLabelActive,
+                ]}>
+                Geral
               </Text>
-              <Text style={inlineStyle_650_20}>
-                No navegador este runtime usa configurações sincronizadas do
-                device web e da empresa. Ajustes compatíveis ficam refletidos no
-                rodapé e nos recursos em tempo real.
+            </TouchableOpacity>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => setActiveSettingsTab('payments')}
+              style={[
+                settingsTabStyles.tabButton,
+                activeSettingsTab === 'payments' && settingsTabStyles.tabButtonActive,
+              ]}>
+              <Text
+                style={[
+                  settingsTabStyles.tabLabel,
+                  activeSettingsTab === 'payments' && settingsTabStyles.tabLabelActive,
+                ]}>
+                Pagamentos
               </Text>
-            </View>
-          )}
-
-          {/* // // // // // LINKED ORDER INPUT */}
-          <View style={inlineStyle_659_16}>
-            <Text style={styles.Settings.label}>{global.t?.t("configs", "label", "tab type")}</Text>
-            <Picker
-              selectedValue={checkType}
-              onValueChange={handleCheckTypeChange}
-              enabled={!isWebRuntimeDevice}
-              mode={pickerMode}
-              style={styles.Settings.picker}>
-
-              <Picker.Item label={global.t?.t("configs", "option", "manual")} value="manual" />
-              <Picker.Item label={global.t?.t("configs", "option", "barcode")} value="barcode" />
-              <Picker.Item label={global.t?.t("configs", "option", "rfid")} value="rfid" />                            
-              
-            </Picker>
+            </TouchableOpacity>
           </View>
 
-          <View style={inlineStyle_676_16}>
-            <Text style={styles.Settings.label}>
-              {global.t?.t('configs', 'label', 'linkedOrderType') ||
-                'Service base order'}
-            </Text>
-            <Picker
-              selectedValue={checkOrderType}
-              onValueChange={handleCheckOrderTypeChange}
-              enabled={!isWebRuntimeDevice}
-              mode={pickerMode}
-              style={styles.Settings.picker}>
-              <Picker.Item
-                label={global.t?.t('configs', 'option', 'none') || 'None'}
-                value={POS_CHECK_ORDER_TYPE_NONE}
-              />
-              <Picker.Item
-                label={global.t?.t('orders', 'title', 'tab') || 'Tab'}
-                value={POS_CHECK_ORDER_TYPE_TAB}
-              />
-              <Picker.Item
-                label={global.t?.t('orders', 'title', 'table') || 'Table'}
-                value={POS_CHECK_ORDER_TYPE_TABLE}
-              />
-            </Picker>
-          </View>
+          {activeSettingsTab === 'payments' ? (
+            <PaymentTypesByWalletTab
+              currentCompanyId={currentCompany?.id}
+              configs={runtimeCompanyConfigs}
+              isSaving={isSaving}
+              onPersistSelectedPaymentTypeIds={persistCompanyPaymentConfigs}
+              title="Pagamentos da empresa"
+              introText="Os wallets só organizam a lista. O que vale para o shop é a allowlist de meios de pagamento salva nas configurações da empresa."
+              helpText="Esse padrão é usado pelo shop e pelos fluxos que consomem as configs da empresa."
+              emptyTitle="Nenhuma wallet da empresa encontrada"
+              emptyText="Não há wallets cadastradas para a empresa ativa."
+              emptyPaymentsText="Nenhum meio de pagamento vinculado a esta wallet."
+              unassignedText="Meios de pagamento sem wallet vinculada."
+            />
+          ) : (
+            <>
+              {isWebRuntimeDevice && (
+                <View style={inlineStyle_639_14}>
+                  <Text style={[styles.Settings.label, {marginBottom: 4}]}>
+                    Configuração sincronizada
+                  </Text>
+                  <Text style={inlineStyle_650_20}>
+                    No navegador este runtime usa configurações sincronizadas do
+                    device web e da empresa. Ajustes compatíveis ficam refletidos no
+                    rodapé e nos recursos em tempo real.
+                  </Text>
+                </View>
+              )}
+
+              {/* // // // // // LINKED ORDER INPUT */}
+              <View style={inlineStyle_659_16}>
+                <Text style={styles.Settings.label}>{global.t?.t("configs", "label", "tab type")}</Text>
+                <Picker
+                  selectedValue={checkType}
+                  onValueChange={handleCheckTypeChange}
+                  enabled={!isWebRuntimeDevice}
+                  mode={pickerMode}
+                  style={styles.Settings.picker}>
+
+                  <Picker.Item label={global.t?.t("configs", "option", "manual")} value="manual" />
+                  <Picker.Item label={global.t?.t("configs", "option", "barcode")} value="barcode" />
+                  <Picker.Item label={global.t?.t("configs", "option", "rfid")} value="rfid" />                            
+                  
+                </Picker>
+              </View>
+
+              <View style={inlineStyle_676_16}>
+                <Text style={styles.Settings.label}>
+                  {global.t?.t('configs', 'label', 'linkedOrderType') ||
+                    'Service base order'}
+                </Text>
+                <Picker
+                  selectedValue={checkOrderType}
+                  onValueChange={handleCheckOrderTypeChange}
+                  enabled={!isWebRuntimeDevice}
+                  mode={pickerMode}
+                  style={styles.Settings.picker}>
+                  <Picker.Item
+                    label={global.t?.t('configs', 'option', 'none') || 'None'}
+                    value={POS_CHECK_ORDER_TYPE_NONE}
+                  />
+                  <Picker.Item
+                    label={global.t?.t('orders', 'title', 'tab') || 'Tab'}
+                    value={POS_CHECK_ORDER_TYPE_TAB}
+                  />
+                  <Picker.Item
+                    label={global.t?.t('orders', 'title', 'table') || 'Table'}
+                    value={POS_CHECK_ORDER_TYPE_TABLE}
+                  />
+                </Picker>
+              </View>
 
           {checkOrderType !== POS_CHECK_ORDER_TYPE_NONE && (
             <View style={inlineStyle_676_16}>
@@ -1053,6 +1160,8 @@ const Settings = () => {
             <Icon name="add-circle" size={24} color="#fff" />
             <Text style={inlineStyle_899_18}>{global.t?.t("configs", "label", "resync translations")}</Text>
           </TouchableOpacity>
+            </>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>

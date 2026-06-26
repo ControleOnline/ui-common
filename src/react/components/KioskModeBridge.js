@@ -5,7 +5,6 @@ import {useStore} from '@store';
 import {shouldEnableAndroidKioskMode} from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
 
 const kioskModeModule = NativeModules?.KioskMode;
-const REASSERT_INTERVAL_MS = 15000;
 
 const KioskModeBridge = ({appState = AppState.currentState || 'active'}) => {
   const deviceConfigStore = useStore('device_config');
@@ -43,16 +42,6 @@ const KioskModeBridge = ({appState = AppState.currentState || 'active'}) => {
     if (!kioskEnabled || appState !== 'active') {
       return undefined;
     }
-
-    // The state-sync path already covered the first mount and config flips;
-    // only reassert on real foreground resumes to avoid reopening pinning UI.
-    const intervalId = setInterval(() => {
-      kioskModeModule.setKioskMode(true).catch(() => {});
-    }, REASSERT_INTERVAL_MS);
-
-    return () => {
-      clearInterval(intervalId);
-    };
   }, [appState, kioskEnabled]);
 
   useEffect(() => {

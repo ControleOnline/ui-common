@@ -10,10 +10,26 @@ jest.mock('react-native', () => ({
 const {describe, expect, it} = global
 
 const {
+  PAYMENT_TYPE_IDS_CONFIG_KEY,
   isLocalCieloPrintCapableDeviceConfig,
+  resolveDevicePaymentTypeIds,
 } = require('../../../react/utils/paymentDevices')
 
 describe('paymentDevices local Cielo print support', () => {
+  it('resolves the payment type allowlist from the new config key', () => {
+    expect(
+      resolveDevicePaymentTypeIds({
+        configs: {
+          [PAYMENT_TYPE_IDS_CONFIG_KEY]: [1, '2', '/payment_types/3'],
+        },
+      }),
+    ).toEqual(['1', '2', '3'])
+  })
+
+  it('returns an empty list when no payment types are configured', () => {
+    expect(resolveDevicePaymentTypeIds({})).toEqual([])
+  })
+
   it('allows local Cielo print only for PDV devices with Cielo gateway', () => {
     expect(
       isLocalCieloPrintCapableDeviceConfig({

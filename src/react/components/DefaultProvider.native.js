@@ -32,6 +32,10 @@ import {
   hasDeviceRecordChanges,
   resolveOperationalDeviceType,
 } from '@controleonline/ui-common/src/react/utils/deviceRuntime';
+import {
+  filterWalletPaymentTypesByAllowedIds,
+  resolveDevicePaymentTypeIds,
+} from '@controleonline/ui-common/src/react/utils/paymentDevices';
 import {normalizeRuntimeMenuResponse} from '@controleonline/ui-common/src/react/utils/runtimeMenu';
 import packageJson from '@package';
 import providerStyles from './DefaultProvider.styles';
@@ -355,36 +359,66 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
   }, [currentCompany?.id, isLogged, isShopClientApp, printerActions, sessionChecked]);
 
   useEffect(() => {
-    if (
-      companyConfigs &&
-      device_config?.configs &&
-      Object.entries(device_config.configs).length > 0 &&
-      device_config.configs['pos-gateway']
-    ) {
-      let wallets = [];
+    const paymentConfigSource = isShopClientApp
+      ? Object.keys(companyConfigs || {}).length > 0
+        ? companyConfigs
+        : currentCompany?.configs
+      : device_config?.configs;
 
-      if (
-        companyConfigs[
-          'pos-' + device_config.configs['pos-gateway'] + '-wallet'
-        ]
-      ) {
-        wallets.push(
-          companyConfigs[
-            'pos-' + device_config.configs['pos-gateway'] + '-wallet'
-          ],
-        );
-      }
-
-      if (companyConfigs['pos-cash-wallet']) {
-        wallets.push(companyConfigs['pos-cash-wallet']);
-      }
-
-      paymentTypeActions.getItems({
-        people: '/people/' + currentCompany.id,
-        wallet: wallets,
-      });
+    if (!currentCompany?.id || !paymentConfigSource) {
+      paymentTypeActions.setItems([]);
+      return;
     }
-  }, [currentCompany?.id, companyConfigs, device_config?.configs]);
+
+    let isMounted = true;
+
+    api
+      .fetch('wallet_payment_types', {
+        params: {
+          people: `/people/${currentCompany.id}`,
+        },
+      })
+      .then(response => {
+        if (!isMounted) {
+          return;
+        }
+
+        const walletPaymentTypes = Array.isArray(response?.member)
+          ? response.member
+          : Array.isArray(response?.['hydra:member'])
+            ? response['hydra:member']
+            : Array.isArray(response)
+              ? response
+              : [];
+        const allowedPaymentTypeIds = resolveDevicePaymentTypeIds(
+          paymentConfigSource,
+          walletPaymentTypes,
+        );
+
+        paymentTypeActions.setItems(
+          filterWalletPaymentTypesByAllowedIds(
+            walletPaymentTypes,
+            allowedPaymentTypeIds,
+          ),
+        );
+      })
+      .catch(() => {
+        if (isMounted) {
+          paymentTypeActions.setItems([]);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [
+    companyConfigs,
+    currentCompany?.configs,
+    currentCompany?.id,
+    device_config?.configs,
+    isShopClientApp,
+    paymentTypeActions,
+  ]);
 
   useEffect(() => {
     if (

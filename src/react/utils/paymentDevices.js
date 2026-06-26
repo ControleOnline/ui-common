@@ -14,6 +14,8 @@ export const ORDER_PAYMENT_DEVICE_CHANGE_ALLOWED_CONFIG_KEY =
   'order-payment-device-change-allowed';
 export const ORDER_CHARGE_ON_DELIVERY_ENABLED_CONFIG_KEY =
   'order-charge-on-delivery-enabled';
+export const PAYMENT_TYPE_IDS_CONFIG_KEY = 'payment-type-ids';
+export const DEVICE_PAYMENT_TYPES_CONFIG_KEY = PAYMENT_TYPE_IDS_CONFIG_KEY;
 
 const parseJsonValue = (value, fallback) => {
   if (value === null || value === undefined || value === '') {
@@ -47,6 +49,65 @@ export const normalizeDeviceIds = value => {
   const singleId = normalizeDeviceId(parsed);
   return singleId ? [singleId] : [];
 };
+
+const normalizeDevicePaymentIds = value => {
+  if (value === null || value === undefined || value === '') {
+    return [];
+  }
+
+  let parsed = value;
+
+  if (typeof parsed === 'string') {
+    const trimmed = parsed.trim();
+
+    if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+      try {
+        parsed = JSON.parse(trimmed);
+      } catch {
+        parsed = trimmed;
+      }
+    } else {
+      parsed = trimmed;
+    }
+  }
+
+  const rawValues = Array.isArray(parsed)
+    ? parsed
+    : typeof parsed === 'string'
+      ? parsed.split(/[,\n;]/)
+      : [parsed];
+
+  return [...new Set(
+    rawValues
+      .map(walletValue =>
+        normalizeEntityId(
+          walletValue?.['@id'] || walletValue?.id || walletValue,
+        ),
+      )
+      .filter(Boolean),
+  )];
+};
+
+export const normalizePaymentTypeIds = normalizeDevicePaymentIds;
+
+const resolveWalletPaymentTypeWalletId = walletPaymentType =>
+  normalizeEntityId(
+    walletPaymentType?.wallet?.['@id'] ||
+      walletPaymentType?.wallet?.id ||
+      walletPaymentType?.wallet ||
+      walletPaymentType?.walletId ||
+      walletPaymentType?.wallet_id,
+  );
+
+const resolveWalletPaymentTypePaymentTypeId = walletPaymentType =>
+  normalizeEntityId(
+    walletPaymentType?.paymentType?.['@id'] ||
+      walletPaymentType?.paymentType?.id ||
+      walletPaymentType?.paymentType ||
+      walletPaymentType?.payment_type?.['@id'] ||
+      walletPaymentType?.payment_type?.id ||
+      walletPaymentType?.payment_type,
+  );
 
 const parseConfigsObject = value => {
   if (!value) {
@@ -180,6 +241,58 @@ export const isOrderPaymentDeviceChangeAllowed = configs =>
     parseConfigsObject(resolveConfigsSource(configs))?.[
       ORDER_PAYMENT_DEVICE_CHANGE_ALLOWED_CONFIG_KEY
     ],
+  );
+
+export const resolveConfiguredPaymentTypeIds = configs => {
+  const parsedConfigs = parseConfigsObject(resolveConfigsSource(configs));
+  const configuredPaymentTypeIds = normalizePaymentTypeIds(
+    parsedConfigs?.[PAYMENT_TYPE_IDS_CONFIG_KEY],
+  );
+
+  return configuredPaymentTypeIds;
+};
+
+export const resolveDevicePaymentTypeIds = resolveConfiguredPaymentTypeIds;
+
+export const filterWalletPaymentTypesByAllowedIds = (
+  walletPaymentTypes,
+  allowedPaymentTypeIds,
+) => {
+  const allowedPaymentTypeIdSet = new Set(
+    normalizePaymentTypeIds(allowedPaymentTypeIds),
+  );
+
+  if (allowedPaymentTypeIdSet.size === 0) {
+    return [];
+  }
+
+  return (Array.isArray(walletPaymentTypes) ? walletPaymentTypes : []).filter(
+    walletPaymentType =>
+      allowedPaymentTypeIdSet.has(
+        resolveWalletPaymentTypePaymentTypeId(walletPaymentType),
+      ),
+  );
+};
+
+export const groupWalletPaymentTypesByWalletId = walletPaymentTypes =>
+  (Array.isArray(walletPaymentTypes) ? walletPaymentTypes : []).reduce(
+    (grouped, walletPaymentType) => {
+      const walletId = resolveWalletPaymentTypeWalletId(walletPaymentType);
+
+      if (!walletId) {
+        grouped.__unassigned = grouped.__unassigned || [];
+        grouped.__unassigned.push(walletPaymentType);
+        return grouped;
+      }
+
+      if (!grouped[walletId]) {
+        grouped[walletId] = [];
+      }
+
+      grouped[walletId].push(walletPaymentType);
+      return grouped;
+    },
+    {},
   );
 
 export const isPaymentGateway = gateway => PAYMENT_GATEWAYS.includes(gateway);
