@@ -502,14 +502,13 @@ const PaymentTypesByWalletTab = ({
                   {group.paymentTypes.length > 0 ? (
                     <View style={localStyles.paymentTypesRow}>
                       {group.paymentTypes.map(item => {
-                        const paymentTypeId = normalizeEntityId(
-                          item?.paymentType?.id ||
-                            item?.paymentType ||
-                            item?.payment_type?.id ||
-                            item?.payment_type,
+                        const walletPaymentTypeId = normalizeEntityId(
+                          item?.id || item?.['@id'],
                         );
                         const paymentTypeLabel = resolvePaymentTypeLabel(item);
-                        const selected = selectedPaymentTypeIdSet.has(paymentTypeId);
+                        const selected = selectedPaymentTypeIdSet.has(
+                          walletPaymentTypeId,
+                        );
 
                         if (!paymentTypeLabel) {
                           return null;
@@ -517,10 +516,12 @@ const PaymentTypesByWalletTab = ({
 
                         return (
                           <TouchableOpacity
-                            key={`${group.key}-${paymentTypeId || paymentTypeLabel}`}
+                            key={`${group.key}-${walletPaymentTypeId || paymentTypeLabel}`}
                             activeOpacity={selectionEnabled ? 0.85 : 1}
                             disabled={!selectionEnabled}
-                            onPress={() => handleTogglePaymentType(paymentTypeId)}
+                            onPress={() =>
+                              handleTogglePaymentType(walletPaymentTypeId)
+                            }
                             style={[
                               localStyles.paymentTypeChip,
                               selected && localStyles.paymentTypeChipSelected,

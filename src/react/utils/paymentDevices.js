@@ -98,14 +98,9 @@ const resolveWalletPaymentTypeWalletId = walletPaymentType =>
       walletPaymentType?.wallet_id,
   );
 
-const resolveWalletPaymentTypePaymentTypeId = walletPaymentType =>
+const resolveWalletPaymentTypeId = walletPaymentType =>
   normalizeEntityId(
-    walletPaymentType?.paymentType?.['@id'] ||
-      walletPaymentType?.paymentType?.id ||
-      walletPaymentType?.paymentType ||
-      walletPaymentType?.payment_type?.['@id'] ||
-      walletPaymentType?.payment_type?.id ||
-      walletPaymentType?.payment_type,
+    walletPaymentType?.['@id'] || walletPaymentType?.id,
   );
 
 const parseConfigsObject = value => {
@@ -268,7 +263,7 @@ export const filterWalletPaymentTypesByAllowedIds = (
   return (Array.isArray(walletPaymentTypes) ? walletPaymentTypes : []).filter(
     walletPaymentType =>
       allowedPaymentTypeIdSet.has(
-        resolveWalletPaymentTypePaymentTypeId(walletPaymentType),
+        resolveWalletPaymentTypeId(walletPaymentType),
       ),
   );
 };
