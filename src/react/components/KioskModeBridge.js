@@ -11,6 +11,7 @@ const KioskModeBridge = ({appState = AppState.currentState || 'active'}) => {
   const deviceConfigStore = useStore('device_config');
   const {item: runtimeDeviceConfig} = deviceConfigStore.getters;
   const lastRequestedStateRef = useRef(null);
+  const lastActiveAppStateRef = useRef(appState);
   const appType = String(APP_ENV.APP_TYPE || '').trim().toUpperCase();
   const kioskEnabled = useMemo(
     () =>
@@ -23,25 +24,28 @@ const KioskModeBridge = ({appState = AppState.currentState || 'active'}) => {
   );
 
   useEffect(() => {
+    const wasActive = lastActiveAppStateRef.current === 'active';
+    const requestedStateChanged = lastRequestedStateRef.current !== kioskEnabled;
+
+    lastActiveAppStateRef.current = appState;
+
     if (!kioskModeModule) {
-      return;
-    }
-
-    if (lastRequestedStateRef.current === kioskEnabled) {
-      return;
-    }
-
-    lastRequestedStateRef.current = kioskEnabled;
-    kioskModeModule.setKioskMode(kioskEnabled).catch(() => {});
-  }, [kioskEnabled]);
-
-  useEffect(() => {
-    if (!kioskModeModule || !kioskEnabled || appState !== 'active') {
       return undefined;
     }
 
-    kioskModeModule.setKioskMode(true).catch(() => {});
+    if (requestedStateChanged) {
+      lastRequestedStateRef.current = kioskEnabled;
+      kioskModeModule.setKioskMode(kioskEnabled).catch(() => {});
+    } else if (kioskEnabled && appState === 'active' && !wasActive) {
+      kioskModeModule.setKioskMode(true).catch(() => {});
+    }
 
+    if (!kioskEnabled || appState !== 'active') {
+      return undefined;
+    }
+
+    // The state-sync path already covered the first mount and config flips;
+    // only reassert on real foreground resumes to avoid reopening pinning UI.
     const intervalId = setInterval(() => {
       kioskModeModule.setKioskMode(true).catch(() => {});
     }, REASSERT_INTERVAL_MS);
