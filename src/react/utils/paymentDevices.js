@@ -238,6 +238,8 @@ export const isOrderPaymentDeviceChangeAllowed = configs =>
   );
 
 export const resolveConfiguredPaymentTypeIds = configs => {
+  // The allowlist is keyed by wallet_payment_type id so the same payment type
+  // can stay independent across different wallets.
   const parsedConfigs = parseConfigsObject(resolveConfigsSource(configs));
   const configuredPaymentTypeIds = normalizePaymentTypeIds(
     parsedConfigs?.[PAYMENT_TYPE_IDS_CONFIG_KEY],
