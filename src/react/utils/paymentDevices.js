@@ -15,7 +15,6 @@ export const ORDER_PAYMENT_DEVICE_CHANGE_ALLOWED_CONFIG_KEY =
 export const ORDER_CHARGE_ON_DELIVERY_ENABLED_CONFIG_KEY =
   'order-charge-on-delivery-enabled';
 export const PAYMENT_TYPE_IDS_CONFIG_KEY = 'payment-type-ids';
-export const DEVICE_PAYMENT_TYPES_CONFIG_KEY = PAYMENT_TYPE_IDS_CONFIG_KEY;
 
 const parseJsonValue = (value, fallback) => {
   if (value === null || value === undefined || value === '') {
