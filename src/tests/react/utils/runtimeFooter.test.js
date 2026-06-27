@@ -16,6 +16,14 @@ const {
 } = require('../../../react/utils/runtimeFooter')
 
 const originalLocationDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'location')
+const originalTranslator = global.t
+const runtimeFooterTranslations = {
+  counterService: 'Balcão',
+  waiterService: 'Garçom',
+  selfServiceKiosk: 'Totem',
+  singleItemSale: 'Venda única',
+  cashierPOS: 'PDV',
+}
 
 const setLocation = value => {
   Object.defineProperty(globalThis, 'location', {
@@ -34,6 +42,19 @@ const restoreLocation = () => {
 
   delete globalThis.location
 }
+
+test.before(() => {
+  global.t = {
+    getMessageFromBuckets: (store, type, key) =>
+      store === 'common' && type === 'option'
+        ? runtimeFooterTranslations[key] || ''
+        : '',
+  }
+})
+
+test.after(() => {
+  global.t = originalTranslator
+})
 
 test('prefers the persisted public ip for web runtime devices', () => {
   setLocation({hostname: '10.0.0.15'})
@@ -303,6 +324,69 @@ test('shows the PDV operation mode when the runtime device type is available', (
   assert.equal(debugInfo.rawValues.operationModeLabel, 'Garçom')
 })
 
+test('keeps the device identifier while adding the operation mode to the footer', () => {
+  assert.equal(
+    getRuntimeFooterPrimaryText({
+      device: {
+        alias: 'terminal-7',
+        appVersion: '1.3.7',
+        deviceType: 'android',
+        id: 'd41ac8afb9f178eb',
+        type: 'PDV',
+      },
+      appVersion: '1.3.6',
+      deviceConfig: {
+        device: {
+          device: '229252771069b294',
+          type: 'PDV',
+          metadata: {
+            app: {
+              version: '1.3.7',
+            },
+          },
+        },
+        configs: {
+          'config-version': '1.3.7',
+          'pos-operation-mode': 'totem',
+        },
+      },
+    }),
+    'terminal-7 • PDV • Totem / v1.3.7',
+  )
+})
+
+test('does not invent a fallback label when the operation mode translation is missing', () => {
+  const debugInfo = getRuntimeFooterDebugInfo({
+    device: {
+      alias: 'PDV',
+      appVersion: '1.3.7',
+      deviceType: 'android',
+      id: 'd41ac8afb9f178eb',
+      type: 'PDV',
+    },
+    appVersion: '1.3.6',
+    deviceConfig: {
+      device: {
+        device: '229252771069b294',
+        type: 'PDV',
+        metadata: {
+          app: {
+            version: '1.3.7',
+          },
+        },
+      },
+      configs: {
+        'config-version': '1.3.7',
+        'pos-operation-mode': 'unknown-mode',
+      },
+    },
+  })
+
+  assert.equal(debugInfo.operationModeLabel, '')
+  assert.equal(debugInfo.displayName, 'PDV (229252771069b294)')
+  assert.equal(debugInfo.primaryText, 'PDV (229252771069b294) / v1.3.7')
+})
+
 test('renders totem mode in the runtime footer', () => {
   assert.equal(
     getRuntimeFooterPrimaryText({
@@ -324,7 +408,7 @@ test('renders totem mode in the runtime footer', () => {
         },
       },
     }),
-    'PDV • Totem / v1.3.7',
+    'android • PDV • Totem / v1.3.7',
   )
 })
 

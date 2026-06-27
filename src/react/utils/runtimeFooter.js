@@ -4,12 +4,12 @@ const DEVICE_RUNTIME_FOOTER_TEXT_CONFIG_KEY = 'device-runtime-footer-text';
 
 const safeTrim = value => String(value || '').trim();
 
-const POS_OPERATION_MODE_LABELS = {
-  counter: 'Balcão',
-  waiter: 'Garçom',
-  totem: 'Totem',
-  'single-item': 'Venda única',
-  cashier: 'PDV',
+const POS_OPERATION_MODE_TRANSLATION_KEYS = {
+  counter: 'counterService',
+  waiter: 'waiterService',
+  totem: 'selfServiceKiosk',
+  'single-item': 'singleItemSale',
+  cashier: 'cashierPOS',
 };
 
 const normalizeOperationModeKey = value =>
@@ -18,6 +18,53 @@ const normalizeOperationModeKey = value =>
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[\s_]/g, '-');
+
+const normalizeComparableText = value =>
+  safeTrim(value)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+
+const getRuntimeFooterTranslation = (store, type, key) =>
+  safeTrim(globalThis?.t?.getMessageFromBuckets?.(store, type, key));
+
+const buildRuntimeFooterDisplayName = ({
+  deviceName,
+  operationalTypeLabel,
+  operationModeLabel,
+  runtimeDetail,
+}) => {
+  const parts = [];
+  const seen = new Set();
+
+  [deviceName, operationalTypeLabel].forEach(value => {
+    const normalizedValue = normalizeComparableText(value);
+
+    if (!normalizedValue || seen.has(normalizedValue)) {
+      return;
+    }
+
+    seen.add(normalizedValue);
+    parts.push(safeTrim(value));
+  });
+
+  if (operationModeLabel) {
+    const normalizedModeLabel = normalizeComparableText(operationModeLabel);
+
+    if (normalizedModeLabel && !seen.has(normalizedModeLabel)) {
+      seen.add(normalizedModeLabel);
+      parts.push(safeTrim(operationModeLabel));
+    }
+
+    return parts.join(' • ');
+  }
+
+  if (runtimeDetail) {
+    return `${parts.join(' • ')} (${safeTrim(runtimeDetail)})`;
+  }
+
+  return parts.join(' • ');
+};
 
 const parseJsonStringValue = value => {
   try {
@@ -200,8 +247,11 @@ const getRuntimeFooterOperationModeLabel = ({deviceConfig} = {}) => {
   const normalizedMode = normalizeOperationModeKey(
     configs?.['pos-operation-mode'],
   );
+  const translationKey = POS_OPERATION_MODE_TRANSLATION_KEYS[normalizedMode];
 
-  return POS_OPERATION_MODE_LABELS[normalizedMode] || '';
+  return translationKey
+    ? getRuntimeFooterTranslation('common', 'option', translationKey)
+    : '';
 };
 
 const getRuntimeFooterOperationalSummary = ({device, deviceConfig} = {}) => {
@@ -338,25 +388,22 @@ const getRuntimeFooterDebugInfo = ({device, appVersion, deviceConfig}) => {
     deviceConfig,
   });
   const nativeIdentifier = nativeIdentifierCandidates[0]?.value || '';
-  const runtimeDetail = operationalSummary
-    ? operationalTypeLabel === 'PDV' &&
-      operationModeLabel &&
-      operationModeLabel.toUpperCase() !== operationalTypeLabel.toUpperCase()
-      ? operationModeLabel
-      : operationalTypeLabel
+  const runtimeDetail = operationModeLabel
+    ? operationModeLabel
     : isWebRuntime
       ? webIdentifier
       : nativeIdentifier;
-  const runtimeDetailSource = operationalSummary
-    ? operationalTypeLabel === 'PDV' &&
-      operationModeLabel &&
-      operationModeLabel.toUpperCase() !== operationalTypeLabel.toUpperCase()
-      ? 'device_config.configs.pos-operation-mode'
-      : operationalTypeInfo.source
+  const runtimeDetailSource = operationModeLabel
+    ? 'device_config.configs.pos-operation-mode'
     : isWebRuntime
       ? webIdentifierCandidates[0]?.source || ''
       : nativeIdentifierCandidates[0]?.source || '';
-  const displayName = operationalSummary || deviceName;
+  const displayName = buildRuntimeFooterDisplayName({
+    deviceName,
+    operationalTypeLabel,
+    operationModeLabel,
+    runtimeDetail,
+  });
   const primaryText = [displayName, versionLabel]
     .filter(Boolean)
     .join(' / ');
