@@ -17,7 +17,7 @@ const {
 
 const originalLocationDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'location')
 const originalTranslator = global.t
-const runtimeFooterTranslations = {
+const commonOptionTranslations = {
   counterService: 'Balcão',
   waiterService: 'Garçom',
   selfServiceKiosk: 'Totem',
@@ -47,7 +47,7 @@ test.before(() => {
   global.t = {
     getMessageFromBuckets: (store, type, key) =>
       store === 'common' && type === 'option'
-        ? runtimeFooterTranslations[key] || ''
+        ? commonOptionTranslations[key] || ''
         : '',
   }
 })
