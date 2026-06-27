@@ -118,11 +118,12 @@ export const api = {
           if (value.length === 0) {
             pairs.push(`${fullKey}[]=`);
           } else {
+            const shouldRepeatKey = fullKey === 'status';
             value.forEach(val => {
               if (typeof val === 'object' && val !== null) {
-                pairs.push(...this.serialize(val, `${fullKey}[]`));
+                pairs.push(...this.serialize(val, shouldRepeatKey ? fullKey : `${fullKey}[]`));
               } else {
-                pairs.push(`${fullKey}[]=${encodeURIComponent(val)}`);
+                pairs.push(`${shouldRepeatKey ? fullKey : `${fullKey}[]`}=${encodeURIComponent(val)}`);
               }
             });
           }
