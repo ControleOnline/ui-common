@@ -33,7 +33,7 @@ export const POS_CHECK_ORDER_MANAGEMENT_MODE_CONFIG_KEY =
   'check-order-management-mode';
 export const POS_OPERATION_MODE_COUNTER = 'counter';
 export const POS_OPERATION_MODE_WAITER = 'waiter';
-export const POS_OPERATION_MODE_KIOSK = 'kiosk';
+export const POS_OPERATION_MODE_TOTEM = 'totem';
 export const POS_OPERATION_MODE_SINGLE_ITEM = 'single-item';
 export const POS_OPERATION_MODE_CASHIER = 'cashier';
 export const POS_CHECK_ORDER_TYPE_NONE = 'none';
@@ -61,7 +61,7 @@ export const POS_OPERATION_MODE_OPTIONS = [
     descriptionKey: 'waiterServiceDescription',
   },
   {
-    value: POS_OPERATION_MODE_KIOSK,
+    value: POS_OPERATION_MODE_TOTEM,
     translationKey: 'selfServiceKiosk',
     descriptionKey: 'selfServiceKioskDescription',
   },
@@ -183,13 +183,10 @@ export const normalizePosOperationMode = value => {
 
   if (
     [
-      POS_OPERATION_MODE_KIOSK,
-      'totem',
-      'self-service',
-      'self-service-kiosk',
+      POS_OPERATION_MODE_TOTEM,
     ].includes(normalizedValue)
   ) {
-    return POS_OPERATION_MODE_KIOSK;
+    return POS_OPERATION_MODE_TOTEM;
   }
 
   if (
@@ -221,7 +218,7 @@ export const normalizePosOperationMode = value => {
     return POS_OPERATION_MODE_CASHIER;
   }
 
-  return POS_OPERATION_MODE_DEFAULT;
+  return '';
 };
 
 export const resolvePosOperationMode = configs =>
@@ -312,17 +309,12 @@ export const canManagePosCheckOrders = configs =>
 export const usesPosCheckLinkedOrder = configs =>
   resolvePosCheckOrderType(configs) !== POS_CHECK_ORDER_TYPE_NONE;
 
-export const isPosKioskMode = configs =>
-  resolvePosOperationMode(configs) === POS_OPERATION_MODE_KIOSK;
+export const isPosTotemMode = configs =>
+  resolvePosOperationMode(configs) === POS_OPERATION_MODE_TOTEM;
 
 export const isAndroidKioskEnabled = configs => {
   const parsedConfigs = parseConfigsObject(configs);
-  const storedValue =
-    parsedConfigs?.[DEVICE_ANDROID_KIOSK_ENABLED_CONFIG_KEY];
-
-  if (isMissingConfigValue(storedValue)) {
-    return isPosKioskMode(parsedConfigs);
-  }
+  const storedValue = parsedConfigs?.[DEVICE_ANDROID_KIOSK_ENABLED_CONFIG_KEY];
 
   return isTruthyValue(storedValue);
 };
@@ -343,7 +335,7 @@ export const isPosCounterMode = configs =>
   resolvePosOperationMode(configs) === POS_OPERATION_MODE_COUNTER;
 
 export const isPosSelfServiceMode = configs =>
-  isPosKioskMode(configs) || isPosCounterMode(configs);
+  isPosTotemMode(configs) || isPosCounterMode(configs);
 
 export const resolvePosPrintMode = configs => {
   const value = String(parseConfigsObject(configs)?.['print-mode'] || '')
@@ -406,7 +398,7 @@ export const resolvePosCashManagementMode = configs => {
 };
 
 export const shouldUsePosCashRegisterLifecycle = configs => {
-  if (isPosKioskMode(configs)) {
+  if (isPosTotemMode(configs)) {
     return false;
   }
 
@@ -446,11 +438,8 @@ export const isPosCashRegisterClosed = configs =>
 export const getPosOperationModeOption = mode => {
   const normalizedMode = normalizePosOperationMode(mode);
 
-  return (
-    POS_OPERATION_MODE_OPTIONS.find(option => option.value === normalizedMode) ||
-    POS_OPERATION_MODE_OPTIONS.find(
-      option => option.value === POS_OPERATION_MODE_DEFAULT,
-    )
+  return POS_OPERATION_MODE_OPTIONS.find(
+    option => option.value === normalizedMode,
   );
 };
 

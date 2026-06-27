@@ -1,5 +1,10 @@
 const assert = require('node:assert/strict')
 const test = require('node:test')
+const {jest} = require('@jest/globals')
+
+jest.mock('@controleonline/ui-common/src/react/utils/printerDevices', () => ({
+  getDeviceTypeLabel: value => String(value || ''),
+}))
 
 const {
   getRuntimeFooterDebugInfo,
@@ -251,6 +256,76 @@ test('prefers the backend device identifier used by the devices page', () => {
   assert.equal(debugInfo.versionCandidates[0]?.source, 'device_config.device.metadata.app.version')
   assert.equal(debugInfo.rawValues.deviceId, 'd41ac8afb9f178eb')
   assert.equal(debugInfo.rawValues.storedDeviceIdentifier, '229252771069b294')
+})
+
+test('shows the PDV operation mode when the runtime device type is available', () => {
+  const params = {
+    device: {
+      alias: 'PDV',
+      appVersion: '1.3.7',
+      deviceType: 'android',
+      id: 'd41ac8afb9f178eb',
+      type: 'PDV',
+    },
+    appVersion: '1.3.6',
+    deviceConfig: {
+      device: {
+        device: '229252771069b294',
+        type: 'PDV',
+        metadata: {
+          app: {
+            version: '1.3.7',
+          },
+        },
+      },
+      configs: {
+        'config-version': '1.3.7',
+        'pos-operation-mode': 'waiter',
+      },
+    },
+  }
+
+  assert.equal(
+    getRuntimeFooterPrimaryText(params),
+    'PDV • Garçom / v1.3.7',
+  )
+
+  const debugInfo = getRuntimeFooterDebugInfo(params)
+
+  assert.equal(debugInfo.displayName, 'PDV • Garçom')
+  assert.equal(debugInfo.runtimeDetail, 'Garçom')
+  assert.equal(
+    debugInfo.runtimeDetailSource,
+    'device_config.configs.pos-operation-mode',
+  )
+  assert.equal(debugInfo.rawValues.operationalType, 'PDV')
+  assert.equal(debugInfo.rawValues.operationMode, 'waiter')
+  assert.equal(debugInfo.rawValues.operationModeLabel, 'Garçom')
+})
+
+test('renders totem mode in the runtime footer', () => {
+  assert.equal(
+    getRuntimeFooterPrimaryText({
+      device: {
+        appVersion: '1.3.7',
+        deviceType: 'android',
+        id: 'native-13',
+        type: 'PDV',
+      },
+      appVersion: '1.3.6',
+      deviceConfig: {
+        device: {
+          device: '229252771069b294',
+          type: 'PDV',
+        },
+        configs: {
+          'config-version': '1.3.7',
+          'pos-operation-mode': 'totem',
+        },
+      },
+    }),
+    'PDV • Totem / v1.3.7',
+  )
 })
 
 test('falls back to the local device id when the backend identifier is unavailable', () => {

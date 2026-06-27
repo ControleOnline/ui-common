@@ -32,6 +32,7 @@ const {
   resolvePosPrintMode,
   shouldEnableAndroidKioskMode,
   shouldUsePosCashRegisterLifecycle,
+  isPosTotemMode,
 } = require('../../../react/config/deviceConfigBootstrap')
 
 const {describe, expect, it} = global
@@ -143,14 +144,29 @@ describe('deviceConfigBootstrap POS operation helpers', () => {
     expect(needsUpdate).toBe(false)
   })
 
-  it('keeps kiosk without cash register lifecycle and normalizes print mode', () => {
+  it('keeps totem without cash register lifecycle and normalizes print mode', () => {
     const configs = {
-      [POS_OPERATION_MODE_CONFIG_KEY]: 'kiosk',
+      [POS_OPERATION_MODE_CONFIG_KEY]: 'totem',
       'print-mode': 'form',
     }
 
+    expect(resolvePosOperationMode(configs)).toBe('totem')
+    expect(isPosTotemMode(configs)).toBe(true)
     expect(shouldUsePosCashRegisterLifecycle(configs)).toBe(false)
     expect(resolvePosPrintMode(configs)).toBe('form')
+  })
+
+  it('does not accept the legacy kiosk operation mode value', () => {
+    expect(
+      resolvePosOperationMode({
+        [POS_OPERATION_MODE_CONFIG_KEY]: 'kiosk',
+      }),
+    ).toBe('')
+    expect(
+      isPosTotemMode({
+        [POS_OPERATION_MODE_CONFIG_KEY]: 'kiosk',
+      }),
+    ).toBe(false)
   })
 
   it('defaults display size to 5 and clamps the configured range to 1..10', () => {
@@ -174,22 +190,22 @@ describe('deviceConfigBootstrap POS operation helpers', () => {
     ).toBe(true)
   })
 
-  it('falls back to kiosk mode when the explicit Android kiosk flag is missing', () => {
+  it('does not enable Android kiosk without the explicit device flag', () => {
     expect(
       shouldEnableAndroidKioskMode({
         appType: 'POS',
         configs: {
-          [POS_OPERATION_MODE_CONFIG_KEY]: 'kiosk',
+          [POS_OPERATION_MODE_CONFIG_KEY]: 'totem',
         },
         platform: 'android',
       }),
-    ).toBe(true)
+    ).toBe(false)
 
     expect(
       shouldEnableAndroidKioskMode({
         appType: 'POS',
         configs: {
-          [POS_OPERATION_MODE_CONFIG_KEY]: 'counter',
+          [POS_OPERATION_MODE_CONFIG_KEY]: 'totem',
         },
         platform: 'android',
       }),
@@ -212,7 +228,7 @@ describe('deviceConfigBootstrap POS operation helpers', () => {
       shouldEnableAndroidKioskMode({
         appType: 'POS',
         configs: {
-          [POS_OPERATION_MODE_CONFIG_KEY]: 'kiosk',
+          [POS_OPERATION_MODE_CONFIG_KEY]: 'totem',
           [DEVICE_ANDROID_KIOSK_ENABLED_CONFIG_KEY]: '0',
         },
         platform: 'android',

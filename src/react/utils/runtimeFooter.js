@@ -1,6 +1,23 @@
+import { getDeviceTypeLabel } from '@controleonline/ui-common/src/react/utils/printerDevices';
+
 const DEVICE_RUNTIME_FOOTER_TEXT_CONFIG_KEY = 'device-runtime-footer-text';
 
 const safeTrim = value => String(value || '').trim();
+
+const POS_OPERATION_MODE_LABELS = {
+  counter: 'Balcão',
+  waiter: 'Garçom',
+  totem: 'Totem',
+  'single-item': 'Venda única',
+  cashier: 'PDV',
+};
+
+const normalizeOperationModeKey = value =>
+  safeTrim(value)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\s_]/g, '-');
 
 const parseJsonStringValue = value => {
   try {
@@ -142,6 +159,79 @@ const getRuntimeFooterStoredVersion = deviceConfig => {
   return formatRuntimeFooterVersion(configs?.['config-version']);
 };
 
+const getRuntimeFooterOperationalTypeInfo = ({device, deviceConfig} = {}) => {
+  const runtimeType = safeTrim(device?.type);
+
+  if (runtimeType) {
+    return {
+      source: 'device.type',
+      value: runtimeType.toUpperCase(),
+    };
+  }
+
+  const storedType = safeTrim(deviceConfig?.device?.type);
+
+  if (storedType) {
+    return {
+      source: 'device_config.device.type',
+      value: storedType.toUpperCase(),
+    };
+  }
+
+  return {
+    source: '',
+    value: '',
+  };
+};
+
+const getRuntimeFooterOperationalTypeLabel = ({device, deviceConfig} = {}) => {
+  const operationalTypeInfo = getRuntimeFooterOperationalTypeInfo({
+    device,
+    deviceConfig,
+  });
+
+  return operationalTypeInfo.value
+    ? getDeviceTypeLabel(operationalTypeInfo.value)
+    : '';
+};
+
+const getRuntimeFooterOperationModeLabel = ({deviceConfig} = {}) => {
+  const configs = parseDeviceConfigs(deviceConfig?.configs);
+  const normalizedMode = normalizeOperationModeKey(
+    configs?.['pos-operation-mode'],
+  );
+
+  return POS_OPERATION_MODE_LABELS[normalizedMode] || '';
+};
+
+const getRuntimeFooterOperationalSummary = ({device, deviceConfig} = {}) => {
+  const operationalTypeLabel = getRuntimeFooterOperationalTypeLabel({
+    device,
+    deviceConfig,
+  });
+
+  if (!operationalTypeLabel) {
+    return '';
+  }
+
+  if (operationalTypeLabel !== 'PDV') {
+    return operationalTypeLabel;
+  }
+
+  const operationModeLabel = getRuntimeFooterOperationModeLabel({
+    deviceConfig,
+  });
+
+  if (
+    !operationModeLabel ||
+    operationModeLabel.toUpperCase() === operationalTypeLabel.toUpperCase()
+  ) {
+    return operationalTypeLabel;
+  }
+
+  return `${operationalTypeLabel} • ${operationModeLabel}`;
+};
+
 const getRuntimeFooterVersionCandidates = ({device, appVersion, deviceConfig}) => {
   const deviceMetadata = parseDeviceMetadata(device?.metadata);
   const storedDeviceMetadata = parseDeviceMetadata(deviceConfig?.device?.metadata);
@@ -221,6 +311,21 @@ const getRuntimeFooterDebugInfo = ({device, appVersion, deviceConfig}) => {
   });
   const versionLabel = versionCandidates[0]?.label || '';
   const isWebRuntime = isWebRuntimeDevice(device);
+  const operationalTypeInfo = getRuntimeFooterOperationalTypeInfo({
+    device,
+    deviceConfig,
+  });
+  const operationalTypeLabel = operationalTypeInfo.value
+    ? getDeviceTypeLabel(operationalTypeInfo.value)
+    : '';
+  const operationModeLabel =
+    operationalTypeLabel === 'PDV'
+      ? getRuntimeFooterOperationModeLabel({deviceConfig})
+      : '';
+  const operationalSummary = getRuntimeFooterOperationalSummary({
+    device,
+    deviceConfig,
+  });
   const webIdentifierCandidates = isWebRuntime
     ? getRuntimeFooterWebIdentifierCandidates({
       device,
@@ -233,10 +338,25 @@ const getRuntimeFooterDebugInfo = ({device, appVersion, deviceConfig}) => {
     deviceConfig,
   });
   const nativeIdentifier = nativeIdentifierCandidates[0]?.value || '';
-  const runtimeDetail = isWebRuntime ? webIdentifier : nativeIdentifier;
-  const displayName = runtimeDetail
-    ? `${deviceName} (${runtimeDetail})`
-    : deviceName;
+  const runtimeDetail = operationalSummary
+    ? operationalTypeLabel === 'PDV' &&
+      operationModeLabel &&
+      operationModeLabel.toUpperCase() !== operationalTypeLabel.toUpperCase()
+      ? operationModeLabel
+      : operationalTypeLabel
+    : isWebRuntime
+      ? webIdentifier
+      : nativeIdentifier;
+  const runtimeDetailSource = operationalSummary
+    ? operationalTypeLabel === 'PDV' &&
+      operationModeLabel &&
+      operationModeLabel.toUpperCase() !== operationalTypeLabel.toUpperCase()
+      ? 'device_config.configs.pos-operation-mode'
+      : operationalTypeInfo.source
+    : isWebRuntime
+      ? webIdentifierCandidates[0]?.source || ''
+      : nativeIdentifierCandidates[0]?.source || '';
+  const displayName = operationalSummary || deviceName;
   const primaryText = [displayName, versionLabel]
     .filter(Boolean)
     .join(' / ');
@@ -244,11 +364,12 @@ const getRuntimeFooterDebugInfo = ({device, appVersion, deviceConfig}) => {
   return {
     deviceName,
     displayName,
+    operationalSummary,
+    operationalTypeLabel,
+    operationModeLabel,
     versionLabel,
     runtimeDetail,
-    runtimeDetailSource: isWebRuntime
-      ? webIdentifierCandidates[0]?.source || ''
-      : nativeIdentifierCandidates[0]?.source || '',
+    runtimeDetailSource,
     primaryText,
     isWebRuntime,
     versionCandidates,
@@ -257,6 +378,7 @@ const getRuntimeFooterDebugInfo = ({device, appVersion, deviceConfig}) => {
     rawValues: {
       appVersionProp: safeTrim(appVersion),
       deviceId: safeTrim(device?.id),
+      deviceType: safeTrim(device?.type),
       deviceExternalIp: safeTrim(device?.externalIp),
       deviceAppVersion: safeTrim(device?.appVersion),
       deviceMetadataAppVersion: safeTrim(
@@ -266,6 +388,7 @@ const getRuntimeFooterDebugInfo = ({device, appVersion, deviceConfig}) => {
         parseDeviceMetadata(device?.metadata)?.network?.publicIp,
       ),
       storedDeviceRecordId: safeTrim(deviceConfig?.device?.id),
+      storedDeviceType: safeTrim(deviceConfig?.device?.type),
       storedDeviceIdentifier: safeTrim(deviceConfig?.device?.device),
       storedDeviceMetadataAppVersion: safeTrim(
         parseDeviceMetadata(deviceConfig?.device?.metadata)?.app?.version,
@@ -276,6 +399,11 @@ const getRuntimeFooterDebugInfo = ({device, appVersion, deviceConfig}) => {
       storedConfigVersion: safeTrim(
         parseDeviceConfigs(deviceConfig?.configs)?.['config-version'],
       ),
+      operationMode: normalizeOperationModeKey(
+        parseDeviceConfigs(deviceConfig?.configs)?.['pos-operation-mode'],
+      ),
+      operationModeLabel,
+      operationalType: safeTrim(operationalTypeInfo.value),
       webHost: getRuntimeFooterWebHost(),
     },
   };

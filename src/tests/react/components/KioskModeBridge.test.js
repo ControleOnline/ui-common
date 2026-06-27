@@ -11,15 +11,16 @@ const mockBackHandlerAddEventListener = jest.fn(() => ({
 }));
 const mockUseStore = jest.fn(name => {
   if (name === 'device_config') {
-    return {
-      getters: {
-        item: {
-          configs: {
-            'pos-operation-mode': 'kiosk',
+      return {
+        getters: {
+          item: {
+            configs: {
+              'pos-operation-mode': 'totem',
+              'android-kiosk-enabled': '1',
+            },
           },
         },
-      },
-    };
+      };
   }
 
   return {
