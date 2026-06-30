@@ -312,6 +312,8 @@ export const usesPosCheckLinkedOrder = configs =>
 export const isPosTotemMode = configs =>
   resolvePosOperationMode(configs) === POS_OPERATION_MODE_TOTEM;
 
+export const isPosKioskMode = isPosTotemMode;
+
 export const isAndroidKioskEnabled = configs => {
   const parsedConfigs = parseConfigsObject(configs);
   const storedValue = parsedConfigs?.[DEVICE_ANDROID_KIOSK_ENABLED_CONFIG_KEY];

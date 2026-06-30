@@ -23,6 +23,7 @@ const {
   isPosCashRegisterOpen,
   isPosCounterMode,
   isPosDeliveryEnabled,
+  isPosKioskMode,
   isPosSelfServiceMode,
   isDisplaySideBreakEnabled,
   normalizeDisplaySize,
@@ -152,6 +153,7 @@ describe('deviceConfigBootstrap POS operation helpers', () => {
 
     expect(resolvePosOperationMode(configs)).toBe('totem')
     expect(isPosTotemMode(configs)).toBe(true)
+    expect(isPosKioskMode(configs)).toBe(true)
     expect(shouldUsePosCashRegisterLifecycle(configs)).toBe(false)
     expect(resolvePosPrintMode(configs)).toBe('form')
   })
@@ -164,6 +166,11 @@ describe('deviceConfigBootstrap POS operation helpers', () => {
     ).toBe('')
     expect(
       isPosTotemMode({
+        [POS_OPERATION_MODE_CONFIG_KEY]: 'kiosk',
+      }),
+    ).toBe(false)
+    expect(
+      isPosKioskMode({
         [POS_OPERATION_MODE_CONFIG_KEY]: 'kiosk',
       }),
     ).toBe(false)
