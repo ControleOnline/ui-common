@@ -81,10 +81,6 @@ const resolveDeviceConfigPeopleIri = ({appType, currentCompany, user}) => {
     return `/people/${currentCompanyId}`;
   }
 
-  if (normalizedAppType === 'DELIVERY' && currentPeopleId) {
-    return `/people/${currentPeopleId}`;
-  }
-
   return '';
 };
 
