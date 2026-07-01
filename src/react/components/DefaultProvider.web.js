@@ -66,6 +66,28 @@ const normalizeEntityId = value =>
     .replace(/\D/g, '')
     .trim();
 
+const resolveDeviceConfigPeopleIri = ({appType, currentCompany, user}) => {
+  const normalizedAppType = String(appType || '').trim().toUpperCase();
+  const currentPeopleId = normalizeEntityId(
+    user?.people ?? user?.peopleId ?? user?.person ?? user?.personId ?? '',
+  );
+  const currentCompanyId = normalizeEntityId(currentCompany?.id);
+
+  if (normalizedAppType === 'DELIVERY' && currentPeopleId) {
+    return `/people/${currentPeopleId}`;
+  }
+
+  if (currentCompanyId) {
+    return `/people/${currentCompanyId}`;
+  }
+
+  if (normalizedAppType === 'DELIVERY' && currentPeopleId) {
+    return `/people/${currentPeopleId}`;
+  }
+
+  return '';
+};
+
 const normalizeRuntimeIp = value => String(value || '').trim();
 
 const getRuntimeIpFromResponse = response =>
@@ -166,6 +188,7 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
   const [, setTranslateVersion] = useState(0);
   const [baseThemeColors, setBaseThemeColors] = useState({});
   const translateBootstrapKeyRef = useRef('');
+  const lastDeviceConfigPeopleIriRef = useRef('');
   const [device, setDevice] = useState(
     JSON.parse(localStorage.getItem('device') || '{}'),
   );
@@ -179,6 +202,11 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
   const runtimeDeviceType = resolveOperationalDeviceType({
     appType: APP_ENV.APP_TYPE,
     deviceInfo: device || {},
+  });
+  const deviceConfigPeopleIri = resolveDeviceConfigPeopleIri({
+    appType,
+    currentCompany,
+    user,
   });
   const isPublicRouteActive = isPublicRoute(currentRouteName);
 
@@ -226,6 +254,20 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
       delete global.t;
     }
   }, [isLogged, isPublicRouteActive]);
+
+  useEffect(() => {
+    if (
+      !deviceConfigPeopleIri ||
+      lastDeviceConfigPeopleIriRef.current === deviceConfigPeopleIri
+    ) {
+      return;
+    }
+
+    lastDeviceConfigPeopleIriRef.current = deviceConfigPeopleIri;
+    setDeviceConfigFetched(false);
+    setDeviceRuntimeConfigSynced(false);
+    deviceConfigsActions.setItem({});
+  }, [deviceConfigPeopleIri, deviceConfigsActions]);
 
   useEffect(() => {
     if (!isLogged) {
@@ -487,50 +529,46 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
   ]);
 
   useEffect(() => {
-    if (
-      device &&
-      device.id &&
-      isLogged &&
-      currentCompany &&
-      Object.entries(currentCompany).length > 0
-    ) {
-      setDeviceConfigFetched(false);
-      setDeviceRuntimeConfigSynced(false);
-      deviceConfigsActions.setItem({});
-
-      deviceConfigsActions
-        .getItems({
-          'device.device': device.id,
-          people: '/people/' + currentCompany.id,
-          type: runtimeDeviceType,
-        })
-        .then(data => {
-          const selectedConfig = selectRuntimeDeviceConfig({
-            items: data,
-            deviceId: device.id,
-            companyId: currentCompany.id,
-            runtimeDeviceType,
-          });
-
-          if (selectedConfig) {
-            const nextItem = {
-              ...selectedConfig,
-              configs: parseConfigsObject(selectedConfig?.configs),
-            };
-            deviceConfigsActions.setItem(nextItem);
-            return;
-          }
-
-          deviceConfigsActions.setItem({});
-        })
-        .catch(() => { })
-        .finally(() => {
-          setDeviceConfigFetched(true);
-        });
+    if (!device?.id || !isLogged || !deviceConfigPeopleIri) {
+      return;
     }
+
+    setDeviceConfigFetched(false);
+    setDeviceRuntimeConfigSynced(false);
+    deviceConfigsActions.setItem({});
+
+    deviceConfigsActions
+      .getItems({
+        'device.device': device.id,
+        people: deviceConfigPeopleIri,
+        type: runtimeDeviceType,
+      })
+      .then(data => {
+        const selectedConfig = selectRuntimeDeviceConfig({
+          items: data,
+          deviceId: device.id,
+          companyId: deviceConfigPeopleIri,
+          runtimeDeviceType,
+        });
+
+        if (selectedConfig) {
+          const nextItem = {
+            ...selectedConfig,
+            configs: parseConfigsObject(selectedConfig?.configs),
+          };
+          deviceConfigsActions.setItem(nextItem);
+          return;
+        }
+
+        deviceConfigsActions.setItem({});
+      })
+      .catch(() => {})
+      .finally(() => {
+        setDeviceConfigFetched(true);
+      });
   }, [
-    currentCompany?.id,
     device?.id,
+    deviceConfigPeopleIri,
     deviceConfigsActions,
     isLogged,
     runtimeDeviceType,
@@ -540,7 +578,7 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
     if (
       !deviceConfigFetched ||
       !isLogged ||
-      !currentCompany?.id ||
+      !deviceConfigPeopleIri ||
       !device?.id ||
       deviceRuntimeConfigSynced
     ) {
@@ -562,7 +600,7 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
       .addDeviceConfigs({
         device: device.id,
         configs: JSON.stringify(nextConfigs),
-        people: '/people/' + currentCompany.id,
+        people: deviceConfigPeopleIri,
         type: runtimeDeviceType,
       })
       .catch(() => { })
@@ -571,11 +609,11 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
       });
   }, [
     appVersion,
-    currentCompany?.id,
     device?.id,
     device?.manufacturer,
     device?.isEmulator,
     deviceConfigFetched,
+    deviceConfigPeopleIri,
     deviceRuntimeConfigSynced,
     deviceConfigsActions,
     device_config?.configs,

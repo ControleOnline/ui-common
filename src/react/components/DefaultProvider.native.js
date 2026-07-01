@@ -6,6 +6,7 @@ import {WebsocketListener} from '@controleonline/ui-common/src/react/components/
 import BackgroundRuntimeBridge from '@controleonline/ui-common/src/react/components/BackgroundRuntimeBridge';
 import DeviceAlertSoundService from '@controleonline/ui-common/src/react/components/DeviceAlertSoundService';
 import KioskModeBridge from '@controleonline/ui-common/src/react/components/KioskModeBridge';
+import DeliveryPushBridge from '@controleonline/ui-common/src/react/components/DeliveryPushBridge';
 import ManagerPushBridge from '@controleonline/ui-common/src/react/components/ManagerPushBridge';
 import PrintService from '@controleonline/ui-common/src/react/components/PrintService';
 import RemoteCheckoutService from '@controleonline/ui-common/src/react/components/RemoteCheckoutService';
@@ -67,6 +68,24 @@ const normalizeEntityId = value =>
     .replace(/\D/g, '')
     .trim();
 
+const resolveDeviceConfigPeopleIri = ({appType, currentCompany, user}) => {
+  const normalizedAppType = String(appType || '').trim().toUpperCase();
+  const currentPeopleId = normalizeEntityId(
+    user?.people ?? user?.peopleId ?? user?.person ?? user?.personId ?? '',
+  );
+  const currentCompanyId = normalizeEntityId(currentCompany?.id);
+
+  if (normalizedAppType === 'DELIVERY' && currentPeopleId) {
+    return `/people/${currentPeopleId}`;
+  }
+
+  if (currentCompanyId) {
+    return `/people/${currentCompanyId}`;
+  }
+
+  return '';
+};
+
 export const DefaultProvider = ({children, onBootstrapReady}) => {
   const appType = String(APP_ENV.APP_TYPE || '').toUpperCase();
   const isShopClientApp = appType === 'SHOP';
@@ -99,7 +118,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
   const {colors, menus} = getters;
   const {currentCompany, defaultCompany, companies} = peopleGetters;
   const {item: device_config} = deviceConfigsGetters;
-  const {isLogged, sessionChecked} = authGetters;
+  const {isLogged, sessionChecked, user} = authGetters;
   const hasCurrentCompany =
     !!currentCompany && Object.entries(currentCompany).length > 0;
   const [translateReady, setTranslateReady] = useState(true);
@@ -112,6 +131,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
   const [, setTranslateVersion] = useState(0);
   const [baseThemeColors, setBaseThemeColors] = useState({});
   const translateBootstrapKeyRef = useRef('');
+  const lastDeviceConfigPeopleIriRef = useRef('');
   const [device, setDevice] = useState(
     JSON.parse(localStorage.getItem('device') || '{}'),
   );
@@ -121,6 +141,11 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
     appType: APP_ENV.APP_TYPE,
     deviceInfo: device || {},
   });
+  const deviceConfigPeopleIri = resolveDeviceConfigPeopleIri({
+    appType,
+    currentCompany,
+    user,
+  });
   const isPublicRouteActive = isPublicRoute(currentRouteName);
   const shouldRunForegroundRealtimeServices =
     Platform.OS !== 'android' || appState === 'active';
@@ -128,6 +153,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
     <>
       <KioskModeBridge appState={appState} />
       <BackgroundRuntimeBridge appState={appState} />
+      <DeliveryPushBridge device={device} setDevice={setDevice} />
       <ManagerPushBridge device={device} setDevice={setDevice} />
     </>
   );
@@ -254,7 +280,21 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
   }, [device?.id]);
 
   useEffect(() => {
-    if (!sessionChecked || !isLogged || !device?.id) {
+    if (
+      !deviceConfigPeopleIri ||
+      lastDeviceConfigPeopleIriRef.current === deviceConfigPeopleIri
+    ) {
+      return;
+    }
+
+    lastDeviceConfigPeopleIriRef.current = deviceConfigPeopleIri;
+    setDeviceConfigFetched(false);
+    setDeviceRuntimeConfigSynced(false);
+    deviceConfigsActions.setItem({});
+  }, [deviceConfigPeopleIri, deviceConfigsActions]);
+
+  useEffect(() => {
+    if (!sessionChecked || !isLogged || !deviceConfigPeopleIri || !device?.id || deviceConfigFetched) {
       return;
     }
 
@@ -263,6 +303,8 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
     const syncDeviceRegistration = async () => {
       const items = await deviceActions.getItems({
         device: device.id,
+        people: deviceConfigPeopleIri,
+        type: runtimeDeviceType,
       });
 
       if (cancelled) {
@@ -343,6 +385,8 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
     device?.manufacturer,
     device?.model,
     device?.systemVersion,
+    deviceConfigFetched,
+    deviceConfigPeopleIri,
     isLogged,
     sessionChecked,
     runtimeDeviceType,
@@ -459,7 +503,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
     if (
       !deviceConfigFetched ||
       !isLogged ||
-      !currentCompany?.id ||
+      !deviceConfigPeopleIri ||
       !device?.id ||
       deviceRuntimeConfigSynced
     ) {
@@ -477,13 +521,13 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
       return;
     }
 
-    deviceConfigsActions
-      .addDeviceConfigs({
-        device: device.id,
-        configs: JSON.stringify(nextConfigs),
-        people: '/people/' + currentCompany.id,
-        type: runtimeDeviceType,
-      })
+      deviceConfigsActions
+        .addDeviceConfigs({
+          device: device.id,
+          configs: JSON.stringify(nextConfigs),
+          people: deviceConfigPeopleIri,
+          type: runtimeDeviceType,
+        })
       .catch(() => {})
       .finally(() => {
         setDeviceRuntimeConfigSynced(true);
@@ -495,6 +539,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
     device?.manufacturer,
     device?.isEmulator,
     deviceConfigFetched,
+    deviceConfigPeopleIri,
     deviceRuntimeConfigSynced,
     deviceConfigsActions,
     device_config?.configs,
