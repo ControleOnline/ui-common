@@ -168,14 +168,7 @@ const RuntimeInfoFooter = ({appVersion, defaultCompany, device, colors}) => {
           },
         ]}>
         <View style={styles.primaryRow}>
-          <View style={styles.statusIndicators}>
-            {hasStoreLoading && (
-              <ActivityIndicator
-                color={loadingColor}
-                size="small"
-                style={styles.loadingIndicator}
-              />
-            )}
+          <View style={styles.statusDotWrap}>
             <View
               style={[
                 styles.statusDot,
@@ -192,11 +185,16 @@ const RuntimeInfoFooter = ({appVersion, defaultCompany, device, colors}) => {
             style={[
               styles.primaryText,
               {
-                color: textColor,
+              color: textColor,
               },
             ]}>
             {showDebugInfo ? inlineText || primaryText || device?.id || '--' : displayedText}
           </Text>
+          <View style={styles.loadingWrap}>
+            {hasStoreLoading && (
+              <ActivityIndicator color={loadingColor} size="small" />
+            )}
+          </View>
         </View>
 
         {showDebugInfo &&

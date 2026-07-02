@@ -19,15 +19,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  statusIndicators: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
+  statusDotWrap: {
     minWidth: 22,
     marginRight: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  loadingIndicator: {
-    marginRight: 5,
+  loadingWrap: {
+    minWidth: 22,
+    marginLeft: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   statusDot: {
     width: 7,
