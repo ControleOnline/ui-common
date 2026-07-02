@@ -137,13 +137,6 @@ const RuntimeInfoFooter = ({appVersion, defaultCompany, device, colors}) => {
     };
   }, [entries.length, shouldRotate]);
 
-  useEffect(() => {
-    if (typeof __DEV__ !== 'undefined' && !__DEV__) {
-      return;
-    }
-
-  }, [footerDebugInfo]);
-
   if (entries.length === 0 && !showDebugInfo) {
     return null;
   }
@@ -185,7 +178,7 @@ const RuntimeInfoFooter = ({appVersion, defaultCompany, device, colors}) => {
             style={[
               styles.primaryText,
               {
-              color: textColor,
+                color: textColor,
               },
             ]}>
             {showDebugInfo ? inlineText || primaryText || device?.id || '--' : displayedText}
