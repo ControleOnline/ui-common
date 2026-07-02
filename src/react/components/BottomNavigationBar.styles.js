@@ -30,7 +30,7 @@ const createStyles = ({
       bottom: 0,
       zIndex: 1000,
       backgroundColor: 'transparent',
-      paddingBottom: Math.max(Number(insets?.bottom) || 0, 8),
+      paddingBottom: Math.max(Number(insets?.bottom) || 0, 4),
     },
     dock: {
       flexDirection: 'row',
@@ -42,11 +42,7 @@ const createStyles = ({
       paddingBottom: 8,
       borderWidth: 1,
       borderColor,
-      borderTopLeftRadius: 24,
-      borderTopRightRadius: 24,
-      borderBottomLeftRadius: 0,
-      borderBottomRightRadius: 0,
-      borderBottomWidth: 0,
+      borderRadius: 24,
       backgroundColor: dockBackground,
       overflow: 'hidden',
       ...(Platform.OS === 'android'
