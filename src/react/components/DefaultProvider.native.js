@@ -764,6 +764,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
         params: {
           myCompany: currentCompany.id,
           appType,
+          menuType: 'home',
         },
       })
       .then(result => {

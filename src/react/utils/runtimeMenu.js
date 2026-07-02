@@ -144,7 +144,10 @@ export const normalizeRuntimeMenuIcon = value => {
   return RUNTIME_MENU_ICON_ALIASES[normalized.toLowerCase()] || normalized;
 };
 
-export const normalizeRuntimeMenuResponse = (result, {appType} = {}) => {
+export const normalizeRuntimeMenuResponse = (
+  result,
+  {appType, allowFallback = true} = {},
+) => {
   const modules =
     result?.response?.data?.modules ||
     result?.data?.modules ||
@@ -171,7 +174,7 @@ export const normalizeRuntimeMenuResponse = (result, {appType} = {}) => {
 
   const normalizedAppType = String(appType || '').trim().toUpperCase();
 
-  if (normalizedAppType === 'MANAGER') {
+  if (allowFallback && normalizedAppType === 'MANAGER') {
     return cloneRuntimeMenuModules(MANAGER_RUNTIME_MENU_FALLBACK);
   }
 

@@ -165,4 +165,10 @@ describe('runtimeMenu', () => {
       normalizeRuntimeMenuResponse({}, {appType: 'SHOP'}),
     ).toEqual([]);
   });
+
+  it('can skip the manager fallback when requested', () => {
+    expect(
+      normalizeRuntimeMenuResponse({}, {appType: 'MANAGER', allowFallback: false}),
+    ).toEqual([]);
+  });
 });
