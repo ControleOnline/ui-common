@@ -3,6 +3,7 @@ import {Pressable, Text, View} from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import {useTheme} from './DefaultProvider';
 import RuntimeInfoFooter from './RuntimeInfoFooter';
+import {resolveMenuRouteParams} from '@controleonline/ui-layout/src/react/utils/menuNavigation';
 import createStyles from './BottomNavigationBar.styles';
 
 const BottomNavigationBar = ({
@@ -60,9 +61,9 @@ const BottomNavigationBar = ({
     ? activeRouteName
     : routeItems[0]?.route || '';
 
-  const navigateTo = routeName => {
+  const navigateTo = item => {
     try {
-      navigation?.navigate?.(routeName);
+      navigation?.navigate?.(item?.route, resolveMenuRouteParams(item?.routeParams));
     } catch {
       // Keep the footer stable if a route is unavailable in the current app flavor.
     }
@@ -83,7 +84,7 @@ const BottomNavigationBar = ({
                 key={item.route}
                 accessibilityRole="button"
                 disabled={isDisabled}
-                onPress={() => navigateTo(item.route)}
+                onPress={() => navigateTo(item)}
                 style={({pressed}) => [
                   styles.item,
                   isActive && styles.itemActive,

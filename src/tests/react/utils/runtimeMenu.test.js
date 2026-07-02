@@ -1,6 +1,8 @@
 /* global describe, expect, it */
 
 import {
+  filterRuntimeMenuModulesByType,
+  flattenRuntimeMenuItemsByType,
   getRuntimeMenuRoutes,
   normalizeRuntimeMenuIcon,
   normalizeRuntimeMenuResponse,
@@ -17,7 +19,7 @@ describe('runtimeMenu', () => {
               id: 2,
               label: 'Config',
               menus: [
-                {id: 20, label: 'B', route: 'BRoute', sortOrder: 20},
+                {id: 20, label: 'B', route: 'BRoute', sortOrder: 20, menuType: 'toolbar'},
                 {id: 10, label: 'A', route: 'ARoute', sortOrder: 10},
               ],
             },
@@ -29,6 +31,7 @@ describe('runtimeMenu', () => {
     expect(result).toHaveLength(1);
     expect(result[0].menus.map(item => item.route)).toEqual(['ARoute', 'BRoute']);
     expect(result[0].menus[0].routeParams).toEqual({});
+    expect(result[0].menus.map(item => item.menuType)).toEqual(['home', 'toolbar']);
   });
 
   it('builds route sets and checks super admin role', () => {
@@ -84,6 +87,32 @@ describe('runtimeMenu', () => {
     expect(menus[0].menus[0].icon).toBe('shopping-cart');
   });
 
+  it('filters runtime menu modules by menu type', () => {
+    const menus = normalizeRuntimeMenuResponse({
+      modules: {
+        1: {
+          label: 'Mix',
+          menus: [
+            {route: 'HomePage', menuType: 'home', sortOrder: 10},
+            {route: 'ToolbarPage', menu_type: 'toolbar', sortOrder: 20},
+          ],
+        },
+      },
+    });
+
+    const toolbarMenus = filterRuntimeMenuModulesByType(menus, 'toolbar');
+
+    expect(toolbarMenus).toHaveLength(1);
+    expect(toolbarMenus[0].menus).toHaveLength(1);
+    expect(toolbarMenus[0].menus[0]).toMatchObject({
+      route: 'ToolbarPage',
+      menuType: 'toolbar',
+    });
+    expect(
+      flattenRuntimeMenuItemsByType(menus, 'toolbar').map(item => item.route),
+    ).toEqual(['ToolbarPage']);
+  });
+
   it('falls back to the manager core menu when the runtime menu is empty', () => {
     const menus = normalizeRuntimeMenuResponse({}, {appType: 'MANAGER'});
 
@@ -98,6 +127,7 @@ describe('runtimeMenu', () => {
       label: 'Financeiro',
       menuKey: 'financial_hub',
       route: 'FinancialHubPage',
+      menuType: 'home',
     });
     expect(menus[0].menus[1]).toMatchObject({
       label: 'Demonstrativo de resultados',

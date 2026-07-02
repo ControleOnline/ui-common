@@ -9,6 +9,23 @@ const RUNTIME_MENU_ICON_ALIASES = {
   account_balance_wallet: 'credit-card',
 };
 
+export const normalizeRuntimeMenuType = (value, fallback = 'home') => {
+  const normalized = String(value || '').trim().toLowerCase();
+  return normalized || fallback;
+};
+
+const normalizeRuntimeMenuItem = (menu = {}) => ({
+  ...menu,
+  icon: normalizeRuntimeMenuIcon(menu?.icon),
+  menuKey: String(menu?.menuKey || menu?.menu_key || '').trim(),
+  menuType: normalizeRuntimeMenuType(menu?.menuType || menu?.menu_type),
+  routeParams:
+    menu?.routeParams && typeof menu.routeParams === 'object'
+      ? menu.routeParams
+      : {},
+  sortOrder: Number(menu?.sortOrder ?? menu?.sort_order ?? 0),
+});
+
 const MANAGER_RUNTIME_MENU_FALLBACK = [
   {
     id: 'manager-financeiro',
@@ -116,9 +133,7 @@ const cloneRuntimeMenuModules = modules =>
   (Array.isArray(modules) ? modules : []).map(module => ({
     ...module,
     menus: Array.isArray(module?.menus)
-      ? module.menus.map(menu => ({
-          ...menu,
-        }))
+      ? module.menus.map(menu => normalizeRuntimeMenuItem(menu))
       : [],
   }));
 
@@ -141,15 +156,7 @@ export const normalizeRuntimeMenuResponse = (result, {appType} = {}) => {
       ...module,
       icon: normalizeRuntimeMenuIcon(module?.icon),
       menus: (Array.isArray(module?.menus) ? module.menus : [])
-        .map(menu => ({
-          ...menu,
-          icon: normalizeRuntimeMenuIcon(menu?.icon),
-          menuKey: String(menu?.menuKey || menu?.menu_key || '').trim(),
-          routeParams: menu?.routeParams && typeof menu.routeParams === 'object'
-            ? menu.routeParams
-            : {},
-          sortOrder: Number(menu?.sortOrder || 0),
-        }))
+        .map(menu => normalizeRuntimeMenuItem(menu))
         .sort((left, right) => {
           const orderDiff = Number(left?.sortOrder || 0) - Number(right?.sortOrder || 0);
           if (orderDiff !== 0) return orderDiff;
@@ -170,6 +177,37 @@ export const normalizeRuntimeMenuResponse = (result, {appType} = {}) => {
 
   return [];
 };
+
+export const filterRuntimeMenuModulesByType = (menus, menuType) => {
+  const normalizedMenuType =
+    menuType === null || menuType === undefined || String(menuType).trim() === ''
+      ? null
+      : normalizeRuntimeMenuType(menuType, '');
+
+  const modules = cloneRuntimeMenuModules(menus);
+  if (!normalizedMenuType) {
+    return modules;
+  }
+
+  return modules
+    .map(module => ({
+      ...module,
+      menus: Array.isArray(module?.menus)
+        ? module.menus.filter(
+            menu => normalizeRuntimeMenuType(menu?.menuType, '') === normalizedMenuType,
+          )
+        : [],
+    }))
+    .filter(module => module.menus.length > 0);
+};
+
+export const flattenRuntimeMenuItemsByType = (menus, menuType) =>
+  filterRuntimeMenuModulesByType(menus, menuType).flatMap(module =>
+    Array.isArray(module?.menus) ? module.menus : [],
+  );
+
+export const resolveRuntimeMenuLabel = (menu, translate) =>
+  translate?.('menu', 'menu', menu?.menuKey) || menu?.label || menu?.menuKey || '';
 
 export const getRuntimeMenuRoutes = menus =>
   new Set(
