@@ -1,6 +1,7 @@
 import React, {useEffect, useMemo, useState} from 'react';
 import {ActivityIndicator, Text, View, useWindowDimensions} from 'react-native';
 import {useStore, useStores} from '@store';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {colors as runtimeColors} from '@controleonline/../../src/styles/colors';
 import {
   DEVICE_RUNTIME_DEBUG_INFO_ENABLED_KEY,
@@ -20,6 +21,7 @@ const MAX_INLINE_TEXT_LENGTH = 84;
 
 const RuntimeInfoFooter = ({appVersion, defaultCompany, device, colors}) => {
   const {width} = useWindowDimensions();
+  const insets = useSafeAreaInsets();
   const [activeIndex, setActiveIndex] = useState(0);
   const allStores = useStores(state => state);
   const deviceConfigStore = useStore('device_config');
@@ -118,6 +120,7 @@ const RuntimeInfoFooter = ({appVersion, defaultCompany, device, colors}) => {
       ),
     [allStores],
   );
+  const bottomInset = Math.max(Number(insets.bottom) || 0, 16);
 
   useEffect(() => {
     if (!shouldRotate || entries.length <= 1) {
@@ -152,65 +155,67 @@ const RuntimeInfoFooter = ({appVersion, defaultCompany, device, colors}) => {
   const loadingColor = colors?.primary || runtimeColors.primary || textColor;
 
   return (
-    <View
-      testID="runtime-info-footer"
-      pointerEvents="none"
-      style={[
-        styles.container,
-        showDebugInfo ? styles.containerExpanded : null,
-        {
-          backgroundColor,
-          borderTopColor: borderColor,
-        },
-      ]}>
-      <View style={styles.primaryRow}>
-        <View style={styles.statusIndicators}>
-          {hasStoreLoading && (
-            <ActivityIndicator
-              color={loadingColor}
-              size="small"
-              style={styles.loadingIndicator}
+    <View pointerEvents="none" style={styles.shell}>
+      <View
+        testID="runtime-info-footer"
+        style={[
+          styles.container,
+          showDebugInfo ? styles.containerExpanded : null,
+          {
+            backgroundColor,
+            borderTopColor: borderColor,
+            paddingBottom: bottomInset,
+          },
+        ]}>
+        <View style={styles.primaryRow}>
+          <View style={styles.statusIndicators}>
+            {hasStoreLoading && (
+              <ActivityIndicator
+                color={loadingColor}
+                size="small"
+                style={styles.loadingIndicator}
+              />
+            )}
+            <View
+              style={[
+                styles.statusDot,
+                {
+                  backgroundColor: socketIndicatorColor,
+                },
+              ]}
             />
-          )}
-          <View
-            style={[
-              styles.statusDot,
-              {
-                backgroundColor: socketIndicatorColor,
-              },
-            ]}
-          />
-        </View>
-        <Text
-          numberOfLines={1}
-          ellipsizeMode="tail"
-          minimumFontScale={0.85}
-          style={[
-            styles.primaryText,
-            {
-              color: textColor,
-            },
-          ]}>
-          {showDebugInfo ? inlineText || primaryText || device?.id || '--' : displayedText}
-        </Text>
-      </View>
-
-      {showDebugInfo &&
-        debugLines.map((line, index) => (
+          </View>
           <Text
-            key={`runtime-debug-line-${index}`}
             numberOfLines={1}
             ellipsizeMode="tail"
-            minimumFontScale={0.82}
+            minimumFontScale={0.85}
             style={[
-              styles.debugText,
+              styles.primaryText,
               {
                 color: textColor,
               },
             ]}>
-            {line}
+            {showDebugInfo ? inlineText || primaryText || device?.id || '--' : displayedText}
           </Text>
-        ))}
+        </View>
+
+        {showDebugInfo &&
+          debugLines.map((line, index) => (
+            <Text
+              key={`runtime-debug-line-${index}`}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+              minimumFontScale={0.82}
+              style={[
+                styles.debugText,
+                {
+                  color: textColor,
+                },
+              ]}>
+              {line}
+            </Text>
+          ))}
+      </View>
     </View>
   );
 };

@@ -1,11 +1,14 @@
 import { StyleSheet } from 'react-native'
 
 const styles = StyleSheet.create({
+  shell: {
+    width: '100%',
+  },
   container: {
     minHeight: 22,
     borderTopWidth: StyleSheet.hairlineWidth,
     justifyContent: 'center',
-    paddingHorizontal: 12,
+    paddingHorizontal: 16,
     paddingVertical: 4,
   },
   containerExpanded: {
