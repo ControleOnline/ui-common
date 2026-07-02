@@ -153,6 +153,7 @@ const RuntimeInfoFooter = ({appVersion, defaultCompany, device, colors}) => {
 
   return (
     <View
+      testID="runtime-info-footer"
       pointerEvents="none"
       style={[
         styles.container,
