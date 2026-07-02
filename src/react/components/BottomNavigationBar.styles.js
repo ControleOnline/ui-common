@@ -20,7 +20,6 @@ const createStyles = ({
   inactiveText,
   activeBg,
   activeBorder,
-  insets,
 }) =>
   StyleSheet.create({
     host: {
@@ -30,7 +29,11 @@ const createStyles = ({
       bottom: 0,
       zIndex: 1000,
       backgroundColor: 'transparent',
-      paddingBottom: Math.max(Number(insets?.bottom) || 0, 4),
+      alignItems: 'stretch',
+    },
+    stack: {
+      width: '100%',
+      alignItems: 'stretch',
     },
     dock: {
       flexDirection: 'row',
@@ -41,8 +44,12 @@ const createStyles = ({
       paddingTop: 8,
       paddingBottom: 8,
       borderWidth: 1,
+      borderBottomWidth: 0,
       borderColor,
-      borderRadius: 24,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
+      borderBottomLeftRadius: 0,
+      borderBottomRightRadius: 0,
       backgroundColor: dockBackground,
       overflow: 'hidden',
       ...(Platform.OS === 'android'

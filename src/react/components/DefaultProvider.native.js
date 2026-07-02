@@ -1,4 +1,12 @@
-import React, {createContext, useContext, useEffect, useRef, useState} from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {View, AppState, Platform} from 'react-native';
 import DeviceInfo from 'react-native-device-info';
 import Translate from '@controleonline/ui-common/src/utils/translate';
@@ -130,6 +138,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
   const [appState, setAppState] = useState(AppState.currentState || 'active');
   const [, setTranslateVersion] = useState(0);
   const [baseThemeColors, setBaseThemeColors] = useState({});
+  const [bottomNavigationCount, setBottomNavigationCount] = useState(0);
   const translateBootstrapKeyRef = useRef('');
   const lastDeviceConfigPeopleIriRef = useRef('');
   const [device, setDevice] = useState(
@@ -149,6 +158,48 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
   const isPublicRouteActive = isPublicRoute(currentRouteName);
   const shouldRunForegroundRealtimeServices =
     Platform.OS !== 'android' || appState === 'active';
+  const registerBottomNavigation = useCallback(() => {
+    setBottomNavigationCount(current => current + 1);
+
+    let released = false;
+
+    return () => {
+      if (released) {
+        return;
+      }
+
+      released = true;
+      setBottomNavigationCount(current => Math.max(0, current - 1));
+    };
+  }, []);
+  const themeContextValue = useMemo(
+    () => ({
+      colors,
+      menus,
+      runtimeFooter: isShopClientApp
+        ? null
+        : {
+            appVersion,
+            colors,
+            defaultCompany,
+            device,
+          },
+      bottomChrome: {
+        hasBottomNavigation: bottomNavigationCount > 0,
+        registerBottomNavigation,
+      },
+    }),
+    [
+      appVersion,
+      bottomNavigationCount,
+      colors,
+      defaultCompany,
+      device,
+      isShopClientApp,
+      menus,
+      registerBottomNavigation,
+    ],
+  );
   const runtimeBridges = (
     <>
       <KioskModeBridge appState={appState} />
@@ -753,7 +804,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
       {runtimeBridges}
       {device &&
         device.id && (
-          <ThemeContext.Provider value={{colors, menus}}>
+          <ThemeContext.Provider value={themeContextValue}>
             <View
               style={[
                 providerStyles.shell,
@@ -762,7 +813,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
                 },
               ]}>
               <View style={providerStyles.content}>{children}</View>
-              {!isShopClientApp && (
+              {!isShopClientApp && bottomNavigationCount === 0 && (
                 <RuntimeInfoFooter
                   appVersion={appVersion}
                   defaultCompany={defaultCompany}

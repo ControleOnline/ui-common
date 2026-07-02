@@ -1,4 +1,12 @@
-import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import { View } from 'react-native';
 import Translate from '@controleonline/ui-common/src/utils/translate';
 import { WebsocketListener } from '@controleonline/ui-common/src/react/components/WebsocketListener';
@@ -183,6 +191,7 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
   const [currentRouteName, setCurrentRouteName] = useState('');
   const [, setTranslateVersion] = useState(0);
   const [baseThemeColors, setBaseThemeColors] = useState({});
+  const [bottomNavigationCount, setBottomNavigationCount] = useState(0);
   const translateBootstrapKeyRef = useRef('');
   const lastDeviceConfigPeopleIriRef = useRef('');
   const [device, setDevice] = useState(
@@ -205,6 +214,50 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
     user,
   });
   const isPublicRouteActive = isPublicRoute(currentRouteName);
+
+  const registerBottomNavigation = useCallback(() => {
+    setBottomNavigationCount(current => current + 1);
+
+    let released = false;
+
+    return () => {
+      if (released) {
+        return;
+      }
+
+      released = true;
+      setBottomNavigationCount(current => Math.max(0, current - 1));
+    };
+  }, []);
+
+  const themeContextValue = useMemo(
+    () => ({
+      colors,
+      menus,
+      runtimeFooter: isShopClientApp
+        ? null
+        : {
+            appVersion,
+            colors,
+            defaultCompany,
+            device,
+          },
+      bottomChrome: {
+        hasBottomNavigation: bottomNavigationCount > 0,
+        registerBottomNavigation,
+      },
+    }),
+    [
+      appVersion,
+      bottomNavigationCount,
+      colors,
+      defaultCompany,
+      device,
+      isShopClientApp,
+      menus,
+      registerBottomNavigation,
+    ],
+  );
 
   useEffect(() => {
     global.refreshTranslationsUI = () => {
@@ -822,16 +875,16 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
   ]);
 
   return (
-    <ThemeContext.Provider value={{ colors, menus }}>
-      <View
-        style={[
-          providerStyles.shell,
-          {
-            backgroundColor: colors?.background || runtimeColors.background,
-          },
-        ]}>
-        <View style={providerStyles.content}>{children}</View>
-        {!isShopClientApp && (
+      <ThemeContext.Provider value={themeContextValue}>
+        <View
+          style={[
+            providerStyles.shell,
+            {
+              backgroundColor: colors?.background || runtimeColors.background,
+            },
+          ]}>
+          <View style={providerStyles.content}>{children}</View>
+        {!isShopClientApp && bottomNavigationCount === 0 && (
           <RuntimeInfoFooter
             appVersion={appVersion}
             defaultCompany={defaultCompany}
