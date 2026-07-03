@@ -169,6 +169,7 @@ export const BOTTOM_NAVIGATION_PRESETS = {
     routeAliases: {
       OrderDetails: 'DeliveryOrdersPage',
       OrderLogisticsPage: 'DeliveryOrdersPage',
+      DeliveryRunPage: 'DeliveryOrdersPage',
       DeliveryVehicleSetupPage: 'DeliveryRateTablesPage',
       DeliveryRateTableFormPage: 'DeliveryRateTablesPage',
       DeliveryRateTableCompaniesPage: 'DeliveryRateTablesPage',
