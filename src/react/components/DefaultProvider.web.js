@@ -811,9 +811,7 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
       }
     };
 
-    if (device?.id) {
-      fetchColors();
-    }
+    fetchColors();
   }, [actions, currentCompany?.id, defaultCompany?.id, device?.id]);
 
   useEffect(() => {
