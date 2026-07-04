@@ -72,7 +72,7 @@ const BottomNavigationBar = ({
   return (
     <View pointerEvents="box-none" style={styles.host}>
       <View style={styles.stack}>
-        <View accessibilityRole="navigation" style={styles.dock} testID={testID}>
+        <View style={styles.dock} testID={testID}>
           {routeItems.map(item => {
             const isActive = effectiveActiveRoute === item.route;
             const isDisabled = disabled || item.disabled;
