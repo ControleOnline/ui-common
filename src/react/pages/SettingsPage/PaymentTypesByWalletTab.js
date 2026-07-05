@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 
 import {api} from '@controleonline/ui-common/src/api';
+import DefaultTooltip from '@controleonline/ui-default/src/react/components/help/DefaultTooltip';
 import {
   groupWalletPaymentTypesByWalletId,
   normalizeEntityId,
@@ -67,22 +68,16 @@ const localStyles = StyleSheet.create({
     borderWidth: 1,
     padding: 14,
   },
+  introHeaderRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: 10,
+    justifyContent: 'space-between',
+  },
   introTitle: {
     color: '#1E3A8A',
     fontSize: 16,
     fontWeight: '700',
-    marginBottom: 6,
-  },
-  introText: {
-    color: '#1D4ED8',
-    fontSize: 13,
-    lineHeight: 18,
-  },
-  helpText: {
-    color: '#64748B',
-    fontSize: 12,
-    lineHeight: 18,
-    marginTop: 10,
   },
   loadingRow: {
     alignItems: 'center',
@@ -433,9 +428,13 @@ const PaymentTypesByWalletTab = ({
   return (
     <View style={localStyles.container}>
       <View style={localStyles.introCard}>
-        <Text style={localStyles.introTitle}>{title}</Text>
-        <Text style={localStyles.introText}>{introText}</Text>
-        <Text style={localStyles.helpText}>{helpText}</Text>
+        <View style={localStyles.introHeaderRow}>
+          <Text style={localStyles.introTitle}>{title}</Text>
+          <DefaultTooltip
+            title={title}
+            message={`${introText} ${helpText}`.trim()}
+          />
+        </View>
       </View>
 
       {walletsLoading ? (
