@@ -395,23 +395,13 @@ export const resolvePosCashManagementMode = configs => {
     .replace(/[\s_]/g, '-');
 
   if (
-    [
-      POS_CASH_MANAGEMENT_MODE_DAILY,
-      'diario',
-      'daily-close',
-      'daily-closing',
-    ].includes(normalizedValue)
+    normalizedValue === POS_CASH_MANAGEMENT_MODE_DAILY
   ) {
     return POS_CASH_MANAGEMENT_MODE_DAILY;
   }
 
   if (
-    [
-      POS_CASH_MANAGEMENT_MODE_CASH_REGISTER,
-      'abertura-fechamento',
-      'open-close',
-      'open-close-cash-register',
-    ].includes(normalizedValue)
+    normalizedValue === POS_CASH_MANAGEMENT_MODE_CASH_REGISTER
   ) {
     return POS_CASH_MANAGEMENT_MODE_CASH_REGISTER;
   }
