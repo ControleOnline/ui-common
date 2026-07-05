@@ -1,6 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {
-  ActivityIndicator,
   Alert,
   StyleSheet,
   Text,
@@ -8,7 +7,8 @@ import {
   View,
 } from 'react-native';
 
-import {api} from '@controleonline/ui-common/src/api';
+import {useStore} from '@store';
+import StateStore from '@controleonline/ui-layout/src/react/components/StateStore';
 import DefaultTooltip from '@controleonline/ui-default/src/react/components/help/DefaultTooltip';
 import {
   groupWalletPaymentTypesByWalletId,
@@ -16,44 +16,18 @@ import {
   resolveDevicePaymentTypeIds,
 } from '@controleonline/ui-common/src/react/utils/paymentDevices';
 
-const extractCollectionItems = response => {
-  if (Array.isArray(response)) return response;
-  if (Array.isArray(response?.member)) return response.member;
-  if (Array.isArray(response?.['hydra:member'])) return response['hydra:member'];
-  return [];
-};
-
 const resolveWalletLabel = wallet => {
-  const label = String(
-    wallet?.wallet || wallet?.name || wallet?.label || wallet?.description || '',
-  ).trim();
-
-  if (label) {
-    return label;
-  }
-
-  const walletId = normalizeEntityId(wallet?.id || wallet?.wallet || wallet);
-  return walletId ? `Wallet #${walletId}` : 'Wallet';
+  return String(wallet?.wallet ?? '').trim();
 };
 
 const resolvePaymentTypeLabel = walletPaymentType => {
   const paymentType = walletPaymentType?.paymentType;
 
-  if (!paymentType) {
+  if (!paymentType || typeof paymentType !== 'object') {
     return '';
   }
 
-  if (typeof paymentType === 'object') {
-    return (
-      paymentType.paymentType ||
-      paymentType.name ||
-      paymentType.label ||
-      paymentType.code ||
-      ''
-    );
-  }
-
-  return String(paymentType || '').trim();
+  return String(paymentType.paymentType ?? '').trim();
 };
 
 const localStyles = StyleSheet.create({
@@ -78,16 +52,6 @@ const localStyles = StyleSheet.create({
     color: '#1E3A8A',
     fontSize: 16,
     fontWeight: '700',
-  },
-  loadingRow: {
-    alignItems: 'center',
-    flexDirection: 'row',
-    gap: 10,
-    marginTop: 14,
-  },
-  loadingText: {
-    color: '#334155',
-    fontSize: 13,
   },
   emptyCard: {
     backgroundColor: '#F8FAFC',
@@ -135,18 +99,6 @@ const localStyles = StyleSheet.create({
     color: '#64748B',
     fontSize: 12,
     marginTop: 2,
-  },
-  walletHint: {
-    color: '#64748B',
-    fontSize: 12,
-    lineHeight: 18,
-    marginTop: 8,
-  },
-  walletColor: {
-    borderRadius: 999,
-    height: 12,
-    marginLeft: 10,
-    width: 12,
   },
   paymentTypesBlock: {
     marginTop: 12,
@@ -218,94 +170,57 @@ const PaymentTypesByWalletTab = ({
   unassignedTitle = 'Sem carteira',
   unassignedText = 'Meios de pagamento sem wallet vinculada.',
 }) => {
-  const [wallets, setWallets] = useState([]);
-  const [walletsLoading, setWalletsLoading] = useState(false);
-  const [walletPaymentTypes, setWalletPaymentTypes] = useState([]);
-  const [walletPaymentTypesLoading, setWalletPaymentTypesLoading] = useState(false);
+  const walletStore = useStore('wallet');
+  const walletPaymentTypeStore = useStore('walletPaymentType');
+  const {getters: walletGetters, actions: walletActions} = walletStore;
+  const {
+    getters: walletPaymentTypeGetters,
+    actions: walletPaymentTypeActions,
+  } = walletPaymentTypeStore;
+
+  const wallets = Array.isArray(walletGetters.items) ? walletGetters.items : [];
+  const walletPaymentTypes = Array.isArray(walletPaymentTypeGetters.items)
+    ? walletPaymentTypeGetters.items
+    : [];
+  const walletsLoading = walletGetters.isLoading === true;
+  const walletPaymentTypesLoading = walletPaymentTypeGetters.isLoading === true;
   const [selectedPaymentTypeIds, setSelectedPaymentTypeIds] = useState([]);
 
   useEffect(() => {
     if (!currentCompanyId) {
-      setWallets([]);
-      setWalletPaymentTypes([]);
-      setWalletsLoading(false);
-      setWalletPaymentTypesLoading(false);
+      walletActions.setItems([]);
+      walletPaymentTypeActions.setItems([]);
       return;
     }
 
-    let isMounted = true;
-    setWalletsLoading(true);
-
-    api
-      .fetch('wallets', {
-        params: {
-          people: currentCompanyId,
-        },
-      })
-      .then(response => {
-        if (!isMounted) {
-          return;
-        }
-
-        setWallets(extractCollectionItems(response));
-      })
+    walletActions
+      .getItems({people: currentCompanyId})
       .catch(() => {
-        if (isMounted) {
-          setWallets([]);
-        }
-      })
-      .finally(() => {
-        if (isMounted) {
-          setWalletsLoading(false);
-        }
+        walletActions.setItems([]);
       });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [currentCompanyId]);
+    walletPaymentTypeActions
+      .getItems({'wallet.people': currentCompanyId})
+      .catch(() => {
+        walletPaymentTypeActions.setItems([]);
+      });
+  }, [currentCompanyId, walletActions, walletPaymentTypeActions]);
 
   useEffect(() => {
-    if (!currentCompanyId) {
-      setWalletPaymentTypes([]);
-      setWalletPaymentTypesLoading(false);
-      return;
-    }
+    const nextSelectedPaymentTypeIds = resolveDevicePaymentTypeIds(configs);
+    setSelectedPaymentTypeIds(current => {
+      const currentSignature = current
+        .map(normalizeEntityId)
+        .filter(Boolean)
+        .join(',');
+      const nextSignature = nextSelectedPaymentTypeIds
+        .map(normalizeEntityId)
+        .filter(Boolean)
+        .join(',');
 
-    let isMounted = true;
-    setWalletPaymentTypesLoading(true);
-
-    api
-      .fetch('wallet_payment_types', {
-        params: {
-          people: `/people/${currentCompanyId}`,
-        },
-      })
-      .then(response => {
-        if (!isMounted) {
-          return;
-        }
-
-        setWalletPaymentTypes(extractCollectionItems(response));
-      })
-      .catch(() => {
-        if (isMounted) {
-          setWalletPaymentTypes([]);
-        }
-      })
-      .finally(() => {
-        if (isMounted) {
-          setWalletPaymentTypesLoading(false);
-        }
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [currentCompanyId]);
-
-  useEffect(() => {
-    setSelectedPaymentTypeIds(resolveDevicePaymentTypeIds(configs));
+      return currentSignature === nextSignature
+        ? current
+        : nextSelectedPaymentTypeIds;
+    });
   }, [configs]);
 
   const selectedPaymentTypeIdSet = useMemo(
@@ -319,22 +234,25 @@ const PaymentTypesByWalletTab = ({
     );
     const groupedWalletIds = new Set();
 
-    const groups = (Array.isArray(wallets) ? wallets : []).map(wallet => {
-      const walletId = normalizeEntityId(wallet?.id);
-      if (walletId) {
-        groupedWalletIds.add(walletId);
-      }
+    const groups = wallets
+      .map(wallet => {
+        const walletId = normalizeEntityId(wallet?.id);
 
-      return {
-        key:
-          walletId ||
-          `wallet-${String(wallet?.wallet || wallet?.name || wallet?.label || '').trim() || 'unassigned'}`,
-        walletId,
-        wallet,
-        paymentTypes: groupedPaymentTypes[walletId] || [],
-        isUnassigned: false,
-      };
-    });
+        if (!walletId) {
+          return null;
+        }
+
+        groupedWalletIds.add(walletId);
+
+        return {
+          key: walletId,
+          walletId,
+          wallet,
+          paymentTypes: groupedPaymentTypes[walletId] ?? [],
+          isUnassigned: false,
+        };
+      })
+      .filter(Boolean);
 
     Object.entries(groupedPaymentTypes).forEach(([walletId, paymentTypes]) => {
       if (walletId === '__unassigned' || groupedWalletIds.has(walletId)) {
@@ -344,13 +262,13 @@ const PaymentTypesByWalletTab = ({
       groups.push({
         key: `wallet-${walletId}`,
         walletId,
-        wallet: paymentTypes[0]?.wallet || null,
+        wallet: paymentTypes[0]?.wallet ?? null,
         paymentTypes,
         isUnassigned: false,
       });
     });
 
-    const unassignedPaymentTypes = groupedPaymentTypes.__unassigned || [];
+    const unassignedPaymentTypes = groupedPaymentTypes.__unassigned ?? [];
     if (unassignedPaymentTypes.length > 0) {
       groups.push({
         key: '__unassigned',
@@ -406,7 +324,7 @@ const PaymentTypesByWalletTab = ({
       persistSelectedPaymentTypeIds(nextSelectedIds).catch(error => {
         Alert.alert(
           'Erro ao gravar configurações',
-          error?.message || JSON.stringify(error),
+          error?.message ?? JSON.stringify(error),
         );
         setSelectedPaymentTypeIds(resolveDevicePaymentTypeIds(configs));
       });
@@ -438,17 +356,11 @@ const PaymentTypesByWalletTab = ({
       </View>
 
       {walletsLoading ? (
-        <View style={localStyles.loadingRow}>
-          <ActivityIndicator size="small" color="#1B5587" />
-          <Text style={localStyles.loadingText}>{loadingWalletsText}</Text>
-        </View>
+        <StateStore compact loading={loadingWalletsText} />
       ) : null}
 
       {!walletsLoading && walletPaymentTypesLoading ? (
-        <View style={localStyles.loadingRow}>
-          <ActivityIndicator size="small" color="#1B5587" />
-          <Text style={localStyles.loadingText}>{loadingPaymentsText}</Text>
-        </View>
+        <StateStore compact loading={loadingPaymentsText} />
       ) : null}
 
       {!walletsLoading && !hasWallets && !hasPaymentTypes ? (
@@ -464,10 +376,6 @@ const PaymentTypesByWalletTab = ({
             const walletLabel = group.isUnassigned
               ? unassignedTitle
               : resolveWalletLabel(group.wallet);
-            const walletHint = group.isUnassigned
-              ? unassignedText
-              : group.wallet?.description || group.wallet?.hint || '';
-            const walletColor = group.wallet?.color || '#CBD5E1';
 
             return (
               <View key={group.key} style={localStyles.walletCard}>
@@ -476,23 +384,11 @@ const PaymentTypesByWalletTab = ({
                     <Text style={localStyles.walletName}>{walletLabel}</Text>
                     {!group.isUnassigned && (
                       <Text style={localStyles.walletId}>
-                        {group.walletId ? `ID #${group.walletId}` : 'ID -'}
+                        {group.walletId ? `ID #${group.walletId}` : ''}
                       </Text>
                     )}
                   </View>
-                  {!group.isUnassigned && (
-                    <View
-                      style={[
-                        localStyles.walletColor,
-                        {backgroundColor: walletColor},
-                      ]}
-                    />
-                  )}
                 </View>
-
-                {walletHint ? (
-                  <Text style={localStyles.walletHint}>{walletHint}</Text>
-                ) : null}
 
                 <View style={localStyles.paymentTypesBlock}>
                   <Text style={localStyles.paymentTypesTitle}>
@@ -501,9 +397,11 @@ const PaymentTypesByWalletTab = ({
                   {group.paymentTypes.length > 0 ? (
                     <View style={localStyles.paymentTypesRow}>
                       {group.paymentTypes.map(item => {
-                        const walletPaymentTypeId = normalizeEntityId(
-                          item?.id || item?.['@id'],
-                        );
+                        const walletPaymentTypeId = normalizeEntityId(item?.id);
+                        if (!walletPaymentTypeId) {
+                          return null;
+                        }
+
                         const paymentTypeLabel = resolvePaymentTypeLabel(item);
                         const selected = selectedPaymentTypeIdSet.has(
                           walletPaymentTypeId,
@@ -515,7 +413,7 @@ const PaymentTypesByWalletTab = ({
 
                         return (
                           <TouchableOpacity
-                            key={`${group.key}-${walletPaymentTypeId || paymentTypeLabel}`}
+                            key={`${group.key}-${walletPaymentTypeId}`}
                             activeOpacity={selectionEnabled ? 0.85 : 1}
                             disabled={!selectionEnabled}
                             onPress={() =>
