@@ -22,10 +22,10 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   inputError: {
-    borderColor: '#ff4444',
+    borderColor: '#c10015',
   },
   errorText: {
-    color: '#ff4444',
+    color: '#c10015',
     fontSize: 12,
     marginTop: 5,
   },
