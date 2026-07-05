@@ -14,6 +14,7 @@ import {WebsocketListener} from '@controleonline/ui-common/src/react/components/
 import BackgroundRuntimeBridge from '@controleonline/ui-common/src/react/components/BackgroundRuntimeBridge';
 import DeviceAlertSoundService from '@controleonline/ui-common/src/react/components/DeviceAlertSoundService';
 import KioskModeBridge from '@controleonline/ui-common/src/react/components/KioskModeBridge';
+import LauncherModeBridge from '@controleonline/ui-common/src/react/components/LauncherModeBridge';
 import DeliveryPushBridge from '@controleonline/ui-common/src/react/components/DeliveryPushBridge';
 import ManagerPushBridge from '@controleonline/ui-common/src/react/components/ManagerPushBridge';
 import PrintService from '@controleonline/ui-common/src/react/components/PrintService';
@@ -202,6 +203,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
   );
   const runtimeBridges = (
     <>
+      <LauncherModeBridge appState={appState} />
       <KioskModeBridge appState={appState} />
       <BackgroundRuntimeBridge appState={appState} />
       <DeliveryPushBridge device={device} setDevice={setDevice} />

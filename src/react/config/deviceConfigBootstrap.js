@@ -25,6 +25,8 @@ export const DISPLAY_SIZE_DEFAULT = 5;
 export const POS_OPERATION_MODE_CONFIG_KEY = 'pos-operation-mode';
 export const DEVICE_ANDROID_KIOSK_ENABLED_CONFIG_KEY =
   'android-kiosk-enabled';
+export const DEVICE_ANDROID_LAUNCHER_ENABLED_CONFIG_KEY =
+  'android-launcher-enabled';
 export const POS_AUTO_PRINT_ENABLED_CONFIG_KEY = 'pos-auto-print-enabled';
 export const POS_CASH_MANAGEMENT_MODE_CONFIG_KEY =
   'pos-cash-management-mode';
@@ -90,6 +92,7 @@ export const DEFAULT_DEVICE_CONFIGS = {
   [DEVICE_ALERT_SOUND_ENABLED_KEY]: '0',
   [DEVICE_ALERT_SOUND_URL_KEY]: '',
   [DEVICE_RUNTIME_DEBUG_INFO_ENABLED_KEY]: '0',
+  [DEVICE_ANDROID_LAUNCHER_ENABLED_CONFIG_KEY]: '0',
   [DISPLAY_ALLOW_PRINTER_CHANGE_CONFIG_KEY]: '0',
   [DISPLAY_SIZE_CONFIG_KEY]: String(DISPLAY_SIZE_DEFAULT),
   [DISPLAY_SIDE_BREAK_CONFIG_KEY]: '0',
@@ -321,6 +324,14 @@ export const isAndroidKioskEnabled = configs => {
   return isTruthyValue(storedValue);
 };
 
+export const isAndroidLauncherEnabled = configs => {
+  const parsedConfigs = parseConfigsObject(configs);
+  const storedValue =
+    parsedConfigs?.[DEVICE_ANDROID_LAUNCHER_ENABLED_CONFIG_KEY];
+
+  return isTruthyValue(storedValue);
+};
+
 export const isPosSingleItemMode = configs =>
   resolvePosOperationMode(configs) === POS_OPERATION_MODE_SINGLE_ITEM;
 
@@ -332,6 +343,15 @@ export const shouldEnableAndroidKioskMode = ({
   String(appType || '').trim().toUpperCase() === 'POS' &&
   platform === 'android' &&
   isAndroidKioskEnabled(configs);
+
+export const shouldEnableAndroidLauncherMode = ({
+  appType,
+  configs,
+  platform,
+}) =>
+  String(appType || '').trim().toUpperCase() === 'POS' &&
+  platform === 'android' &&
+  isAndroidLauncherEnabled(configs);
 
 export const isPosCounterMode = configs =>
   resolvePosOperationMode(configs) === POS_OPERATION_MODE_COUNTER;

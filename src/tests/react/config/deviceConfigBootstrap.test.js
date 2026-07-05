@@ -8,6 +8,7 @@ jest.mock('../../../react/utils/screenMetrics', () => ({
 const {
   buildProviderManagedDeviceConfigs,
   DEVICE_ANDROID_KIOSK_ENABLED_CONFIG_KEY,
+  DEVICE_ANDROID_LAUNCHER_ENABLED_CONFIG_KEY,
   DISPLAY_SIZE_CONFIG_KEY,
   DISPLAY_SIZE_DEFAULT,
   DISPLAY_SIZE_MAX,
@@ -22,6 +23,7 @@ const {
   isPosCashRegisterClosed,
   isPosCashRegisterOpen,
   isPosCounterMode,
+  isAndroidLauncherEnabled,
   isPosDeliveryEnabled,
   isPosKioskMode,
   isPosSelfServiceMode,
@@ -32,6 +34,7 @@ const {
   resolvePosOperationMode,
   resolvePosPrintMode,
   shouldEnableAndroidKioskMode,
+  shouldEnableAndroidLauncherMode,
   shouldUsePosCashRegisterLifecycle,
   isPosTotemMode,
 } = require('../../../react/config/deviceConfigBootstrap')
@@ -259,6 +262,59 @@ describe('deviceConfigBootstrap POS operation helpers', () => {
         configs: {
           [POS_OPERATION_MODE_CONFIG_KEY]: 'counter',
           [DEVICE_ANDROID_KIOSK_ENABLED_CONFIG_KEY]: '1',
+        },
+        platform: 'web',
+      }),
+    ).toBe(false)
+  })
+
+  it('does not enable Android launcher without the explicit device flag', () => {
+    expect(
+      isAndroidLauncherEnabled({
+        [POS_OPERATION_MODE_CONFIG_KEY]: 'totem',
+      }),
+    ).toBe(false)
+
+    expect(
+      shouldEnableAndroidLauncherMode({
+        appType: 'POS',
+        configs: {
+          [POS_OPERATION_MODE_CONFIG_KEY]: 'totem',
+        },
+        platform: 'android',
+      }),
+    ).toBe(false)
+  })
+
+  it('respects the explicit Android launcher flag independently of the operation mode', () => {
+    expect(
+      shouldEnableAndroidLauncherMode({
+        appType: 'POS',
+        configs: {
+          [POS_OPERATION_MODE_CONFIG_KEY]: 'counter',
+          [DEVICE_ANDROID_LAUNCHER_ENABLED_CONFIG_KEY]: '1',
+        },
+        platform: 'android',
+      }),
+    ).toBe(true)
+
+    expect(
+      shouldEnableAndroidLauncherMode({
+        appType: 'MANAGER',
+        configs: {
+          [POS_OPERATION_MODE_CONFIG_KEY]: 'counter',
+          [DEVICE_ANDROID_LAUNCHER_ENABLED_CONFIG_KEY]: '1',
+        },
+        platform: 'android',
+      }),
+    ).toBe(false)
+
+    expect(
+      shouldEnableAndroidLauncherMode({
+        appType: 'POS',
+        configs: {
+          [POS_OPERATION_MODE_CONFIG_KEY]: 'counter',
+          [DEVICE_ANDROID_LAUNCHER_ENABLED_CONFIG_KEY]: '1',
         },
         platform: 'web',
       }),
