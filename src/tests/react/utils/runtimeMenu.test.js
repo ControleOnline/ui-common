@@ -160,6 +160,20 @@ describe('runtimeMenu', () => {
     ]);
   });
 
+  it('falls back to the admin starter menu when the runtime menu is empty', () => {
+    const menus = normalizeRuntimeMenuResponse({}, {appType: 'ADMIN'});
+
+    expect(menus).toHaveLength(1);
+    expect(menus[0].label).toBe('Configuracoes');
+    expect(menus[0].menus).toHaveLength(1);
+    expect(menus[0].menus[0]).toMatchObject({
+      label: 'Menus por perfil',
+      menuKey: 'menu_access',
+      route: 'MenuAccessConfigPage',
+      menuType: 'home',
+    });
+  });
+
   it('does not invent a fallback menu for non-manager apps', () => {
     expect(
       normalizeRuntimeMenuResponse({}, {appType: 'SHOP'}),

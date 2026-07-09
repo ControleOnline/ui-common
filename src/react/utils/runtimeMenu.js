@@ -129,6 +129,25 @@ const MANAGER_RUNTIME_MENU_FALLBACK = [
   },
 ];
 
+const ADMIN_RUNTIME_MENU_FALLBACK = [
+  {
+    id: 'admin-configuracoes',
+    label: 'Configuracoes',
+    icon: 'settings',
+    menus: [
+      {
+        id: 'menu_access',
+        menuKey: 'menu_access',
+        label: 'Menus por perfil',
+        route: 'MenuAccessConfigPage',
+        icon: 'list',
+        color: '#64748B',
+        sortOrder: 10,
+      },
+    ],
+  },
+];
+
 const cloneRuntimeMenuModules = modules =>
   (Array.isArray(modules) ? modules : []).map(module => ({
     ...module,
@@ -176,6 +195,10 @@ export const normalizeRuntimeMenuResponse = (
 
   if (allowFallback && normalizedAppType === 'MANAGER') {
     return cloneRuntimeMenuModules(MANAGER_RUNTIME_MENU_FALLBACK);
+  }
+
+  if (allowFallback && normalizedAppType === 'ADMIN') {
+    return cloneRuntimeMenuModules(ADMIN_RUNTIME_MENU_FALLBACK);
   }
 
   return [];
