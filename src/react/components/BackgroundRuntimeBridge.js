@@ -61,7 +61,7 @@ const BackgroundRuntimeBridge = () => {
 
   const bundleId = safeTrim(DeviceInfo.getBundleId());
   const runtimeAppKey =
-    bundleId || safeTrim(APP_ENV.APP_TYPE).toUpperCase() || 'app';
+    bundleId || safeTrim(app_type).toUpperCase() || 'app';
   const runtimeDeviceId = normalizeDeviceId(runtimeDevice?.id);
   const runtimeDeviceType = normalizeDeviceType(
     runtimeDeviceConfig?.type ||
@@ -70,7 +70,7 @@ const BackgroundRuntimeBridge = () => {
   );
   const currentCompanyId = safeTrim(currentCompany?.id);
   const sessionToken = readSessionToken();
-  const isManagerRuntime = isManagerAppType(APP_ENV?.APP_TYPE);
+  const isManagerRuntime = isManagerAppType(app_type);
   const managerOrderNotificationPreferences =
     resolveManagerOrderNotificationPreferences(user);
   const userAlertSoundUrl = safeTrim(
@@ -162,7 +162,7 @@ const BackgroundRuntimeBridge = () => {
       companyAlias: safeTrim(currentCompany?.alias || currentCompany?.name),
       companyId: currentCompanyId,
       appDomain: safeTrim(resolveAppDomain(APP_ENV.DOMAIN)),
-      appType: safeTrim(APP_ENV.APP_TYPE).toUpperCase(),
+      appType: safeTrim(app_type).toUpperCase(),
       backgroundEnabled: true,
       deviceId: runtimeDeviceId,
       deviceType: runtimeDeviceType,

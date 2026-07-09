@@ -96,7 +96,7 @@ const resolveDeviceConfigPeopleIri = ({appType, currentCompany, user}) => {
 };
 
 export const DefaultProvider = ({children, onBootstrapReady}) => {
-  const appType = String(APP_ENV.APP_TYPE || '').toUpperCase();
+  const appType = String(app_type || '').toUpperCase();
   const isShopClientApp = appType === 'SHOP';
   const themeStore = useStore('theme');
   const getters = themeStore.getters;
@@ -148,7 +148,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
   const packageVersion = packageJson?.version || packageJson?.default?.version;
   const appVersion = packageVersion || device?.appVersion;
   const runtimeDeviceType = resolveOperationalDeviceType({
-    appType: APP_ENV.APP_TYPE,
+    appType: app_type,
     deviceInfo: device || {},
   });
   const deviceConfigPeopleIri = resolveDeviceConfigPeopleIri({
@@ -281,7 +281,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
     let ld = null;
     if (uniqueId) {
       ld = buildLocalRuntimeDevice({
-        appType: APP_ENV.APP_TYPE,
+        appType: app_type,
         deviceInfo: {
           id: uniqueId,
           appName: appName,
@@ -368,7 +368,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
         Array.isArray(items) && items.length > 0 ? items[0] : null;
       const nextDevice = buildDeviceRegistrationPayload({
         deviceInfo: device,
-        appType: APP_ENV.APP_TYPE,
+        appType: app_type,
         existingDevice,
       });
 

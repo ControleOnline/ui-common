@@ -48,7 +48,7 @@ const RuntimeBottomNavigationBar = ({
   const [runtimeMenus, setRuntimeMenus] = useState([]);
   const preset = presetKey ? getBottomNavigationPreset(presetKey) : null;
   const routeAliases = routeAliasesProp || preset?.routeAliases || {};
-  const appType = normalizeAppType(APP_ENV.APP_TYPE);
+  const appType = normalizeAppType(app_type);
 
   useEffect(() => {
     if (!currentCompany?.id || !menuType) {

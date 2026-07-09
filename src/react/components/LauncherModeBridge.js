@@ -11,7 +11,7 @@ const LauncherModeBridge = ({appState = AppState.currentState || 'active'}) => {
   const {item: runtimeDeviceConfig} = deviceConfigStore.getters;
   const lastRequestedStateRef = useRef(null);
   const lastActiveAppStateRef = useRef(appState);
-  const appType = String(APP_ENV.APP_TYPE || '').trim().toUpperCase();
+  const appType = String(app_type || '').trim().toUpperCase();
   const launcherEnabled = useMemo(
     () =>
       shouldEnableAndroidLauncherMode({
