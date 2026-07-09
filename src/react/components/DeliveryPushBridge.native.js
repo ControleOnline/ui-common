@@ -2,6 +2,7 @@ import React, {useCallback, useEffect, useRef} from 'react';
 import {Platform} from 'react-native';
 import * as Notifications from 'expo-notifications';
 import {env as APP_ENV} from '@env';
+import {app_type} from '@appType';
 import {useStore} from '@store';
 import {ensureManagerOrderNotificationPermission} from '@controleonline/ui-common/src/react/utils/managerOrderNotifications';
 import {queueNotificationNavigation} from '@controleonline/ui-common/src/react/utils/notificationNavigation';

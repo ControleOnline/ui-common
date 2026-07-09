@@ -10,6 +10,7 @@ import {createAudioPlayer} from 'expo-audio';
 import {NativeModules, Platform} from 'react-native';
 import {useStore, useStores} from '@store';
 import {env as APP_ENV} from '@env';
+import {app_type} from '@appType';
 import {api} from '@controleonline/ui-common/src/api';
 import Formatter from '@controleonline/ui-common/src/utils/formatter';
 import {
