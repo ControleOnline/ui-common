@@ -1,11 +1,12 @@
-import { env as APP_ENV } from '@env';
-import { buildAssetUrl } from '@controleonline/../../src/styles/branding';
+import {env as APP_ENV} from '@env';
+import {buildAssetUrl} from '@controleonline/../../src/styles/branding';
 import {
   resolveAppDomain,
   resolveCompanyDomain,
 } from '@controleonline/ui-common/src/utils/appDomain';
 
 const IMAGE_PATH_PATTERN = /\.(?:avif|bmp|gif|ico|jpe?g|png|svg|webp)(?:\?|$)/i;
+const FILE_DOWNLOAD_PATTERN = /(?:^|\/)files\/[^/?#]+\/download(?:[?#]|$)/i;
 
 const normalizeText = value => String(value || '').trim();
 
@@ -19,6 +20,84 @@ const unwrapFile = file => {
   }
 
   return file;
+};
+
+const isDownloadLikeUrl = value =>
+  FILE_DOWNLOAD_PATTERN.test(normalizeText(value));
+
+const appendQueryParam = (url, key, value) => {
+  const normalizedUrl = normalizeText(url);
+  const normalizedKey = normalizeText(key);
+  const normalizedValue = normalizeText(value);
+
+  if (!normalizedUrl || !normalizedKey || !normalizedValue) {
+    return normalizedUrl;
+  }
+
+  const hashIndex = normalizedUrl.indexOf('#');
+  const hash = hashIndex >= 0 ? normalizedUrl.slice(hashIndex) : '';
+  const urlWithoutHash =
+    hashIndex >= 0 ? normalizedUrl.slice(0, hashIndex) : normalizedUrl;
+  const queryIndex = urlWithoutHash.indexOf('?');
+  const base =
+    queryIndex >= 0 ? urlWithoutHash.slice(0, queryIndex) : urlWithoutHash;
+  const query = queryIndex >= 0 ? urlWithoutHash.slice(queryIndex + 1) : '';
+  const params = query
+    ? query
+        .split('&')
+        .map(item => item.trim())
+        .filter(Boolean)
+        .filter(item => {
+          const [rawKey] = item.split('=');
+          return decodeURIComponent(rawKey || '') !== normalizedKey;
+        })
+    : [];
+
+  params.push(
+    `${encodeURIComponent(normalizedKey)}=${encodeURIComponent(normalizedValue)}`,
+  );
+
+  return `${base}?${params.join('&')}${hash}`;
+};
+
+const ensureAbsoluteUrl = url => {
+  const normalizedUrl = normalizeText(url);
+  if (!normalizedUrl) {
+    return '';
+  }
+
+  if (/^https?:\/\//i.test(normalizedUrl) || /^\/\//.test(normalizedUrl)) {
+    return buildAssetUrl(normalizedUrl) || normalizedUrl;
+  }
+
+  const apiEntryPoint = normalizeText(APP_ENV?.API_ENTRYPOINT).replace(
+    /\/$/,
+    '',
+  );
+  const normalizedPath = normalizedUrl.startsWith('/')
+    ? normalizedUrl
+    : `/${normalizedUrl}`;
+
+  return apiEntryPoint ? `${apiEntryPoint}${normalizedPath}` : normalizedPath;
+};
+
+const resolveDownloadHost = ({company = null, appDomain = ''} = {}) => {
+  const fallbackDomain =
+    normalizeText(appDomain) || resolveAppDomain(APP_ENV?.DOMAIN);
+  return resolveCompanyDomain(company, fallbackDomain);
+};
+
+const buildBackendDownloadUrl = (fileId, options = {}) => {
+  const normalizedId = String(fileId || '').trim();
+  if (!normalizedId) {
+    return '';
+  }
+
+  const host = resolveDownloadHost(options);
+  const relativeUrl = `/files/${normalizedId}/download`;
+  const absoluteUrl = ensureAbsoluteUrl(relativeUrl);
+
+  return host ? appendQueryParam(absoluteUrl, 'app-domain', host) : absoluteUrl;
 };
 
 const resolveDirectFileUrl = file => {
@@ -77,26 +156,113 @@ export const extractFileId = file => {
   return null;
 };
 
-// Centraliza a resolucao de imagem/arquivo do backend em uma unica regra.
-export const resolveFileImageUrl = (file, {company = null, appDomain = ''} = {}) => {
+export const resolveDefaultFileSource = (
+  file,
+  {company = null, appDomain = '', headers = {}} = {},
+) => {
   const normalizedFile = unwrapFile(file);
-  const directUrl = resolveDirectFileUrl(normalizedFile);
-  if (directUrl) {
-    return directUrl;
+  const host = resolveDownloadHost({company, appDomain});
+
+  if (!normalizedFile) {
+    return null;
   }
 
-  const fileId = extractFileId(normalizedFile);
-  if (!fileId) {
-    return '';
+  if (typeof normalizedFile === 'number') {
+    const uri = buildBackendDownloadUrl(normalizedFile, {company, appDomain});
+
+    return uri
+      ? {
+          uri,
+          headers: host ? {...headers, 'app-domain': host} : {...headers},
+        }
+      : null;
   }
 
-  const fallbackDomain = normalizeText(appDomain) || resolveAppDomain(APP_ENV?.DOMAIN);
-  const host = resolveCompanyDomain(company, fallbackDomain);
-  const query = host ? `?app-domain=${encodeURIComponent(host)}` : '';
-  const relativeUrl = `/files/${fileId}/download${query}`;
-  const apiEntryPoint = normalizeText(APP_ENV?.API_ENTRYPOINT).replace(/\/$/, '');
+  if (typeof normalizedFile === 'string') {
+    const normalizedValue = normalizeText(normalizedFile);
+    if (!normalizedValue) {
+      return null;
+    }
 
-  return apiEntryPoint ? `${apiEntryPoint}${relativeUrl}` : relativeUrl;
+    if (isDownloadLikeUrl(normalizedValue)) {
+      const uri = appendQueryParam(
+        ensureAbsoluteUrl(normalizedValue),
+        'app-domain',
+        host,
+      );
+
+      return uri
+        ? {
+            uri,
+            headers: host ? {...headers, 'app-domain': host} : {...headers},
+          }
+        : null;
+    }
+
+    const numericId = extractFileId(normalizedValue);
+    if (numericId && !IMAGE_PATH_PATTERN.test(normalizedValue)) {
+      const uri = buildBackendDownloadUrl(numericId, {company, appDomain});
+
+      return uri
+        ? {
+            uri,
+            headers: host ? {...headers, 'app-domain': host} : {...headers},
+          }
+        : null;
+    }
+
+    const directUrl = resolveDirectFileUrl(normalizedValue);
+
+    return directUrl
+      ? {
+          uri: directUrl,
+          headers: {...headers},
+        }
+      : null;
+  }
+
+  if (typeof normalizedFile === 'object' && !Array.isArray(normalizedFile)) {
+    const sourceHeaders =
+      normalizedFile?.headers && typeof normalizedFile.headers === 'object'
+        ? normalizedFile.headers
+        : {};
+    const fileId = extractFileId(normalizedFile);
+    const directUrl = resolveDirectFileUrl(normalizedFile);
+    const isBackendDownload =
+      Boolean(fileId) ||
+      isDownloadLikeUrl(directUrl) ||
+      isDownloadLikeUrl(normalizedFile?.uri) ||
+      isDownloadLikeUrl(normalizedFile?.url) ||
+      isDownloadLikeUrl(normalizedFile?.path);
+    const uriBase =
+      directUrl ||
+      (fileId ? buildBackendDownloadUrl(fileId, {company, appDomain}) : '');
+
+    if (!uriBase) {
+      return null;
+    }
+
+    const uri = isBackendDownload
+      ? appendQueryParam(ensureAbsoluteUrl(uriBase), 'app-domain', host)
+      : uriBase;
+
+    return {
+      uri,
+      headers:
+        isBackendDownload && host
+          ? {...sourceHeaders, ...headers, 'app-domain': host}
+          : {...sourceHeaders, ...headers},
+    };
+  }
+
+  return null;
 };
+
+export const resolveDefaultFileUrl = (file, options = {}) =>
+  resolveDefaultFileSource(file, options)?.uri || '';
+
+// Centraliza a resolucao de imagem/arquivo do backend em uma unica regra.
+export const resolveFileImageUrl = (file, options = {}) =>
+  resolveDefaultFileUrl(file, options);
 
 export const resolveFileDownloadUrl = resolveFileImageUrl;
