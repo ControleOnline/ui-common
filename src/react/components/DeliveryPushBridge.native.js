@@ -87,7 +87,7 @@ const DeliveryPushBridge = ({device, setDevice}) => {
   const deviceActions = deviceStore.actions;
 
   const {isLogged, sessionChecked} = authGetters;
-  const isDeliveryRuntime = isDeliveryRuntimeAppType(APP_ENV?.APP_TYPE);
+  const isDeliveryRuntime = isDeliveryRuntimeAppType(app_type);
 
   const currentDeviceRef = useRef(device || {});
   const pushTokenListenerRef = useRef(null);

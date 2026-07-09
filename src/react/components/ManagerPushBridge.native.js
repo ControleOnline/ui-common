@@ -94,7 +94,7 @@ const ManagerPushBridge = ({device, setDevice}) => {
   const deviceActions = deviceStore.actions;
 
   const {isLogged, sessionChecked, user} = authGetters;
-  const isManagerRuntime = isManagerAppType(APP_ENV?.APP_TYPE);
+  const isManagerRuntime = isManagerAppType(app_type);
   const pushPreferences = useMemo(
     () => resolveManagerOrderNotificationPreferences(user),
     [user],

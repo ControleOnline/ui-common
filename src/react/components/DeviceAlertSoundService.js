@@ -189,7 +189,7 @@ const DeviceAlertSoundService = () => {
     [user],
   );
 
-  const isManagerRuntime = isManagerAppType(APP_ENV?.APP_TYPE);
+  const isManagerRuntime = isManagerAppType(app_type);
   const currentCompanyId = normalizeEntityId(currentCompany?.id);
   const managerPushEnabled =
     isManagerRuntime && managerOrderNotificationPreferences.pushEnabled;
