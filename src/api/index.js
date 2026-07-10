@@ -6,6 +6,175 @@ import { resolveApiEntryPoint } from '@controleonline/ui-common/src/utils/apiEnt
 
 const MIME_TYPE = 'application/ld+json';
 
+function encodeBasicAuth(user, password) {
+  const credentials = `${String(user || '').trim()}:${String(password || '').trim()}`;
+
+  if (credentials === ':') {
+    return '';
+  }
+
+  if (typeof btoa === 'function') {
+    return btoa(credentials);
+  }
+
+  if (typeof Buffer !== 'undefined') {
+    return Buffer.from(credentials, 'utf8').toString('base64');
+  }
+
+  return '';
+}
+
+function resolveApiRuntimeConfig(config = {}) {
+  return {
+    apiBaseUrl: String(config.apiBaseUrl || APP_ENV.API_ENTRYPOINT || '').trim(),
+    domain: String(config.domain || APP_ENV.DOMAIN || '').trim(),
+    htaccessUser: String(config.htaccessUser || APP_ENV.HTACCESS_USER || '').trim(),
+    htaccessPassword: String(config.htaccessPassword || APP_ENV.HTACCESS_PASSWORD || '').trim(),
+  };
+}
+
+function buildApiUrl(apiBaseUrl, path) {
+  const apiEntryPoint = resolveApiEntryPoint(apiBaseUrl);
+  const entryPoint = apiEntryPoint + (apiEntryPoint.endsWith('/') ? '' : '/');
+  const normalizedPath = String(path || '').startsWith('/')
+    ? String(path || '').substring(1)
+    : String(path || '');
+
+  return new URL(normalizedPath, entryPoint).href;
+}
+
+async function readSmokeResponseBody(response, responseType) {
+  if (responseType === 'blob') {
+    return await response.blob();
+  }
+
+  if (responseType === 'text') {
+    return await response.text();
+  }
+
+  const text = await response.text();
+
+  if (!text) {
+    return null;
+  }
+
+  try {
+    return JSON.parse(text);
+  } catch (error) {
+    return text;
+  }
+}
+
+function buildSmokeHttpError(response, body) {
+  const message =
+    String(body?.message || body?.error || body || response.statusText || 'Request failed')
+      .trim() || 'Request failed';
+
+  const error = new Error(message);
+  error.code = response.status;
+  error.status = response.status;
+  error.body = body;
+  return error;
+}
+
+async function requestSmoke(path, options = {}, config = {}) {
+  const runtimeConfig = resolveApiRuntimeConfig(config);
+  const url = buildApiUrl(runtimeConfig.apiBaseUrl, path);
+  const headers = new Headers(options.headers || undefined);
+  const accept =
+    options.responseType === 'blob' || options.responseType === 'text'
+      ? '*/*'
+      : MIME_TYPE;
+
+  if (accept !== '' && !headers.has('Accept')) {
+    headers.set('Accept', accept);
+  }
+
+  if (options.responseType !== 'blob' && !headers.has('Content-Type')) {
+    headers.set('Content-Type', MIME_TYPE);
+  }
+
+  const sessionToken = await api.getToken();
+
+  if (sessionToken && !headers.has('API-TOKEN')) {
+    headers.set('API-TOKEN', sessionToken);
+    headers.set('X-API-KEY', sessionToken);
+  }
+
+  const basicAuth = encodeBasicAuth(runtimeConfig.htaccessUser, runtimeConfig.htaccessPassword);
+  if (basicAuth !== '' && !headers.has('Authorization')) {
+    headers.set('Authorization', `Basic ${basicAuth}`);
+  }
+
+  const appDomain = resolveAppDomain(runtimeConfig.domain);
+  if (appDomain !== '' && !headers.has('App-Domain')) {
+    headers.set('App-Domain', appDomain);
+  }
+
+  let body = options.body;
+  const hasBody =
+    body !== undefined &&
+    body !== null &&
+    options.method !== 'GET' &&
+    options.method !== 'HEAD';
+
+  if (hasBody && typeof body !== 'string' && !(body instanceof FormData) && !(body instanceof Blob)) {
+    body = JSON.stringify(body);
+  }
+
+  if (options.params) {
+    const params = api.serialize(options.params);
+    if (params.length > 0) {
+      const urlObject = new URL(url);
+      urlObject.search = params.join('&');
+      return requestSmokeUrl(urlObject.toString(), {
+        ...options,
+        body,
+        headers,
+      });
+    }
+  }
+
+  return requestSmokeUrl(url, {
+    ...options,
+    body,
+    headers,
+  });
+}
+
+async function requestSmokeUrl(url, options) {
+  const response = await fetch(url, options);
+
+  if (options.responseType === 'blob') {
+    if (!response.ok) {
+      throw buildSmokeHttpError(response, await response.text().catch(() => ''));
+    }
+
+    return await response.blob();
+  }
+
+  const responseBody = await readSmokeResponseBody(response, options.responseType);
+
+  if (!response.ok) {
+    throw buildSmokeHttpError(response, responseBody);
+  }
+
+  if (
+    responseBody &&
+    typeof responseBody === 'object' &&
+    (responseBody['@type'] === 'Error' ||
+      responseBody['@type'] === 'ConstraintViolationList')
+  ) {
+    throw buildSmokeHttpError(response, responseBody);
+  }
+
+  if (options.responseType === 'text') {
+    return typeof responseBody === 'string' ? responseBody : '';
+  }
+
+  return responseBody;
+}
+
 export const api = {
   device: JSON.parse(localStorage.getItem('device') || '{}'),
   masterDevice: JSON.parse(localStorage.getItem('master-device') || '{}'),
@@ -17,14 +186,20 @@ export const api = {
     const apiEntryPoint = resolveApiEntryPoint(APP_ENV.API_ENTRYPOINT);
     const entryPoint = apiEntryPoint + (apiEntryPoint.endsWith("/") ? "" : "/");
     const url = new URL(uri.startsWith('/') ? uri.substring(1) : uri, entryPoint).href;
+    const basicAuth = encodeBasicAuth(APP_ENV.HTACCESS_USER, APP_ENV.HTACCESS_PASSWORD);
+    const headers = {
+      'API-TOKEN': token,
+      'App-Domain': appDomain,
+      'Accept': '*/*',
+      // IMPORTANTE: Deixe vazio para o Axios/Browser definir o boundary do multipart
+    };
+
+    if (basicAuth !== '') {
+      headers.Authorization = `Basic ${basicAuth}`;
+    }
 
     return axios.post(url, formData, {
-      headers: {
-        'API-TOKEN': token,
-        'App-Domain': appDomain,
-        'Accept': '*/*',
-        // IMPORTANTE: Deixe vazio para o Axios/Browser definir o boundary do multipart
-      }
+      headers,
     });
   },
   fetch: async function (uri, options = {}) {
@@ -48,6 +223,11 @@ export const api = {
 
     let token = await this.getToken();
     if (token) options.headers.set('API-TOKEN', token);
+
+    const basicAuth = encodeBasicAuth(APP_ENV.HTACCESS_USER, APP_ENV.HTACCESS_PASSWORD);
+    if (basicAuth !== '' && !options.headers.has('Authorization')) {
+      options.headers.set('Authorization', `Basic ${basicAuth}`);
+    }
 
     let bodyDeviceId = null;
     if (options.body) {
@@ -148,6 +328,27 @@ export const api = {
       body: body,
     };
     return await this.fetch(uri, options);
+  },
+  loadSmokeIndex: async function (config = {}) {
+    return await requestSmoke('/tests/index.json', {}, config);
+  },
+  loadArtifactBlob: async function (config = {}, artifact) {
+    if (!artifact || typeof artifact !== 'object') {
+      throw new Error('Artefato inválido.');
+    }
+
+    if (!artifact.url) {
+      throw new Error('Artefato inválido.');
+    }
+
+    return await requestSmoke(artifact.url, {
+      responseType: 'blob',
+    }, config);
+  },
+  triggerSmokeRun: async function (config = {}) {
+    return await requestSmoke('/tests/run', {
+      method: 'POST',
+    }, config);
   },
   execute: function (params) {
     return axios(params);

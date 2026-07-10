@@ -310,6 +310,24 @@ export default class Formatter {
     return `${Formatter.formatDecimal(value, locale, maximumFractionDigits)}%`;
   }
 
+  static formatCount(value, singular, plural = `${singular}s`) {
+    return `${value} ${value === 1 ? singular : plural}`;
+  }
+
+  static formatDateTime(value) {
+    if (!value) return 'sem data';
+
+    const date = new Date(value);
+
+    if (isNaN(date.getTime()))
+      return value;
+
+    return new Intl.DateTimeFormat('pt-BR', {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    }).format(date);
+  }
+
   static formatSignedInteger(value, locale = 'pt-BR') {
 
     const numericValue = Number(value || 0);
