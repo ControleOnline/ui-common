@@ -17,8 +17,8 @@ import ProductCatalogCacheService from '@controleonline/ui-common/src/react/comp
 import RuntimeInfoFooter from '@controleonline/ui-common/src/react/components/RuntimeInfoFooter';
 import { useStore } from '@store';
 import { api } from '@controleonline/ui-common/src/api';
-import { env as APP_ENV } from '@env';
 import {app_type} from '@appType';
+import { env as APP_ENV } from '@env';
 import { isPublicRoute } from '@controleonline/ui-login/src/react/router/publicRoutes';
 const { resolveConfiguredLanguage } = require('../utils/runtimeLanguage');
 import {

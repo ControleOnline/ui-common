@@ -1,7 +1,7 @@
 import React, {useEffect, useMemo, useRef} from 'react';
 import {NativeModules} from 'react-native';
-import {env as APP_ENV} from '@env';
 import {app_type} from '@appType';
+import { env as APP_ENV } from '@env';
 import {useStore} from '@store';
 import DeviceInfo from 'react-native-device-info';
 import {resolveAppDomain} from '@controleonline/ui-common/src/utils/appDomain';

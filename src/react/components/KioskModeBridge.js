@@ -1,6 +1,5 @@
 import React, {useEffect, useMemo, useRef} from 'react';
 import {AppState, BackHandler, NativeModules, Platform} from 'react-native';
-import {env as APP_ENV} from '@env';
 import {app_type} from '@appType';
 import {useStore} from '@store';
 import {shouldEnableAndroidKioskMode} from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
