@@ -165,11 +165,17 @@ describe('runtimeMenu', () => {
 
     expect(menus).toHaveLength(1);
     expect(menus[0].label).toBe('Configuracoes');
-    expect(menus[0].menus).toHaveLength(1);
+    expect(menus[0].menus).toHaveLength(2);
     expect(menus[0].menus[0]).toMatchObject({
       label: 'Menus por perfil',
       menuKey: 'menu_access',
       route: 'MenuAccessConfigPage',
+      menuType: 'home',
+    });
+    expect(menus[0].menus[1]).toMatchObject({
+      label: 'Resultados de testes',
+      menuKey: 'test_results',
+      route: 'SmokeTestsPage',
       menuType: 'home',
     });
   });

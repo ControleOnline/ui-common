@@ -144,6 +144,15 @@ const ADMIN_RUNTIME_MENU_FALLBACK = [
         color: '#64748B',
         sortOrder: 10,
       },
+      {
+        id: 'test_results',
+        menuKey: 'test_results',
+        label: 'Resultados de testes',
+        route: 'SmokeTestsPage',
+        icon: 'clipboard',
+        color: '#0EA5E9',
+        sortOrder: 20,
+      },
     ],
   },
 ];
