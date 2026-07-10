@@ -884,14 +884,14 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
             },
           ]}>
           <View style={providerStyles.content}>{children}</View>
-        {!isShopClientApp && bottomNavigationCount === 0 && (
-          <RuntimeInfoFooter
-            appVersion={appVersion}
-            defaultCompany={defaultCompany}
-            device={device}
-            colors={colors}
-          />
-        )}
+              {!isShopClientApp && bottomNavigationCount === 0 && (
+                <RuntimeInfoFooter
+                  appVersion={appVersion}
+                  defaultCompany={defaultCompany}
+                  device={device}
+                  colors={colors}
+                />
+              )}
       </View>
       {!isShopClientApp && device?.id && isLogged && (
         <>

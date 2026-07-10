@@ -2,10 +2,7 @@ import React, {useEffect, useMemo, useState} from 'react';
 import {useNavigationState} from '@react-navigation/native';
 import {useStore} from '@store';
 import {api} from '@controleonline/ui-common/src/api';
-import {env as APP_ENV} from '@env';
 import {app_type} from '@appType';
-import {colors as runtimeColors} from '@controleonline/../../src/styles/colors';
-import {resolveThemePalette} from '@controleonline/../../src/styles/branding';
 import BottomNavigationBar from '@controleonline/ui-common/src/react/components/BottomNavigationBar';
 import {
   getBottomNavigationPreset,
@@ -94,13 +91,10 @@ const RuntimeBottomNavigationBar = ({
       return colorsOverride;
     }
 
-    return resolveThemePalette(
-      {
-        ...themeColors,
-        ...(currentCompany?.theme?.colors || {}),
-      },
-      runtimeColors,
-    );
+    return {
+      ...themeColors,
+      ...(currentCompany?.theme?.colors || {}),
+    };
   }, [colorsOverride, currentCompany?.theme?.colors, themeColors]);
 
   const navItems = useMemo(() => {

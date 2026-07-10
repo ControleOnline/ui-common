@@ -1,24 +1,10 @@
 import {Platform, StyleSheet} from 'react-native';
 
-const withAlpha = (color, alphaHex) => {
-  const raw = String(color || '').trim().replace('#', '');
-  if (/^[0-9a-fA-F]{6}$/.test(raw)) {
-    return `#${raw}${alphaHex}`;
-  }
-
-  if (/^[0-9a-fA-F]{8}$/.test(raw)) {
-    return `#${raw.slice(0, 6)}${alphaHex}`;
-  }
-
-  return color || '#1B5587';
-};
-
 const createStyles = ({
-  primaryColor,
+  activeBackground,
   dockBackground,
-  borderColor,
-  inactiveText,
-  activeBg,
+  dockBorder,
+  dockShadow,
   activeBorder,
 }) =>
   StyleSheet.create({
@@ -45,7 +31,7 @@ const createStyles = ({
       paddingBottom: 8,
       borderWidth: 1,
       borderBottomWidth: 0,
-      borderColor,
+      borderColor: dockBorder,
       borderTopLeftRadius: 24,
       borderTopRightRadius: 24,
       borderBottomLeftRadius: 0,
@@ -55,7 +41,7 @@ const createStyles = ({
       ...(Platform.OS === 'android'
         ? {elevation: 10}
         : {
-            shadowColor: '#0F172A',
+            shadowColor: dockShadow,
             shadowOpacity: 0.12,
             shadowOffset: {width: 0, height: -6},
             shadowRadius: 14,
@@ -73,16 +59,13 @@ const createStyles = ({
       borderRadius: 18,
     },
     itemActive: {
-      backgroundColor: activeBg,
+      backgroundColor: activeBackground,
       borderColor: activeBorder,
     },
     itemPressed: {
-      opacity: 0.92,
       transform: [{scale: 0.99}],
     },
-    itemDisabled: {
-      opacity: 0.45,
-    },
+    itemDisabled: {},
     iconWrap: {
       width: 24,
       height: 24,
@@ -92,18 +75,10 @@ const createStyles = ({
       marginBottom: 4,
       backgroundColor: 'transparent',
     },
-    iconWrapActive: {
-      backgroundColor: withAlpha(primaryColor, '18'),
-    },
     itemLabel: {
       fontSize: 12,
       fontWeight: '600',
-      color: inactiveText,
       textAlign: 'center',
-    },
-    itemLabelActive: {
-      color: primaryColor,
-      fontWeight: '800',
     },
   });
 
