@@ -7,6 +7,7 @@ import {
   View,
 } from 'react-native';
 
+import {api} from '@controleonline/ui-common/src/api';
 import {useStore} from '@store';
 import StateStore from '@controleonline/ui-layout/src/react/components/StateStore';
 import DefaultTooltip from '@controleonline/ui-default/src/react/components/help/DefaultTooltip';
@@ -171,39 +172,68 @@ const PaymentTypesByWalletTab = ({
   unassignedText = 'Meios de pagamento sem wallet vinculada.',
 }) => {
   const walletStore = useStore('wallet');
-  const walletPaymentTypeStore = useStore('walletPaymentType');
   const {getters: walletGetters, actions: walletActions} = walletStore;
-  const {
-    getters: walletPaymentTypeGetters,
-    actions: walletPaymentTypeActions,
-  } = walletPaymentTypeStore;
 
   const wallets = Array.isArray(walletGetters.items) ? walletGetters.items : [];
-  const walletPaymentTypes = Array.isArray(walletPaymentTypeGetters.items)
-    ? walletPaymentTypeGetters.items
-    : [];
   const walletsLoading = walletGetters.isLoading === true;
-  const walletPaymentTypesLoading = walletPaymentTypeGetters.isLoading === true;
   const [selectedPaymentTypeIds, setSelectedPaymentTypeIds] = useState([]);
+  const [walletPaymentTypes, setWalletPaymentTypes] = useState([]);
+  const [walletPaymentTypesLoading, setWalletPaymentTypesLoading] =
+    useState(false);
 
   useEffect(() => {
     if (!currentCompanyId) {
       walletActions.setItems([]);
-      walletPaymentTypeActions.setItems([]);
+      setWalletPaymentTypes([]);
+      setWalletPaymentTypesLoading(false);
       return;
     }
+
+    let cancelled = false;
 
     walletActions
       .getItems({people: currentCompanyId})
       .catch(() => {
         walletActions.setItems([]);
       });
-    walletPaymentTypeActions
-      .getItems({'wallet.people': currentCompanyId})
+
+    setWalletPaymentTypesLoading(true);
+    api
+      .fetch('wallet_payment_types', {
+        params: {
+          'wallet.people': currentCompanyId,
+        },
+      })
+      .then(response => {
+        if (cancelled) {
+          return;
+        }
+
+        const items = Array.isArray(response?.member)
+          ? response.member
+          : Array.isArray(response?.['hydra:member'])
+            ? response['hydra:member']
+            : Array.isArray(response)
+              ? response
+              : [];
+
+        setWalletPaymentTypes(items);
+      })
       .catch(() => {
-        walletPaymentTypeActions.setItems([]);
+        if (!cancelled) {
+          setWalletPaymentTypes([]);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setWalletPaymentTypesLoading(false);
+        }
       });
-  }, [currentCompanyId, walletActions, walletPaymentTypeActions]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentCompanyId, walletActions]);
 
   useEffect(() => {
     const nextSelectedPaymentTypeIds = resolveDevicePaymentTypeIds(configs);

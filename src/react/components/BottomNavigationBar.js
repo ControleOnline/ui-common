@@ -18,34 +18,71 @@ const BottomNavigationBar = ({
   const runtimeFooter = theme?.runtimeFooter || null;
   const registerBottomNavigation =
     theme?.bottomChrome?.registerBottomNavigation || null;
-  const primaryColor = colors.primary || '#1B5587';
-  const dockBackground =
-    colors['toolbar-background'] || colors.background || '#F8FBFF';
-  const borderColor = colors['toolbar-border'] || colors.border || '#D1DDE9';
-  const inactiveText =
-    colors['toolbar-text-muted'] || colors.textSecondary || '#64748B';
-  const activeBg = `${primaryColor}1A`;
-  const activeBorder = `${primaryColor}55`;
+  const activeBackground = colors.navigationActiveBackground;
+  const activeBorder = colors.navigationActiveBorder;
+  const activeIcon = colors.navigationActiveIcon;
+  const activeText = colors.navigationActiveText;
+  const dockBackground = colors.navigationBackground;
+  const dockBorder = colors.navigationBorder;
+  const dockShadow = colors.navigationShadow;
+  const inactiveIcon = colors.navigationIcon;
+  const inactiveText = colors.navigationText;
 
   const styles = useMemo(
     () =>
       createStyles({
-        primaryColor,
+        activeBackground,
         dockBackground,
-        borderColor,
-        inactiveText,
-        activeBg,
+        dockBorder,
+        dockShadow,
         activeBorder,
       }),
     [
-      activeBg,
+      activeBackground,
       activeBorder,
-      borderColor,
       dockBackground,
-      inactiveText,
-      primaryColor,
+      dockBorder,
+      dockShadow,
     ],
   );
+
+  const resolveItemColors = ({isActive, isDisabled}) => {
+    if (isActive) {
+      return {
+        iconColor: activeIcon,
+        textColor: activeText,
+      };
+    }
+
+    if (isDisabled) {
+      return {
+        iconColor: colors.navigationDisabledIcon,
+        textColor: colors.navigationDisabledText,
+      };
+    }
+
+    return {
+      iconColor: inactiveIcon,
+      textColor: inactiveText,
+    };
+  };
+
+  const resolveItemStateStyles = ({isActive, isDisabled}) => [
+    styles.item,
+    isActive && styles.itemActive,
+    isDisabled && styles.itemDisabled,
+    isDisabled && {
+      backgroundColor: colors.navigationDisabledBackground,
+      borderColor: colors.navigationDisabledBorder,
+    },
+  ];
+
+  const resolvePressedStyles = ({pressed, isDisabled}) =>
+    pressed && !isDisabled
+      ? [
+          styles.itemPressed,
+        ]
+      : [];
 
   useLayoutEffect(() => {
     if (typeof registerBottomNavigation !== 'function') {
@@ -77,7 +114,10 @@ const BottomNavigationBar = ({
             const isActive = effectiveActiveRoute === item.route;
             const isDisabled = disabled || item.disabled;
             const iconSize = item.iconSize || 18;
-            const iconColor = isActive ? primaryColor : inactiveText;
+            const {iconColor, textColor} = resolveItemColors({
+              isActive,
+              isDisabled,
+            });
 
             return (
               <Pressable
@@ -86,17 +126,20 @@ const BottomNavigationBar = ({
                 disabled={isDisabled}
                 onPress={() => navigateTo(item)}
                 style={({pressed}) => [
-                  styles.item,
-                  isActive && styles.itemActive,
-                  pressed && !isDisabled && styles.itemPressed,
-                  isDisabled && styles.itemDisabled,
+                  ...resolveItemStateStyles({isActive, isDisabled}),
+                  ...resolvePressedStyles({pressed, isDisabled}),
                 ]}>
-                <View style={[styles.iconWrap, isActive && styles.iconWrapActive]}>
+                <View style={styles.iconWrap}>
                   <Icon color={iconColor} name={item.icon} size={iconSize} />
                 </View>
                 <Text
                   numberOfLines={1}
-                  style={[styles.itemLabel, isActive && styles.itemLabelActive]}>
+                  style={[
+                    styles.itemLabel,
+                    {
+                      color: textColor,
+                    },
+                  ]}>
                   {item.label}
                 </Text>
               </Pressable>
@@ -107,7 +150,7 @@ const BottomNavigationBar = ({
         {runtimeFooter && (
           <RuntimeInfoFooter
             appVersion={runtimeFooter.appVersion}
-            colors={runtimeFooter.colors || colors}
+            colors={runtimeFooter.colors || {}}
             defaultCompany={runtimeFooter.defaultCompany}
             device={runtimeFooter.device}
           />

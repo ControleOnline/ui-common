@@ -2,7 +2,6 @@ import React, {useEffect, useMemo, useState} from 'react';
 import {ActivityIndicator, Text, View, useWindowDimensions} from 'react-native';
 import {useStore, useStores} from '@store';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {colors as runtimeColors} from '@controleonline/../../src/styles/colors';
 import {
   DEVICE_RUNTIME_DEBUG_INFO_ENABLED_KEY,
   isTruthyValue,
@@ -110,7 +109,26 @@ const RuntimeInfoFooter = ({appVersion, defaultCompany, device, colors}) => {
     () => footerEntries.flatMap(entry => entry?.lines || []),
     [footerEntries],
   );
-  const socketIndicatorColor = socketEntry?.indicatorColor;
+  const socketIndicatorColor = useMemo(() => {
+    const indicatorTone = String(socketEntry?.indicatorTone || '').trim();
+    if (!indicatorTone) {
+      return undefined;
+    }
+
+    if (indicatorTone === 'success') {
+      return colors?.success;
+    }
+
+    if (indicatorTone === 'warning') {
+      return colors?.warning;
+    }
+
+    if (indicatorTone === 'error') {
+      return colors?.error;
+    }
+
+    return undefined;
+  }, [colors?.error, colors?.success, colors?.warning, socketEntry?.indicatorTone]);
   const hasStoreLoading = useMemo(
     () =>
       Object.values(allStores || {}).some(
@@ -142,10 +160,10 @@ const RuntimeInfoFooter = ({appVersion, defaultCompany, device, colors}) => {
   }
 
   const displayedText = shouldRotate ? entries[activeIndex] : inlineText;
-  const backgroundColor = colors?.background || runtimeColors.background;
-  const borderColor = colors?.border || runtimeColors.border;
-  const textColor = colors?.textSecondary || runtimeColors.textSecondary;
-  const loadingColor = colors?.primary || runtimeColors.primary || textColor;
+  const backgroundColor = colors?.footerBackground;
+  const borderColor = colors?.footerBorder;
+  const textColor = colors?.footerText;
+  const loadingColor = colors?.footerLink;
 
   return (
     <View pointerEvents="none" style={styles.shell}>
