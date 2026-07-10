@@ -74,12 +74,12 @@ export const WebsocketListener = () => {
         : 'socket:open'
       : `socket:${normalizedStatus || 'off'}`;
 
-    const indicatorColor =
+    const indicatorTone =
       socketConnected && socketIdentified
-        ? '#10b981'
+        ? 'success'
         : (socketConnected || ['connecting', 'identifying', 'open', 'reconnecting'].includes(normalizedStatus))
-          ? '#e67e22'
-          : '#c10015';
+          ? 'warning'
+          : 'error';
     const lastSocketStores = Array.isArray(state?.lastStores)
       ? state.lastStores.filter(Boolean).join(', ')
       : '';
@@ -90,7 +90,7 @@ export const WebsocketListener = () => {
     runtimeDebugActions.setFooterEntry({
       key: 'socket',
       order: 10,
-      indicatorColor,
+      indicatorTone,
       updatedAt: state?.updatedAt || new Date().toISOString(),
       lines: [
         `Realtime ${stateLabel} | empresa: ${normalizeText(

@@ -109,7 +109,26 @@ const RuntimeInfoFooter = ({appVersion, defaultCompany, device, colors}) => {
     () => footerEntries.flatMap(entry => entry?.lines || []),
     [footerEntries],
   );
-  const socketIndicatorColor = socketEntry?.indicatorColor;
+  const socketIndicatorColor = useMemo(() => {
+    const indicatorTone = String(socketEntry?.indicatorTone || '').trim();
+    if (!indicatorTone) {
+      return undefined;
+    }
+
+    if (indicatorTone === 'success') {
+      return colors?.success;
+    }
+
+    if (indicatorTone === 'warning') {
+      return colors?.warning;
+    }
+
+    if (indicatorTone === 'error') {
+      return colors?.error;
+    }
+
+    return undefined;
+  }, [colors?.error, colors?.success, colors?.warning, socketEntry?.indicatorTone]);
   const hasStoreLoading = useMemo(
     () =>
       Object.values(allStores || {}).some(
