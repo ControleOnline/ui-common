@@ -46,7 +46,7 @@ describe('smoke api helper', () => {
     expect(url).toBe('https://smoke.example.test/tests');
     expect(options.headers.get('App-Domain')).toBe('admin.controleonline.com');
     expect(options.headers.get('API-TOKEN')).toBe('session-token');
-    expect(options.headers.get('X-API-KEY')).toBe('session-token');
+    expect(options.headers.get('X-API-KEY')).toBeNull();
     expect(options.headers.get('Accept')).toBe('application/ld+json');
     expect(options.headers.get('Content-Type')).toBe('application/ld+json');
     expect(response.status).toBe('idle');
