@@ -98,7 +98,6 @@ async function requestSmoke(path, options = {}, config = {}) {
 
   if (sessionToken && !headers.has('API-TOKEN')) {
     headers.set('API-TOKEN', sessionToken);
-    headers.set('X-API-KEY', sessionToken);
   }
 
   const basicAuth = encodeBasicAuth(runtimeConfig.htaccessUser, runtimeConfig.htaccessPassword);
