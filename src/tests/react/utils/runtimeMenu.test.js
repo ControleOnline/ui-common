@@ -175,7 +175,7 @@ describe('runtimeMenu', () => {
     expect(menus[0].menus[1]).toMatchObject({
       label: 'Resultados de testes',
       menuKey: 'test_results',
-      route: 'SmokeTestsPage',
+      route: 'TestsPlaygroundPage',
       menuType: 'home',
     });
   });

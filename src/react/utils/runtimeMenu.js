@@ -148,7 +148,7 @@ const ADMIN_RUNTIME_MENU_FALLBACK = [
         id: 'test_results',
         menuKey: 'test_results',
         label: 'Resultados de testes',
-        route: 'SmokeTestsPage',
+        route: 'TestsPlaygroundPage',
         icon: 'clipboard',
         color: '#0EA5E9',
         sortOrder: 20,
