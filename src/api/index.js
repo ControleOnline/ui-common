@@ -330,7 +330,7 @@ export const api = {
     return await this.fetch(uri, options);
   },
   loadSmokeIndex: async function (config = {}) {
-    return await requestSmoke('/tests/index.json', {}, config);
+    return await requestSmoke('/tests', {}, config);
   },
   loadArtifactBlob: async function (config = {}, artifact) {
     if (!artifact || typeof artifact !== 'object') {
