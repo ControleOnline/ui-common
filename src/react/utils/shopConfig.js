@@ -52,6 +52,8 @@ export const SHOP_LOYALTY_REQUIRED_SALES_CONFIG_KEY =
   'shop-loyalty-required-sales';
 export const SHOP_LOYALTY_GIFT_PRODUCT_ID_CONFIG_KEY =
   'shop-loyalty-gift-product-id';
+export const SHOP_LOYALTY_STAMP_ICON_URL_CONFIG_KEY =
+  'shop-loyalty-stamp-icon-url';
 
 export const normalizeShopEntityId = value => {
   if (!value) {
@@ -289,6 +291,9 @@ export const resolveShopSettings = configs => {
     ),
     loyaltyGiftProductId: normalizeShopEntityId(
       configMap[SHOP_LOYALTY_GIFT_PRODUCT_ID_CONFIG_KEY],
+    ),
+    loyaltyStampIconUrl: normalizeShopTextConfig(
+      configMap[SHOP_LOYALTY_STAMP_ICON_URL_CONFIG_KEY],
     ),
   };
 };
