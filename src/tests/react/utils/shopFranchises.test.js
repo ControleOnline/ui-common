@@ -6,6 +6,7 @@ jest.mock('@controleonline/ui-common/src/api', () => ({
 
 const {api} = require('@controleonline/ui-common/src/api');
 const {
+  fetchAllShopFranchiseDirectory,
   fetchShopFranchiseDirectory,
 } = require('../../../react/utils/shopFranchises');
 
@@ -77,6 +78,72 @@ describe('shopFranchises', () => {
     });
     expect(directory[0].shopAddresses).toEqual([
       {id: 601, nickname: 'Loja Norte'},
+    ]);
+  });
+
+  it('loads every page when building the full franchise directory', async () => {
+    api.fetch
+      .mockResolvedValueOnce({
+        member: [
+          {
+            id: 21,
+            alias: 'Centro',
+            shopAddresses: [{id: 501, nickname: 'Loja Centro'}],
+          },
+          {
+            id: 22,
+            alias: 'Norte',
+            shopAddresses: [{id: 601, nickname: 'Loja Norte'}],
+          },
+        ],
+      })
+      .mockResolvedValueOnce({
+        member: [
+          {
+            id: 23,
+            alias: 'Sul',
+            shopAddresses: [{id: 701, nickname: 'Loja Sul'}],
+          },
+        ],
+      });
+
+    const directory = await fetchAllShopFranchiseDirectory({
+      companyId: 10,
+      itemsPerPage: 2,
+    });
+
+    expect(api.fetch).toHaveBeenNthCalledWith(1, 'people', {
+      params: {
+        'link.company': '/people/10',
+        'link.linkType': 'franchisee',
+        itemsPerPage: 2,
+        page: 1,
+      },
+    });
+    expect(api.fetch).toHaveBeenNthCalledWith(2, 'people', {
+      params: {
+        'link.company': '/people/10',
+        'link.linkType': 'franchisee',
+        itemsPerPage: 2,
+        page: 2,
+      },
+    });
+    expect(directory).toEqual([
+      {
+        id: 21,
+        alias: 'Centro',
+        shopAddresses: [{id: 501, nickname: 'Loja Centro'}],
+      },
+      {
+        id: 22,
+        alias: 'Norte',
+        shopAddresses: [{id: 601, nickname: 'Loja Norte'}],
+      },
+      {
+        id: 23,
+        alias: 'Sul',
+        shopAddresses: [{id: 701, nickname: 'Loja Sul'}],
+      },
     ]);
   });
 });

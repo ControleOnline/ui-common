@@ -11,6 +11,15 @@ export const SHOP_FRANCHISE_PAGE_SIZE = 50;
 const normalizeItemsPerPage = value =>
   Math.max(1, Math.min(SHOP_FRANCHISE_PAGE_SIZE, Number(value) || SHOP_FRANCHISE_PAGE_SIZE));
 
+const normalizeFranchiseDirectoryItem = company => ({
+  ...company,
+  shopAddresses: Array.isArray(company?.shopAddresses)
+    ? company.shopAddresses
+    : Array.isArray(company?.address)
+      ? company.address
+      : [],
+});
+
 const sortByLabel = (left, right) =>
   String(left || '')
     .localeCompare(String(right || ''), 'pt-BR', {
@@ -49,14 +58,46 @@ export const fetchShopFranchiseCompanies = async ({
   const items = extractCollectionItems(response);
 
   return items
-    .map(company => ({
-      ...company,
-      shopAddresses: Array.isArray(company?.shopAddresses)
-        ? company.shopAddresses
-        : Array.isArray(company?.address)
-          ? company.address
-          : [],
-    }))
+    .map(normalizeFranchiseDirectoryItem)
+    .sort((left, right) =>
+      sortByLabel(
+        resolveFranchiseCompanyLabel(left),
+        resolveFranchiseCompanyLabel(right),
+      ),
+    );
+};
+
+export const fetchAllShopFranchiseDirectory = async ({
+  companyId,
+  publicDirectory = false,
+  search = '',
+  itemsPerPage = SHOP_FRANCHISE_PAGE_SIZE,
+} = {}) => {
+  const normalizedItemsPerPage = normalizeItemsPerPage(itemsPerPage);
+  const items = [];
+  let page = 1;
+
+  while (true) {
+    const pageItems = await fetchShopFranchiseCompanies({
+      companyId,
+      publicDirectory,
+      search,
+      page,
+      itemsPerPage: normalizedItemsPerPage,
+    });
+    const normalizedPageItems = Array.isArray(pageItems) ? pageItems : [];
+
+    items.push(...normalizedPageItems);
+
+    if (normalizedPageItems.length < normalizedItemsPerPage) {
+      break;
+    }
+
+    page += 1;
+  }
+
+  return items
+    .map(normalizeFranchiseDirectoryItem)
     .sort((left, right) =>
       sortByLabel(
         resolveFranchiseCompanyLabel(left),
@@ -102,13 +143,6 @@ export const fetchShopFranchiseDirectory = async ({
     itemsPerPage,
   });
 
-  return companies.map(company => ({
-    ...company,
-    shopAddresses: Array.isArray(company?.shopAddresses)
-      ? company.shopAddresses
-      : Array.isArray(company?.address)
-        ? company.address
-        : [],
-  }));
+  return companies.map(normalizeFranchiseDirectoryItem);
 };
 // TODO(store-first): quando este arquivo for mexido, mover a leitura para stores, remover api.fetch e evitar repassar dados em objetos quando o store ja resolver isso.
