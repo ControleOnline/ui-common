@@ -18,6 +18,8 @@ const {
   POS_CASH_MANAGEMENT_MODE_CONFIG_KEY,
   POS_DELIVERY_ENABLED_CONFIG_KEY,
   POS_OPERATION_MODE_CONFIG_KEY,
+  POS_CHECK_ORDER_TYPE_CONFIG_KEY,
+  POS_CHECK_ORDER_TYPE_STAMP,
   isPosSingleItemMode,
   isPosAutoPrintEnabled,
   isPosCashRegisterClosed,
@@ -30,9 +32,11 @@ const {
   isDisplaySideBreakEnabled,
   normalizeDisplaySize,
   resolveDisplaySize,
+  resolvePosCheckOrderTypeForShop,
   resolvePosCashManagementMode,
   resolvePosOperationMode,
   resolvePosPrintMode,
+  resolvePosCheckOrderType,
   shouldEnableAndroidKioskMode,
   shouldEnableAndroidLauncherMode,
   shouldUsePosCashRegisterLifecycle,
@@ -177,6 +181,49 @@ describe('deviceConfigBootstrap POS operation helpers', () => {
         [POS_OPERATION_MODE_CONFIG_KEY]: 'kiosk',
       }),
     ).toBe(false)
+  })
+
+  it('normalizes stamp linked order types for the POS config', () => {
+    expect(
+      resolvePosCheckOrderType({
+        [POS_CHECK_ORDER_TYPE_CONFIG_KEY]: 'stamp',
+      }),
+    ).toBe(POS_CHECK_ORDER_TYPE_STAMP)
+    expect(
+      resolvePosCheckOrderType({
+        [POS_CHECK_ORDER_TYPE_CONFIG_KEY]: 'carimbo',
+      }),
+    ).toBe(POS_CHECK_ORDER_TYPE_STAMP)
+  })
+
+  it('disables stamp when shop loyalty coupons are off', () => {
+    expect(
+      resolvePosCheckOrderTypeForShop(
+        {
+          [POS_CHECK_ORDER_TYPE_CONFIG_KEY]: 'stamp',
+        },
+        {
+          'shop-loyalty-coupons-enabled': '0',
+        },
+      ),
+    ).toBe('none')
+
+    expect(
+      resolvePosCheckOrderTypeForShop(
+        {
+          [POS_CHECK_ORDER_TYPE_CONFIG_KEY]: 'stamp',
+        },
+        {
+          'shop-loyalty-coupons-enabled': '1',
+        },
+      ),
+    ).toBe(POS_CHECK_ORDER_TYPE_STAMP)
+
+    expect(
+      resolvePosCheckOrderTypeForShop({
+        [POS_CHECK_ORDER_TYPE_CONFIG_KEY]: 'stamp',
+      }),
+    ).toBe(POS_CHECK_ORDER_TYPE_STAMP)
   })
 
   it('defaults display size to 5 and clamps the configured range to 1..10', () => {

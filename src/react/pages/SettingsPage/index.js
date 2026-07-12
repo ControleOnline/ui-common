@@ -51,7 +51,7 @@
  * - O help contextual canônico deve ficar em `ui-common` como componente parametrizado acionado por `?`, com modal proprio e sem reaproveitar `ConfirmModal`. Telas consumidoras nao devem escrever explicacao fixa quando esse padrao estiver disponivel.
  */
 
-import React, {useEffect, useState, useCallback, useMemo} from 'react';
+import React, {useEffect, useState, useCallback, useMemo, useRef} from 'react';
 
 import {
   Text,
@@ -98,14 +98,20 @@ import {
   POS_CHECK_ORDER_TYPE_NONE,
   POS_CHECK_ORDER_TYPE_TAB,
   POS_CHECK_ORDER_TYPE_TABLE,
+  POS_CHECK_ORDER_TYPE_STAMP,
   resolveDefaultGateway,
   resolveDeviceOrderVisibility,
   resolvePosCheckOrderManagementMode,
   resolvePosCheckOrderType,
+  resolvePosCheckOrderTypeForShop,
 } from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
 import {
   PAYMENT_TYPE_IDS_CONFIG_KEY,
 } from '@controleonline/ui-common/src/react/utils/paymentDevices';
+import {
+  normalizeBooleanConfig,
+  SHOP_LOYALTY_COUPONS_ENABLED_CONFIG_KEY,
+} from '@controleonline/ui-common/src/react/utils/shopConfig';
 
 import {isWebRuntimeDevice as resolveIsWebRuntimeDevice} from '@controleonline/ui-common/src/react/utils/deviceRuntime';
 import {DEFAULT_NOTIFICATION_SOUND_FILE} from '@controleonline/ui-common/src/react/utils/notificationSound';
@@ -180,6 +186,7 @@ const Settings = () => {
   const [configsLoaded, setConfigsLoaded] = useState(false);
   const [deviceConfigsLoaded, setDeviceConfigsLoaded] = useState(false);
   const [activeSettingsTab, setActiveSettingsTab] = useState('general');
+  const stampAutoDisableSignatureRef = useRef('');
   const pickerMode = Platform.OS === 'android' ? 'dropdown' : undefined;
   const settingsTabStyles = {
     tabRow: {
@@ -229,6 +236,21 @@ const Settings = () => {
           : currentCompany?.configs,
       ),
     [companyConfigs, currentCompany?.configs],
+  );
+  const loyaltyCouponsEnabled = useMemo(
+    () => {
+      const hasLoyaltyCouponsEnabledKey = Object.prototype.hasOwnProperty.call(
+        runtimeCompanyConfigs || {},
+        SHOP_LOYALTY_COUPONS_ENABLED_CONFIG_KEY,
+      );
+
+      return hasLoyaltyCouponsEnabledKey
+        ? normalizeBooleanConfig(
+            runtimeCompanyConfigs?.[SHOP_LOYALTY_COUPONS_ENABLED_CONFIG_KEY],
+          )
+        : true;
+    },
+    [runtimeCompanyConfigs],
   );
 
   const applyRuntimeCompanyConfigs = useCallback(() => {
@@ -489,15 +511,78 @@ const Settings = () => {
     runtimeCompanyConfigs,
   ]);
 
+  useEffect(() => {
+    if (!deviceConfigsLoaded || !device?.configs || !currentCompany?.id) {
+      return;
+    }
+
+    const rawCheckOrderType = resolvePosCheckOrderType(device?.configs);
+    const nextCheckOrderType = resolvePosCheckOrderTypeForShop(
+      device?.configs,
+      runtimeCompanyConfigs,
+    );
+
+    if (
+      rawCheckOrderType !== POS_CHECK_ORDER_TYPE_STAMP ||
+      nextCheckOrderType !== POS_CHECK_ORDER_TYPE_NONE ||
+      isWebRuntimeDevice
+    ) {
+      stampAutoDisableSignatureRef.current = '';
+      return;
+    }
+
+    const signature = [
+      currentCompany?.id,
+      storagedDevice?.id,
+      rawCheckOrderType,
+      String(device?.configs?.['config-version'] || ''),
+      loyaltyCouponsEnabled ? '1' : '0',
+    ].join(':');
+
+    if (stampAutoDisableSignatureRef.current === signature) {
+      return;
+    }
+
+    stampAutoDisableSignatureRef.current = signature;
+
+    setCheckOrderType(POS_CHECK_ORDER_TYPE_NONE);
+    setCheckOrderManagementMode(POS_CHECK_ORDER_MANAGEMENT_MODE_MANAGE);
+
+    const nextConfigs = appendScreenMetrics({...(device?.configs || {})});
+    nextConfigs[POS_CHECK_ORDER_TYPE_CONFIG_KEY] = POS_CHECK_ORDER_TYPE_NONE;
+    nextConfigs[POS_CHECK_ORDER_MANAGEMENT_MODE_CONFIG_KEY] =
+      POS_CHECK_ORDER_MANAGEMENT_MODE_MANAGE;
+    nextConfigs['config-version'] = appVersion;
+
+    persistDeviceConfigs(nextConfigs).catch(err => {
+      console.error('addDeviceConfigs (check-order-type) failed:', err);
+      Alert.alert('Erro ao gravar configurações', err.message || JSON.stringify(err));
+    });
+  }, [
+    appVersion,
+    currentCompany?.id,
+    device?.configs,
+    deviceConfigsLoaded,
+    isWebRuntimeDevice,
+    persistDeviceConfigs,
+    runtimeCompanyConfigs,
+    loyaltyCouponsEnabled,
+    storagedDevice?.id,
+  ]);
+
   useFocusEffect(
     useCallback(() => {
       if (device?.configs) {
         setCheckType(device?.configs['check-type'] || 'manual');
-        setCheckOrderType(
-          resolvePosCheckOrderType(device?.configs),
+        const nextCheckOrderType = resolvePosCheckOrderTypeForShop(
+          device?.configs,
+          runtimeCompanyConfigs,
         );
+        setCheckOrderType(nextCheckOrderType);
         setCheckOrderManagementMode(
-          resolvePosCheckOrderManagementMode(device?.configs),
+          nextCheckOrderType === POS_CHECK_ORDER_TYPE_NONE
+            ? POS_CHECK_ORDER_MANAGEMENT_MODE_MANAGE
+            : resolvePosCheckOrderManagementMode(device?.configs),
         );
         setProductInputType(device?.configs['product-input-type'] || 'manual');
         setSelectionType(device?.configs['selection-type'] || 'single');
@@ -582,10 +667,19 @@ const Settings = () => {
   };
 
   const handleCheckOrderTypeChange = value => {
-    setCheckOrderType(value);
+    const nextCheckOrderType =
+      value === POS_CHECK_ORDER_TYPE_TAB
+        ? POS_CHECK_ORDER_TYPE_TAB
+        : value === POS_CHECK_ORDER_TYPE_TABLE
+          ? POS_CHECK_ORDER_TYPE_TABLE
+          : value === POS_CHECK_ORDER_TYPE_STAMP && loyaltyCouponsEnabled
+            ? POS_CHECK_ORDER_TYPE_STAMP
+            : POS_CHECK_ORDER_TYPE_NONE;
+
+    setCheckOrderType(nextCheckOrderType);
     let lc = appendScreenMetrics({...(device?.configs || {})});
-    lc[POS_CHECK_ORDER_TYPE_CONFIG_KEY] = value;
-    if (value === POS_CHECK_ORDER_TYPE_NONE) {
+    lc[POS_CHECK_ORDER_TYPE_CONFIG_KEY] = nextCheckOrderType;
+    if (nextCheckOrderType === POS_CHECK_ORDER_TYPE_NONE) {
       lc[POS_CHECK_ORDER_MANAGEMENT_MODE_CONFIG_KEY] =
         POS_CHECK_ORDER_MANAGEMENT_MODE_MANAGE;
       setCheckOrderManagementMode(POS_CHECK_ORDER_MANAGEMENT_MODE_MANAGE);
@@ -942,6 +1036,11 @@ const Settings = () => {
                     label={global.t?.t('orders', 'title', 'table') || 'Table'}
                     value={POS_CHECK_ORDER_TYPE_TABLE}
                   />
+                  <Picker.Item
+                    label={global.t?.t('orders', 'title', 'stamp') || 'Stamp'}
+                    value={POS_CHECK_ORDER_TYPE_STAMP}
+                    enabled={loyaltyCouponsEnabled}
+                  />
                 </Picker>
               </View>
 
@@ -949,7 +1048,7 @@ const Settings = () => {
             <View style={inlineStyle_676_16}>
               <Text style={styles.Settings.label}>
                 {global.t?.t('configs', 'label', 'linkedOrderManagementMode') ||
-                  'Tab and table access'}
+                  'Tab, table and stamp access'}
               </Text>
               <Picker
                 selectedValue={checkOrderManagementMode}
@@ -960,7 +1059,7 @@ const Settings = () => {
                 <Picker.Item
                   label={
                     global.t?.t('configs', 'option', 'manageLinkedOrders') ||
-                    'Open and close tabs/tables'
+                    'Open and close tabs/tables/stamps'
                   }
                   value={POS_CHECK_ORDER_MANAGEMENT_MODE_MANAGE}
                 />
@@ -970,7 +1069,7 @@ const Settings = () => {
                       'configs',
                       'option',
                       'existingLinkedOrdersOnly',
-                    ) || 'Use open tabs/tables only'
+                    ) || 'Use open tabs/tables/stamps only'
                   }
                   value={POS_CHECK_ORDER_MANAGEMENT_MODE_EXISTING_ONLY}
                 />

@@ -2,6 +2,10 @@ import {
   appendScreenMetrics,
   hasScreenMetricsChanges,
 } from '@controleonline/ui-common/src/react/utils/screenMetrics';
+import {
+  normalizeBooleanConfig,
+  SHOP_LOYALTY_COUPONS_ENABLED_CONFIG_KEY,
+} from '@controleonline/ui-common/src/react/utils/shopConfig';
 
 export const CIELO_DEVICES = ['quantum', 'ingenico', 'positivo'];
 export const SUPPORTED_POS_GATEWAYS = ['cielo', 'infinite-pay'];
@@ -41,6 +45,7 @@ export const POS_OPERATION_MODE_CASHIER = 'cashier';
 export const POS_CHECK_ORDER_TYPE_NONE = 'none';
 export const POS_CHECK_ORDER_TYPE_TAB = 'tab';
 export const POS_CHECK_ORDER_TYPE_TABLE = 'table';
+export const POS_CHECK_ORDER_TYPE_STAMP = 'stamp';
 export const POS_CHECK_ORDER_MANAGEMENT_MODE_MANAGE = 'manage';
 export const POS_CHECK_ORDER_MANAGEMENT_MODE_EXISTING_ONLY = 'existing-only';
 export const POS_OPERATION_MODE_DEFAULT = POS_OPERATION_MODE_CASHIER;
@@ -255,6 +260,16 @@ export const normalizePosCheckOrderType = value => {
     return POS_CHECK_ORDER_TYPE_TABLE;
   }
 
+  if (
+    [
+      POS_CHECK_ORDER_TYPE_STAMP,
+      'stamp',
+      'carimbo',
+    ].includes(normalizedValue)
+  ) {
+    return POS_CHECK_ORDER_TYPE_STAMP;
+  }
+
   return POS_CHECK_ORDER_TYPE_NONE;
 };
 
@@ -262,6 +277,30 @@ export const resolvePosCheckOrderType = configs =>
   normalizePosCheckOrderType(
     parseConfigsObject(configs)?.[POS_CHECK_ORDER_TYPE_CONFIG_KEY],
   );
+
+export const resolvePosCheckOrderTypeForShop = (
+  deviceConfigs,
+  shopConfigs,
+) => {
+  const resolvedType = resolvePosCheckOrderType(deviceConfigs);
+  const parsedShopConfigs = parseConfigsObject(shopConfigs);
+  const hasLoyaltyCouponsEnabledKey = Object.prototype.hasOwnProperty.call(
+    parsedShopConfigs,
+    SHOP_LOYALTY_COUPONS_ENABLED_CONFIG_KEY,
+  );
+
+  if (
+    hasLoyaltyCouponsEnabledKey &&
+    resolvedType === POS_CHECK_ORDER_TYPE_STAMP &&
+    !normalizeBooleanConfig(
+      parsedShopConfigs?.[SHOP_LOYALTY_COUPONS_ENABLED_CONFIG_KEY],
+    )
+  ) {
+    return POS_CHECK_ORDER_TYPE_NONE;
+  }
+
+  return resolvedType;
+};
 
 export const normalizePosCheckOrderManagementMode = value => {
   const normalizedValue = String(value || '')
