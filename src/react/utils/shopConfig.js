@@ -298,6 +298,16 @@ export const resolveShopSettings = configs => {
   };
 };
 
+export const saveAndUpdateConfigValue = ({
+  configKey,
+  nextValue,
+  saveConfig,
+  setValue,
+}) => {
+  setValue(nextValue);
+  return saveConfig(configKey, nextValue);
+};
+
 export const toggleAndSaveBooleanConfig = ({
   configKey,
   currentValue,
