@@ -297,3 +297,14 @@ export const resolveShopSettings = configs => {
     ),
   };
 };
+
+export const toggleAndSaveBooleanConfig = ({
+  configKey,
+  currentValue,
+  saveConfig,
+  setValue,
+}) => {
+  const nextValue = !Boolean(currentValue);
+  setValue(nextValue);
+  return saveConfig(configKey, nextValue ? '1' : '0');
+};
