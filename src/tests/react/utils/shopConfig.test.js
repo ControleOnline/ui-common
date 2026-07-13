@@ -1,3 +1,5 @@
+const {jest} = require('@jest/globals');
+
 const {
   resolveShopSettings,
   SHOP_LOYALTY_STAMP_ICON_URL_CONFIG_KEY,
