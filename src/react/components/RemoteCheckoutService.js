@@ -12,6 +12,7 @@ import {
 } from '@controleonline/ui-common/src/react/utils/paymentGatewayExecution';
 import {
   buildRemotePaymentResultMessage,
+  isRemotePaymentCancellation,
   isRemotePaymentRequestMessage,
   normalizeRemotePaymentRequestKey,
 } from '@controleonline/ui-common/src/react/utils/remotePayment';
@@ -260,10 +261,17 @@ const Checkout = () => {
           error,
           'Nao foi possivel concluir o pagamento remoto.',
         );
-        invoiceActions.setError(errorMessage);
+        const wasCanceled = isRemotePaymentCancellation({
+          status: error?.status,
+          error: errorMessage,
+        });
+
+        if (!wasCanceled) {
+          invoiceActions.setError(errorMessage);
+        }
         await sendRemoteResult({
           error: errorMessage,
-          status: 'error',
+          status: wasCanceled ? 'canceled' : 'error',
         });
       } finally {
         clear();
