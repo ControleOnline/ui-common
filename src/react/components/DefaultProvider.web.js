@@ -816,8 +816,12 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
   }, [actions, currentCompany?.id, defaultCompany?.id, device?.id]);
 
   useEffect(() => {
-    if (!isLogged || !currentCompany?.id || !appType) {
-      actions.setMenus([]);
+    if (
+      !isLogged ||
+      !currentCompany?.id ||
+      !appType ||
+      currentRouteName !== 'HomePage'
+    ) {
       return;
     }
 
@@ -845,7 +849,7 @@ export const DefaultProvider = ({ children, onBootstrapReady }) => {
     return () => {
       cancelled = true;
     };
-  }, [actions, appType, currentCompany?.id, isLogged]);
+  }, [actions, appType, currentCompany?.id, currentRouteName, isLogged]);
 
   useEffect(() => {
     const companyThemeColors = isShopClientApp
