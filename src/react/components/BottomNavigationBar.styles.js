@@ -1,11 +1,37 @@
 import {Platform, StyleSheet} from 'react-native';
 
+const resolveWebShadowColor = shadowColor => {
+  if (typeof shadowColor !== 'string') {
+    return 'rgba(0, 0, 0, 0.12)';
+  }
+
+  const normalized = shadowColor.trim();
+  if (!normalized) {
+    return 'rgba(0, 0, 0, 0.12)';
+  }
+
+  if (/^#[0-9a-f]{3}$/i.test(normalized)) {
+    return `${normalized[0]}${normalized[1]}${normalized[1]}${normalized[2]}${normalized[2]}${normalized[3]}${normalized[3]}1f`;
+  }
+
+  if (/^#[0-9a-f]{6}$/i.test(normalized)) {
+    return `${normalized}1f`;
+  }
+
+  if (/^#[0-9a-f]{4}$/i.test(normalized) || /^#[0-9a-f]{8}$/i.test(normalized)) {
+    return normalized;
+  }
+
+  return normalized;
+};
+
 const createStyles = ({
   activeBackground,
   dockBackground,
   dockBorder,
   dockShadow,
   activeBorder,
+  useModernWebChromeProps = false,
 }) =>
   StyleSheet.create({
     host: {
@@ -16,6 +42,9 @@ const createStyles = ({
       zIndex: 1000,
       backgroundColor: 'transparent',
       alignItems: 'stretch',
+    },
+    hostPointerEventsBoxNone: {
+      pointerEvents: 'box-none',
     },
     stack: {
       width: '100%',
@@ -40,6 +69,10 @@ const createStyles = ({
       overflow: 'hidden',
       ...(Platform.OS === 'android'
         ? {elevation: 10}
+        : Platform.OS === 'web' && useModernWebChromeProps
+          ? {
+              boxShadow: `0px -6px 14px ${resolveWebShadowColor(dockShadow)}`,
+            }
         : {
             shadowColor: dockShadow,
             shadowOpacity: 0.12,

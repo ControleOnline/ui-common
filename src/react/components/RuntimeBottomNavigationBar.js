@@ -32,6 +32,7 @@ const RuntimeBottomNavigationBar = ({
   presetKey,
   routeAliases: routeAliasesProp,
   testID = 'bottom-navigation',
+  useModernWebChromeProps = false,
 }) => {
   const state = useNavigationState(current => current);
   const activeRouteName =
@@ -139,6 +140,7 @@ const RuntimeBottomNavigationBar = ({
       items={navItems}
       navigation={navigation}
       testID={testID}
+      useModernWebChromeProps={useModernWebChromeProps}
     />
   );
 };

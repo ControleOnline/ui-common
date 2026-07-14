@@ -18,7 +18,13 @@ const ROTATION_INTERVAL_MS = 6000;
 const COMPACT_BREAKPOINT = 720;
 const MAX_INLINE_TEXT_LENGTH = 84;
 
-const RuntimeInfoFooter = ({appVersion, defaultCompany, device, colors}) => {
+const RuntimeInfoFooter = ({
+  appVersion,
+  defaultCompany,
+  device,
+  colors,
+  useModernWebChromeProps = false,
+}) => {
   const {width} = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const [activeIndex, setActiveIndex] = useState(0);
@@ -164,9 +170,13 @@ const RuntimeInfoFooter = ({appVersion, defaultCompany, device, colors}) => {
   const borderColor = colors?.footerBorder;
   const textColor = colors?.footerText;
   const loadingColor = colors?.footerLink;
+  const shellProps = useModernWebChromeProps ? {} : {pointerEvents: 'none'};
+  const shellStyle = useModernWebChromeProps
+    ? [styles.shell, {pointerEvents: 'none'}]
+    : styles.shell;
 
   return (
-    <View pointerEvents="none" style={styles.shell}>
+    <View {...shellProps} style={shellStyle}>
       <View
         testID="runtime-info-footer"
         style={[

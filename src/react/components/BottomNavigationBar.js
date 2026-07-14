@@ -13,6 +13,7 @@ const BottomNavigationBar = ({
   disabled = false,
   colors = {},
   testID = 'bottom-navigation',
+  useModernWebChromeProps = false,
 }) => {
   const theme = useTheme?.() || {};
   const runtimeFooter = theme?.runtimeFooter || null;
@@ -36,6 +37,7 @@ const BottomNavigationBar = ({
         dockBorder,
         dockShadow,
         activeBorder,
+        useModernWebChromeProps,
       }),
     [
       activeBackground,
@@ -43,6 +45,7 @@ const BottomNavigationBar = ({
       dockBackground,
       dockBorder,
       dockShadow,
+      useModernWebChromeProps,
     ],
   );
 
@@ -106,8 +109,22 @@ const BottomNavigationBar = ({
     }
   };
 
+  const hostProps = useModernWebChromeProps
+    ? {}
+    : {pointerEvents: 'box-none'};
+  const hostStyle = useModernWebChromeProps
+    ? [styles.host, styles.hostPointerEventsBoxNone]
+    : styles.host;
+  const footerProps = {
+    appVersion: runtimeFooter?.appVersion,
+    colors: runtimeFooter?.colors || {},
+    defaultCompany: runtimeFooter?.defaultCompany,
+    device: runtimeFooter?.device,
+    useModernWebChromeProps,
+  };
+
   return (
-    <View pointerEvents="box-none" style={styles.host}>
+    <View {...hostProps} style={hostStyle}>
       <View style={styles.stack}>
         <View style={styles.dock} testID={testID}>
           {routeItems.map(item => {
@@ -148,12 +165,7 @@ const BottomNavigationBar = ({
         </View>
 
         {runtimeFooter && (
-          <RuntimeInfoFooter
-            appVersion={runtimeFooter.appVersion}
-            colors={runtimeFooter.colors || {}}
-            defaultCompany={runtimeFooter.defaultCompany}
-            device={runtimeFooter.device}
-          />
+          <RuntimeInfoFooter {...footerProps} />
         )}
       </View>
     </View>
