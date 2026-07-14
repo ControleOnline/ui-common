@@ -25,6 +25,7 @@ const RuntimeBottomNavigationBar = ({
   activeRouteName: activeRouteNameProp,
   colors: colorsOverride,
   disabled: disabledOverride,
+  disableMenuFetch = false,
   itemFilter,
   itemMapper,
   menuType = 'toolbar',
@@ -43,6 +44,7 @@ const RuntimeBottomNavigationBar = ({
   const themeGetters = themeStore?.getters || {};
   const peopleGetters = peopleStore?.getters || {};
   const currentCompany = peopleGetters.currentCompany || {};
+  const cachedMenus = Array.isArray(themeGetters.menus) ? themeGetters.menus : [];
   const themeColors = themeGetters.colors || {};
   const [runtimeMenus, setRuntimeMenus] = useState([]);
   const preset = presetKey ? getBottomNavigationPreset(presetKey) : null;
@@ -52,6 +54,28 @@ const RuntimeBottomNavigationBar = ({
   useEffect(() => {
     if (!currentCompany?.id || !menuType) {
       setRuntimeMenus([]);
+      return undefined;
+    }
+
+    if (disableMenuFetch) {
+      const sourceMenus =
+        cachedMenus.length > 0
+          ? cachedMenus
+          : normalizeRuntimeMenuResponse(null, {
+              appType,
+              allowFallback: true,
+            });
+      const forcedMenuTypeMenus = sourceMenus.map(module => ({
+        ...module,
+        menus: Array.isArray(module?.menus)
+          ? module.menus.map(menu => ({
+              ...menu,
+              menuType,
+            }))
+          : [],
+      }));
+
+      setRuntimeMenus(forcedMenuTypeMenus);
       return undefined;
     }
 
@@ -85,7 +109,13 @@ const RuntimeBottomNavigationBar = ({
     return () => {
       cancelled = true;
     };
-  }, [appType, currentCompany?.id, menuType]);
+  }, [
+    appType,
+    cachedMenus,
+    currentCompany?.id,
+    disableMenuFetch,
+    menuType,
+  ]);
 
   const colors = useMemo(() => {
     if (colorsOverride) {
