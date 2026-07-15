@@ -703,7 +703,6 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
     );
     setTranslateReady(true);
     global.refreshTranslationsUI?.();
-    global.t.discoveryAll().catch(() => {});
   }, [
     companies,
     currentCompany,

@@ -17,6 +17,7 @@ export default class Translate {
     this.bootstrapStores = new Set(this.getStoreList());
     this.discoveredStores = new Set();
     this.pendingStoreDiscoveries = new Map();
+    this.pendingTranslateResolutionPromise = null;
     this.pendingPersistRequests = new Map();
     this.t = this.t.bind(this);
     if (typeof this.translateActions?.setPendingMessages === "function") {
@@ -223,7 +224,17 @@ export default class Translate {
   hasDiscoveredStore(store) {
     if (!store) return false;
 
-    return this.discoveredStores.has(this.getStoreDiscoveryToken(store));
+    const token = this.getStoreDiscoveryToken(store);
+    if (this.discoveredStores.has(token)) {
+      return true;
+    }
+
+    if (this.hasCachedBootstrapStore(store)) {
+      this.markStoreDiscovered(store);
+      return true;
+    }
+
+    return false;
   }
 
   markStoreDiscovered(store) {
@@ -339,7 +350,7 @@ export default class Translate {
   persistMissingTranslate(store, type, key, translate) {
     if (!store || !type || !key || !this.defaultCompany?.id) return;
 
-    // verifica se tenho acesso ao defaultCompany
+    // Skip writes when the default company is not available in the current access scope.
     const defaultCompanyId = this.normalizeId(this.defaultCompany?.id);
     if (
       !Array.isArray(this.companies) ||
@@ -351,15 +362,7 @@ export default class Translate {
       return;
     }
 
-    const requestToken = this.getPersistRequestToken(store, type, key);
-    if (this.pendingPersistRequests.has(requestToken)) {
-      return;
-    }
-
-    if (
-      typeof this.translateActions?.queueMissingTranslate !== "function" ||
-      typeof this.translateActions?.save !== "function"
-    ) {
+    if (typeof this.translateActions?.queueMissingTranslate !== "function") {
       return;
     }
 
@@ -371,6 +374,19 @@ export default class Translate {
       key,
       translate,
     });
+
+    if (typeof this.translateActions?.resolveQueuedMessages === "function") {
+      return this.scheduleQueuedTranslateResolution();
+    }
+
+    const requestToken = this.getPersistRequestToken(store, type, key);
+    if (this.pendingPersistRequests.has(requestToken)) {
+      return this.pendingPersistRequests.get(requestToken);
+    }
+
+    if (typeof this.translateActions?.save !== "function") {
+      return;
+    }
 
     const request = Promise.resolve(
       this.translateActions.save({
@@ -398,6 +414,7 @@ export default class Translate {
       });
 
     this.pendingPersistRequests.set(requestToken, request);
+    return request;
   }
 
   removePendingTranslate(store, type, key) {
@@ -416,30 +433,107 @@ export default class Translate {
     });
   }
 
+  getQueuedTranslateGroups() {
+    const defaultCompanyId = this.normalizeId(this.defaultCompany?.id);
+    if (!defaultCompanyId) {
+      return [];
+    }
+
+    const companyBucket = this.getPendingCompanyBucket(defaultCompanyId, this.language);
+    if (!companyBucket) {
+      return [];
+    }
+
+    const requests = [];
+    Object.entries(companyBucket).forEach(([store, storeBucket]) => {
+      if (!storeBucket || typeof storeBucket !== "object") {
+        return;
+      }
+
+      Object.entries(storeBucket).forEach(([type, typeBucket]) => {
+        if (!typeBucket || typeof typeBucket !== "object") {
+          return;
+        }
+
+        const keys = Object.keys(typeBucket)
+          .map((value) => String(value).trim())
+          .filter(Boolean);
+
+        if (keys.length === 0) {
+          return;
+        }
+
+        requests.push({
+          store,
+          type,
+          keys,
+        });
+      });
+    });
+
+    return requests;
+  }
+
+  scheduleQueuedTranslateResolution() {
+    if (this.pendingTranslateResolutionPromise) {
+      return this.pendingTranslateResolutionPromise;
+    }
+
+    this.pendingTranslateResolutionPromise = Promise.resolve()
+      .then(() => this.resolveQueuedTranslations())
+      .catch(() => this.translates)
+      .finally(() => {
+        this.pendingTranslateResolutionPromise = null;
+      });
+
+    return this.pendingTranslateResolutionPromise;
+  }
+
+  async resolveQueuedTranslations() {
+    if (typeof this.translateActions?.resolveQueuedMessages !== "function") {
+      return this.translates;
+    }
+
+    const requests = this.getQueuedTranslateGroups();
+    if (requests.length === 0) {
+      return this.translates;
+    }
+
+    const currentCompanyId = this.normalizeId(this.currentCompany?.id || this.defaultCompany?.id);
+    if (!currentCompanyId) {
+      return this.translates;
+    }
+
+    const response = await this.translateActions.resolveQueuedMessages({
+      people: "/people/" + currentCompanyId,
+      language: this.language,
+      requests,
+    });
+
+    const resolvedItems = Array.isArray(response)
+      ? response
+      : response?.member || response?.["hydra:member"] || [];
+
+    let changed = false;
+    resolvedItems.forEach((item) => {
+      changed = this.cacheTranslateRecord(item, currentCompanyId, this.language) || changed;
+      this.removePendingTranslate(item.store, item.type, item.key);
+    });
+
+    if (changed) {
+      this.persist();
+      this.notifyTranslationsUpdated();
+    }
+
+    return resolvedItems;
+  }
+
   t(store, type, key) {
     const translate = this.getMessageFromBuckets(store, type, key);
     const fallbackTranslate = this.formatMessage(key);
-    const shouldDiscoverStore =
-      this.canDiscoverStore() && !this.hasDiscoveredStore(store);
-
-    if (shouldDiscoverStore) {
-      this.ensureStoreDiscovered(store)
-        .then(() => {
-          const discoveredTranslate = this.getMessageFromBuckets(store, type, key);
-
-          if (discoveredTranslate) {
-            return;
-          }
-
-          this.persistMissingTranslate(store, type, key, fallbackTranslate);
-        })
-        .catch(() => {});
-    }
 
     if (!translate) {
-      if (!shouldDiscoverStore) {
-        this.persistMissingTranslate(store, type, key, fallbackTranslate);
-      }
+      this.persistMissingTranslate(store, type, key, fallbackTranslate);
 
       return fallbackTranslate;
     }
@@ -456,6 +550,7 @@ export default class Translate {
     this.translates = {};
     this.discoveredStores.clear();
     this.pendingStoreDiscoveries.clear();
+    this.pendingTranslateResolutionPromise = null;
     this.pendingPersistRequests.clear();
     if (typeof this.translateActions?.setPendingMessages === "function") {
       this.translateActions.setPendingMessages({});

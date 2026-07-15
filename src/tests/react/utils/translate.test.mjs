@@ -42,7 +42,7 @@ const normalizeId = value =>
     .replace(/\D+/g, '')
     .trim();
 
-const createPendingTranslateStore = ({getItems, save} = {}) => {
+const createPendingTranslateStore = ({getItems, save, resolveQueuedMessages} = {}) => {
   const store = {
     getters: {
       messages: {},
@@ -54,6 +54,11 @@ const createPendingTranslateStore = ({getItems, save} = {}) => {
   const translateActions = {
     getItems: getItems || (async () => []),
     save: save || (async payload => payload),
+    ...(resolveQueuedMessages
+      ? {
+          resolveQueuedMessages,
+        }
+      : {}),
     setMessages: nextMessages => {
       store.getters.messages = nextMessages;
       return nextMessages;
@@ -232,13 +237,8 @@ test('hydrates the cached translations into the translate store on startup', () 
 test('posts missing translations once and keeps the fallback until review', async () => {
   installLocalStorage();
 
-  const discoveryCalls = [];
   const saveCalls = [];
   const translateStore = createPendingTranslateStore({
-    getItems: async params => {
-      discoveryCalls.push(params);
-      return [];
-    },
     save: async payload => {
       saveCalls.push(payload);
       return payload;
@@ -260,9 +260,6 @@ test('posts missing translations once and keeps the fallback until review', asyn
 
   await flushAsync();
 
-  assert.deepEqual(discoveryCalls, [
-    {store: 'contract', 'language.language': 'pt-br', people: '/people/1', page: 1},
-  ]);
   assert.deepEqual(saveCalls, [{
     people: '/people/1',
     language: 'pt-br',
@@ -275,6 +272,89 @@ test('posts missing translations once and keeps the fallback until review', asyn
   assert.equal(
     translateStore.messages['pt-br'].companies[1].contract.empty.none_registered_title,
     'None registered title',
+  );
+  assert.deepEqual(translateStore.pendingMessages, {});
+});
+
+test('queues missing translations in a single batch resolve request', async () => {
+  installLocalStorage();
+
+  const resolveCalls = [];
+  const translateStore = createPendingTranslateStore({
+    resolveQueuedMessages: async payload => {
+      resolveCalls.push(payload);
+
+      return [
+        {
+          people: '/people/1',
+          language: {
+            id: 1,
+            language: 'pt-br',
+          },
+          store: 'contract',
+          type: 'empty',
+          key: 'none_registered_title',
+          translate: 'Nenhum registro cadastrado',
+          revised: false,
+        },
+        {
+          people: '/people/1',
+          language: {
+            id: 1,
+            language: 'pt-br',
+          },
+          store: 'contract',
+          type: 'empty',
+          key: 'none_registered_subtitle',
+          translate: 'Nenhum subtítulo cadastrado',
+          revised: false,
+        },
+      ];
+    },
+  });
+  const translate = new Translate(
+    [{id: 1}],
+    {id: 1},
+    {id: 1},
+    ['contract'],
+    translateStore,
+  );
+
+  assert.equal(
+    translate.t('contract', 'empty', 'none_registered_title'),
+    'None registered title',
+  );
+  assert.equal(
+    translate.t('contract', 'empty', 'none_registered_subtitle'),
+    'None registered subtitle',
+  );
+  assert.equal(
+    translate.t('contract', 'empty', 'none_registered_title'),
+    'None registered title',
+  );
+
+  await flushAsync();
+
+  assert.deepEqual(resolveCalls, [
+    {
+      people: '/people/1',
+      language: 'pt-br',
+      requests: [
+        {
+          store: 'contract',
+          type: 'empty',
+          keys: ['none_registered_title', 'none_registered_subtitle'],
+        },
+      ],
+    },
+  ]);
+  assert.equal(
+    translateStore.messages['pt-br'].companies[1].contract.empty.none_registered_title,
+    'Nenhum registro cadastrado',
+  );
+  assert.equal(
+    translateStore.messages['pt-br'].companies[1].contract.empty.none_registered_subtitle,
+    'Nenhum subtítulo cadastrado',
   );
   assert.deepEqual(translateStore.pendingMessages, {});
 });
@@ -339,58 +419,42 @@ test('loads each requested store only for the current and default companies', as
   ]);
 });
 
-test('removes stale pending entries once a discovered store returns the real translation', async () => {
+test('reuses cached store buckets without refetching after in-memory discovery is cleared', async () => {
   installLocalStorage();
-
-  const translateStore = createPendingTranslateStore({
-    getItems: async params => {
-      if (params.page === 1) {
-        return [
-          {
-            store: 'menu',
-            type: 'menu',
-            key: 'orders',
-            translate: 'Pedidos',
-          },
-        ];
-      }
-
-      return [];
-    },
-  });
-
-  let refreshCalls = 0;
-  global.refreshTranslationsUI = () => {
-    refreshCalls += 1;
-  };
-
-  const translate = new Translate(
-    [{id: 1}],
-    {id: 1},
-    {id: 1},
-    ['orders'],
-    translateStore,
-  );
-
-  translateStore.actions.setPendingMessages({
+  localStorage.setItem('translates', JSON.stringify({
     'pt-br': {
       companies: {
         1: {
-          menu: {
-            menu: {
-              orders: 'Orders',
+          contract: {
+            empty: {
+              none_registered_title: 'None registered title',
             },
           },
         },
       },
     },
-  });
+  }));
 
-  assert.equal(translate.t('menu', 'menu', 'orders'), 'Orders');
+  const calls = [];
+  const translateStore = createPendingTranslateStore({
+    getItems: async params => {
+      calls.push(params);
+      return [];
+    },
+  });
+  const translate = new Translate(
+    [{id: 1}],
+    {id: 1},
+    {id: 1},
+    ['contract'],
+    translateStore,
+  );
+
+  translate.discoveredStores.clear();
+
+  assert.equal(translate.t('contract', 'empty', 'none_registered_title'), 'None registered title');
 
   await flushAsync();
 
-  assert.deepEqual(translateStore.pendingMessages, {});
-  assert.equal(refreshCalls, 1);
-  assert.equal(translate.t('menu', 'menu', 'orders'), 'Pedidos');
+  assert.deepEqual(calls, []);
 });
