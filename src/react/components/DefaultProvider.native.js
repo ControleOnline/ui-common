@@ -21,7 +21,7 @@ import PrintService from '@controleonline/ui-common/src/react/components/PrintSe
 import RemoteCheckoutService from '@controleonline/ui-common/src/react/components/RemoteCheckoutService';
 import ProductCatalogCacheService from '@controleonline/ui-common/src/react/components/ProductCatalogCacheService';
 import RuntimeInfoFooter from '@controleonline/ui-common/src/react/components/RuntimeInfoFooter';
-import {isPublicRoute} from '@controleonline/ui-login/src/react/router/publicRoutes';
+import {isPublicRoute} from '../router/publicRoutes';
 import {api} from '@controleonline/ui-common/src/api';
 import {app_type} from '@appType';
 import { env as APP_ENV } from '@env';

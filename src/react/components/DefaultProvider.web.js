@@ -19,7 +19,7 @@ import { useStore } from '@store';
 import { api } from '@controleonline/ui-common/src/api';
 import {app_type} from '@appType';
 import { env as APP_ENV } from '@env';
-import { isPublicRoute } from '@controleonline/ui-login/src/react/router/publicRoutes';
+import { isPublicRoute } from '../router/publicRoutes';
 const { resolveConfiguredLanguage } = require('../utils/runtimeLanguage');
 import {
   applyPaletteToRuntimeColors,

@@ -9,7 +9,7 @@ import {
 import {
   normalizeGatewayPaymentError,
   runConfiguredGatewayPayment,
-} from '@controleonline/ui-common/src/react/utils/paymentGatewayExecution';
+} from '../services/paymentGatewayExecution';
 import {
   buildRemotePaymentResultMessage,
   isRemotePaymentCancellation,

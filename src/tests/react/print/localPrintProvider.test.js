@@ -2,7 +2,7 @@ const {jest} = require('@jest/globals')
 
 const mockPrint = jest.fn()
 
-jest.mock('@controleonline/ui-orders/src/react/services/Cielo/Print', () => ({
+jest.mock('../../../react/services/Cielo/Print', () => ({
   CieloPrint: jest.fn().mockImplementation(() => ({
     print: mockPrint,
   })),

@@ -3,7 +3,7 @@ import {Pressable, Text, View} from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import {useTheme} from './DefaultProvider';
 import RuntimeInfoFooter from './RuntimeInfoFooter';
-import {resolveMenuRouteParams} from '@controleonline/ui-layout/src/react/utils/menuNavigation';
+import {resolveMenuRouteParams} from '../utils/menuNavigation';
 import createStyles from './BottomNavigationBar.styles';
 
 const BottomNavigationBar = ({

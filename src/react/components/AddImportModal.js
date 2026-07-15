@@ -11,7 +11,7 @@ import {
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import * as DocumentPicker from 'expo-document-picker';
 import { useStore } from '@store';
-import AnimatedModal from '@controleonline/ui-crm/src/react/components/AnimatedModal';
+import AnimatedModal from './AnimatedModal';
 import { api } from '@controleonline/ui-common/src/api';
 import { useMessage } from '@controleonline/ui-common/src/react/components/MessageService';
 import styles from './AddImportModal.styles';

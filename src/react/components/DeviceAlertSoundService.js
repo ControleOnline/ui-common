@@ -18,7 +18,7 @@ import {
   isTruthyValue,
   parseConfigsObject,
 } from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
-import {resolveOrderIdentity} from '@controleonline/ui-orders/src/react/utils/orderIdentity';
+import {resolveOrderIdentity} from '../utils/orderIdentity';
 import {
   isManagerAppType,
   resolveManagerFinancialNotificationPreferences,

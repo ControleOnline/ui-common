@@ -26,10 +26,6 @@
     "last 1 version, not dead, ie >= 11"
   ],
   "dependencies": {
-    "@controleonline/ui-crm": "*",
-    "@controleonline/ui-default": "*",
-    "@controleonline/ui-layout": "*",
-    "@controleonline/ui-login": "*",
-    "@controleonline/ui-orders": "*"
+    "@controleonline/ui-default": "*"
   }
 }

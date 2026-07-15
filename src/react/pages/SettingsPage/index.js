@@ -66,7 +66,7 @@ import {
 } from 'react-native';
 
 import {SafeAreaView} from 'react-native-safe-area-context';
-import css from '@controleonline/ui-orders/src/react/css/orders';
+import css from '../../css/orders';
 import {useStore} from '@store';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {Picker} from '@react-native-picker/picker';

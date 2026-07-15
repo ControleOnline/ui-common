@@ -1,4 +1,4 @@
-import {CieloPrint} from '@controleonline/ui-orders/src/react/services/Cielo/Print';
+import {CieloPrint} from '../../services/Cielo/Print';
 
 export const LOCAL_CIELO_PRINT_UNAVAILABLE_MESSAGE =
   'Impressao local Cielo indisponivel neste equipamento.';
