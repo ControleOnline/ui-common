@@ -6,6 +6,7 @@ import {app_type} from '@appType';
 import BottomNavigationBar from '@controleonline/ui-common/src/react/components/BottomNavigationBar';
 import {
   getBottomNavigationPreset,
+  resolveBottomNavigationItems,
   resolveBottomNavigationRoute,
 } from '@controleonline/ui-common/src/react/components/BottomNavigationBar.config';
 import {
@@ -44,7 +45,6 @@ const RuntimeBottomNavigationBar = ({
   const themeGetters = themeStore?.getters || {};
   const peopleGetters = peopleStore?.getters || {};
   const currentCompany = peopleGetters.currentCompany || {};
-  const cachedMenus = Array.isArray(themeGetters.menus) ? themeGetters.menus : [];
   const themeColors = themeGetters.colors || {};
   const [runtimeMenus, setRuntimeMenus] = useState([]);
   const preset = presetKey ? getBottomNavigationPreset(presetKey) : null;
@@ -58,24 +58,25 @@ const RuntimeBottomNavigationBar = ({
     }
 
     if (disableMenuFetch) {
-      const sourceMenus =
-        cachedMenus.length > 0
-          ? cachedMenus
-          : normalizeRuntimeMenuResponse(null, {
-              appType,
-              allowFallback: true,
-            });
-      const forcedMenuTypeMenus = sourceMenus.map(module => ({
-        ...module,
-        menus: Array.isArray(module?.menus)
-          ? module.menus.map(menu => ({
-              ...menu,
+      const presetMenus = Array.isArray(preset?.items)
+        ? resolveBottomNavigationItems(
+            preset.items.map((item, index) => ({
+              ...item,
               menuType,
-            }))
-          : [],
-      }));
+              sortOrder: Number(item?.sortOrder || (index + 1) * 10),
+            })),
+            global.t?.t,
+          )
+        : [];
 
-      setRuntimeMenus(forcedMenuTypeMenus);
+      setRuntimeMenus([
+        {
+          id: presetKey || 'runtime-bottom-navigation',
+          label: preset?.label || presetKey || '',
+          icon: preset?.icon || '',
+          menus: presetMenus,
+        },
+      ]);
       return undefined;
     }
 
@@ -111,10 +112,11 @@ const RuntimeBottomNavigationBar = ({
     };
   }, [
     appType,
-    cachedMenus,
     currentCompany?.id,
     disableMenuFetch,
     menuType,
+    preset,
+    presetKey,
   ]);
 
   const colors = useMemo(() => {
