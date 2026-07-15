@@ -26,7 +26,6 @@ const RuntimeBottomNavigationBar = ({
   activeRouteName: activeRouteNameProp,
   colors: colorsOverride,
   disabled: disabledOverride,
-  disableMenuFetch = false,
   itemFilter,
   itemMapper,
   menuType = 'toolbar',
@@ -57,7 +56,7 @@ const RuntimeBottomNavigationBar = ({
       return undefined;
     }
 
-    if (disableMenuFetch) {
+    if (preset) {
       const presetMenus = Array.isArray(preset?.items)
         ? resolveBottomNavigationItems(
             preset.items.map((item, index) => ({
@@ -113,7 +112,6 @@ const RuntimeBottomNavigationBar = ({
   }, [
     appType,
     currentCompany?.id,
-    disableMenuFetch,
     menuType,
     preset,
     presetKey,
