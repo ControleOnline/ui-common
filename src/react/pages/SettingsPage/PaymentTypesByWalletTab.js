@@ -9,7 +9,7 @@ import {
 
 import {api} from '@controleonline/ui-common/src/api';
 import {useStore} from '@store';
-import StateStore from '@controleonline/ui-layout/src/react/components/StateStore';
+import StateStore from '@controleonline/ui-common/src/react/components/StateStore';
 import DefaultTooltip from '@controleonline/ui-default/src/react/components/help/DefaultTooltip';
 import {
   groupWalletPaymentTypesByWalletId,

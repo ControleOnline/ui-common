@@ -71,7 +71,7 @@ import {useStore} from '@store';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {Picker} from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-import StateStore from '@controleonline/ui-layout/src/react/components/StateStore';
+import StateStore from '@controleonline/ui-common/src/react/components/StateStore';
 import packageJson from '@package';
 import PaymentTypesByWalletTab from './PaymentTypesByWalletTab';
 
