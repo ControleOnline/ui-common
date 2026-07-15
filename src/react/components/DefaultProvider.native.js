@@ -47,6 +47,9 @@ import {
   filterWalletPaymentTypesByAllowedIds,
   resolveDevicePaymentTypeIds,
 } from '@controleonline/ui-common/src/react/utils/paymentDevices';
+import {
+  normalizeRuntimeMenuResponse,
+} from '@controleonline/ui-common/src/react/utils/runtimeMenu';
 import packageJson from '@package';
 import providerStyles from './DefaultProvider.styles';
 
@@ -729,6 +732,38 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
       peopleActions.myCompanies();
     }
   }, [isLogged, device?.id]);
+
+  useEffect(() => {
+    if (!isLogged || !currentCompany?.id) {
+      actions.setMenus([]);
+      return undefined;
+    }
+
+    let cancelled = false;
+
+    api
+      .fetch('menus-people', {
+        params: {
+          myCompany: currentCompany.id,
+          appType,
+          menuType: 'home',
+        },
+      })
+      .then(result => {
+        if (!cancelled) {
+          actions.setMenus(normalizeRuntimeMenuResponse(result, {appType}));
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          actions.setMenus(normalizeRuntimeMenuResponse(null, {appType}));
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [actions, appType, currentCompany?.id, isLogged]);
 
   useEffect(() => {
     const fetchColors = async () => {
