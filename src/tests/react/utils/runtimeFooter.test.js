@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict')
-const test = require('node:test')
-const {jest, test: jestCompatTest} = require('@jest/globals')
+const {beforeAll, afterAll, test} = global
+const {jest} = require('@jest/globals')
 
 jest.mock('@controleonline/ui-common/src/react/utils/printerDevices', () => ({
   getDeviceTypeLabel: value => String(value || ''),
@@ -43,7 +43,7 @@ const restoreLocation = () => {
   delete globalThis.location
 }
 
-test.before(() => {
+beforeAll(() => {
   global.t = {
     getMessageFromBuckets: (store, type, key) =>
       store === 'common' && type === 'option'
@@ -52,7 +52,7 @@ test.before(() => {
   }
 })
 
-test.after(() => {
+afterAll(() => {
   global.t = originalTranslator
 })
 
@@ -425,5 +425,3 @@ test('falls back to the local device id when the backend identifier is unavailab
   assert.equal(candidates[0]?.value, 'local-device-99')
   assert.equal(candidates[0]?.source, 'device.id')
 })
-
-jestCompatTest('jest compatibility placeholder', () => {})

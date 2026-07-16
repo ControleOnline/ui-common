@@ -1,4 +1,21 @@
-const {afterEach, beforeEach, describe, expect, it, jest} = global;
+const {afterAll, afterEach, beforeEach, describe, expect, it} = global;
+const {jest} = require('@jest/globals');
+
+jest.mock('react-native', () => ({
+  Platform: {
+    OS: 'web',
+    select: options => options.web || options.default || options.ios || options.android,
+  },
+}));
+
+const originalLocalStorage = global.localStorage;
+
+global.localStorage = {
+  clear: jest.fn(),
+  getItem: jest.fn(() => '{}'),
+  removeItem: jest.fn(),
+  setItem: jest.fn(),
+};
 
 const {api} = require('@controleonline/ui-common/src/api');
 
@@ -15,6 +32,10 @@ describe('smoke api helper', () => {
     global.fetch = originalFetch;
     api.getToken = originalGetToken;
     jest.restoreAllMocks();
+  });
+
+  afterAll(() => {
+    global.localStorage = originalLocalStorage;
   });
 
   it('loads the smoke index from the canonical /tests endpoint and sends the app-domain', async () => {
