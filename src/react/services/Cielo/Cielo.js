@@ -29,6 +29,19 @@ const hasRequiredCieloConfig = config =>
       String(config?.EMAIL || '').trim(),
   );
 
+const hasExpectedMerchantCode = (result, expectedMerchantCode) => {
+  if (!expectedMerchantCode) return true;
+
+  const payments = Array.isArray(result?.payments) ? result.payments : [];
+
+  return (
+    payments.length > 0 &&
+    payments.every(
+      payment => String(payment?.merchantCode || '').trim() === expectedMerchantCode,
+    )
+  );
+};
+
 let technicalCieloConfigCache = DEFAULT_CIELO_CONFIG;
 let technicalCieloConfigCompanyId = '';
 let technicalCieloConfigPromise = null;
@@ -123,6 +136,11 @@ const resolveRuntimeCieloConfig = async () => {
       env?.CIELO?.CLIENT_ID ||
       '',
     EMAIL: runtimeConfig.EMAIL || technicalConfig.EMAIL || env?.CIELO?.EMAIL || '',
+    MERCHANT_CODE:
+      runtimeConfig.MERCHANT_CODE ||
+      technicalConfig.MERCHANT_CODE ||
+      env?.CIELO?.MERCHANT_CODE ||
+      '',
   };
 };
 
@@ -148,12 +166,26 @@ class CieloService {
       value: orderPrice,
     };
 
+    if (cieloConfig.MERCHANT_CODE) {
+      json.merchantCode = cieloConfig.MERCHANT_CODE;
+    }
+
     const response = await Cielo.payment(JSON.stringify(json));
 
+    const result = response.success
+      ? JSON.parse(response.result)
+      : response.result;
+    const hasValidMerchantCode = hasExpectedMerchantCode(
+      result,
+      cieloConfig.MERCHANT_CODE,
+    );
+
     return {
-      success: response.success,
+      success: response.success && hasValidMerchantCode,
       code: response.code,
-      result: response.success ? JSON.parse(response.result) : response.result,
+      result: hasValidMerchantCode
+        ? result
+        : 'Pagamento processado em estabelecimento Cielo diferente do configurado.',
     };
   }
 }

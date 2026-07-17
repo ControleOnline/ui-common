@@ -6,6 +6,7 @@ export const DEFAULT_CIELO_CONFIG = {
   ACCESS_TOKEN: '',
   CLIENT_ID: '',
   EMAIL: '',
+  MERCHANT_CODE: '',
 };
 
 export const DEFAULT_NEW_RELIC_CONFIG = {
