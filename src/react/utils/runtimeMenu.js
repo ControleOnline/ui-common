@@ -153,6 +153,15 @@ const ADMIN_RUNTIME_MENU_FALLBACK = [
         color: '#0EA5E9',
         sortOrder: 20,
       },
+      {
+        id: 'people_domains',
+        menuKey: 'people_domains',
+        label: 'Domínios',
+        route: 'PeopleDomainsPage',
+        icon: 'globe',
+        color: '#0EA5E9',
+        sortOrder: 30,
+      },
     ],
   },
 ];
