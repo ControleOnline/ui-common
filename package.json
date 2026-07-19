@@ -26,6 +26,7 @@
     "last 1 version, not dead, ie >= 11"
   ],
   "dependencies": {
-    "@controleonline/ui-default": "*"
+    "@controleonline/ui-default": "*",
+    "md5": "^2.3.0"
   }
 }
