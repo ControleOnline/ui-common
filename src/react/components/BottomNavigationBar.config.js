@@ -190,16 +190,6 @@ export const BOTTOM_NAVIGATION_PRESETS = {
   posToolbar: {
     items: [
       {
-        route: 'HomePage',
-        icon: 'home',
-        label: {
-          store: 'orders',
-          type: 'label',
-          key: 'home',
-          fallback: 'Home',
-        },
-      },
-      {
         route: 'OrderHistoryPage',
         icon: 'shopping-bag',
         label: {
@@ -207,16 +197,6 @@ export const BOTTOM_NAVIGATION_PRESETS = {
           type: 'label',
           key: 'orders',
           fallback: 'Orders',
-        },
-      },
-      {
-        route: 'CashRegisterIndex',
-        icon: 'credit-card',
-        label: {
-          store: 'orders',
-          type: 'title',
-          key: 'cashRegister',
-          fallback: 'Cash register',
         },
       },
       {
