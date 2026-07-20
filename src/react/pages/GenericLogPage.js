@@ -3,7 +3,6 @@ import {
   ActivityIndicator,
   ScrollView,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native';
@@ -11,8 +10,7 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import {useFocusEffect} from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import {useStore} from '@store';
-import CompactFilterSelector from '@controleonline/ui-default/src/react/components/filters/CompactFilterSelector';
-import DateShortcutFilter from '@controleonline/ui-default/src/react/components/filters/DateShortcutFilter';
+import DefaultExternalFilters from '@controleonline/ui-default/src/react/components/filters/DefaultExternalFilters';
 import EntityLogContent from '@controleonline/ui-common/src/react/components/EntityLogContent';
 import Formatter from '@controleonline/ui-common/src/utils/formatter';
 import {resolveStoreConfigByClassName} from '@controleonline/ui-common/src/react/utils/storeColumns';
@@ -185,39 +183,12 @@ const buildTypeOptions = items => {
   });
 
   return [
-    {key: 'all', label: 'Todos'},
+    {value: '', label: 'Todos'},
     ...Array.from(typeKeys).map(key => ({
-      key,
+      value: key,
       label: getTypeMeta(key).label,
     })),
   ];
-};
-
-const buildQuickClassOptions = items => {
-  const counts = new Map();
-
-  items.forEach(log => {
-    if (normalizeFilterKey(log?.type) !== 'entity' || !normalizeText(log?.class)) {
-      return;
-    }
-
-    const key = getShortClassName(log.class);
-    counts.set(key, (counts.get(key) || 0) + 1);
-  });
-
-  return Array.from(counts.entries())
-    .sort((left, right) => {
-      if (right[1] !== left[1]) {
-        return right[1] - left[1];
-      }
-
-      return left[0].localeCompare(right[0], 'pt-BR');
-    })
-    .slice(0, 12)
-    .map(([value]) => ({
-      label: formatClassLabel(value),
-      value,
-    }));
 };
 
 function MetaBadge({meta, styles}) {
@@ -420,20 +391,18 @@ export default function GenericLogPage({navigation}) {
     status: 'idle',
     totalItems: 0,
   });
-  const [selectedType, setSelectedType] = useState('all');
-  const [dateFilterKey, setDateFilterKey] = useState('all');
-  const [customRange, setCustomRange] = useState({
-    from: '',
-    to: '',
-  });
-  const [classFilterInput, setClassFilterInput] = useState('');
-  const [appliedClassFilter, setAppliedClassFilter] = useState('');
+  const [filters, setFilters] = useState({});
   const [expandedEntityKey, setExpandedEntityKey] = useState('');
 
   const loadLogs = useCallback(async () => {
-    const {after, before} = getDateRange(dateFilterKey, customRange, {
+    const dateFilter = filters.createdAt || {};
+    const {after, before} = getDateRange(
+      dateFilter.shortcut || dateFilter.value || 'all',
+      dateFilter.customRange || {from: '', to: ''},
+      {
       useCurrentMoment: true,
-    });
+      },
+    );
 
     setLogsState(current => ({
       ...current,
@@ -443,10 +412,10 @@ export default function GenericLogPage({navigation}) {
 
     try {
       const response = await entityLogActions.getTimeline({
-        ...(selectedType !== 'all' ? {type: selectedType} : {}),
+        ...(filters.type ? {type: filters.type} : {}),
         ...(after ? {'createdAt[after]': after} : {}),
         ...(before ? {'createdAt[before]': before} : {}),
-        ...(appliedClassFilter ? {class: appliedClassFilter} : {}),
+        ...(filters.class ? {class: filters.class} : {}),
       });
 
       const items = Array.isArray(response?.items) ? response.items : [];
@@ -464,29 +433,31 @@ export default function GenericLogPage({navigation}) {
         totalItems: 0,
       });
     }
-  }, [appliedClassFilter, customRange, dateFilterKey, entityLogActions, selectedType]);
+  }, [entityLogActions, filters]);
 
   const typeOptions = useMemo(
     () => buildTypeOptions(logsState.items),
     [logsState.items],
   );
 
-  const quickClassOptions = useMemo(
-    () => buildQuickClassOptions(logsState.items),
-    [logsState.items],
-  );
-
   const activeDateSummary = useMemo(
-    () => resolveDateRangeSummary(dateFilterKey, customRange, {useCurrentMoment: true}),
-    [customRange, dateFilterKey],
+    () => {
+      const dateFilter = filters.createdAt || {};
+      return resolveDateRangeSummary(
+        dateFilter.shortcut || dateFilter.value || 'all',
+        dateFilter.customRange || {from: '', to: ''},
+        {useCurrentMoment: true},
+      );
+    },
+    [filters.createdAt],
   );
 
   const hasActiveFilters = useMemo(
     () =>
-      selectedType !== 'all' ||
-      Boolean(appliedClassFilter) ||
+      Boolean(filters.type) ||
+      Boolean(filters.class) ||
       Boolean(activeDateSummary),
-    [activeDateSummary, appliedClassFilter, selectedType],
+    [activeDateSummary, filters.class, filters.type],
   );
 
   const resultsSummary = useMemo(() => {
@@ -503,30 +474,32 @@ export default function GenericLogPage({navigation}) {
 
     return `${countLabel} no periodo ${activeDateSummary}`;
   }, [activeDateSummary, logsState.items.length, logsState.totalItems]);
-  const selectedTypeLabel = useMemo(
-    () => typeOptions.find(option => option.key === selectedType)?.label || 'Todos',
-    [selectedType, typeOptions],
+  const externalFilterColumns = useMemo(
+    () => [
+      {
+        externalFilter: true,
+        inputType: 'date-range',
+        label: 'period',
+        name: 'createdAt',
+      },
+      {
+        emptyOptionLabel: 'Todos',
+        externalFilter: true,
+        label: 'Tipo de log',
+        list: typeOptions,
+        name: 'type',
+      },
+      {
+        externalFilter: true,
+        label: 'Classe / origem',
+        name: 'class',
+      },
+    ],
+    [typeOptions],
   );
-  const selectedQuickClassLabel = useMemo(() => {
-    if (!appliedClassFilter) {
-      return 'Sugestoes';
-    }
-
-    return quickClassOptions.find(
-      option => normalizeFilterKey(option.value) === normalizeFilterKey(appliedClassFilter),
-    )?.label || formatClassLabel(appliedClassFilter);
-  }, [appliedClassFilter, quickClassOptions]);
-
-  const applyClassFilter = useCallback(() => {
-    setAppliedClassFilter(normalizeText(classFilterInput));
-  }, [classFilterInput]);
 
   const clearAllFilters = useCallback(() => {
-    setSelectedType('all');
-    setDateFilterKey('all');
-    setCustomRange({from: '', to: ''});
-    setClassFilterInput('');
-    setAppliedClassFilter('');
+    setFilters({});
     setExpandedEntityKey('');
   }, []);
 
@@ -548,7 +521,7 @@ export default function GenericLogPage({navigation}) {
 
   useEffect(() => {
     setExpandedEntityKey('');
-  }, [appliedClassFilter, dateFilterKey, logsState.items, selectedType]);
+  }, [filters, logsState.items]);
 
   useFocusEffect(
     useCallback(() => {
@@ -602,96 +575,17 @@ export default function GenericLogPage({navigation}) {
               ) : null}
             </View>
 
-            <View style={styles.filterGroup}>
-              <Text style={styles.filterLabel}>Periodo</Text>
-              <DateShortcutFilter
-                value={dateFilterKey}
-                onChange={setDateFilterKey}
-                customRange={customRange}
-                onCustomRangeChange={setCustomRange}
-                colors={{
-                  accent: '#2563EB',
-                  appBg: 'transparent',
-                  border: '#CBD5E1',
-                  borderSoft: '#E2E8F0',
-                  cardBg: '#FFFFFF',
-                  cardBgSoft: '#F8FAFC',
-                  danger: '#DC2626',
-                  isLight: true,
-                  panelBg: '#EFF6FF',
-                  pillTextDark: '#FFFFFF',
-                  textPrimary: '#0F172A',
-                  textSecondary: '#64748B',
-                }}
-              />
+            <DefaultExternalFilters
+              accentColor="#2563EB"
+              columns={externalFilterColumns}
+              filters={filters}
+              onChangeFilters={setFilters}
+              storeName="entity_log"
+            />
 
-              {!!activeDateSummary && (
-                <Text style={styles.filterHint}>Periodo atual: {activeDateSummary}</Text>
-              )}
-            </View>
-
-            <View style={styles.filterGroup}>
-              <Text style={styles.filterLabel}>Tipo de log</Text>
-              <CompactFilterSelector
-                icon="filter"
-                label={selectedTypeLabel}
-                title="Tipo de log"
-                accentColor="#2563EB"
-                active={selectedType !== 'all'}
-                options={typeOptions}
-                selectedKey={selectedType}
-                onSelect={optionKey => {
-                  setSelectedType(optionKey);
-                  return true;
-                }}
-              />
-            </View>
-
-            <View style={styles.filterGroup}>
-              <Text style={styles.filterLabel}>Classe / origem</Text>
-              <View style={styles.textFilterRow}>
-                <TextInput
-                  value={classFilterInput}
-                  onChangeText={setClassFilterInput}
-                  placeholder="Ex.: Integration, Device, execute_operation"
-                  placeholderTextColor="#94A3B8"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  style={styles.textFilterInput}
-                />
-
-                <TouchableOpacity
-                  activeOpacity={0.9}
-                  onPress={applyClassFilter}
-                  style={styles.primaryButton}>
-                  <Text style={styles.primaryButtonText}>Aplicar</Text>
-                </TouchableOpacity>
-              </View>
-
-              {!!appliedClassFilter && (
-                <Text style={styles.filterHint}>Classe aplicada: {appliedClassFilter}</Text>
-              )}
-
-              {!!quickClassOptions.length && (
-                <CompactFilterSelector
-                  icon="layers"
-                  label={selectedQuickClassLabel}
-                  title="Sugestoes de classe"
-                  accentColor="#2563EB"
-                  active={Boolean(appliedClassFilter)}
-                  options={quickClassOptions.map(option => ({
-                    key: option.value,
-                    label: option.label,
-                  }))}
-                  selectedKey={appliedClassFilter}
-                  onSelect={optionKey => {
-                    setClassFilterInput(optionKey);
-                    setAppliedClassFilter(optionKey);
-                    return true;
-                  }}
-                />
-              )}
-            </View>
+            {!!activeDateSummary && (
+              <Text style={styles.filterHint}>Periodo atual: {activeDateSummary}</Text>
+            )}
           </View>
 
           {logsState.status === 'loading' ? (
