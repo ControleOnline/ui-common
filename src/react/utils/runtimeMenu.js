@@ -125,6 +125,15 @@ const MANAGER_RUNTIME_MENU_FALLBACK = [
         color: '#64748B',
         sortOrder: 60,
       },
+      {
+        id: 'product_showcases',
+        menuKey: 'product_showcases',
+        label: 'Vitrines de preços',
+        route: 'ProductShowcasesPage',
+        icon: 'grid',
+        color: '#0F766E',
+        sortOrder: 65,
+      },
     ],
   },
 ];
