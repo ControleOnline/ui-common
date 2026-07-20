@@ -474,27 +474,8 @@ export default function GenericLogPage({navigation}) {
 
     return `${countLabel} no periodo ${activeDateSummary}`;
   }, [activeDateSummary, logsState.items.length, logsState.totalItems]);
-  const externalFilterColumns = useMemo(
-    () => [
-      {
-        externalFilter: true,
-        inputType: 'date-range',
-        label: 'period',
-        name: 'createdAt',
-      },
-      {
-        emptyOptionLabel: 'Todos',
-        externalFilter: true,
-        label: 'Tipo de log',
-        list: typeOptions,
-        name: 'type',
-      },
-      {
-        externalFilter: true,
-        label: 'Classe / origem',
-        name: 'class',
-      },
-    ],
+  const getExternalFilterOptions = useCallback(
+    column => ((column?.name || column?.key) === 'type' ? typeOptions : []),
     [typeOptions],
   );
 
@@ -577,8 +558,8 @@ export default function GenericLogPage({navigation}) {
 
             <DefaultExternalFilters
               accentColor="#2563EB"
-              columns={externalFilterColumns}
               filters={filters}
+              getOptionsForColumn={getExternalFilterOptions}
               onChangeFilters={setFilters}
               storeName="entity_log"
             />
