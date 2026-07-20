@@ -17,6 +17,7 @@ export default class Translate {
     this.bootstrapStores = new Set(this.getStoreList());
     this.discoveredStores = new Set();
     this.pendingStoreDiscoveries = new Map();
+    this.pendingMissingTranslateSchedules = new Set();
     this.pendingTranslateResolutionPromise = null;
     this.pendingPersistRequests = new Map();
     this.t = this.t.bind(this);
@@ -533,7 +534,14 @@ export default class Translate {
     const fallbackTranslate = this.formatMessage(key);
 
     if (!translate) {
-      this.persistMissingTranslate(store, type, key, fallbackTranslate);
+      const scheduleKey = `${store}:${type}:${key}`;
+      if (!this.pendingMissingTranslateSchedules.has(scheduleKey)) {
+        this.pendingMissingTranslateSchedules.add(scheduleKey);
+        setTimeout(() => {
+          this.pendingMissingTranslateSchedules.delete(scheduleKey);
+          this.persistMissingTranslate(store, type, key, fallbackTranslate);
+        }, 0);
+      }
 
       return fallbackTranslate;
     }
