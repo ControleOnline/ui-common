@@ -43,6 +43,18 @@ function buildApiUrl(apiBaseUrl, path) {
   return new URL(normalizedPath, entryPoint).href;
 }
 
+function resolveRequestDevice(masterDevice, device, bodyDeviceId) {
+  if (masterDevice?.id) {
+    return masterDevice;
+  }
+
+  if (device?.id) {
+    return device;
+  }
+
+  return bodyDeviceId ? {id: bodyDeviceId} : null;
+}
+
 async function readSmokeResponseBody(response, responseType) {
   if (responseType === 'blob') {
     return await response.blob();
@@ -242,9 +254,22 @@ export const api = {
       }
     }
 
-    const headerDeviceId =
-      this.masterDevice?.id || this.device?.id || bodyDeviceId;
-    if (headerDeviceId) options.headers.set('DEVICE', headerDeviceId);
+    const requestDevice = resolveRequestDevice(
+      this.masterDevice,
+      this.device,
+      bodyDeviceId,
+    );
+
+    if (requestDevice?.id) {
+      options.headers.set('DEVICE', requestDevice.id);
+
+      const requestDeviceType = String(requestDevice.type || '')
+        .trim()
+        .toUpperCase();
+      if (requestDeviceType !== '') {
+        options.headers.set('DEVICE-TYPE', requestDeviceType);
+      }
+    }
     if (options.responseType != 'text') {
       options.headers.set('Content-Type', MIME_TYPE);
       options.headers.set('Accept', MIME_TYPE);
