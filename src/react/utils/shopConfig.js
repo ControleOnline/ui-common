@@ -38,8 +38,6 @@ export const SHOP_CATALOG_PRODUCT_TYPES_CONFIG_KEY =
   'shop-catalog-product-types';
 export const SHOP_GOOGLE_MAPS_API_KEY_CONFIG_KEY =
   'shop-google-maps-api-key';
-export const SHOP_FRANCHISE_PIN_ICON_URL_CONFIG_KEY =
-  'shop-franchise-pin-icon-url';
 export const SHOP_FRANCHISE_VISIBLE_COMPANY_IDS_CONFIG_KEY =
   'shop-franchise-visible-company-ids';
 export const SHOP_FRANCHISE_VISIBLE_ADDRESS_IDS_CONFIG_KEY =
@@ -271,9 +269,6 @@ export const resolveShopSettings = configs => {
     ),
     googleMapsApiKey: normalizeShopTextConfig(
       configMap[SHOP_GOOGLE_MAPS_API_KEY_CONFIG_KEY],
-    ),
-    franchisePinIconUrl: normalizeShopTextConfig(
-      configMap[SHOP_FRANCHISE_PIN_ICON_URL_CONFIG_KEY],
     ),
     visibleFranchiseCompanyIds: normalizeShopEntityIds(
       configMap[SHOP_FRANCHISE_VISIBLE_COMPANY_IDS_CONFIG_KEY],
