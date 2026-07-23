@@ -406,6 +406,10 @@ export default class Formatter {
 
     if (!value) return '';
 
+    const isoOffsetParts = Formatter.parseIsoDateWithNumericOffset(value);
+    if (isoOffsetParts)
+      return Formatter.formatDatePartsToBR(isoOffsetParts, withTime);
+
     const date = new Date(value);
 
     if (isNaN(date.getTime()))
@@ -432,6 +436,38 @@ export default class Formatter {
     }
 
     return date.toLocaleString('pt-BR', options);
+  }
+
+  static parseIsoDateWithNumericOffset(value) {
+
+    if (typeof value !== 'string')
+      return null;
+
+    const matches = value.match(
+      /^(\d{4})-(\d{2})-(\d{2})[T\s](\d{2}):(\d{2})(?::(\d{2})(?:\.\d+)?)?[+-]\d{2}:?\d{2}$/
+    );
+
+    if (!matches)
+      return null;
+
+    return {
+      year: matches[1],
+      month: matches[2],
+      day: matches[3],
+      hour: matches[4],
+      minute: matches[5],
+      second: matches[6] || '00',
+    };
+  }
+
+  static formatDatePartsToBR(parts, withTime = false) {
+
+    const date = `${parts.day}/${parts.month}/${parts.year}`;
+
+    if (!withTime)
+      return date;
+
+    return `${date}, ${parts.hour}:${parts.minute}:${parts.second}`;
   }
 
 }
