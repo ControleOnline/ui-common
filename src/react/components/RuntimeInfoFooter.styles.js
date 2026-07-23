@@ -18,15 +18,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: 20,
   },
   statusDotWrap: {
     minWidth: 22,
+    minHeight: 20,
     marginRight: 8,
     alignItems: 'center',
     justifyContent: 'center',
   },
   loadingWrap: {
     minWidth: 22,
+    minHeight: 20,
     marginLeft: 8,
     alignItems: 'center',
     justifyContent: 'center',
