@@ -1,7 +1,9 @@
 const assert = require('node:assert/strict')
-const {test} = global
+const {test} = require('node:test')
 
 const {
+  buildTranslationBootstrapKey,
+  isTranslationBootstrapReady,
   normalizeLanguageCode,
   resolveCompanyLanguageCode,
   resolveConfiguredLanguage,
@@ -77,4 +79,72 @@ test('falls back through default company, config, session and the hardcoded defa
   )
 
   assert.equal(resolveConfiguredLanguage({}), 'pt-br')
+})
+
+test('builds the translation bootstrap key only from language and company context', () => {
+  assert.equal(
+    buildTranslationBootstrapKey({
+      language: ' PT_BR ',
+      currentCompanyId: 21,
+      defaultCompanyId: 1,
+    }),
+    'pt-br::21::1',
+  )
+  assert.equal(
+    buildTranslationBootstrapKey({
+      language: 'pt-br',
+      currentCompanyId: '',
+      defaultCompanyId: 1,
+    }),
+    '',
+  )
+})
+
+test('keeps authenticated content blocked until the matching translator exists', () => {
+  const context = {
+    activeKey: 'pt-br::21::1',
+    expectedKey: 'pt-br::21::1',
+    required: true,
+    ready: true,
+  }
+
+  assert.equal(
+    isTranslationBootstrapReady({
+      ...context,
+      translator: undefined,
+    }),
+    false,
+  )
+  assert.equal(
+    isTranslationBootstrapReady({
+      ...context,
+      activeKey: 'pt-br::3::1',
+      translator: {t() {}},
+    }),
+    false,
+  )
+  assert.equal(
+    isTranslationBootstrapReady({
+      ...context,
+      ready: false,
+      translator: {t() {}},
+    }),
+    false,
+  )
+  assert.equal(
+    isTranslationBootstrapReady({
+      ...context,
+      translator: {t() {}},
+    }),
+    true,
+  )
+})
+
+test('does not block contexts where translation bootstrap is not required', () => {
+  assert.equal(
+    isTranslationBootstrapReady({
+      required: false,
+    }),
+    true,
+  )
 })

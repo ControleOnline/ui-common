@@ -25,7 +25,11 @@ import {isPublicRoute} from '../router/publicRoutes';
 import {api} from '@controleonline/ui-common/src/api';
 import {app_type} from '@appType';
 import { env as APP_ENV } from '@env';
-const {resolveConfiguredLanguage} = require('../utils/runtimeLanguage');
+const {
+  buildTranslationBootstrapKey,
+  isTranslationBootstrapReady,
+  resolveConfiguredLanguage,
+} = require('../utils/runtimeLanguage');
 import {
   applyPaletteToRuntimeColors,
   applyThemeCssVariables,
@@ -98,7 +102,11 @@ const resolveDeviceConfigPeopleIri = ({appType, currentCompany, user}) => {
   return '';
 };
 
-export const DefaultProvider = ({children, onBootstrapReady}) => {
+export const DefaultProvider = ({
+  children,
+  currentRouteName = '',
+  onBootstrapReady,
+}) => {
   const appType = String(app_type || '').toUpperCase();
   const isShopClientApp = appType === 'SHOP';
   const themeStore = useStore('theme');
@@ -133,12 +141,13 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
   const {isLogged, sessionChecked, user} = authGetters;
   const hasCurrentCompany =
     !!currentCompany && Object.entries(currentCompany).length > 0;
-  const [translateReady, setTranslateReady] = useState(true);
+  const [translateReady, setTranslateReady] = useState(false);
+  const [activeTranslateBootstrapKey, setActiveTranslateBootstrapKey] =
+    useState('');
   const [deviceConfigFetched, setDeviceConfigFetched] = useState(false);
   const [mainConfigsDiscovered, setMainConfigsDiscovered] = useState(false);
   const [deviceRuntimeConfigSynced, setDeviceRuntimeConfigSynced] =
     useState(false);
-  const [currentRouteName, setCurrentRouteName] = useState('');
   const [appState, setAppState] = useState(AppState.currentState || 'active');
   const [, setTranslateVersion] = useState(0);
   const [baseThemeColors, setBaseThemeColors] = useState({});
@@ -160,6 +169,38 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
     user,
   });
   const isPublicRouteActive = isPublicRoute(currentRouteName);
+  const currentTranslationConfig = JSON.parse(
+    localStorage.getItem('config') || '{}',
+  );
+  const currentTranslationSession = JSON.parse(
+    localStorage.getItem('session') || '{}',
+  );
+  const configuredTranslationLanguage = resolveConfiguredLanguage({
+    currentCompany,
+    defaultCompany,
+    currentConfig: currentTranslationConfig,
+    sessionData: currentTranslationSession,
+  });
+  const expectedTranslateBootstrapKey = isLogged && hasCurrentCompany
+    ? buildTranslationBootstrapKey({
+        language: configuredTranslationLanguage,
+        currentCompanyId: normalizeEntityId(currentCompany?.id),
+        defaultCompanyId: normalizeEntityId(defaultCompany?.id),
+      })
+    : '';
+  const requiresTranslateBootstrap = Boolean(
+    isLogged &&
+      hasCurrentCompany &&
+      currentRouteName &&
+      !isPublicRouteActive,
+  );
+  const isTranslateBootstrapReady = isTranslationBootstrapReady({
+    activeKey: activeTranslateBootstrapKey,
+    expectedKey: expectedTranslateBootstrapKey,
+    required: requiresTranslateBootstrap,
+    ready: translateReady,
+    translator: global.t,
+  });
   const shouldRunForegroundRealtimeServices =
     Platform.OS !== 'android' || appState === 'active';
   const registerBottomNavigation = useCallback(() => {
@@ -227,29 +268,12 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
   }, []);
 
   useEffect(() => {
-    global.setRuntimeRouteName = routeName => {
-      const normalizedRouteName = String(routeName || '').trim();
-
-      setCurrentRouteName(previousRouteName =>
-        previousRouteName === normalizedRouteName
-          ? previousRouteName
-          : normalizedRouteName,
-      );
-    };
-
-    return () => {
-      if (global.setRuntimeRouteName) {
-        delete global.setRuntimeRouteName;
-      }
-    };
-  }, []);
-
-  useEffect(() => {
     if (isLogged && !isPublicRouteActive) {
       return;
     }
 
     setTranslateReady(true);
+    setActiveTranslateBootstrapKey('');
     translateBootstrapKeyRef.current = '';
     translateActions.setMessages({});
     translateActions.setPendingMessages?.({});
@@ -257,7 +281,7 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
     if (global.t) {
       delete global.t;
     }
-  }, [isLogged, isPublicRouteActive]);
+  }, [isLogged, isPublicRouteActive, translateActions]);
 
   useEffect(() => {
     const subscription = AppState.addEventListener('change', nextState => {
@@ -643,57 +667,48 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
   }, [currentCompany, isLogged, mainConfigsDiscovered]);
 
   useEffect(() => {
-    if (
-      !currentRouteName ||
-      isPublicRouteActive
-    ) {
+    if (!currentRouteName || isPublicRouteActive) {
       return;
     }
 
     if (
       !isLogged ||
-      !currentCompany ||
-      Object.entries(currentCompany).length === 0 ||
-      !deviceConfigFetched
+      !hasCurrentCompany ||
+      !deviceConfigFetched ||
+      !expectedTranslateBootstrapKey
     ) {
       return;
     }
 
     const currentConfig = JSON.parse(localStorage.getItem('config') || '{}');
-    const sessionData = JSON.parse(localStorage.getItem('session') || '{}');
-    const currentCompanyId = normalizeEntityId(currentCompany?.id);
-    const defaultCompanyId = normalizeEntityId(defaultCompany?.id);
-    const configuredLanguage = resolveConfiguredLanguage({
-      currentCompany,
-      defaultCompany,
-      currentConfig,
-      sessionData,
-    });
-    const nextTranslateBootstrapKey = [
-      configuredLanguage,
-      currentCompanyId,
-      defaultCompanyId,
-    ].join('::');
 
-    if (translateBootstrapKeyRef.current === nextTranslateBootstrapKey) {
-      if (global.t) {
-        global.t.companies = companies;
-        global.t.currentCompany = currentCompany;
-        global.t.defaultCompany = defaultCompany;
-      }
+    if (
+      translateBootstrapKeyRef.current === expectedTranslateBootstrapKey &&
+      global.t
+    ) {
+      global.t.companies = companies;
+      global.t.currentCompany = currentCompany;
+      global.t.defaultCompany = defaultCompany;
+      setActiveTranslateBootstrapKey(expectedTranslateBootstrapKey);
+      setTranslateReady(true);
 
       return;
     }
 
-    if (currentConfig.language !== configuredLanguage) {
-      const nextConfig = {...currentConfig, language: configuredLanguage};
+    setTranslateReady(false);
+
+    if (currentConfig.language !== configuredTranslationLanguage) {
+      const nextConfig = {
+        ...currentConfig,
+        language: configuredTranslationLanguage,
+      };
       localStorage.setItem(
         'config',
         JSON.stringify(nextConfig),
       );
     }
 
-    translateBootstrapKeyRef.current = nextTranslateBootstrapKey;
+    translateBootstrapKeyRef.current = expectedTranslateBootstrapKey;
     global.t = new Translate(
       companies,
       defaultCompany,
@@ -701,25 +716,39 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
       Object.keys(stores),
       translateStore,
     );
+    setActiveTranslateBootstrapKey(expectedTranslateBootstrapKey);
     setTranslateReady(true);
     global.refreshTranslationsUI?.();
   }, [
     companies,
+    configuredTranslationLanguage,
     currentCompany,
     currentRouteName,
     defaultCompany,
     deviceConfigFetched,
+    expectedTranslateBootstrapKey,
+    hasCurrentCompany,
     isLogged,
     isPublicRouteActive,
-    translateActions,
+    translateStore,
   ]);
 
 
   useEffect(() => {
-    if (!isLogged || translateReady || !hasCurrentCompany) {
+    if (
+      !isLogged ||
+      !hasCurrentCompany ||
+      (currentRouteName && isTranslateBootstrapReady)
+    ) {
       onBootstrapReady?.();
     }
-  }, [isLogged, translateReady, hasCurrentCompany, onBootstrapReady]);
+  }, [
+    currentRouteName,
+    hasCurrentCompany,
+    isLogged,
+    isTranslateBootstrapReady,
+    onBootstrapReady,
+  ]);
 
 
   useEffect(() => {
@@ -804,6 +833,11 @@ export const DefaultProvider = ({children, onBootstrapReady}) => {
 
     actions.setColors(mergedThemeColors);
   }, [actions, baseThemeColors, currentCompany?.id, currentCompany?.theme?.colors]);
+
+  if (requiresTranslateBootstrap && !isTranslateBootstrapReady) {
+    return <View style={providerStyles.loadingContainer} />;
+  }
+
   return (
     <>
       {runtimeBridges}

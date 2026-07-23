@@ -43,7 +43,48 @@ function resolveConfiguredLanguage({
   )
 }
 
+function buildTranslationBootstrapKey({
+  language,
+  currentCompanyId,
+  defaultCompanyId,
+} = {}) {
+  const normalizedLanguage = normalizeLanguageCode(language)
+  const normalizedCurrentCompanyId = String(currentCompanyId || '').trim()
+  const normalizedDefaultCompanyId = String(defaultCompanyId || '').trim()
+
+  if (!normalizedLanguage || !normalizedCurrentCompanyId) {
+    return ''
+  }
+
+  return [
+    normalizedLanguage,
+    normalizedCurrentCompanyId,
+    normalizedDefaultCompanyId,
+  ].join('::')
+}
+
+function isTranslationBootstrapReady({
+  activeKey,
+  expectedKey,
+  required,
+  ready,
+  translator,
+} = {}) {
+  if (!required) {
+    return true
+  }
+
+  return Boolean(
+    expectedKey &&
+      activeKey === expectedKey &&
+      ready === true &&
+      typeof translator?.t === 'function',
+  )
+}
+
 module.exports = {
+  buildTranslationBootstrapKey,
+  isTranslationBootstrapReady,
   normalizeLanguageCode,
   resolveCompanyLanguageCode,
   resolveConfiguredLanguage,
