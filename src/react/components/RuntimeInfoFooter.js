@@ -1,5 +1,11 @@
-import React, {useEffect, useMemo, useState} from 'react';
-import {ActivityIndicator, Text, View, useWindowDimensions} from 'react-native';
+import React, {useEffect, useMemo, useRef, useState} from 'react';
+import {
+  ActivityIndicator,
+  Animated,
+  Text,
+  View,
+  useWindowDimensions,
+} from 'react-native';
 import {useStore, useStores} from '@store';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {
@@ -10,11 +16,14 @@ import {
 import {
   getRuntimeFooterDebugInfo,
   getRuntimeFooterPrimaryText,
+  getRuntimeFooterRotationEntries,
   getRuntimeFooterText,
+  getRuntimeFooterTextLines,
 } from '@controleonline/ui-common/src/react/utils/runtimeFooter';
 import styles from './RuntimeInfoFooter.styles';
 
 const ROTATION_INTERVAL_MS = 6000;
+const FADE_DURATION_MS = 260;
 const COMPACT_BREAKPOINT = 720;
 const MAX_INLINE_TEXT_LENGTH = 84;
 
@@ -28,6 +37,7 @@ const RuntimeInfoFooter = ({
   const {width} = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const [activeIndex, setActiveIndex] = useState(0);
+  const fadeOpacity = useRef(new Animated.Value(1)).current;
   const allStores = useStores(state => state);
   const deviceConfigStore = useStore('device_config');
   const runtimeDebugStore = useStore('runtime_debug');
@@ -57,6 +67,10 @@ const RuntimeInfoFooter = ({
     () => getRuntimeFooterText(defaultCompany),
     [defaultCompany?.configs],
   );
+  const footerTextLines = useMemo(
+    () => getRuntimeFooterTextLines(companyFooterText),
+    [companyFooterText],
+  );
   const deviceConfigs = useMemo(
     () => parseConfigsObject(deviceConfigItem?.configs),
     [deviceConfigItem?.configs],
@@ -69,15 +83,26 @@ const RuntimeInfoFooter = ({
     [deviceConfigs],
   );
 
-  const entries = useMemo(
-    () => [primaryText, companyFooterText].filter(Boolean),
+  const rotationEntries = useMemo(
+    () =>
+      getRuntimeFooterRotationEntries({
+        companyFooterText,
+        primaryText,
+      }),
     [companyFooterText, primaryText],
   );
-  const inlineText = useMemo(() => entries.join('  •  '), [entries]);
+  const inlineText = useMemo(
+    () => [primaryText, ...footerTextLines].filter(Boolean).join('  •  '),
+    [footerTextLines, primaryText],
+  );
   const shouldRotate =
     !showDebugInfo &&
-    entries.length > 1 &&
-    (width < COMPACT_BREAKPOINT || inlineText.length > MAX_INLINE_TEXT_LENGTH);
+    rotationEntries.length > 1 &&
+    (
+      footerTextLines.length > 1 ||
+      width < COMPACT_BREAKPOINT ||
+      inlineText.length > MAX_INLINE_TEXT_LENGTH
+    );
   const footerEntries = useMemo(
     () =>
       Object.values(runtimeDebugSummary?.entries || {})
@@ -147,25 +172,61 @@ const RuntimeInfoFooter = ({
   const bottomInset = Math.max(Number(insets.bottom) || 0, 16);
 
   useEffect(() => {
-    if (!shouldRotate || entries.length <= 1) {
+    if (!shouldRotate || rotationEntries.length <= 1) {
       setActiveIndex(0);
+      fadeOpacity.stopAnimation();
+      fadeOpacity.setValue(1);
       return;
     }
 
-    const intervalId = setInterval(() => {
-      setActiveIndex(current => (current + 1) % entries.length);
-    }, ROTATION_INTERVAL_MS);
+    let timeoutId;
+    let cancelled = false;
+
+    const scheduleTransition = () => {
+      timeoutId = setTimeout(() => {
+        Animated.timing(fadeOpacity, {
+          toValue: 0,
+          duration: FADE_DURATION_MS,
+          useNativeDriver: true,
+        }).start(({finished}) => {
+          if (!finished || cancelled) {
+            return;
+          }
+
+          setActiveIndex(current => (current + 1) % rotationEntries.length);
+
+          Animated.timing(fadeOpacity, {
+            toValue: 1,
+            duration: FADE_DURATION_MS,
+            useNativeDriver: true,
+          }).start(({finished: fadeInFinished}) => {
+            if (fadeInFinished && !cancelled) {
+              scheduleTransition();
+            }
+          });
+        });
+      }, ROTATION_INTERVAL_MS);
+    };
+
+    fadeOpacity.setValue(1);
+    scheduleTransition();
 
     return () => {
-      clearInterval(intervalId);
+      cancelled = true;
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+      fadeOpacity.stopAnimation();
     };
-  }, [entries.length, shouldRotate]);
+  }, [fadeOpacity, rotationEntries.length, shouldRotate]);
 
-  if (entries.length === 0 && !showDebugInfo) {
+  if (rotationEntries.length === 0 && !showDebugInfo) {
     return null;
   }
 
-  const displayedText = shouldRotate ? entries[activeIndex] : inlineText;
+  const displayedText = shouldRotate
+    ? rotationEntries[activeIndex]
+    : inlineText;
   const backgroundColor = colors?.footerBackground;
   const borderColor = colors?.footerBorder;
   const textColor = colors?.footerText;
@@ -199,18 +260,21 @@ const RuntimeInfoFooter = ({
               ]}
             />
           </View>
-          <Text
+          <Animated.Text
             numberOfLines={1}
             ellipsizeMode="tail"
             minimumFontScale={0.85}
             style={[
               styles.primaryText,
               {
+                opacity: showDebugInfo ? 1 : fadeOpacity,
+              },
+              {
                 color: textColor,
               },
             ]}>
             {showDebugInfo ? inlineText || primaryText || device?.id || '--' : displayedText}
-          </Text>
+          </Animated.Text>
           <View style={styles.loadingWrap}>
             {hasStoreLoading && (
               <ActivityIndicator color={loadingColor} size="small" />

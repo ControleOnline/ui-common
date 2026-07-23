@@ -10,9 +10,12 @@ const {
   getRuntimeFooterDebugInfo,
   getRuntimeFooterNativeIdentifierCandidates,
   getRuntimeFooterPrimaryText,
+  getRuntimeFooterRotationEntries,
   getRuntimeFooterStoredVersion,
+  getRuntimeFooterTextLines,
   getRuntimeFooterWebIdentifierCandidates,
   getRuntimeFooterWebHost,
+  normalizeRuntimeFooterText,
 } = require('../../../react/utils/runtimeFooter')
 
 const originalLocationDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'location')
@@ -424,4 +427,26 @@ test('falls back to the local device id when the backend identifier is unavailab
 
   assert.equal(candidates[0]?.value, 'local-device-99')
   assert.equal(candidates[0]?.source, 'device.id')
+})
+
+test('preserves free-text line breaks while normalizing each footer line', () => {
+  assert.equal(
+    normalizeRuntimeFooterText('  www.site.com  \n\n  (11) 99999-9999 \n suporte  '),
+    'www.site.com\n(11) 99999-9999\nsuporte',
+  )
+
+  assert.deepEqual(
+    getRuntimeFooterTextLines('www.site.com\n(11) 99999-9999\nsuporte'),
+    ['www.site.com', '(11) 99999-9999', 'suporte'],
+  )
+})
+
+test('rotates each footer line before the runtime version entry', () => {
+  assert.deepEqual(
+    getRuntimeFooterRotationEntries({
+      companyFooterText: 'www.site.com\n(11) 99999-9999',
+      primaryText: 'web (203.0.113.42) / v1.3.6',
+    }),
+    ['www.site.com', '(11) 99999-9999', 'web (203.0.113.42) / v1.3.6'],
+  )
 })

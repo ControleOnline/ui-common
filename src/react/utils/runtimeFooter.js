@@ -102,14 +102,30 @@ const normalizeRuntimeFooterText = value => {
     return '';
   }
 
-  const normalized = safeTrim(parsedValue);
-
-  return normalized.replace(/\s+/g, ' ');
+  return safeTrim(String(parsedValue).replace(/\r\n?/g, '\n'))
+    .split('\n')
+    .map(line => safeTrim(line).replace(/\s+/g, ' '))
+    .filter(Boolean)
+    .join('\n');
 };
 
 const getRuntimeFooterText = company =>
   normalizeRuntimeFooterText(
     company?.configs?.[DEVICE_RUNTIME_FOOTER_TEXT_CONFIG_KEY],
+  );
+
+const getRuntimeFooterTextLines = value => {
+  const normalizedText =
+    typeof value === 'string'
+      ? normalizeRuntimeFooterText(value)
+      : getRuntimeFooterText(value);
+
+  return normalizedText ? normalizedText.split('\n').filter(Boolean) : [];
+};
+
+const getRuntimeFooterRotationEntries = ({companyFooterText, primaryText}) =>
+  [...getRuntimeFooterTextLines(companyFooterText), safeTrim(primaryText)].filter(
+    Boolean,
   );
 
 const isWebRuntimeDevice = device => {
@@ -466,7 +482,9 @@ module.exports = {
   getRuntimeFooterDeviceName,
   getRuntimeFooterNativeIdentifierCandidates,
   getRuntimeFooterPrimaryText,
+  getRuntimeFooterRotationEntries,
   getRuntimeFooterStoredVersion,
+  getRuntimeFooterTextLines,
   getRuntimeFooterVersionCandidates,
   getRuntimeFooterWebIdentifierCandidates,
   getRuntimeFooterText,
