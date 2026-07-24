@@ -134,6 +134,14 @@ export default class Translate {
     return unique;
   }
 
+  getResolveCompaniesToCache() {
+    const company = this.currentCompany?.id
+      ? this.currentCompany
+      : this.defaultCompany;
+
+    return company?.id ? [company] : [];
+  }
+
   getStoreList() {
     if (Array.isArray(this.stores)) {
       return this.stores.filter(Boolean);
@@ -202,7 +210,7 @@ export default class Translate {
   }
 
   canDiscoverStore() {
-    return typeof this.translateActions?.getItems === "function";
+    return typeof this.translateActions?.resolveQueuedMessages === "function";
   }
 
   hasCachedBootstrapStore(store) {
@@ -475,12 +483,25 @@ export default class Translate {
     return requests;
   }
 
+  getQueuedTranslateGroupsForStore(store) {
+    const normalizedStore = String(store || "").trim();
+    if (!normalizedStore) {
+      return [];
+    }
+
+    return this.getQueuedTranslateGroups().filter(
+      (request) => request.store === normalizedStore
+    );
+  }
+
   scheduleQueuedTranslateResolution() {
     if (this.pendingTranslateResolutionPromise) {
       return this.pendingTranslateResolutionPromise;
     }
 
-    this.pendingTranslateResolutionPromise = Promise.resolve()
+    this.pendingTranslateResolutionPromise = new Promise((resolve) => {
+      setTimeout(resolve, 0);
+    })
       .then(() => this.resolveQueuedTranslations())
       .catch(() => this.translates)
       .finally(() => {
@@ -577,7 +598,10 @@ export default class Translate {
   }
 
   async discoveryAll(options = {}) {
-    const companies = this.getCompaniesToCache();
+    const companies =
+      typeof this.translateActions?.resolveQueuedMessages === "function"
+        ? this.getResolveCompaniesToCache()
+        : this.getCompaniesToCache();
 
     for (const company of companies) {
       for (const store of this.getStoreList()) {
@@ -633,58 +657,35 @@ export default class Translate {
       return false;
     }
 
-    const params = {
-      store: store,
-      "language.language": this.language,
-      people: "/people/" + company.id,
-    };
+    return this.resolveStoreTranslates(store, company);
+  }
 
-    const storeTranslates = [];
-    let page = 1;
-    let firstPageSize = null;
-    const maxPages = 1000;
-
-    while (page <= maxPages) {
-      const pageItems = await this.translateActions.getItems({
-        ...params,
-        page,
-      });
-
-      if (!Array.isArray(pageItems) || pageItems.length === 0) break;
-
-      storeTranslates.push(...pageItems);
-      if (firstPageSize == null) firstPageSize = pageItems.length;
-      if (pageItems.length < firstPageSize) break;
-
-      page += 1;
-    }
-
+  async resolveStoreTranslates(store, company) {
     const companyId = this.normalizeId(company?.id);
-    const storeBucket = this.getStoreBucket(companyId, store, true);
-    let changed = false;
+    if (!companyId) return false;
 
-    if (storeBucket) {
-      if (Object.keys(storeBucket).length > 0) {
-        changed = true;
-      }
-      Object.keys(storeBucket).forEach((type) => {
-        delete storeBucket[type];
-      });
+    const requests = this.getQueuedTranslateGroupsForStore(store);
+    if (requests.length === 0) {
+      return false;
     }
 
-    storeTranslates.forEach((element) => {
-      changed = this.cacheTranslateRecord(
-        {
-          ...element,
-          people: element.people || companyId,
-        },
-        companyId,
-        this.language,
-      ) || changed;
-      this.removePendingTranslate(element.store, element.type, element.key);
+    const response = await this.translateActions.resolveQueuedMessages({
+      people: "/people/" + companyId,
+      language: this.language,
+      requests,
     });
 
-    return changed || storeTranslates.length === 0;
+    const resolvedItems = Array.isArray(response)
+      ? response
+      : response?.member || response?.["hydra:member"] || [];
+
+    let changed = false;
+    resolvedItems.forEach((item) => {
+      changed = this.cacheTranslateRecord(item, companyId, this.language) || changed;
+      this.removePendingTranslate(item.store, item.type, item.key);
+    });
+
+    return changed;
   }
 
   persist() {

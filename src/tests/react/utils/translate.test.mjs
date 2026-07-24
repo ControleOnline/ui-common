@@ -392,7 +392,7 @@ test('persists missing translations with the normalized configured language', as
   );
 });
 
-test('loads each requested store only for the current and default companies', async () => {
+test('does not fall back to the translates collection during discovery', async () => {
   installLocalStorage();
 
   const calls = [];
@@ -411,12 +411,76 @@ test('loads each requested store only for the current and default companies', as
 
   await translate.discoveryAll();
 
-  assert.deepEqual(calls, [
-    {store: 'orders', 'language.language': 'pt-br', people: '/people/1', page: 1},
-    {store: 'crm', 'language.language': 'pt-br', people: '/people/1', page: 1},
-    {store: 'orders', 'language.language': 'pt-br', people: '/people/5', page: 1},
-    {store: 'crm', 'language.language': 'pt-br', people: '/people/5', page: 1},
+  assert.deepEqual(calls, []);
+});
+
+test('resolves queued store discovery through the resolve endpoint', async () => {
+  installLocalStorage();
+
+  const getItemsCalls = [];
+  const resolveCalls = [];
+  const translateStore = createPendingTranslateStore({
+    getItems: async params => {
+      getItemsCalls.push(params);
+      return [];
+    },
+    resolveQueuedMessages: async payload => {
+      resolveCalls.push(payload);
+
+      return [
+        {
+          people: '/people/5',
+          language: {
+            id: 1,
+            language: 'pt-br',
+          },
+          store: 'financial',
+          type: 'label',
+          key: 'accountsReceivable',
+          translate: 'Contas a receber',
+          revised: true,
+        },
+      ];
+    },
+  });
+  const translate = new Translate(
+    [{id: 1}, {id: 5}],
+    {id: 1},
+    {id: 5},
+    ['financial'],
+    translateStore,
+  );
+
+  translateStore.actions.queueMissingTranslate({
+    language: 'pt-br',
+    companyId: 1,
+    store: 'financial',
+    type: 'label',
+    key: 'accountsReceivable',
+    translate: 'Accounts Receivable',
+  });
+
+  await translate.discoveryAll();
+
+  assert.deepEqual(getItemsCalls, []);
+  assert.deepEqual(resolveCalls, [
+    {
+      people: '/people/5',
+      language: 'pt-br',
+      requests: [
+        {
+          store: 'financial',
+          type: 'label',
+          keys: ['accountsReceivable'],
+        },
+      ],
+    },
   ]);
+  assert.equal(
+    translateStore.messages['pt-br'].companies[5].financial.label.accountsReceivable,
+    'Contas a receber',
+  );
+  assert.deepEqual(translateStore.pendingMessages, {});
 });
 
 test('reuses cached store buckets without refetching after in-memory discovery is cleared', async () => {
