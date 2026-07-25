@@ -14,7 +14,9 @@ export default {
     messages: [],
     message: {},
     summary: {},
-    filters: {},
+    filters: {
+      enabled: true,
+    },
     columns: [
       {
         isIdentity: true,
