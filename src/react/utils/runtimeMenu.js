@@ -171,6 +171,15 @@ const ADMIN_RUNTIME_MENU_FALLBACK = [
         color: '#0EA5E9',
         sortOrder: 30,
       },
+      {
+        id: 'flowcharts',
+        menuKey: 'flowcharts',
+        label: 'Fluxogramas',
+        route: 'FlowchartsPage',
+        icon: 'git-branch',
+        color: '#0F766E',
+        sortOrder: 40,
+      },
     ],
   },
 ];

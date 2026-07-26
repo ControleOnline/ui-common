@@ -157,6 +157,7 @@ describe('runtimeMenu', () => {
     expect(menus[3].menus.map(item => item.route)).toEqual([
       'DevicesIndex',
       'ConfiguratorPage',
+      'ProductShowcasesPage',
     ]);
   });
 
@@ -165,7 +166,7 @@ describe('runtimeMenu', () => {
 
     expect(menus).toHaveLength(1);
     expect(menus[0].label).toBe('Configuracoes');
-    expect(menus[0].menus).toHaveLength(3);
+    expect(menus[0].menus).toHaveLength(4);
     expect(menus[0].menus[0]).toMatchObject({
       label: 'Menus por perfil',
       menuKey: 'menu_access',
@@ -182,6 +183,12 @@ describe('runtimeMenu', () => {
       label: 'Domínios',
       menuKey: 'people_domains',
       route: 'PeopleDomainsPage',
+      menuType: 'home',
+    });
+    expect(menus[0].menus[3]).toMatchObject({
+      label: 'Fluxogramas',
+      menuKey: 'flowcharts',
+      route: 'FlowchartsPage',
       menuType: 'home',
     });
   });
