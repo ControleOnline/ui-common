@@ -19,3 +19,15 @@ test('formats API datetimes using the numeric offset returned by the backend', (
     '22/07/2026, 21:34:22',
   );
 });
+
+test('repairs mojibake from API text payloads', () => {
+  assert.equal(
+    Formatter.repairMojibake('NÃ£o, saÃ­da, cobranÃ§a, garÃ§om, conferÃªncia'),
+    'Não, saída, cobrança, garçom, conferência',
+  );
+
+  assert.equal(
+    Formatter.repairMojibake('ProduÃ§Ã£o entrada â†’ trabalhando â†’ pronto'),
+    'Produção entrada → trabalhando → pronto',
+  );
+});

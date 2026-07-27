@@ -1,9 +1,61 @@
+/* global Intl */
+
+const MOJIBAKE_REPLACEMENTS = [
+  ['Ã€', 'À'],
+  ['\u00C3\u0081', 'Á'],
+  ['Ã‚', 'Â'],
+  ['Ãƒ', 'Ã'],
+  ['Ã‰', 'É'],
+  ['ÃŠ', 'Ê'],
+  ['Ã“', 'Ó'],
+  ['Ã”', 'Ô'],
+  ['Ã•', 'Õ'],
+  ['Ãš', 'Ú'],
+  ['Ã¡', 'á'],
+  ['Ã ', 'à'],
+  ['Ã\u00A0', 'à'],
+  ['Ã¢', 'â'],
+  ['Ã£', 'ã'],
+  ['Ã©', 'é'],
+  ['Ãª', 'ê'],
+  ['Ã­', 'í'],
+  ['Ã³', 'ó'],
+  ['Ã´', 'ô'],
+  ['Ãµ', 'õ'],
+  ['Ãº', 'ú'],
+  ['Ã‡', 'Ç'],
+  ['Ã§', 'ç'],
+  ['Âº', 'º'],
+  ['Âª', 'ª'],
+  ['Â·', '·'],
+  ['â†’', '→'],
+  ['â€“', '–'],
+  ['â€”', '—'],
+  ['â€˜', "'"],
+  ['â€™', "'"],
+  ['â€œ', '"'],
+  ['\u00E2\u20AC\u009D', '"'],
+  ['Â', ''],
+];
+
 export default class Formatter {
 
   /* ================= UTIL ================= */
 
   static onlyNumbers(value) {
     return String(value || '').replace(/\D/g, '');
+  }
+
+  static repairMojibake(value) {
+    let text = String(value || '');
+
+    for (let pass = 0; pass < 2; pass += 1) {
+      MOJIBAKE_REPLACEMENTS.forEach(([broken, fixed]) => {
+        text = text.split(broken).join(fixed);
+      });
+    }
+
+    return text;
   }
 
   /* ================= DOCUMENTOS ================= */
