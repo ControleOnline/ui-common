@@ -1,4 +1,9 @@
-const toRawString = value => String(value || '').trim();
+const INVALID_DOMAIN_VALUES = new Set(['undefined', 'null', 'false']);
+
+const toRawString = value => {
+  const raw = String(value || '').trim();
+  return INVALID_DOMAIN_VALUES.has(raw.toLowerCase()) ? '' : raw;
+};
 
 const tryParseHost = value => {
   const raw = toRawString(value);
