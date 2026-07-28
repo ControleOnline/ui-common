@@ -18,7 +18,6 @@ import RuntimeInfoFooter from '@controleonline/ui-common/src/react/components/Ru
 import { useStore } from '@store';
 import { api } from '@controleonline/ui-common/src/api';
 import {app_type} from '@appType';
-import { env as APP_ENV } from '@env';
 import { isPublicRoute } from '../router/publicRoutes';
 const {
   buildTranslationBootstrapKey,
@@ -30,7 +29,6 @@ import {
   applyThemeCssVariables,
   resolveThemePalette,
 } from '@controleonline/../../src/styles/branding';
-import { resolveAppDomain } from '@controleonline/ui-common/src/utils/appDomain';
 import { colors as runtimeColors } from '@controleonline/../../src/styles/colors';
 import {
   buildProviderManagedDeviceConfigs,
@@ -859,13 +857,9 @@ export const DefaultProvider = ({
 
   useEffect(() => {
     const fetchColors = async () => {
-      const appDomain = resolveAppDomain(APP_ENV.DOMAIN);
-      const params = appDomain ? { 'app-domain': appDomain } : undefined;
-
       try {
         const cssText = await api.fetch('themes-colors.css', {
           responseType: 'text',
-          params,
         });
         const parsedColors = parseThemeCss(cssText);
         setBaseThemeColors(parsedColors);
