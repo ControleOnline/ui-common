@@ -163,6 +163,15 @@ const ADMIN_RUNTIME_MENU_FALLBACK = [
         sortOrder: 20,
       },
       {
+        id: 'tenancies',
+        menuKey: 'tenancies',
+        label: 'Tenancies',
+        route: 'TenanciesPage',
+        icon: 'server',
+        color: '#0F766E',
+        sortOrder: 25,
+      },
+      {
         id: 'people_domains',
         menuKey: 'people_domains',
         label: 'Domínios',
