@@ -9,12 +9,12 @@ describe('resolveAppDomain', () => {
     try {
       Object.defineProperty(global, 'location', {
         configurable: true,
-        value: {host: 'erp.jaguncos.com.br'},
+        value: {host: 'erp.exemplo.com.br'},
       })
 
-      expect(resolveAppDomain('undefined')).toBe('erp.jaguncos.com.br')
-      expect(resolveAppDomain('null')).toBe('erp.jaguncos.com.br')
-      expect(resolveAppDomain('false')).toBe('erp.jaguncos.com.br')
+      expect(resolveAppDomain('undefined')).toBe('erp.exemplo.com.br')
+      expect(resolveAppDomain('null')).toBe('erp.exemplo.com.br')
+      expect(resolveAppDomain('false')).toBe('erp.exemplo.com.br')
     } finally {
       if (previousLocation) {
         Object.defineProperty(global, 'location', previousLocation)

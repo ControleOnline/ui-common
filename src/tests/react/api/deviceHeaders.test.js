@@ -94,10 +94,10 @@ describe('device request headers', () => {
   });
 
   it('keeps the app domain in the header and removes it from query params', async () => {
-    await api.fetch('/people/company/default?app-domain=loja.jaguncos.com.br&existing=1', {
+    await api.fetch('/people/company/default?app-domain=loja.exemplo.com.br&existing=1', {
       params: {
-        'app-domain': 'loja.jaguncos.com.br',
-        AppDomain: 'loja.jaguncos.com.br',
+        'app-domain': 'loja.exemplo.com.br',
+        AppDomain: 'loja.exemplo.com.br',
         q: 'shop',
       },
     });

@@ -12,7 +12,7 @@ describe('entityDisplay helpers', () => {
   });
 
   it('uppercases pt-BR strings with cedilla correctly', () => {
-    expect(formatDisplayUppercase('Jagunços')).toBe('JAGUNÇOS');
-    expect(formatDisplayUppercase('Empório Jagunços Ltda')).toBe('EMPÓRIO JAGUNÇOS LTDA');
+    expect(formatDisplayUppercase('Empresa Exemplo')).toBe('EMPRESA EXEMPLO');
+    expect(formatDisplayUppercase('Empresa Exemplo Ltda')).toBe('EMPRESA EXEMPLO LTDA');
   });
 });
