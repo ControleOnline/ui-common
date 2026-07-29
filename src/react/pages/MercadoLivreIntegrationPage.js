@@ -1,4 +1,4 @@
-import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {
   ActivityIndicator,
   Linking,
@@ -119,7 +119,6 @@ export default function MercadoLivreIntegrationPage() {
   const [importing, setImporting] = useState(false);
   const [detail, setDetail] = useState(null);
   const [selectedShowcaseId, setSelectedShowcaseId] = useState(null);
-  const oauthHandledRef = useRef(false);
 
   const loadPageData = useCallback(
     async ({showLoading = true} = {}) => {
@@ -183,71 +182,19 @@ export default function MercadoLivreIntegrationPage() {
     const params = new URLSearchParams(window.location.search || '');
     const alreadyConnected = params.get('mercadolivre_connected') === '1';
     const oauthStatusError = params.get('mercadolivre_error');
-    const oauthError = params.get('error');
-    const code = normalizeTextValue(params.get('code'));
-    const state = normalizeTextValue(params.get('state'));
 
     if (alreadyConnected) {
       showSuccess('Mercado Livre conectado com sucesso.');
       replaceFrontOAuthStatus({});
+      loadPageData({showLoading: false});
       return;
     }
 
-    if (oauthStatusError && !code && !state) {
+    if (oauthStatusError) {
       showError('Nao foi possivel conectar o Mercado Livre.');
       replaceFrontOAuthStatus({});
-      return;
+      loadPageData({showLoading: false});
     }
-
-    if ((!code && !state && !oauthError) || oauthHandledRef.current) {
-      return;
-    }
-
-    oauthHandledRef.current = true;
-
-    const finishOAuth = async () => {
-      if (oauthError) {
-        showError('Nao foi possivel conectar o Mercado Livre.');
-        replaceFrontOAuthStatus({mercadolivre_error: oauthError});
-        return;
-      }
-
-      const redirectUri = resolveFrontOAuthRedirectUri();
-      if (!code || !state || !redirectUri) {
-        showError('Retorno do Mercado Livre incompleto.');
-        replaceFrontOAuthStatus({mercadolivre_error: 'missing_oauth_payload'});
-        return;
-      }
-
-      setAuthorizing(true);
-      try {
-        const response = await api.fetch('/marketplace/integrations/mercadolivre/oauth/callback', {
-          method: 'POST',
-          body: {
-            code,
-            state,
-            redirect_uri: redirectUri,
-          },
-        });
-
-        if (response?.success === false) {
-          throw response;
-        }
-
-        showSuccess('Mercado Livre conectado com sucesso.');
-        replaceFrontOAuthStatus({mercadolivre_connected: '1'});
-        await loadPageData({showLoading: false});
-      } catch (error) {
-        showError(formatApiError(error));
-        replaceFrontOAuthStatus({
-          mercadolivre_error: error?.error || 'oauth_failed',
-        });
-      } finally {
-        setAuthorizing(false);
-      }
-    };
-
-    finishOAuth();
   }, [loadPageData, showError, showSuccess]);
 
   const onRefresh = useCallback(async () => {

@@ -25,13 +25,10 @@ const unwrapFile = file => {
 const isDownloadLikeUrl = value =>
   FILE_DOWNLOAD_PATTERN.test(normalizeText(value));
 
-const appendQueryParam = (url, key, value) => {
+const stripDomainQueryParams = url => {
   const normalizedUrl = normalizeText(url);
-  const normalizedKey = normalizeText(key);
-  const normalizedValue = normalizeText(value);
-
-  if (!normalizedUrl || !normalizedKey || !normalizedValue) {
-    return normalizedUrl;
+  if (!normalizedUrl) {
+    return '';
   }
 
   const hashIndex = normalizedUrl.indexOf('#');
@@ -49,15 +46,12 @@ const appendQueryParam = (url, key, value) => {
         .filter(Boolean)
         .filter(item => {
           const [rawKey] = item.split('=');
-          return decodeURIComponent(rawKey || '') !== normalizedKey;
+          const key = decodeURIComponent(rawKey || '').toLowerCase();
+          return key !== 'app-domain' && key !== 'appdomain';
         })
     : [];
 
-  params.push(
-    `${encodeURIComponent(normalizedKey)}=${encodeURIComponent(normalizedValue)}`,
-  );
-
-  return `${base}?${params.join('&')}${hash}`;
+  return `${base}${params.length ? `?${params.join('&')}` : ''}${hash}`;
 };
 
 const ensureAbsoluteUrl = url => {
@@ -95,9 +89,38 @@ const buildBackendDownloadUrl = (fileId, options = {}) => {
 
   const host = resolveDownloadHost(options);
   const relativeUrl = `/files/${normalizedId}/download`;
-  const absoluteUrl = ensureAbsoluteUrl(relativeUrl);
 
-  return host ? appendQueryParam(absoluteUrl, 'app-domain', host) : absoluteUrl;
+  return buildTenantDownloadUrl(relativeUrl, host);
+};
+
+const buildTenantDownloadUrl = (url, host) => {
+  const absoluteUrl = ensureAbsoluteUrl(stripDomainQueryParams(url));
+  const normalizedHost = normalizeText(host);
+  if (!absoluteUrl || !normalizedHost) {
+    return absoluteUrl;
+  }
+
+  if (/^https?:\/\//i.test(absoluteUrl)) {
+    const match = stripDomainQueryParams(absoluteUrl).match(
+      /^(https?:\/\/[^/?#]+)\/(?:[^/]+\/)?files\/([^/?#]+)\/download([^#]*)(#.*)?$/i,
+    );
+
+    return match
+      ? `${match[1]}/${encodeURIComponent(normalizedHost)}/files/${match[2]}/download${match[3] || ''}${match[4] || ''}`
+      : stripDomainQueryParams(absoluteUrl);
+  }
+
+  const hashIndex = absoluteUrl.indexOf('#');
+  const hash = hashIndex >= 0 ? absoluteUrl.slice(hashIndex) : '';
+  const urlWithoutHash = hashIndex >= 0 ? absoluteUrl.slice(0, hashIndex) : absoluteUrl;
+  const queryIndex = urlWithoutHash.indexOf('?');
+  const path = queryIndex >= 0 ? urlWithoutHash.slice(0, queryIndex) : urlWithoutHash;
+  const query = queryIndex >= 0 ? urlWithoutHash.slice(queryIndex) : '';
+  const match = path.match(/^\/(?:[^/]+\/)?files\/([^/]+)\/download$/i);
+
+  return match
+    ? `/${encodeURIComponent(normalizedHost)}/files/${match[1]}/download${query}${hash}`
+    : stripDomainQueryParams(absoluteUrl);
 };
 
 const resolveDirectFileUrl = file => {
@@ -185,11 +208,7 @@ export const resolveDefaultFileSource = (
     }
 
     if (isDownloadLikeUrl(normalizedValue)) {
-      const uri = appendQueryParam(
-        ensureAbsoluteUrl(normalizedValue),
-        'app-domain',
-        host,
-      );
+      const uri = buildTenantDownloadUrl(normalizedValue, host);
 
       return uri
         ? {
@@ -243,7 +262,7 @@ export const resolveDefaultFileSource = (
     }
 
     const uri = isBackendDownload
-      ? appendQueryParam(ensureAbsoluteUrl(uriBase), 'app-domain', host)
+      ? buildTenantDownloadUrl(uriBase, host)
       : uriBase;
 
     return {

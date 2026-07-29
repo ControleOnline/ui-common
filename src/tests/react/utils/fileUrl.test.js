@@ -14,7 +14,7 @@ const {
 } = require('../../../react/utils/fileUrl');
 
 describe('fileUrl helpers', () => {
-  it('adds app-domain to backend download urls and keeps headers', () => {
+  it('uses path app-domain for backend download urls and keeps headers', () => {
     const company = {
       domain: 'maincompany.controleonline.com',
     };
@@ -33,14 +33,14 @@ describe('fileUrl helpers', () => {
     );
 
     expect(source).toEqual({
-      uri: 'https://api.controleonline.com/files/3/download?app-domain=maincompany.controleonline.com',
+      uri: 'https://api.controleonline.com/maincompany.controleonline.com/files/3/download',
       headers: {
         Authorization: 'Bearer token',
         'app-domain': 'maincompany.controleonline.com',
       },
     });
     expect(resolveFileImageUrl(3, {company})).toBe(
-      'https://api.controleonline.com/files/3/download?app-domain=maincompany.controleonline.com',
+      'https://api.controleonline.com/maincompany.controleonline.com/files/3/download',
     );
   });
 
