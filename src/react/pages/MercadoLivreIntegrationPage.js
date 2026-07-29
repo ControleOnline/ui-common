@@ -32,6 +32,8 @@ const PROVIDER = {
   icon: 'shopping-bag',
 };
 
+const tt = (type, key) => global.t?.t('configs', type, key);
+
 const shadowStyle = Platform.select({
   ios: {
     shadowColor: '#0F172A',
@@ -55,6 +57,7 @@ const formatApiError = error =>
   error?.message ||
   error?.description ||
   error?.error ||
+  tt('marketplace_error', 'mercadoLivreLoad') ||
   'Nao foi possivel carregar a integracao Mercado Livre.';
 
 const MERCADO_LIVRE_OAUTH_QUERY_KEYS = [
@@ -97,15 +100,24 @@ const replaceFrontOAuthStatus = statusParams => {
 const formatOAuthStatusError = (error, message) => {
   const messageText = normalizeTextValue(message);
   if (messageText) {
-    return `Nao foi possivel conectar o Mercado Livre: ${messageText}`;
+    return `${
+      tt('marketplace_error', 'mercadoLivreConnectWithMessage') ||
+      'Nao foi possivel conectar o Mercado Livre:'
+    } ${messageText}`;
   }
 
   const errorText = normalizeTextValue(error);
   if (!errorText) {
-    return 'Nao foi possivel conectar o Mercado Livre.';
+    return (
+      tt('marketplace_error', 'mercadoLivreConnect') ||
+      'Nao foi possivel conectar o Mercado Livre.'
+    );
   }
 
-  return `Nao foi possivel conectar o Mercado Livre (${errorText}).`;
+  return `${
+    tt('marketplace_error', 'mercadoLivreConnect') ||
+    'Nao foi possivel conectar o Mercado Livre.'
+  } (${errorText}).`;
 };
 
 export default function MercadoLivreIntegrationPage() {
@@ -200,7 +212,10 @@ export default function MercadoLivreIntegrationPage() {
     const oauthStatusMessage = params.get('mercadolivre_message');
 
     if (alreadyConnected) {
-      showSuccess('Mercado Livre conectado com sucesso.');
+      showSuccess(
+        tt('marketplace_success', 'mercadoLivreConnected') ||
+          'Mercado Livre conectado com sucesso.',
+      );
       replaceFrontOAuthStatus({});
       loadPageData({showLoading: false});
       return;
@@ -224,12 +239,18 @@ export default function MercadoLivreIntegrationPage() {
 
   const connectMercadoLivre = useCallback(async () => {
     if (!providerId) {
-      showError('Nao foi possivel identificar a empresa ativa.');
+      showError(
+        tt('marketplace_error', 'activeCompanyMissing') ||
+          'Nao foi possivel identificar a empresa ativa.',
+      );
       return;
     }
 
     if (detail?.oauth?.client_configured === false) {
-      showError('Configure o Client ID e Secret do app Mercado Livre antes de conectar.');
+      showError(
+        tt('marketplace_error', 'mercadoLivreClientMissing') ||
+          'Configure o Client ID e Secret do app Mercado Livre antes de conectar.',
+      );
       return;
     }
 
@@ -246,13 +267,21 @@ export default function MercadoLivreIntegrationPage() {
       const authorizationUrl =
         response?.authorization_url || response?.url || response?.auth_url || '';
       if (!authorizationUrl) {
-        showError(response?.message || 'URL de autorizacao do Mercado Livre indisponivel.');
+        showError(
+          response?.message ||
+            tt('marketplace_error', 'mercadoLivreAuthorizationUrlMissing') ||
+            'URL de autorizacao do Mercado Livre indisponivel.',
+        );
         return;
       }
 
       await Linking.openURL(authorizationUrl);
     } catch (error) {
-      showError(error?.message || 'Nao foi possivel iniciar o login do Mercado Livre.');
+      showError(
+        error?.message ||
+          tt('marketplace_error', 'mercadoLivreLoginStart') ||
+          'Nao foi possivel iniciar o login do Mercado Livre.',
+      );
     } finally {
       setAuthorizing(false);
     }
@@ -260,7 +289,10 @@ export default function MercadoLivreIntegrationPage() {
 
   const importProducts = useCallback(async () => {
     if (!providerId || !selectedShowcaseId) {
-      showError('Selecione a vitrine que recebera os produtos importados.');
+      showError(
+        tt('marketplace_error', 'showcaseRequiredForImport') ||
+          'Selecione a vitrine que recebera os produtos importados.',
+      );
       return;
     }
 
@@ -276,11 +308,22 @@ export default function MercadoLivreIntegrationPage() {
       });
 
       showSuccess(
-        `Importacao concluida: ${response?.imported_count || 0} novos e ${response?.updated_count || 0} atualizados.`,
+        response?.integration_id
+          ? `${
+              tt('marketplace_success', 'productImportQueuedWithId') ||
+              'Importacao enviada para a fila #'
+            }${response.integration_id}.`
+          : tt('marketplace_success', 'productImportQueued') ||
+              'Importacao enviada para a fila.',
       );
       await loadPageData({showLoading: false});
     } catch (error) {
-      showError(error?.message || error?.error || 'Nao foi possivel importar os produtos.');
+      showError(
+        error?.message ||
+          error?.error ||
+          tt('marketplace_error', 'productImport') ||
+          'Nao foi possivel importar os produtos.',
+      );
     } finally {
       setImporting(false);
     }
@@ -291,9 +334,12 @@ export default function MercadoLivreIntegrationPage() {
       <SafeAreaView style={styles.container} edges={['bottom']}>
         <View style={styles.centerState}>
           <Icon name="building" size={32} color="#94A3B8" />
-          <Text style={styles.centerStateTitle}>Selecione uma empresa</Text>
+          <Text style={styles.centerStateTitle}>
+            {tt('marketplace_title', 'selectCompany') || 'Selecione uma empresa'}
+          </Text>
           <Text style={styles.centerStateText}>
-            A integracao depende da empresa ativa.
+            {tt('marketplace_message', 'activeCompanyRequired') ||
+              'A integracao depende da empresa ativa.'}
           </Text>
         </View>
       </SafeAreaView>
@@ -305,9 +351,12 @@ export default function MercadoLivreIntegrationPage() {
       <SafeAreaView style={[styles.container, {backgroundColor: brandColors.background}]} edges={['bottom']}>
         <View style={styles.centerState}>
           <ActivityIndicator size="large" color={PROVIDER.accent} />
-          <Text style={styles.centerStateTitle}>Carregando Mercado Livre</Text>
+          <Text style={styles.centerStateTitle}>
+            {tt('marketplace_title', 'loadingMercadoLivre') || 'Carregando Mercado Livre'}
+          </Text>
           <Text style={styles.centerStateText}>
-            Buscando credenciais, webhook e vitrines disponiveis.
+            {tt('marketplace_message', 'loadingMercadoLivre') ||
+              'Buscando credenciais, webhook e vitrines disponiveis.'}
           </Text>
         </View>
       </SafeAreaView>
@@ -330,10 +379,13 @@ export default function MercadoLivreIntegrationPage() {
         }>
         <View style={[styles.heroCard, shadowStyle, {backgroundColor: '#FFE600'}]}>
           <View style={styles.heroCopy}>
-            <Text style={[styles.heroEyebrow, {color: 'rgba(17,24,39,0.64)'}]}>INTEGRACAO</Text>
+            <Text style={[styles.heroEyebrow, {color: 'rgba(17,24,39,0.64)'}]}>
+              {tt('marketplace_label', 'integration') || 'INTEGRACAO'}
+            </Text>
             <Text style={[styles.heroTitle, {color: '#111827'}]}>{PROVIDER.label}</Text>
             <Text style={[styles.heroText, {color: 'rgba(17,24,39,0.76)'}]}>
-              Receba notificacoes de pedidos e importe anuncios para a vitrine escolhida.
+              {tt('marketplace_message', 'mercadoLivreHero') ||
+                'Receba notificacoes de pedidos e importe anuncios para a vitrine escolhida.'}
             </Text>
           </View>
           <View style={styles.heroBadge}>
@@ -344,27 +396,36 @@ export default function MercadoLivreIntegrationPage() {
         <View style={[styles.statusCard, shadowStyle]}>
           <View style={styles.statusHeader}>
             <View style={styles.statusCopy}>
-              <Text style={styles.sectionTitle}>Status</Text>
+              <Text style={styles.sectionTitle}>
+                {tt('marketplace_title', 'status') || 'Status'}
+              </Text>
               <Text style={styles.sectionSubtitle}>
                 {integration.user_id
                   ? `Seller/User ID ${integration.user_id}`
-                  : 'Conecte a conta vendedora para habilitar importacao e webhook.'}
+                  : tt('marketplace_message', 'connectSellerAccount') ||
+                    'Conecte a conta vendedora para habilitar importacao e webhook.'}
               </Text>
             </View>
             <View style={[styles.statusBadge, {backgroundColor: withOpacity(statusTone, 0.12)}]}>
               <Text style={[styles.statusBadgeText, {color: statusTone}]}>
-                {connected ? 'Conectado' : 'Pendente'}
+                {connected
+                  ? tt('marketplace_status', 'connected') || 'Conectado'
+                  : tt('marketplace_status', 'pending') || 'Pendente'}
               </Text>
             </View>
           </View>
         </View>
 
         <View style={[styles.formCard, shadowStyle]}>
-          <Text style={styles.cardTitle}>Conta Mercado Livre</Text>
+          <Text style={styles.cardTitle}>
+            {tt('marketplace_title', 'mercadoLivreAccount') || 'Conta Mercado Livre'}
+          </Text>
           <Text style={styles.cardSubtitle}>
             {oauthClientConfigured
-              ? 'O login abre o Mercado Livre, autoriza a conta vendedora e retorna para esta tela.'
-              : 'Configure o Client ID e Secret do app Mercado Livre nesta empresa para habilitar o login.'}
+              ? tt('marketplace_message', 'mercadoLivreOauthFlow') ||
+                'O login abre o Mercado Livre, autoriza a conta vendedora e retorna para esta tela.'
+              : tt('marketplace_message', 'mercadoLivreClientConfigRequired') ||
+                'Configure o Client ID e Secret do app Mercado Livre nesta empresa para habilitar o login.'}
           </Text>
 
           <TouchableOpacity
@@ -382,28 +443,45 @@ export default function MercadoLivreIntegrationPage() {
               <Icon name="external-link" size={16} color="#FFFFFF" />
             )}
             <Text style={styles.saveButtonText}>
-              {connected ? 'Reconectar Mercado Livre' : 'Conectar com Mercado Livre'}
+              {connected
+                ? tt('marketplace_button', 'reconnectMercadoLivre') ||
+                  'Reconectar Mercado Livre'
+                : tt('marketplace_button', 'connectMercadoLivre') ||
+                  'Conectar com Mercado Livre'}
             </Text>
           </TouchableOpacity>
         </View>
 
         <View style={[styles.formCard, shadowStyle]}>
-          <Text style={styles.cardTitle}>Webhook</Text>
-          <Text style={styles.cardSubtitle}>{detail?.webhook?.url || 'Webhook indisponivel.'}</Text>
+          <Text style={styles.cardTitle}>
+            {tt('marketplace_title', 'webhook') || 'Webhook'}
+          </Text>
+          <Text style={styles.cardSubtitle}>
+            {detail?.webhook?.url ||
+              tt('marketplace_message', 'webhookUnavailable') ||
+              'Webhook indisponivel.'}
+          </Text>
         </View>
 
         <View style={[styles.formCard, shadowStyle]}>
-          <Text style={styles.cardTitle}>Importar produtos</Text>
+          <Text style={styles.cardTitle}>
+            {tt('marketplace_title', 'importProducts') || 'Importar produtos'}
+          </Text>
           <Text style={styles.cardSubtitle}>
-            Selecione a vitrine que recebera os produtos importados do Mercado Livre.
+            {tt('marketplace_message', 'selectShowcaseForImport') ||
+              'Selecione a vitrine que recebera os produtos importados do Mercado Livre.'}
           </Text>
 
           <View style={styles.fieldList}>
             {showcases.length === 0 ? (
               <View style={styles.fieldGroup}>
-                <Text style={styles.fieldLabel}>Nenhuma vitrine ativa encontrada</Text>
+                <Text style={styles.fieldLabel}>
+                  {tt('marketplace_label', 'noActiveShowcaseFound') ||
+                    'Nenhuma vitrine ativa encontrada'}
+                </Text>
                 <Text style={styles.fieldKey}>
-                  Crie ou ative uma vitrine antes de importar produtos.
+                  {tt('marketplace_message', 'createShowcaseBeforeImport') ||
+                    'Crie ou ative uma vitrine antes de importar produtos.'}
                 </Text>
               </View>
             ) : (
@@ -423,7 +501,10 @@ export default function MercadoLivreIntegrationPage() {
                     ]}>
                     <Text style={styles.fieldLabel}>{showcase.name}</Text>
                     <Text style={styles.fieldKey}>
-                      {showcase.domain || showcase.integration_key || 'Vitrine sem dominio'}
+                      {showcase.domain ||
+                        showcase.integration_key ||
+                        tt('marketplace_label', 'showcaseWithoutDomain') ||
+                        'Vitrine sem dominio'}
                     </Text>
                   </TouchableOpacity>
                 );
@@ -445,7 +526,10 @@ export default function MercadoLivreIntegrationPage() {
             ) : (
               <Icon name="download-cloud" size={16} color="#FFFFFF" />
             )}
-            <Text style={styles.saveButtonText}>Importar para a vitrine</Text>
+            <Text style={styles.saveButtonText}>
+              {tt('marketplace_button', 'queueProductImport') ||
+                'Enviar importacao para a fila'}
+            </Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
