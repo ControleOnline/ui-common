@@ -64,6 +64,7 @@ const MERCADO_LIVRE_OAUTH_QUERY_KEYS = [
   'error_description',
   'mercadolivre_connected',
   'mercadolivre_error',
+  'mercadolivre_message',
 ];
 
 const resolveFrontOAuthRedirectUri = () => {
@@ -91,6 +92,20 @@ const replaceFrontOAuthStatus = statusParams => {
     }
   });
   window.history.replaceState({}, document.title, url.toString());
+};
+
+const formatOAuthStatusError = (error, message) => {
+  const messageText = normalizeTextValue(message);
+  if (messageText) {
+    return `Nao foi possivel conectar o Mercado Livre: ${messageText}`;
+  }
+
+  const errorText = normalizeTextValue(error);
+  if (!errorText) {
+    return 'Nao foi possivel conectar o Mercado Livre.';
+  }
+
+  return `Nao foi possivel conectar o Mercado Livre (${errorText}).`;
 };
 
 export default function MercadoLivreIntegrationPage() {
@@ -182,6 +197,7 @@ export default function MercadoLivreIntegrationPage() {
     const params = new URLSearchParams(window.location.search || '');
     const alreadyConnected = params.get('mercadolivre_connected') === '1';
     const oauthStatusError = params.get('mercadolivre_error');
+    const oauthStatusMessage = params.get('mercadolivre_message');
 
     if (alreadyConnected) {
       showSuccess('Mercado Livre conectado com sucesso.');
@@ -191,7 +207,7 @@ export default function MercadoLivreIntegrationPage() {
     }
 
     if (oauthStatusError) {
-      showError('Nao foi possivel conectar o Mercado Livre.');
+      showError(formatOAuthStatusError(oauthStatusError, oauthStatusMessage));
       replaceFrontOAuthStatus({});
       loadPageData({showLoading: false});
     }
