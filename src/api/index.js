@@ -5,6 +5,31 @@ import { resolveAppDomain } from '@controleonline/ui-common/src/utils/appDomain'
 import { resolveApiEntryPoint } from '@controleonline/ui-common/src/utils/apiEntryPoint';
 
 const MIME_TYPE = 'application/ld+json';
+const DOMAIN_QUERY_PARAM_KEYS = new Set(['app-domain', 'appdomain']);
+
+function stripDomainQueryParams(uri) {
+  const value = String(uri || '');
+  const hashIndex = value.indexOf('#');
+  const withoutHash = hashIndex >= 0 ? value.slice(0, hashIndex) : value;
+  const hash = hashIndex >= 0 ? value.slice(hashIndex) : '';
+  const queryIndex = withoutHash.indexOf('?');
+
+  if (queryIndex < 0) {
+    return value;
+  }
+
+  const path = withoutHash.slice(0, queryIndex);
+  const params = new URLSearchParams(withoutHash.slice(queryIndex + 1));
+
+  for (const key of [...params.keys()]) {
+    if (DOMAIN_QUERY_PARAM_KEYS.has(String(key || '').trim().toLowerCase())) {
+      params.delete(key);
+    }
+  }
+
+  const query = params.toString();
+  return `${path}${query ? `?${query}` : ''}${hash}`;
+}
 
 function encodeBasicAuth(user, password) {
   const credentials = `${String(user || '').trim()}:${String(password || '').trim()}`;
@@ -36,9 +61,10 @@ function resolveApiRuntimeConfig(config = {}) {
 function buildApiUrl(apiBaseUrl, path) {
   const apiEntryPoint = resolveApiEntryPoint(apiBaseUrl);
   const entryPoint = apiEntryPoint + (apiEntryPoint.endsWith('/') ? '' : '/');
-  const normalizedPath = String(path || '').startsWith('/')
+  const rawPath = String(path || '').startsWith('/')
     ? String(path || '').substring(1)
     : String(path || '');
+  const normalizedPath = stripDomainQueryParams(rawPath);
 
   return new URL(normalizedPath, entryPoint).href;
 }
@@ -279,6 +305,8 @@ export const api = {
     if (options.body && typeof options.body != 'string') {
       options.body = JSON.stringify(options.body);
     }
+    uri = stripDomainQueryParams(uri);
+
     if (options.params) {
       uri = this.buildQueryString(uri, options);
     }
@@ -309,6 +337,11 @@ export const api = {
 
     for (const key in obj) {
       if (obj.hasOwnProperty(key)) {
+        const normalizedKey = String(key || '').trim().toLowerCase();
+        if (DOMAIN_QUERY_PARAM_KEYS.has(normalizedKey)) {
+          continue;
+        }
+
         const value = obj[key];
         let fullKey = prefix ? `${prefix}.${key}` : key; // Usa ponto para objetos
 
@@ -340,11 +373,23 @@ export const api = {
   },
 
   buildQueryString(uri, options) {
+    const safeUri = stripDomainQueryParams(uri);
+
     if (options.params) {
       const params = this.serialize(options.params);
-      uri = `${uri}?${params.join('&')}`;
+      if (params.length === 0) {
+        return safeUri;
+      }
+
+      const hashIndex = safeUri.indexOf('#');
+      const withoutHash = hashIndex >= 0 ? safeUri.slice(0, hashIndex) : safeUri;
+      const hash = hashIndex >= 0 ? safeUri.slice(hashIndex) : '';
+      const separator = withoutHash.includes('?') ? '&' : '?';
+
+      return `${withoutHash}${separator}${params.join('&')}${hash}`;
     }
-    return uri;
+
+    return safeUri;
   },
   post: async function (uri, body = {}) {
     const options = {

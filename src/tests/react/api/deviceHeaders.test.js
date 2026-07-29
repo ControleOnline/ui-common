@@ -92,4 +92,23 @@ describe('device request headers', () => {
     expect(options.headers.get('DEVICE')).toBe('legacy-device');
     expect(options.headers.get('DEVICE-TYPE')).toBeNull();
   });
+
+  it('keeps the app domain in the header and removes it from query params', async () => {
+    await api.fetch('/people/company/default?app-domain=loja.jaguncos.com.br&existing=1', {
+      params: {
+        'app-domain': 'loja.jaguncos.com.br',
+        AppDomain: 'loja.jaguncos.com.br',
+        q: 'shop',
+      },
+    });
+
+    const [url, options] = global.fetch.mock.calls[0];
+    const requestUrl = new URL(String(url));
+
+    expect(options.headers.get('App-Domain')).toBeTruthy();
+    expect(requestUrl.searchParams.has('app-domain')).toBe(false);
+    expect(requestUrl.searchParams.has('AppDomain')).toBe(false);
+    expect(requestUrl.searchParams.get('existing')).toBe('1');
+    expect(requestUrl.searchParams.get('q')).toBe('shop');
+  });
 });
