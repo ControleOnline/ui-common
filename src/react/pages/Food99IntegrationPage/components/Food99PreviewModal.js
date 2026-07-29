@@ -6,7 +6,7 @@ import { colors } from '@controleonline/../../src/styles/colors';
 import AnimatedModal from '@controleonline/ui-common/src/react/components/AnimatedModal';
 
 import styles from '../styles';
-import { countCollection } from '../@controleonline/ui-common/src/react/utils/integrationPage';
+import { countCollection } from '@controleonline/ui-common/src/react/utils/integrationPage';
 
 // Modal de pré-visualização do menu antes do envio à 99Food.
 export default function Food99PreviewModal({
