@@ -12,6 +12,8 @@ import {
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useStore } from '@store';
+import { colors } from '@controleonline/../../src/styles/colors';
+import { resolveThemePalette } from '@controleonline/../../src/styles/branding';
 import styles from './CategoryForm.styles';
 import { inlineStyle_240_75 } from './CategoryForm.styles';
 
@@ -131,11 +133,11 @@ const BottomModal = ({ visible, onClose, title, children }) => (
 );
 
 /* ─── Seletor de cor ─── */
-const ColorPicker = ({ value, onChange }) => {
+const ColorPicker = ({ defaultColor = '#CBD5E1', value, onChange }) => {
   const [open, setOpen] = useState(false);
-  const [hexInput, setHexInput] = useState(value || '#000000');
+  const [hexInput, setHexInput] = useState(value || defaultColor);
 
-  useEffect(() => { setHexInput(value || '#000000'); }, [value]);
+  useEffect(() => { setHexInput(value || defaultColor); }, [defaultColor, value]);
 
   const applyHex = () => {
     const v = hexInput.startsWith('#') ? hexInput : `#${hexInput}`;
@@ -152,8 +154,8 @@ const ColorPicker = ({ value, onChange }) => {
         onPress={() => setOpen(true)}
         activeOpacity={0.7}
       >
-        <View style={[styles.colorSwatch, { backgroundColor: value || '#000000' }]} />
-        <Text style={styles.colorButtonText}>{value || '#000000'}</Text>
+        <View style={[styles.colorSwatch, { backgroundColor: value || defaultColor }]} />
+        <Text style={styles.colorButtonText}>{value || defaultColor}</Text>
         <MaterialCommunityIcons name="palette-outline" size={18} color="#94A3B8" />
       </TouchableOpacity>
 
@@ -445,7 +447,15 @@ const CategoryForm = forwardRef(({ category, context = 'products', onClose, onSa
   const categories = categoriesStore.getters.items;
   const peopleStore = useStore('people');
   const { currentCompany } = peopleStore.getters;
+  const { colors: themeColors } = useStore('theme').getters;
   const categoryContext = normalizeCategoryContext(context);
+  const defaultColor = useMemo(
+    () => resolveThemePalette(
+      { ...themeColors, ...(currentCompany?.theme?.colors || {}) },
+      colors,
+    ).primary,
+    [currentCompany?.theme?.colors, themeColors],
+  );
 
   const [name, setName] = useState('');
   const [color, setColor] = useState('#CBD5E1');
@@ -463,20 +473,20 @@ const CategoryForm = forwardRef(({ category, context = 'products', onClose, onSa
   useEffect(() => {
     if (category) {
       setName(category.name || '');
-      setColor(category.color || '#CBD5E1');
+      setColor(category.color || defaultColor);
       setIcon(category.icon || '');
       setParent(category.parent?.id || null);
       setSortOrder(String(category?.extraData?.sortOrder || ''));
       setChannel(String(category?.extraData?.channel || 'default'));
     } else {
       setName('');
-      setColor('#CBD5E1');
+      setColor(defaultColor);
       setIcon('');
       setParent(null);
       setSortOrder('');
       setChannel('default');
     }
-  }, [category]);
+  }, [category, defaultColor]);
 
   const handleSubmit = async () => {
     const payload = {
@@ -526,7 +536,7 @@ const CategoryForm = forwardRef(({ category, context = 'products', onClose, onSa
       {/* Cor */}
       <View style={styles.field}>
         <Text style={styles.label}>Cor</Text>
-        <ColorPicker value={color} onChange={setColor} />
+        <ColorPicker defaultColor={defaultColor} value={color} onChange={setColor} />
       </View>
 
       {/* Ícone */}
@@ -559,9 +569,11 @@ const CategoryForm = forwardRef(({ category, context = 'products', onClose, onSa
         />
       </View>
 
-      {/* Canais */}
+      {/* Vitrines */}
       <View style={styles.field}>
-        <Text style={styles.label}>Canais de venda</Text>
+        <Text style={styles.label}>
+          {global.t?.t?.('categories', 'label', 'showcases')}
+        </Text>
         <ChannelPicker value={channel} onChange={setChannel} />
       </View>
 

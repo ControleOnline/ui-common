@@ -117,8 +117,27 @@ const normalizeFormattedValue = value => {
     return value;
   }
 
+  if (Array.isArray(value)) {
+    return value
+      .map(item => normalizeFormattedValue(item))
+      .filter(item => normalizeText(item))
+      .join(', ');
+  }
+
   if (typeof value === 'object' && !Array.isArray(value)) {
-    return value?.label ?? value?.value ?? value?.name ?? value;
+    return (
+      value?.label ??
+      value?.value ??
+      value?.name ??
+      value?.alias ??
+      value?.icon ??
+      value?.fileName ??
+      value?.filename ??
+      value?.originalName ??
+      value?.id ??
+      value?.['@id'] ??
+      ''
+    );
   }
 
   return value;
