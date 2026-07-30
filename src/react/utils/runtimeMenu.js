@@ -74,6 +74,15 @@ const MANAGER_RUNTIME_MENU_FALLBACK = [
     icon: 'users',
     menus: [
       {
+        id: 'products',
+        menuKey: 'products',
+        label: 'Produtos',
+        route: 'ProductsPage',
+        icon: 'package',
+        color: '#16A34A',
+        sortOrder: 25,
+      },
+      {
         id: 'clients',
         menuKey: 'clients',
         label: 'Cadastro de clientes',
