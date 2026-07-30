@@ -11,6 +11,15 @@ export default {
     resourceEndpoint: "categories",
     isLoading: false,
     error: "",
+    configs: {
+      import: {
+        enabled: true,
+        importType: "product",
+        labelKey: ["categories", "button", "importCsv"],
+        titleKey: ["categories", "title", "productImport"],
+        searchPlaceholderKey: ["categories", "input", "importSearch"],
+      },
+    },
     
     totalItems: 0,messages:[], message:{},
     
