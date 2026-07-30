@@ -24,6 +24,7 @@ import RuntimeInfoFooter from '@controleonline/ui-common/src/react/components/Ru
 import {isPublicRoute} from '../router/publicRoutes';
 import {api} from '@controleonline/ui-common/src/api';
 import {app_type} from '@appType';
+import {APP_ENV} from '@controleonline/../../config/env.js';
 const {
   buildTranslationBootstrapKey,
   isTranslationBootstrapReady,
@@ -52,6 +53,9 @@ import {
 import {
   normalizeRuntimeMenuResponse,
 } from '@controleonline/ui-common/src/react/utils/runtimeMenu';
+import {
+  buildRuntimeZoomStyle,
+} from '@controleonline/ui-common/src/react/utils/runtimeZoom';
 import packageJson from '@package';
 import providerStyles from './DefaultProvider.styles';
 
@@ -161,6 +165,10 @@ export const DefaultProvider = ({
     appType: app_type,
     deviceInfo: device || {},
   });
+  const runtimeUiScaleStyle = useMemo(
+    () => buildRuntimeZoomStyle(APP_ENV?.ZOOM),
+    [],
+  );
   const deviceConfigPeopleIri = resolveDeviceConfigPeopleIri({
     appType,
     currentCompany,
@@ -845,7 +853,7 @@ export const DefaultProvider = ({
                   backgroundColor: colors?.background || runtimeColors.background,
                 },
               ]}>
-              <View style={providerStyles.content}>{children}</View>
+              <View style={[providerStyles.content, runtimeUiScaleStyle]}>{children}</View>
               {!isShopClientApp && bottomNavigationCount === 0 && (
                 <RuntimeInfoFooter
                   appVersion={appVersion}
