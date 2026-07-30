@@ -65,6 +65,8 @@ export default {
         name: "categoryFiles",
         align: "left",
         label: "categoryFiles",
+        inputType: "files",
+        fileType: "image",
         format: function (value) {
           return value;
         },
