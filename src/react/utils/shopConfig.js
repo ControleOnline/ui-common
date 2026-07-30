@@ -50,6 +50,13 @@ export const SHOP_LOYALTY_REQUIRED_SALES_CONFIG_KEY =
   'shop-loyalty-required-sales';
 export const SHOP_LOYALTY_GIFT_PRODUCT_ID_CONFIG_KEY =
   'shop-loyalty-gift-product-id';
+export const SHOP_SHOWCASE_TYPE_SETTING_KEY = 'shop_type';
+export const SHOP_SHOWCASE_TYPE_MENU = 'menu';
+export const SHOP_SHOWCASE_TYPE_ECOMMERCE = 'ecommerce';
+export const SHOP_SHOWCASE_TYPE_OPTIONS = [
+  SHOP_SHOWCASE_TYPE_MENU,
+  SHOP_SHOWCASE_TYPE_ECOMMERCE,
+];
 
 export const normalizeShopEntityId = value => {
   if (!value) {
@@ -177,6 +184,14 @@ export const normalizeShopMoneyConfig = (value, fallback = 0) => {
   );
 
   return Number.isFinite(normalized) ? Math.max(0, normalized) : fallback;
+};
+
+export const normalizeShopShowcaseType = value => {
+  const normalized = String(value || '').trim().toLowerCase();
+
+  return SHOP_SHOWCASE_TYPE_OPTIONS.includes(normalized)
+    ? normalized
+    : SHOP_SHOWCASE_TYPE_MENU;
 };
 
 export const getEnabledShopHomeOptions = ({
