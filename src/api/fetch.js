@@ -1,4 +1,4 @@
-import { APP_ENV } from "../../../../../config/env.js";
+import {env as APP_ENV} from '@env';
 import resolveSystemErrorMessage from '@controleonline/ui-common/src/react/utils/systemErrorMessage';
 import {resolveApiEntryPoint} from '@controleonline/ui-common/src/utils/apiEntryPoint';
 

@@ -1,6 +1,6 @@
 import myFetch from '@controleonline/ui-common/src/api/fetch';
 import axios from 'axios';
-import { APP_ENV } from '../../../../../config/env';
+import {env as APP_ENV} from '@env';
 import { resolveAppDomain } from '@controleonline/ui-common/src/utils/appDomain';
 import { resolveApiEntryPoint } from '@controleonline/ui-common/src/utils/apiEntryPoint';
 

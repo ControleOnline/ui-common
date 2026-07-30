@@ -18,7 +18,7 @@ import RuntimeInfoFooter from '@controleonline/ui-common/src/react/components/Ru
 import { useStore } from '@store';
 import { api } from '@controleonline/ui-common/src/api';
 import {app_type} from '@appType';
-import {APP_ENV} from '@controleonline/../../config/env.js';
+import {env as APP_ENV} from '@env';
 import { isPublicRoute } from '../router/publicRoutes';
 const {
   buildTranslationBootstrapKey,
