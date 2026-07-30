@@ -29,17 +29,15 @@ export const buildRuntimeZoomStyle = (value, {isWeb = false} = {}) => {
     return null;
   }
 
+  if (isWeb) {
+    return {zoom: scale};
+  }
+
   const inverseSize = `${100 / scale}%`;
 
-  const style = {
+  return {
     height: inverseSize,
     transform: [{scale}],
     width: inverseSize,
   };
-
-  if (isWeb) {
-    style.transformOrigin = 'top left';
-  }
-
-  return style;
 };

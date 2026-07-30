@@ -17,13 +17,21 @@ test('clamps unsafe zoom percentages', () => {
   assert.equal(normalizeRuntimeZoomPercent(200), 150)
 })
 
-test('builds compensated container dimensions for scaled content', () => {
+test('uses css zoom on web to preserve layout scroll bounds', () => {
   assert.deepEqual(
     buildRuntimeZoomStyle(70, {isWeb: true}),
     {
+      zoom: 0.7,
+    },
+  )
+})
+
+test('builds compensated container dimensions for native scaled content', () => {
+  assert.deepEqual(
+    buildRuntimeZoomStyle(70),
+    {
       height: '142.85714285714286%',
       transform: [{scale: 0.7}],
-      transformOrigin: 'top left',
       width: '142.85714285714286%',
     },
   )
