@@ -476,7 +476,9 @@ const CategoryForm = forwardRef(({ category, context = 'products', onClose, onSa
       setColor(category.color || defaultColor);
       setIcon(category.icon || '');
       setParent(category.parent?.id || null);
-      setSortOrder(String(category?.extraData?.sortOrder || ''));
+      setSortOrder(category?.sortOrder === null || category?.sortOrder === undefined
+        ? ''
+        : String(category.sortOrder));
       setChannel(String(category?.extraData?.channel || 'default'));
     } else {
       setName('');
@@ -489,6 +491,8 @@ const CategoryForm = forwardRef(({ category, context = 'products', onClose, onSa
   }, [category, defaultColor]);
 
   const handleSubmit = async () => {
+    const categoryExtraData = { ...(category?.extraData || {}) };
+    delete categoryExtraData.sortOrder;
     const payload = {
       ...(category?.id ? { id: category.id } : {}),
       name,
@@ -497,9 +501,9 @@ const CategoryForm = forwardRef(({ category, context = 'products', onClose, onSa
       context: categoryContext,
       company: companyIri,
       parent: parent ? `/categories/${parent}` : null,
+      sortOrder: sortOrder === '' ? null : Number.parseInt(sortOrder, 10),
       extraData: {
-        ...(category?.extraData || {}),
-        sortOrder: sortOrder ? parseInt(String(sortOrder).replace(/\D/g, ''), 10) || 0 : 0,
+        ...categoryExtraData,
         channel: channel || 'default',
       },
     };
@@ -508,6 +512,7 @@ const CategoryForm = forwardRef(({ category, context = 'products', onClose, onSa
 
     await categoryActions.getItems({
       context: categoryContext,
+      'order[sortOrder]': 'ASC',
       'order[name]': 'ASC',
       company: currentCompany.id,
     });

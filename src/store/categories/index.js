@@ -51,6 +51,23 @@ export default {
       },
       {
         sortable: true,
+        editable: true,
+        inputType: "number",
+        name: "sortOrder",
+        align: "right",
+        label: "sortOrder",
+        defaultSort: "ASC",
+        format: function (value) {
+          return value ?? "";
+        },
+        saveFormat: function (value) {
+          return value === "" || value === null || value === undefined
+            ? null
+            : Number(value);
+        },
+      },
+      {
+        sortable: true,
         name: "color",
         align: "left",
         label: "color",
