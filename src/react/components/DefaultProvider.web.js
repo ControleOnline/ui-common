@@ -208,6 +208,8 @@ export const DefaultProvider = ({
   const [bottomNavigationCount, setBottomNavigationCount] = useState(0);
   const translateBootstrapKeyRef = useRef('');
   const lastDeviceConfigPeopleIriRef = useRef('');
+  const walletPaymentTypeRequestRef = useRef({key: '', promise: null});
+  const walletPaymentTypeLoadedKeyRef = useRef('');
   const [device, setDevice] = useState(
     JSON.parse(localStorage.getItem('device') || '{}'),
   );
@@ -556,18 +558,45 @@ export const DefaultProvider = ({
       : device_config?.configs;
 
     if (!currentCompany?.id || !paymentConfigSource) {
+      walletPaymentTypeRequestRef.current = {key: '', promise: null};
+      walletPaymentTypeLoadedKeyRef.current = '';
       paymentTypeActions.setItems([]);
       return;
     }
 
+    const paymentTypeSignature = resolveDevicePaymentTypeIds(paymentConfigSource)
+      .sort()
+      .join(',');
+    const requestKey = `${currentCompany.id}:${paymentTypeSignature}`;
+
+    if (walletPaymentTypeLoadedKeyRef.current === requestKey) {
+      return;
+    }
+
+    const existingRequestPromise =
+      walletPaymentTypeRequestRef.current.key === requestKey &&
+      walletPaymentTypeRequestRef.current.promise
+        ? walletPaymentTypeRequestRef.current.promise
+        : null;
+
     let isMounted = true;
 
-    api
-      .fetch('wallet_payment_types', {
-        params: {
-          people: `/people/${currentCompany.id}`,
-        },
-      })
+    const requestPromise =
+      existingRequestPromise ||
+      api.fetch('wallet_payment_types', {
+          params: {
+            people: `/people/${currentCompany.id}`,
+          },
+        });
+
+    if (!existingRequestPromise) {
+      walletPaymentTypeRequestRef.current = {
+        key: requestKey,
+        promise: requestPromise,
+      };
+    }
+
+    requestPromise
       .then(response => {
         if (!isMounted) {
           return;
@@ -591,10 +620,19 @@ export const DefaultProvider = ({
             allowedPaymentTypeIds,
           ),
         );
+        walletPaymentTypeLoadedKeyRef.current = requestKey;
       })
       .catch(() => {
         if (isMounted) {
           paymentTypeActions.setItems([]);
+        }
+      })
+      .finally(() => {
+        if (
+          walletPaymentTypeRequestRef.current.key === requestKey &&
+          walletPaymentTypeRequestRef.current.promise === requestPromise
+        ) {
+          walletPaymentTypeRequestRef.current = {key: '', promise: null};
         }
       });
 

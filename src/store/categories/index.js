@@ -11,6 +11,15 @@ export default {
     resourceEndpoint: "categories",
     isLoading: false,
     error: "",
+    configs: {
+      import: {
+        enabled: true,
+        importType: "product",
+        labelKey: ["categories", "button", "importCsv"],
+        titleKey: ["categories", "title", "productImport"],
+        searchPlaceholderKey: ["categories", "input", "importSearch"],
+      },
+    },
     
     totalItems: 0,messages:[], message:{},
     
@@ -38,6 +47,23 @@ export default {
         sum: false,
         format: function (value) {
           return value;
+        },
+      },
+      {
+        sortable: true,
+        editable: true,
+        inputType: "number",
+        name: "sortOrder",
+        align: "right",
+        label: "sortOrder",
+        defaultSort: "ASC",
+        format: function (value) {
+          return value ?? "";
+        },
+        saveFormat: function (value) {
+          return value === "" || value === null || value === undefined
+            ? null
+            : Number(value);
         },
       },
       {

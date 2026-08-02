@@ -140,16 +140,21 @@ describe('runtimeMenu', () => {
       route: 'OrderHistoryPage',
     });
     expect(menus[2].menus[0]).toMatchObject({
+      label: 'Produtos',
+      menuKey: 'products',
+      route: 'ProductsPage',
+    });
+    expect(menus[2].menus[1]).toMatchObject({
       label: 'Cadastro de clientes',
       menuKey: 'clients',
       route: 'ClientsIndex',
     });
-    expect(menus[2].menus[1]).toMatchObject({
+    expect(menus[2].menus[2]).toMatchObject({
       label: 'Fornecedores',
       menuKey: 'providers',
       route: 'ProvidersIndex',
     });
-    expect(menus[2].menus[2]).toMatchObject({
+    expect(menus[2].menus[3]).toMatchObject({
       label: 'Cadastro de franquias',
       menuKey: 'franchisees',
       route: 'FranchiseesIndex',

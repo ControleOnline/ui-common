@@ -4,3 +4,7 @@
 - Shared formatting and text-normalization helpers must live in `src/utils/formatter.js`; feature modules should import `Formatter` from `ui-common` instead of creating local formatter helpers.
 - Institutional media roles such as `logo`, `icon`, `stamp`, and `pin` must stay in company media payloads from `people_media`, not URL configs.
 - Global UI zoom is read from `APP_ENV.ZOOM` as a percentage number, such as `70` for 70%, and is applied only by `DefaultProvider`.
+
+## Qualidade de código
+
+- A barra comum de modularizacao, testes, smoke tests e limite de tamanho de componentes vive em `https://github.com/ControleOnline/agents-mcp/blob/master/skills/shared/code-quality.md`.
