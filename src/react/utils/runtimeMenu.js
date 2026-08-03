@@ -217,6 +217,15 @@ export const normalizeRuntimeMenuIcon = value => {
   return RUNTIME_MENU_ICON_ALIASES[normalized.toLowerCase()] || normalized;
 };
 
+const resolveRuntimeModuleSortOrder = module => {
+  const explicitSortOrder = Number(module?.sortOrder ?? module?.sort_order);
+  if (Number.isFinite(explicitSortOrder)) {
+    return explicitSortOrder;
+  }
+
+  return 0;
+};
+
 export const normalizeRuntimeMenuResponse = (
   result,
   {appType, allowFallback = true} = {},
@@ -231,6 +240,7 @@ export const normalizeRuntimeMenuResponse = (
     .map(module => ({
       ...module,
       icon: normalizeRuntimeMenuIcon(module?.icon),
+      sortOrder: resolveRuntimeModuleSortOrder(module),
       menus: (Array.isArray(module?.menus) ? module.menus : [])
         .map(menu => normalizeRuntimeMenuItem(menu))
         .sort((left, right) => {
@@ -239,6 +249,11 @@ export const normalizeRuntimeMenuResponse = (
           return String(left?.label || '').localeCompare(String(right?.label || ''));
         }),
     }))
+    .sort((left, right) => {
+      const orderDiff = Number(left?.sortOrder || 0) - Number(right?.sortOrder || 0);
+      if (orderDiff !== 0) return orderDiff;
+      return String(left?.label || '').localeCompare(String(right?.label || ''));
+    })
     .filter(module => module.menus.length > 0);
 
   if (normalizedModules.length > 0) {
