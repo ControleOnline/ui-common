@@ -8,6 +8,37 @@ import AnimatedModal from '@controleonline/ui-common/src/react/components/Animat
 import styles from '../styles';
 import { countCollection } from '@controleonline/ui-common/src/react/utils/integrationPage';
 
+const resolveButtonPalette = (palette, accentColor) => {
+  const primaryBackground =
+    palette.buttonBackground || accentColor || palette.primary;
+  const primaryBorder = palette.buttonBorder || primaryBackground;
+  const primaryText = palette.buttonText || palette.white;
+  const primaryIcon = palette.buttonIcon || primaryText;
+  const secondaryBackground =
+    palette.buttonBackgroundSecondary || palette.white;
+  const secondaryBorder = palette.buttonBorderSecondary || palette.border;
+  const secondaryText = palette.buttonTextSecondary || palette.textSecondary;
+  const secondaryIcon = palette.buttonIconSecondary || secondaryText;
+  const disabledBackground =
+    palette.buttonDisabledBackground || secondaryBorder;
+  const disabledBorder = palette.buttonBorderSecondary || secondaryBorder;
+  const disabledText = palette.buttonDisabledText || secondaryText;
+
+  return {
+    primaryBackground,
+    primaryBorder,
+    primaryText,
+    primaryIcon,
+    secondaryBackground,
+    secondaryBorder,
+    secondaryText,
+    secondaryIcon,
+    disabledBackground,
+    disabledBorder,
+    disabledText,
+  };
+};
+
 // Modal de pré-visualização do menu antes do envio à 99Food.
 export default function Food99PreviewModal({
   visible,
@@ -19,6 +50,8 @@ export default function Food99PreviewModal({
   onClose,
   onUpload,
 }) {
+  const buttonPalette = resolveButtonPalette(palette, accentColor);
+
   return (
     <AnimatedModal visible={visible} onRequestClose={onClose}>
       <View style={styles.modalShell}>
@@ -77,19 +110,58 @@ export default function Food99PreviewModal({
           </ScrollView>
 
           <View style={styles.modalActions}>
-            <TouchableOpacity style={styles.secondaryButton} onPress={onClose}>
-              <Text style={styles.secondaryButtonText}>Fechar</Text>
+            <TouchableOpacity
+              style={[
+                styles.secondaryButton,
+                {
+                  borderColor: buttonPalette.secondaryBorder,
+                  backgroundColor: buttonPalette.secondaryBackground,
+                },
+              ]}
+              onPress={onClose}>
+              <Text
+                style={[
+                  styles.secondaryButtonText,
+                  { color: buttonPalette.secondaryText },
+                ]}>
+                Fechar
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.primaryButton, styles.modalPrimaryButton, { backgroundColor: accentColor }]}
+              style={[
+                styles.primaryButton,
+                styles.modalPrimaryButton,
+                {
+                  borderWidth: 1,
+                  borderColor: uploading
+                    ? buttonPalette.disabledBorder
+                    : buttonPalette.primaryBorder,
+                  backgroundColor: uploading
+                    ? buttonPalette.disabledBackground
+                    : buttonPalette.primaryBackground,
+                },
+              ]}
               onPress={onUpload}
               disabled={uploading}>
               {uploading ? (
-                <ActivityIndicator size="small" color={palette.white} />
+                <ActivityIndicator
+                  size="small"
+                  color={buttonPalette.disabledText}
+                />
               ) : (
                 <>
-                  <Icon name="upload-cloud" size={16} color={palette.white} />
-                  <Text style={styles.primaryButtonText}>Publicar menu</Text>
+                  <Icon
+                    name="upload-cloud"
+                    size={16}
+                    color={buttonPalette.primaryIcon}
+                  />
+                  <Text
+                    style={[
+                      styles.primaryButtonText,
+                      { color: buttonPalette.primaryText },
+                    ]}>
+                    Publicar menu
+                  </Text>
                 </>
               )}
             </TouchableOpacity>

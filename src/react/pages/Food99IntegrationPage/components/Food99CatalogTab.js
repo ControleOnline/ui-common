@@ -23,6 +23,28 @@ import {
   MINIMUM_REQUIRED_ITEMS as DEFAULT_MINIMUM_REQUIRED_ITEMS,
 } from '../utils';
 
+const resolveButtonPalette = (palette, accentColor) => {
+  const primaryBackground =
+    palette.buttonBackground || accentColor || palette.primary;
+  const primaryBorder = palette.buttonBorder || primaryBackground;
+  const primaryText = palette.buttonText || palette.white;
+  const primaryIcon = palette.buttonIcon || primaryText;
+  const disabledBackground =
+    palette.buttonDisabledBackground || palette.border;
+  const disabledBorder = palette.buttonBorderSecondary || palette.border;
+  const disabledText = palette.buttonDisabledText || palette.textSecondary;
+
+  return {
+    primaryBackground,
+    primaryBorder,
+    primaryText,
+    primaryIcon,
+    disabledBackground,
+    disabledBorder,
+    disabledText,
+  };
+};
+
 // Aba separada para seleção e publicação do catálogo 99Food.
 export default function Food99CatalogTab(props) {
   const {
@@ -66,6 +88,9 @@ export default function Food99CatalogTab(props) {
     filterOptions.find(option => option.key === filterKey)?.label ||
     filterOptions[0]?.label ||
     'Todos';
+  const buttonPalette = resolveButtonPalette(palette, accentColor);
+  const previewDisabled =
+    previewLoading || selectedEligibleProducts.length < minimumRequiredItems;
 
   return (
     <View style={[styles.panel, shadowStyle]}>
@@ -123,23 +148,47 @@ export default function Food99CatalogTab(props) {
           style={[
             styles.previewButton,
             {
+              borderWidth: 1,
+              borderColor: previewDisabled
+                ? buttonPalette.disabledBorder
+                : buttonPalette.primaryBorder,
+            },
+            {
               backgroundColor:
-                selectedEligibleProducts.length >= minimumRequiredItems
-                  ? accentColor
-                  : palette.border,
+                previewDisabled
+                  ? buttonPalette.disabledBackground
+                  : buttonPalette.primaryBackground,
             },
           ]}
           onPress={onPreview}
-          disabled={
-            previewLoading ||
-            selectedEligibleProducts.length < minimumRequiredItems
-          }>
+          disabled={previewDisabled}>
           {previewLoading ? (
-            <ActivityIndicator size="small" color={palette.white} />
+            <ActivityIndicator
+              size="small"
+              color={buttonPalette.disabledText}
+            />
           ) : (
             <>
-              <Icon name="eye" size={15} color={palette.white} />
-              <Text style={styles.previewButtonText}>Pre-visualizar menu</Text>
+              <Icon
+                name="eye"
+                size={15}
+                color={
+                  previewDisabled
+                    ? buttonPalette.disabledText
+                    : buttonPalette.primaryIcon
+                }
+              />
+              <Text
+                style={[
+                  styles.previewButtonText,
+                  {
+                    color: previewDisabled
+                      ? buttonPalette.disabledText
+                      : buttonPalette.primaryText,
+                  },
+                ]}>
+                Pre-visualizar menu
+              </Text>
             </>
           )}
         </TouchableOpacity>

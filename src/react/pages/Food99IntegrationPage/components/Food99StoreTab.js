@@ -7,6 +7,35 @@ import { withOpacity } from '@controleonline/../../src/styles/branding';
 
 import styles from '../styles';
 
+const resolveButtonPalette = (palette, accentColor) => {
+  const primaryBackground =
+    palette.buttonBackground || accentColor || palette.primary;
+  const primaryBorder = palette.buttonBorder || primaryBackground;
+  const primaryText = palette.buttonText || palette.white;
+  const primaryIcon = palette.buttonIcon || primaryText;
+  const secondaryBackground =
+    palette.buttonBackgroundSecondary || palette.white;
+  const secondaryBorder = palette.buttonBorderSecondary || palette.border;
+  const secondaryText = palette.buttonTextSecondary || palette.textSecondary;
+  const secondaryIcon = palette.buttonIconSecondary || secondaryText;
+  const disabledBackground =
+    palette.buttonDisabledBackground || secondaryBorder;
+  const disabledText = palette.buttonDisabledText || secondaryText;
+
+  return {
+    primaryBackground,
+    primaryBorder,
+    primaryText,
+    primaryIcon,
+    secondaryBackground,
+    secondaryBorder,
+    secondaryText,
+    secondaryIcon,
+    disabledBackground,
+    disabledText,
+  };
+};
+
 // Aba dedicada ao vínculo da loja e ao status operacional remoto.
 export default function Food99StoreTab({
   shadowStyle,
@@ -32,17 +61,36 @@ export default function Food99StoreTab({
   onDisconnect,
   palette = colors,
 }) {
+  const buttonPalette = resolveButtonPalette(palette, accentColor);
+
   return (
     <>
       <View style={[styles.panel, shadowStyle]}>
         <View style={styles.panelHeader}>
           <Text style={styles.panelTitle}>Status da loja</Text>
           <TouchableOpacity
-            style={styles.inlineAction}
+            style={[
+              styles.inlineAction,
+              {
+                borderWidth: 1,
+                borderColor: buttonPalette.secondaryBorder,
+                backgroundColor: buttonPalette.secondaryBackground,
+              },
+            ]}
             onPress={onRefresh}
             disabled={actionLoading === 'refresh'}>
-            <Icon name="refresh-cw" size={14} color={accentColor} />
-            <Text style={[styles.inlineActionText, { color: accentColor }]}>Atualizar</Text>
+            <Icon
+              name="refresh-cw"
+              size={14}
+              color={buttonPalette.secondaryIcon}
+            />
+            <Text
+              style={[
+                styles.inlineActionText,
+                { color: buttonPalette.secondaryText },
+              ]}>
+              Atualizar
+            </Text>
           </TouchableOpacity>
         </View>
 
@@ -99,15 +147,39 @@ export default function Food99StoreTab({
         <View style={styles.actionRow}>
           {!connected ? (
             <TouchableOpacity
-              style={[styles.primaryButton, { backgroundColor: accentColor }]}
+              style={[
+                styles.primaryButton,
+                {
+                  borderWidth: 1,
+                  borderColor: buttonPalette.primaryBorder,
+                  backgroundColor: buttonPalette.primaryBackground,
+                },
+                actionLoading === 'connect' && {
+                  borderColor: buttonPalette.secondaryBorder,
+                  backgroundColor: buttonPalette.disabledBackground,
+                },
+              ]}
               onPress={onConnect}
               disabled={actionLoading === 'connect'}>
               {actionLoading === 'connect' ? (
-                <ActivityIndicator size="small" color={palette.white} />
+                <ActivityIndicator
+                  size="small"
+                  color={buttonPalette.disabledText}
+                />
               ) : (
                 <>
-                  <Icon name="link-2" size={16} color={palette.white} />
-                  <Text style={styles.primaryButtonText}>Integrar loja</Text>
+                  <Icon
+                    name="link-2"
+                    size={16}
+                    color={buttonPalette.primaryIcon}
+                  />
+                  <Text
+                    style={[
+                      styles.primaryButtonText,
+                      { color: buttonPalette.primaryText },
+                    ]}>
+                    Integrar loja
+                  </Text>
                 </>
               )}
             </TouchableOpacity>
@@ -119,18 +191,29 @@ export default function Food99StoreTab({
                     styles.secondaryActionButton,
                     {
                       flex: 1,
-                      borderColor: palette.warning,
-                      backgroundColor: withOpacity(palette.warning, 0.08),
+                      borderColor: buttonPalette.secondaryBorder,
+                      backgroundColor: buttonPalette.secondaryBackground,
                     },
                   ]}
                   onPress={onConnect}
                   disabled={actionLoading === 'connect'}>
                   {actionLoading === 'connect' ? (
-                    <ActivityIndicator size="small" color={palette.warning} />
+                    <ActivityIndicator
+                      size="small"
+                      color={buttonPalette.disabledText}
+                    />
                   ) : (
                     <>
-                      <Icon name="refresh-cw" size={15} color={palette.warning} />
-                      <Text style={[styles.secondaryActionButtonText, { color: palette.warning }]}>
+                      <Icon
+                        name="refresh-cw"
+                        size={15}
+                        color={buttonPalette.secondaryIcon}
+                      />
+                      <Text
+                        style={[
+                          styles.secondaryActionButtonText,
+                          { color: buttonPalette.secondaryText },
+                        ]}>
                         Reconectar loja
                       </Text>
                     </>
@@ -141,16 +224,36 @@ export default function Food99StoreTab({
               <TouchableOpacity
                 style={[
                   styles.primaryButton,
-                  { flex: 1, backgroundColor: isOnline ? palette.warning : accentColor },
+                  {
+                    flex: 1,
+                    borderWidth: 1,
+                    borderColor: buttonPalette.primaryBorder,
+                    backgroundColor: buttonPalette.primaryBackground,
+                  },
+                  (actionLoading === 'online' || actionLoading === 'offline') && {
+                    borderColor: buttonPalette.secondaryBorder,
+                    backgroundColor: buttonPalette.disabledBackground,
+                  },
                 ]}
                 onPress={onToggleStatus}
                 disabled={actionLoading === 'online' || actionLoading === 'offline'}>
                 {actionLoading === 'online' || actionLoading === 'offline' ? (
-                  <ActivityIndicator size="small" color={palette.white} />
+                  <ActivityIndicator
+                    size="small"
+                    color={buttonPalette.disabledText}
+                  />
                 ) : (
                   <>
-                    <Icon name={isOnline ? 'pause-circle' : 'play-circle'} size={16} color={palette.white} />
-                    <Text style={styles.primaryButtonText}>
+                    <Icon
+                      name={isOnline ? 'pause-circle' : 'play-circle'}
+                      size={16}
+                      color={buttonPalette.primaryIcon}
+                    />
+                    <Text
+                      style={[
+                        styles.primaryButtonText,
+                        { color: buttonPalette.primaryText },
+                      ]}>
                       {isOnline ? 'Colocar offline' : 'Colocar online'}
                     </Text>
                   </>
@@ -167,18 +270,29 @@ export default function Food99StoreTab({
                 styles.secondaryActionButton,
                 {
                   flex: 1,
-                  borderColor: accentColor,
-                  backgroundColor: withOpacity(accentColor, 0.08),
+                  borderColor: buttonPalette.secondaryBorder,
+                  backgroundColor: buttonPalette.secondaryBackground,
                 },
               ]}
               onPress={onSyncOrders}
               disabled={actionLoading === 'sync-orders'}>
               {actionLoading === 'sync-orders' ? (
-                <ActivityIndicator size="small" color={accentColor} />
+                <ActivityIndicator
+                  size="small"
+                  color={buttonPalette.disabledText}
+                />
               ) : (
                 <>
-                  <Icon name="refresh-cw" size={15} color={accentColor} />
-                  <Text style={[styles.secondaryActionButtonText, { color: accentColor }]}>
+                  <Icon
+                    name="refresh-cw"
+                    size={15}
+                    color={buttonPalette.secondaryIcon}
+                  />
+                  <Text
+                    style={[
+                      styles.secondaryActionButtonText,
+                      { color: buttonPalette.secondaryText },
+                    ]}>
                     Sincronizar pedidos
                   </Text>
                 </>
@@ -190,18 +304,29 @@ export default function Food99StoreTab({
                 styles.secondaryActionButton,
                 {
                   flex: 1,
-                  borderColor: palette.success,
-                  backgroundColor: withOpacity(palette.success, 0.08),
+                  borderColor: buttonPalette.secondaryBorder,
+                  backgroundColor: buttonPalette.secondaryBackground,
                 },
               ]}
               onPress={onSyncTodayHistory}
               disabled={actionLoading === 'sync-history'}>
               {actionLoading === 'sync-history' ? (
-                <ActivityIndicator size="small" color={palette.success} />
+                <ActivityIndicator
+                  size="small"
+                  color={buttonPalette.disabledText}
+                />
               ) : (
                 <>
-                  <Icon name="clock" size={15} color={palette.success} />
-                  <Text style={[styles.secondaryActionButtonText, { color: palette.success }]}>
+                  <Icon
+                    name="clock"
+                    size={15}
+                    color={buttonPalette.secondaryIcon}
+                  />
+                  <Text
+                    style={[
+                      styles.secondaryActionButtonText,
+                      { color: buttonPalette.secondaryText },
+                    ]}>
                     Histórico de hoje
                   </Text>
                 </>
@@ -236,15 +361,32 @@ export default function Food99StoreTab({
 
             <View style={styles.formRow}>
               <TouchableOpacity
-                style={[styles.secondaryActionButton, { borderColor: accentColor }]}
+                style={[
+                  styles.secondaryActionButton,
+                  {
+                    borderColor: buttonPalette.secondaryBorder,
+                    backgroundColor: buttonPalette.secondaryBackground,
+                  },
+                ]}
                 onPress={onManualBind}
                 disabled={actionLoading === 'bind-manual'}>
                 {actionLoading === 'bind-manual' ? (
-                  <ActivityIndicator size="small" color={accentColor} />
+                  <ActivityIndicator
+                    size="small"
+                    color={buttonPalette.disabledText}
+                  />
                 ) : (
                   <>
-                    <Icon name="link" size={15} color={accentColor} />
-                    <Text style={[styles.secondaryActionButtonText, { color: accentColor }]}>
+                    <Icon
+                      name="link"
+                      size={15}
+                      color={buttonPalette.secondaryIcon}
+                    />
+                    <Text
+                      style={[
+                        styles.secondaryActionButtonText,
+                        { color: buttonPalette.secondaryText },
+                      ]}>
                       Vincular shop_id
                     </Text>
                   </>

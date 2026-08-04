@@ -11,6 +11,30 @@ import styles from '../../Food99IntegrationPage/styles';
 
 const normalizeList = value => (Array.isArray(value) ? value : []);
 
+const resolveButtonPalette = (palette = {}, accentColor) => {
+  const primaryBackground =
+    palette.buttonBackground || accentColor || palette.primary || '#2563EB';
+  const primaryBorder = palette.buttonBorder || primaryBackground;
+  const primaryText = palette.buttonText || palette.white || '#FFFFFF';
+  const primaryIcon = palette.buttonIcon || primaryText;
+  const disabledBackground =
+    palette.buttonDisabledBackground || palette.border || '#CBD5E1';
+  const disabledBorder =
+    palette.buttonBorderSecondary || palette.border || '#CBD5E1';
+  const disabledText =
+    palette.buttonDisabledText || palette.textSecondary || '#64748B';
+
+  return {
+    primaryBackground,
+    primaryBorder,
+    primaryText,
+    primaryIcon,
+    disabledBackground,
+    disabledBorder,
+    disabledText,
+  };
+};
+
 const formatValue = value => {
   if (value === null || value === undefined || value === '') return '-';
   if (typeof value === 'number') return Number.isFinite(value) ? String(value) : '-';
@@ -203,7 +227,7 @@ export default function RemoteMarketplaceMenuTab({
   onLoad,
 }) {
   const categories = normalizeList(snapshot?.categories);
-  const buttonTextColor = palette?.white || '#fff';
+  const buttonPalette = resolveButtonPalette(palette, accentColor);
   const summaryItems = useMemo(() => {
     const summary = snapshot?.summary || {};
 
@@ -226,15 +250,39 @@ export default function RemoteMarketplaceMenuTab({
         </View>
 
         <TouchableOpacity
-          style={[styles.previewButton, {backgroundColor: accentColor}]}
+          style={[
+            styles.previewButton,
+            {
+              borderWidth: 1,
+              borderColor: loading
+                ? buttonPalette.disabledBorder
+                : buttonPalette.primaryBorder,
+              backgroundColor: loading
+                ? buttonPalette.disabledBackground
+                : buttonPalette.primaryBackground,
+            },
+          ]}
           onPress={onLoad}
           disabled={loading}>
           {loading ? (
-            <ActivityIndicator size="small" color={buttonTextColor} />
+            <ActivityIndicator
+              size="small"
+              color={buttonPalette.disabledText}
+            />
           ) : (
             <>
-              <Icon name="download-cloud" size={15} color={buttonTextColor} />
-              <Text style={styles.previewButtonText}>{buttonLabel}</Text>
+              <Icon
+                name="download-cloud"
+                size={15}
+                color={buttonPalette.primaryIcon}
+              />
+              <Text
+                style={[
+                  styles.previewButtonText,
+                  { color: buttonPalette.primaryText },
+                ]}>
+                {buttonLabel}
+              </Text>
             </>
           )}
         </TouchableOpacity>
