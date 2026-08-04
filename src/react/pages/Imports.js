@@ -31,8 +31,27 @@ const formatDate = (dateString) => {
 
 const Imports = ({ context = {}, onClose }) => {
     const peopleStore = useStore('people');
+    const themeStore = useStore('theme');
     const { getters: peopleGetters } = peopleStore.getters;
     const { currentCompany } = peopleGetters;
+    const themeColors = themeStore?.getters?.colors || {};
+    const buttonPalette = useMemo(
+        () => ({
+            buttonBackground: themeColors.buttonBackground,
+            buttonBorder: themeColors.buttonBorder,
+            buttonText: themeColors.buttonText,
+            buttonIcon: themeColors.buttonIcon || themeColors.buttonText,
+            modalCloseIcon: themeColors.modalCloseIcon || themeColors.iconColor,
+        }),
+        [
+            themeColors.buttonBackground,
+            themeColors.buttonBorder,
+            themeColors.buttonIcon,
+            themeColors.buttonText,
+            themeColors.iconColor,
+            themeColors.modalCloseIcon,
+        ],
+    );
 
     const importType = context.context;
     const title = context.title;
@@ -279,7 +298,7 @@ const Imports = ({ context = {}, onClose }) => {
             <View style={styles.headerBar}>
                 <Text style={styles.headerTitle}>{title}</Text>
                 <TouchableOpacity onPress={onClose}>
-                    <Icon name="close" size={24} color="#000" />
+                    <Icon name="close" size={24} color={buttonPalette.modalCloseIcon} />
                 </TouchableOpacity>
             </View>
 
@@ -287,13 +306,35 @@ const Imports = ({ context = {}, onClose }) => {
                 <View style={styles.topRow}>
                     <View style={styles.topRowActions}>
                         <TouchableOpacity style={styles.downloadButton} onPress={downloadTemplate}>
-                            <IconAdd name="download" size={20} color="#fff" />
-                            <Text style={styles.downloadText}>Baixar Modelo</Text>
+                            <View
+                                style={{
+                                    flexDirection: 'row',
+                                    alignItems: 'center',
+                                    backgroundColor: buttonPalette.buttonBackground,
+                                    borderColor: buttonPalette.buttonBorder,
+                                    borderWidth: 1,
+                                    borderRadius: 8,
+                                    paddingHorizontal: 12,
+                                    paddingVertical: 6,
+                                }}
+                            >
+                                <IconAdd name="download" size={20} color={buttonPalette.buttonIcon} />
+                                <Text style={[styles.downloadText, { color: buttonPalette.buttonText }]}>Baixar Modelo</Text>
+                            </View>
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={styles.refreshButton} onPress={onRefresh}>
-                            <Icon name="refresh" size={16} color={colors.primary} />
-                            <Text style={styles.refreshButtonText}>{refreshLabel}</Text>
+                        <TouchableOpacity
+                            style={[
+                                styles.refreshButton,
+                                {
+                                    backgroundColor: buttonPalette.buttonBackground,
+                                    borderColor: buttonPalette.buttonBorder,
+                                },
+                            ]}
+                            onPress={onRefresh}
+                        >
+                            <Icon name="refresh" size={16} color={buttonPalette.buttonIcon} />
+                            <Text style={[styles.refreshButtonText, { color: buttonPalette.buttonText }]}>{refreshLabel}</Text>
                         </TouchableOpacity>
                     </View>
 
@@ -328,10 +369,17 @@ const Imports = ({ context = {}, onClose }) => {
                     </View>
 
                     <TouchableOpacity
-                        style={styles.addButton}
+                        style={[
+                            styles.addButton,
+                            {
+                                backgroundColor: buttonPalette.buttonBackground,
+                                borderColor: buttonPalette.buttonBorder,
+                                borderWidth: 1,
+                            },
+                        ]}
                         onPress={() => setShowAddImportModal(true)}
                     >
-                        <IconAdd name="upload-file" size={24} color="#FFFFFF" />
+                        <IconAdd name="upload-file" size={24} color={buttonPalette.buttonIcon} />
                     </TouchableOpacity>
                 </View>
             </View>

@@ -18,9 +18,17 @@ const AddImportModal = ({ visible, onClose, onSuccess, context = {} }) => {
     const { showError, showSuccess } = useMessage();
     const peopleStore = useStore('people');
     const importsStore = useStore('imports');
+    const themeStore = useStore('theme');
     const getters = peopleStore.getters;
     const { currentCompany } = getters;
     const importActions = importsStore.actions || {};
+    const themeColors = themeStore?.getters?.colors || {};
+    const buttonPalette = {
+        buttonBackground: themeColors.buttonBackground,
+        buttonBorder: themeColors.buttonBorder,
+        buttonText: themeColors.buttonText,
+        buttonIcon: themeColors.buttonIcon || themeColors.buttonText,
+    };
 
     const modalTitle = global.t?.t('imports', 'title', 'new_import');
     const csvLabel = global.t?.t('imports', 'label', 'csv_file');
@@ -95,15 +103,21 @@ const AddImportModal = ({ visible, onClose, onSuccess, context = {} }) => {
                             <TouchableOpacity
                                 onPress={openManager}
                                 disabled={uploading}
-                                style={styles.filePicker}
+                                style={[
+                                    styles.filePicker,
+                                    {
+                                        backgroundColor: buttonPalette.buttonBackground,
+                                        borderColor: buttonPalette.buttonBorder,
+                                    },
+                                ]}
                             >
-                                <Text numberOfLines={1} style={styles.fileName}>
+                                <Text numberOfLines={1} style={[styles.fileName, { color: buttonPalette.buttonText }]}>
                                     {selectFileLabel}
                                 </Text>
                                 {uploading ? (
-                                    <ActivityIndicator />
+                                    <ActivityIndicator color={buttonPalette.buttonIcon} />
                                 ) : (
-                                    <Icon name="upload-file" size={22} color="#666" />
+                                    <Icon name="upload-file" size={22} color={buttonPalette.buttonIcon} />
                                 )}
                             </TouchableOpacity>
                         )}

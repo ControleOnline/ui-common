@@ -7,6 +7,35 @@ import AnimatedModal from '@controleonline/ui-common/src/react/components/Animat
 
 import styles from '../styles';
 
+const resolveButtonPalette = (palette, accentColor) => {
+  const primaryBackground =
+    palette.buttonBackground || accentColor || palette.primary;
+  const primaryBorder = palette.buttonBorder || primaryBackground;
+  const primaryText = palette.buttonText || palette.white;
+  const primaryIcon = palette.buttonIcon || primaryText;
+  const secondaryBackground =
+    palette.buttonBackgroundSecondary || palette.white;
+  const secondaryBorder = palette.buttonBorderSecondary || palette.border;
+  const secondaryText = palette.buttonTextSecondary || palette.textSecondary;
+  const disabledBackground =
+    palette.buttonDisabledBackground || secondaryBorder;
+  const disabledBorder = palette.buttonBorderSecondary || secondaryBorder;
+  const disabledText = palette.buttonDisabledText || secondaryText;
+
+  return {
+    primaryBackground,
+    primaryBorder,
+    primaryText,
+    primaryIcon,
+    secondaryBackground,
+    secondaryBorder,
+    secondaryText,
+    disabledBackground,
+    disabledBorder,
+    disabledText,
+  };
+};
+
 const createModalStyles = (palette = colors) =>
   StyleSheet.create({
     form: {
@@ -51,6 +80,8 @@ export default function Food99QuickWalletModal({
   onCreate,
 }) {
   const modalStyles = createModalStyles(palette);
+  const buttonPalette = resolveButtonPalette(palette, accentColor);
+  const isCreating = actionLoading === 'create-wallet';
 
   return (
     <AnimatedModal visible={visible} onRequestClose={onClose}>
@@ -87,19 +118,58 @@ export default function Food99QuickWalletModal({
           </View>
 
           <View style={styles.modalActions}>
-            <TouchableOpacity style={styles.secondaryButton} onPress={onClose}>
-              <Text style={styles.secondaryButtonText}>Cancelar</Text>
+            <TouchableOpacity
+              style={[
+                styles.secondaryButton,
+                {
+                  borderColor: buttonPalette.secondaryBorder,
+                  backgroundColor: buttonPalette.secondaryBackground,
+                },
+              ]}
+              onPress={onClose}>
+              <Text
+                style={[
+                  styles.secondaryButtonText,
+                  { color: buttonPalette.secondaryText },
+                ]}>
+                Cancelar
+              </Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.primaryButton, styles.modalPrimaryButton, { backgroundColor: accentColor }]}
+              style={[
+                styles.primaryButton,
+                styles.modalPrimaryButton,
+                {
+                  borderWidth: 1,
+                  borderColor: isCreating
+                    ? buttonPalette.disabledBorder
+                    : buttonPalette.primaryBorder,
+                  backgroundColor: isCreating
+                    ? buttonPalette.disabledBackground
+                    : buttonPalette.primaryBackground,
+                },
+              ]}
               onPress={onCreate}
-              disabled={actionLoading === 'create-wallet'}>
-              {actionLoading === 'create-wallet' ? (
-                <ActivityIndicator size="small" color={palette.white} />
+              disabled={isCreating}>
+              {isCreating ? (
+                <ActivityIndicator
+                  size="small"
+                  color={buttonPalette.disabledText}
+                />
               ) : (
                 <>
-                  <Icon name="plus" size={16} color={palette.white} />
-                  <Text style={styles.primaryButtonText}>Criar carteira</Text>
+                  <Icon
+                    name="plus"
+                    size={16}
+                    color={buttonPalette.primaryIcon}
+                  />
+                  <Text
+                    style={[
+                      styles.primaryButtonText,
+                      { color: buttonPalette.primaryText },
+                    ]}>
+                    Criar carteira
+                  </Text>
                 </>
               )}
             </TouchableOpacity>

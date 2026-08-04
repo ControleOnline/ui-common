@@ -117,6 +117,9 @@ export default function UnifiedPaymentBar({
               return (
                 <TouchableOpacity
                   key={key}
+                  accessibilityLabel={action?.accessibilityLabel || action?.label}
+                  accessibilityRole="button"
+                  accessibilityState={{disabled}}
                   disabled={disabled}
                   onPress={action?.onPress}
                   style={[

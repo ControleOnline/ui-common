@@ -34,6 +34,46 @@ describe('runtimeMenu', () => {
     expect(result[0].menus.map(item => item.menuType)).toEqual(['home', 'toolbar']);
   });
 
+  it('orders runtime modules by category sort order and label', () => {
+    const result = normalizeRuntimeMenuResponse({
+      modules: {
+        operations: {
+          label: 'Operacoes',
+          sortOrder: 20,
+          menus: [
+            {label: 'Pedidos', route: 'OrdersRoute', sortOrder: 5},
+          ],
+        },
+        finance: {
+          label: 'Financeiro',
+          sortOrder: 10,
+          menus: [
+            {label: 'Financeiro', route: 'FinanceRoute', sortOrder: 60},
+          ],
+        },
+        alpha: {
+          label: 'Abertura',
+          menus: [
+            {label: 'Z menu sem ordenar grupo', route: 'AlphaRoute', sortOrder: 99},
+          ],
+        },
+        config: {
+          label: 'Configuracoes',
+          menus: [
+            {label: 'Config', route: 'ConfigRoute', sortOrder: 1},
+          ],
+        },
+      },
+    });
+
+    expect(result.map(module => module.label)).toEqual([
+      'Abertura',
+      'Configuracoes',
+      'Financeiro',
+      'Operacoes',
+    ]);
+  });
+
   it('builds route sets and checks super admin role', () => {
     const menus = normalizeRuntimeMenuResponse({
       modules: {
@@ -171,7 +211,7 @@ describe('runtimeMenu', () => {
 
     expect(menus).toHaveLength(1);
     expect(menus[0].label).toBe('Configuracoes');
-    expect(menus[0].menus).toHaveLength(4);
+    expect(menus[0].menus).toHaveLength(5);
     expect(menus[0].menus[0]).toMatchObject({
       label: 'Menus por perfil',
       menuKey: 'menu_access',
@@ -185,12 +225,18 @@ describe('runtimeMenu', () => {
       menuType: 'home',
     });
     expect(menus[0].menus[2]).toMatchObject({
+      label: 'Tenancies',
+      menuKey: 'tenancies',
+      route: 'TenanciesPage',
+      menuType: 'home',
+    });
+    expect(menus[0].menus[3]).toMatchObject({
       label: 'Domínios',
       menuKey: 'people_domains',
       route: 'PeopleDomainsPage',
       menuType: 'home',
     });
-    expect(menus[0].menus[3]).toMatchObject({
+    expect(menus[0].menus[4]).toMatchObject({
       label: 'Fluxogramas',
       menuKey: 'flowcharts',
       route: 'FlowchartsPage',

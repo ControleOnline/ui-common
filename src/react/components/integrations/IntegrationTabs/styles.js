@@ -11,8 +11,8 @@ const createStyles = (palette = colors) =>
     minHeight: 40,
     borderRadius: 999,
     borderWidth: 1,
-    borderColor: palette.border,
-    backgroundColor: palette.white,
+    borderColor: palette.buttonBorderSecondary || palette.border,
+    backgroundColor: palette.buttonBackgroundSecondary || palette.white,
     paddingHorizontal: 14,
     paddingVertical: 8,
     flexDirection: 'row',
@@ -23,13 +23,13 @@ const createStyles = (palette = colors) =>
   tabLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: palette.textSecondary,
+    color: palette.buttonTextSecondary || palette.textSecondary,
   },
   tabBadge: {
     minWidth: 22,
     height: 22,
     borderRadius: 999,
-    backgroundColor: palette.border,
+    backgroundColor: palette.badgeBackground || palette.border,
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: 6,
@@ -37,7 +37,7 @@ const createStyles = (palette = colors) =>
   tabBadgeText: {
     fontSize: 11,
     fontWeight: '800',
-    color: palette.textSecondary,
+    color: palette.buttonIconSecondary || palette.textSecondary,
   },
 });
 

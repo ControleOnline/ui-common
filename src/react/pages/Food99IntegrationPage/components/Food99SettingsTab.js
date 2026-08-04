@@ -14,6 +14,35 @@ import {
   sanitizeTimeInput,
 } from '../utils';
 
+const resolveButtonPalette = (palette, accentColor) => {
+  const primaryBackground =
+    palette.buttonBackground || accentColor || palette.primary;
+  const primaryBorder = palette.buttonBorder || primaryBackground;
+  const primaryText = palette.buttonText || palette.white;
+  const primaryIcon = palette.buttonIcon || primaryText;
+  const secondaryBackground =
+    palette.buttonBackgroundSecondary || palette.white;
+  const secondaryBorder = palette.buttonBorderSecondary || palette.border;
+  const secondaryText = palette.buttonTextSecondary || palette.textSecondary;
+  const secondaryIcon = palette.buttonIconSecondary || secondaryText;
+  const disabledBackground =
+    palette.buttonDisabledBackground || secondaryBorder;
+  const disabledText = palette.buttonDisabledText || secondaryText;
+
+  return {
+    primaryBackground,
+    primaryBorder,
+    primaryText,
+    primaryIcon,
+    secondaryBackground,
+    secondaryBorder,
+    secondaryText,
+    secondaryIcon,
+    disabledBackground,
+    disabledText,
+  };
+};
+
 // Aba isolada para configurações operacionais da loja.
 export default function Food99SettingsTab({
   shadowStyle,
@@ -28,6 +57,8 @@ export default function Food99SettingsTab({
   onSave,
   palette = colors,
 }) {
+  const buttonPalette = resolveButtonPalette(palette, accentColor);
+
   return (
     <View style={[styles.panel, shadowStyle]}>
       <View style={styles.panelHeader}>
@@ -115,12 +146,24 @@ export default function Food99SettingsTab({
                     }
                     style={[
                       styles.optionChip,
-                      selected && {
-                        borderColor: accentColor,
-                        backgroundColor: withOpacity(accentColor, 0.12),
+                      {
+                        borderColor: selected
+                          ? buttonPalette.primaryBorder
+                          : buttonPalette.secondaryBorder,
+                        backgroundColor: selected
+                          ? buttonPalette.primaryBackground
+                          : buttonPalette.secondaryBackground,
                       },
                     ]}>
-                    <Text style={[styles.optionChipText, selected && { color: accentColor }]}>
+                    <Text
+                      style={[
+                        styles.optionChipText,
+                        {
+                          color: selected
+                            ? buttonPalette.primaryText
+                            : buttonPalette.secondaryText,
+                        },
+                      ]}>
                       {option.label}
                     </Text>
                   </TouchableOpacity>
@@ -167,12 +210,22 @@ export default function Food99SettingsTab({
                 styles.inlineAction,
                 {
                   borderWidth: 1,
-                  borderColor: withOpacity(accentColor, 0.22),
-                  backgroundColor: withOpacity(accentColor, 0.08),
+                  borderColor: buttonPalette.secondaryBorder,
+                  backgroundColor: buttonPalette.secondaryBackground,
                 },
               ]}>
-              <Icon name="plus" size={14} color={accentColor} />
-              <Text style={[styles.inlineActionText, { color: accentColor }]}>Cadastro rapido</Text>
+              <Icon
+                name="plus"
+                size={14}
+                color={buttonPalette.secondaryIcon}
+              />
+              <Text
+                style={[
+                  styles.inlineActionText,
+                  { color: buttonPalette.secondaryText },
+                ]}>
+                Cadastro rapido
+              </Text>
             </TouchableOpacity>
           </View>
           <View style={styles.pickerWrap}>
@@ -211,15 +264,39 @@ export default function Food99SettingsTab({
 
       <View style={styles.actionRow}>
         <TouchableOpacity
-          style={[styles.primaryButton, { backgroundColor: accentColor }]}
+          style={[
+            styles.primaryButton,
+            {
+              borderWidth: 1,
+              borderColor: buttonPalette.primaryBorder,
+              backgroundColor: buttonPalette.primaryBackground,
+            },
+            actionLoading === 'save-settings' && {
+              borderColor: buttonPalette.secondaryBorder,
+              backgroundColor: buttonPalette.disabledBackground,
+            },
+          ]}
           onPress={onSave}
           disabled={actionLoading === 'save-settings'}>
           {actionLoading === 'save-settings' ? (
-            <ActivityIndicator size="small" color={palette.white} />
+            <ActivityIndicator
+              size="small"
+              color={buttonPalette.disabledText}
+            />
           ) : (
             <>
-              <Icon name="save" size={16} color={palette.white} />
-              <Text style={styles.primaryButtonText}>Salvar configuracoes</Text>
+              <Icon
+                name="save"
+                size={16}
+                color={buttonPalette.primaryIcon}
+              />
+              <Text
+                style={[
+                  styles.primaryButtonText,
+                  { color: buttonPalette.primaryText },
+                ]}>
+                Salvar configuracoes
+              </Text>
             </>
           )}
         </TouchableOpacity>

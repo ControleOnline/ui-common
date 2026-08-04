@@ -26,19 +26,29 @@ import {
   INTEGRATION_LIST,
   parseIntegrationCollection,
 } from './integrationsCatalog';
-import styles from './Integrations.styles';
+import { createStyles } from './Integrations.styles';
 
 const tt = (type, key) => global.t?.t('configs', type, key);
 
-const shadowStyle = Platform.select({
-  ios: {
-    shadowColor: '#0F172A',
-    shadowOffset: {width: 0, height: 8},
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-  },
-  android: {elevation: 3},
-  web: {boxShadow: '0 10px 24px rgba(15,23,42,0.08)'},
+const resolveIntegrationColors = brandColors => ({
+  ...brandColors,
+  background: brandColors.background || '#F8FAFC',
+  cardBackground: brandColors.cardBackground || brandColors.surface || '#FFFFFF',
+  cardBorder: brandColors.cardBorder || brandColors.border || '#E2E8F0',
+  cardIconBackground: brandColors.cardIconBackground || brandColors.iconBackground || '#EEF2FF',
+  cardIconColor: brandColors.cardIconColor || brandColors.iconColor || '#0F172A',
+  cardText: brandColors.cardText || brandColors.textPrimary || brandColors.text || '#0F172A',
+  text: brandColors.textPrimary || brandColors.text || '#0F172A',
+  mutedText: brandColors.textMuted || brandColors.textSecondary || '#64748B',
+  badgeBackground: brandColors.badgeBackground || brandColors.buttonBackgroundSecondary || '#F8FAFC',
+  badgeBorder: brandColors.badgeBorder || brandColors.buttonBorderSecondary || '#E2E8F0',
+  badgeText: brandColors.badgeText || brandColors.textSecondary || '#64748B',
+  badgeSelectedBackground: brandColors.badgeSelectedBackground || brandColors.buttonBackground || '#EFF6FF',
+  badgeSelectedBorder: brandColors.badgeSelectedBorder || brandColors.buttonBorder || '#BFDBFE',
+  badgeSelectedText: brandColors.badgeSelectedText || brandColors.buttonText || '#0F172A',
+  textSuccess: brandColors.textSuccess || '#16A34A',
+  textWarning: brandColors.textWarning || '#B45309',
+  iconColor: brandColors.iconColor || brandColors.text || '#0F172A',
 });
 
 const formatApiError = error => {
@@ -59,12 +69,12 @@ const isConnectedValue = value =>
   value === '1' ||
   String(value).trim().toLowerCase() === 'true';
 
-const renderIntegrationIcon = integration => {
+const renderIntegrationIcon = (integration, resolvedStyles, iconColor) => {
   if (integration.logo) {
     return (
       <Image
         source={integration.logo}
-        style={styles.integrationLogo}
+        style={resolvedStyles.integrationLogo}
         resizeMode="contain"
       />
     );
@@ -74,7 +84,7 @@ const renderIntegrationIcon = integration => {
     <Icon
       name={integration.icon || 'box'}
       size={20}
-      color={integration.accent}
+      color={iconColor}
     />
   );
 };
@@ -96,6 +106,14 @@ export default function IntegrationsPage({navigation}) {
         colors,
       ),
     [themeColors, currentCompany?.id],
+  );
+  const integrationColors = useMemo(
+    () => resolveIntegrationColors(brandColors),
+    [brandColors],
+  );
+  const styles = useMemo(
+    () => createStyles(integrationColors),
+    [integrationColors],
   );
 
   const [loading, setLoading] = useState(true);
@@ -173,7 +191,7 @@ export default function IntegrationsPage({navigation}) {
     return (
       <SafeAreaView style={styles.container} edges={['bottom']}>
         <View style={styles.centerState}>
-          <Icon name="building" size={32} color="#94A3B8" />
+          <Icon name="building" size={32} color={integrationColors.iconColor} />
           <Text style={styles.centerStateTitle}>{tt('integrations_title', 'selectCompany') || 'Selecione uma empresa'}</Text>
           <Text style={styles.centerStateText}>
             {tt('integrations_text', 'selectCompany') || 'O hub de integracoes depende da empresa ativa.'}
@@ -224,30 +242,42 @@ export default function IntegrationsPage({navigation}) {
         <View style={styles.integrationGrid}>
           {integrationCards.map(integration => {
             const connected = Boolean(integration.connected);
-            const statusTone = connected ? '#16A34A' : '#e67e22';
+            const statusTone = connected
+              ? (integrationColors.textSuccess || integrationColors.badgeSelectedText)
+              : (integrationColors.textWarning || integrationColors.badgeText);
             const statusText = connected
               ? tt('integrations_status', 'connected') || 'Conectado'
               : tt('integrations_status', 'pending') || 'Pendente';
+            const statusBackgroundColor = connected
+              ? (integrationColors.badgeSelectedBackground || withOpacity(statusTone, 0.12))
+              : (integrationColors.badgeBackground || withOpacity(statusTone, 0.12));
+            const statusBorderColor = connected
+              ? (integrationColors.badgeSelectedBorder || withOpacity(statusTone, 0.22))
+              : (integrationColors.badgeBorder || withOpacity(statusTone, 0.22));
 
             return (
               <TouchableOpacity
                 key={integration.key}
-                style={[styles.integrationCard, shadowStyle]}
+                style={styles.integrationCard}
                 activeOpacity={0.9}
                 onPress={() => handleOpenIntegration(integration)}>
                 <View style={styles.integrationTopRow}>
-                  <View
-                    style={[
-                      styles.integrationIconWrap,
-                      {backgroundColor: withOpacity(integration.accent, 0.12)},
-                    ]}>
-                    {renderIntegrationIcon(integration)}
+                  <View style={styles.integrationHeaderLeft}>
+                    <View style={styles.integrationIconWrap}>
+                      {renderIntegrationIcon(integration, styles, integrationColors.cardIconColor)}
+                    </View>
+                    <Text style={styles.integrationTitle} numberOfLines={1}>
+                      {integration.label}
+                    </Text>
                   </View>
 
                   <View
                     style={[
                       styles.integrationStatus,
-                      {backgroundColor: withOpacity(statusTone, 0.12)},
+                      {
+                        backgroundColor: statusBackgroundColor,
+                        borderColor: statusBorderColor,
+                      },
                     ]}>
                     <Text
                       style={[
@@ -258,10 +288,6 @@ export default function IntegrationsPage({navigation}) {
                     </Text>
                   </View>
                 </View>
-
-                <Text style={styles.integrationTitle} numberOfLines={1}>
-                  {integration.label}
-                </Text>
               </TouchableOpacity>
             );
           })}
