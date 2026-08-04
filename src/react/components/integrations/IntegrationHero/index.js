@@ -19,7 +19,13 @@ export default function IntegrationHero({
   const styles = createStyles(palette);
 
   return (
-    <View style={[styles.card, shadowStyle, { backgroundColor: accentColor }]}>
+    <View
+      style={[
+        styles.card,
+        shadowStyle,
+        { backgroundColor: palette.actionBackground || accentColor },
+      ]}
+    >
       <View style={styles.copy}>
         <Text style={styles.eyebrow}>{eyebrow}</Text>
         <Text style={styles.title}>{title}</Text>
@@ -30,7 +36,11 @@ export default function IntegrationHero({
         {logo ? (
           <Image source={logo} style={styles.logo} resizeMode="contain" />
         ) : (
-          <Icon name={iconName} size={20} color={accentColor} />
+          <Icon
+            name={iconName}
+            size={20}
+            color={palette.cardIconColor || palette.iconColor || accentColor}
+          />
         )}
       </View>
     </View>

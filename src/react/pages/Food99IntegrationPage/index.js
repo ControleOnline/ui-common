@@ -83,6 +83,30 @@ export default function Food99IntegrationPage() {
     [themeColors, currentCompany?.id],
   );
 
+  const heroPalette = useMemo(
+    () => ({
+      ...brandColors,
+      actionBackground:
+        brandColors.buttonBackground ||
+        brandColors.actionBackground ||
+        brandColors.primary,
+      actionText:
+        brandColors.buttonText ||
+        brandColors.actionText ||
+        brandColors.white,
+      cardIconBackground:
+        brandColors.cardIconBackground ||
+        brandColors.iconBackground ||
+        brandColors.white,
+      cardIconColor:
+        brandColors.cardIconColor ||
+        brandColors.iconColor ||
+        brandColors.buttonText ||
+        brandColors.textPrimary,
+    }),
+    [brandColors],
+  );
+
   const providerId = currentCompany?.id;
   const logo = getOrderChannelLogo({app: '99Food'});
 
@@ -1365,6 +1389,7 @@ export default function Food99IntegrationPage() {
         <IntegrationHero
           shadowStyle={integrationCardShadowStyle}
           accentColor={brandColors.primary}
+          palette={heroPalette}
           eyebrow="Marketplace"
           title="Integração 99Food"
           description="Separei leitura geral, vínculo da loja, configuração operacional e catálogo para reduzir a complexidade da tela."

@@ -58,8 +58,17 @@ export default function Food99OverviewTab({
       <View style={styles.summaryGrid}>
         {summaryCards.map(card => (
           <View key={card.key} style={[styles.summaryCard, shadowStyle]}>
-            <View style={[styles.summaryIcon, { backgroundColor: withOpacity(card.color, 0.12) }]}>
-              <Icon name={card.icon} size={18} color={card.color} />
+            <View
+              style={[
+                styles.summaryIcon,
+                { backgroundColor: palette.cardIconBackground || palette.iconBackground },
+              ]}
+            >
+              <Icon
+                name={card.icon}
+                size={18}
+                color={palette.cardIconColor || palette.iconColor || palette.text}
+              />
             </View>
             <Text style={styles.summaryValue}>{card.value}</Text>
             <Text style={styles.summaryLabel}>{card.label}</Text>
