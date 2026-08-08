@@ -175,5 +175,4 @@ export {
   DEFAULT_NETWORK_PRINTER_PORT,
   NETWORK_PRINTER_PORT_CONFIG_KEY,
   isPdvPrinterEnabled,
-  buildProviderManagedDeviceConfigs,
 };
