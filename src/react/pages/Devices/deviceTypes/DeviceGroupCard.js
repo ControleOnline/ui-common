@@ -38,7 +38,6 @@ export default function DeviceGroupCard({
   runtimeDeviceType,
   showCurrentPdvSetup,
 }) {
-item: deviceGroup}) => {
         const isCurrentDevice = isCurrentDeviceGroup({
           deviceGroup,
           runtimeDeviceIdentifier,
