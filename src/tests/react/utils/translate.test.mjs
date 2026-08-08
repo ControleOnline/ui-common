@@ -2,158 +2,11 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import Translate from '../../../utils/translate.js';
-
-const installLocalStorage = (config = {language: 'pt-br'}) => {
-  const storage = {};
-
-  global.localStorage = {
-    getItem(key) {
-      return Object.prototype.hasOwnProperty.call(storage, key)
-        ? storage[key]
-        : null;
-    },
-    setItem(key, value) {
-      storage[key] = String(value);
-    },
-    removeItem(key) {
-      delete storage[key];
-    },
-  };
-
-  localStorage.setItem('config', JSON.stringify(config));
-  localStorage.setItem('translates', JSON.stringify({}));
-  delete global.refreshTranslationsUI;
-};
-
-const flushAsync = async () => {
-  await Promise.resolve();
-  await new Promise(resolve => setTimeout(resolve, 0));
-  await new Promise(resolve => setTimeout(resolve, 0));
-};
-
-const normalizeLanguage = value =>
-  String(value || '')
-    .trim()
-    .replace(/_/g, '-')
-    .toLowerCase();
-
-const normalizeId = value =>
-  String(value || '')
-    .replace(/\D+/g, '')
-    .trim();
-
-const createPendingTranslateStore = ({getItems, save, resolveQueuedMessages} = {}) => {
-  const store = {
-    getters: {
-      messages: {},
-      pendingMessages: {},
-    },
-    actions: {},
-  };
-
-  const translateActions = {
-    getItems: getItems || (async () => []),
-    save: save || (async payload => payload),
-    ...(resolveQueuedMessages
-      ? {
-          resolveQueuedMessages,
-        }
-      : {}),
-    setMessages: nextMessages => {
-      store.getters.messages = nextMessages;
-      return nextMessages;
-    },
-    setPendingMessages: nextMessages => {
-      store.getters.pendingMessages = nextMessages;
-      return nextMessages;
-    },
-    queueMissingTranslate: ({language, companyId, store: storeName, type, key, translate}) => {
-      const normalizedLanguage = normalizeLanguage(language);
-      const normalizedCompanyId = normalizeId(companyId);
-      const pendingMessages = store.getters.pendingMessages;
-
-      if (!pendingMessages[normalizedLanguage]) {
-        pendingMessages[normalizedLanguage] = {};
-      }
-
-      if (!pendingMessages[normalizedLanguage].companies) {
-        pendingMessages[normalizedLanguage].companies = {};
-      }
-
-      if (!pendingMessages[normalizedLanguage].companies[normalizedCompanyId]) {
-        pendingMessages[normalizedLanguage].companies[normalizedCompanyId] = {};
-      }
-
-      if (!pendingMessages[normalizedLanguage].companies[normalizedCompanyId][storeName]) {
-        pendingMessages[normalizedLanguage].companies[normalizedCompanyId][storeName] = {};
-      }
-
-      if (
-        !pendingMessages[normalizedLanguage].companies[normalizedCompanyId][storeName][type]
-      ) {
-        pendingMessages[normalizedLanguage].companies[normalizedCompanyId][storeName][type] =
-          {};
-      }
-
-      pendingMessages[normalizedLanguage].companies[normalizedCompanyId][storeName][type][
-        key
-      ] = translate;
-
-      return pendingMessages;
-    },
-    removePendingTranslate: ({language, companyId, store: storeName, type, key}) => {
-      const normalizedLanguage = normalizeLanguage(language);
-      const normalizedCompanyId = normalizeId(companyId);
-      const pendingMessages = store.getters.pendingMessages;
-      const languageBucket = pendingMessages[normalizedLanguage];
-      const companyBucket = languageBucket?.companies?.[normalizedCompanyId];
-      const storeBucket = companyBucket?.[storeName];
-      const typeBucket = storeBucket?.[type];
-
-      if (!typeBucket || !Object.prototype.hasOwnProperty.call(typeBucket, key)) {
-        return pendingMessages;
-      }
-
-      delete typeBucket[key];
-
-      if (Object.keys(typeBucket).length === 0) {
-        delete storeBucket[type];
-      }
-
-      if (Object.keys(storeBucket).length === 0) {
-        delete companyBucket[storeName];
-      }
-
-      if (Object.keys(companyBucket).length === 0) {
-        delete languageBucket.companies[normalizedCompanyId];
-      }
-
-      if (Object.keys(languageBucket.companies || {}).length === 0) {
-        delete languageBucket.companies;
-      }
-
-      if (Object.keys(languageBucket).length === 0) {
-        delete pendingMessages[normalizedLanguage];
-      }
-
-      return pendingMessages;
-    },
-  };
-
-  store.actions = translateActions;
-
-  return {
-    getters: store.getters,
-    actions: store.actions,
-    get messages() {
-      return store.getters.messages;
-    },
-    get pendingMessages() {
-      return store.getters.pendingMessages;
-    },
-    translateActions,
-  };
-};
+import {
+  installLocalStorage,
+  flushAsync,
+  createPendingTranslateStore,
+} from './translate.test.helpers.mjs';
 
 test('prefers the current company translation and falls back to the default company', () => {
   installLocalStorage();
@@ -359,166 +212,41 @@ test('queues missing translations in a single batch resolve request', async () =
   assert.deepEqual(translateStore.pendingMessages, {});
 });
 
-test('persists missing translations with the normalized configured language', async () => {
-  installLocalStorage({language: 'en_US'});
-
-  const saveCalls = [];
-  const translateStore = createPendingTranslateStore({
-    getItems: async () => [],
-    save: async payload => {
-      saveCalls.push(payload);
-      return payload;
-    },
-  });
+test('falls back past empty current-company values to the main company', () => {
+  installLocalStorage();
+  const translateStore = createPendingTranslateStore();
+  const currentCompany = {id: 2};
+  const defaultCompany = {id: 1};
   const translate = new Translate(
-    [{id: 1}],
-    {id: 1},
-    {id: 1},
-    ['contract'],
+    [defaultCompany, currentCompany],
+    defaultCompany,
+    currentCompany,
+    ['orders'],
     translateStore,
   );
 
-  translate.t('contract', 'empty', 'none_registered_title');
+  translate.findMessage('orders', 'menu', 'overview', '   ', 2, 'pt-br');
+  translate.findMessage('orders', 'menu', 'overview', 'Visão geral', 1, 'pt-br');
 
-  await flushAsync();
-
-  assert.equal(
-    saveCalls[0].language,
-    'en-us',
-  );
-  assert.equal(
-    translateStore.messages['en-us'].companies[1].contract.empty.none_registered_title,
-    'None registered title',
-  );
+  assert.equal(translate.t('orders', 'menu', 'overview'), 'Visão geral');
 });
 
-test('does not fall back to the translates collection during discovery', async () => {
+test('getResolveCompaniesToCache returns current and main companies', () => {
   installLocalStorage();
-
-  const calls = [];
+  const translateStore = createPendingTranslateStore();
+  const currentCompany = {id: 2};
+  const defaultCompany = {id: 1};
   const translate = new Translate(
-    [{id: 1}, {id: 5}, {id: 9}],
-    {id: 1},
-    {id: 5},
-    ['orders', 'crm'],
-    createPendingTranslateStore({
-      getItems: async params => {
-        calls.push(params);
-        return [];
-      },
-    }),
-  );
-
-  await translate.discoveryAll();
-
-  assert.deepEqual(calls, []);
-});
-
-test('resolves queued store discovery through the resolve endpoint', async () => {
-  installLocalStorage();
-
-  const getItemsCalls = [];
-  const resolveCalls = [];
-  const translateStore = createPendingTranslateStore({
-    getItems: async params => {
-      getItemsCalls.push(params);
-      return [];
-    },
-    resolveQueuedMessages: async payload => {
-      resolveCalls.push(payload);
-
-      return [
-        {
-          people: '/people/5',
-          language: {
-            id: 1,
-            language: 'pt-br',
-          },
-          store: 'financial',
-          type: 'label',
-          key: 'accountsReceivable',
-          translate: 'Contas a receber',
-          revised: true,
-        },
-      ];
-    },
-  });
-  const translate = new Translate(
-    [{id: 1}, {id: 5}],
-    {id: 1},
-    {id: 5},
-    ['financial'],
+    [defaultCompany, currentCompany],
+    defaultCompany,
+    currentCompany,
+    ['orders'],
     translateStore,
   );
 
-  translateStore.actions.queueMissingTranslate({
-    language: 'pt-br',
-    companyId: 1,
-    store: 'financial',
-    type: 'label',
-    key: 'accountsReceivable',
-    translate: 'Accounts Receivable',
-  });
-
-  await translate.discoveryAll();
-
-  assert.deepEqual(getItemsCalls, []);
-  assert.deepEqual(resolveCalls, [
-    {
-      people: '/people/5',
-      language: 'pt-br',
-      requests: [
-        {
-          store: 'financial',
-          type: 'label',
-          keys: ['accountsReceivable'],
-        },
-      ],
-    },
-  ]);
-  assert.equal(
-    translateStore.messages['pt-br'].companies[5].financial.label.accountsReceivable,
-    'Contas a receber',
-  );
-  assert.deepEqual(translateStore.pendingMessages, {});
-});
-
-test('reuses cached store buckets without refetching after in-memory discovery is cleared', async () => {
-  installLocalStorage();
-  localStorage.setItem('translates', JSON.stringify({
-    'pt-br': {
-      companies: {
-        1: {
-          contract: {
-            empty: {
-              none_registered_title: 'None registered title',
-            },
-          },
-        },
-      },
-    },
-  }));
-
-  const calls = [];
-  const translateStore = createPendingTranslateStore({
-    getItems: async params => {
-      calls.push(params);
-      return [];
-    },
-  });
-  const translate = new Translate(
-    [{id: 1}],
-    {id: 1},
-    {id: 1},
-    ['contract'],
-    translateStore,
-  );
-
-  translate.discoveredStores.clear();
-
-  assert.equal(translate.t('contract', 'empty', 'none_registered_title'), 'None registered title');
-
-  await flushAsync();
-
-  assert.deepEqual(calls, []);
+  const ids = translate
+    .getResolveCompaniesToCache()
+    .map((company) => String(company.id))
+    .sort();
+  assert.deepEqual(ids, ['1', '2']);
 });

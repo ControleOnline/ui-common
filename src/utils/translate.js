@@ -1,12 +1,40 @@
-const TRANSLATES_STORAGE_KEY = "translates";
+import {
+  formatMessage,
+  isNonEmptyMessage,
+  normalizeId,
+  normalizeLanguageCode,
+  resolveReferenceId,
+} from "./translateNormalize.js";
+import {
+  TRANSLATES_STORAGE_KEY,
+  collectCompaniesToCache,
+  getCompanyBucket as readCompanyBucket,
+  getLanguageBucket as readLanguageBucket,
+  getStoreBucket as readStoreBucket,
+  loadStorageObject,
+  writeMessageToBucket,
+} from "./translateStorage.js";
+import {
+  getPendingMessages as readPendingMessages,
+  getQueuedTranslateGroups as readQueuedGroups,
+  getQueuedTranslateGroupsForStore as readQueuedGroupsForStore,
+  hasPendingTranslate as readHasPendingTranslate,
+} from "./translatePending.js";
+import {
+  discoveryAll as runDiscoveryAll,
+  discoveryStoreTranslate as runDiscoveryStoreTranslate,
+  fetchTranslates as runFetchTranslates,
+  resolveStoreTranslates as runResolveStoreTranslates,
+} from "./translateDiscovery.js";
 
 export default class Translate {
   constructor(companies, defaultCompany, currentCompany, stores, translateStore) {
-    this.translates = this.loadStorageObject(TRANSLATES_STORAGE_KEY);
+    this.translates = loadStorageObject(TRANSLATES_STORAGE_KEY);
 
-    this.language = this.normalizeLanguageCode(
-      JSON.parse(localStorage.getItem("config") || "{}").language
-    ) || "pt-br";
+    this.language =
+      normalizeLanguageCode(
+        JSON.parse(localStorage.getItem("config") || "{}").language,
+      ) || "pt-br";
 
     this.defaultCompany = defaultCompany;
     this.currentCompany = currentCompany;
@@ -28,185 +56,85 @@ export default class Translate {
     this.hydrateDiscoveredStores();
   }
 
-  loadStorageObject(key) {
-    if (typeof localStorage === "undefined") {
-      return {};
-    }
-
-    try {
-      const value = localStorage.getItem(key);
-      if (!value) return {};
-
-      const parsed = JSON.parse(value);
-      return parsed && typeof parsed === "object" ? parsed : {};
-    } catch {
-      return {};
-    }
-  }
-
-  getLanguageBucket(language = this.language, createIfMissing = false) {
-    const normalizedLanguage = this.normalizeLanguageCode(language);
-    if (!normalizedLanguage) return null;
-
-    if (!this.translates[normalizedLanguage] && createIfMissing) {
-      this.translates[normalizedLanguage] = {};
-    }
-
-    return this.translates[normalizedLanguage] || null;
-  }
-
-  getCompanyBucket(companyId, createIfMissing = false, language = this.language) {
-    const normalizedCompanyId = this.normalizeId(companyId);
-    if (!normalizedCompanyId) return null;
-
-    const languageBucket = this.getLanguageBucket(language, createIfMissing);
-    if (!languageBucket) return null;
-
-    if (!languageBucket.companies && createIfMissing) {
-      languageBucket.companies = {};
-    }
-
-    if (
-      createIfMissing &&
-      languageBucket.companies &&
-      !languageBucket.companies[normalizedCompanyId]
-    ) {
-      languageBucket.companies[normalizedCompanyId] = {};
-    }
-
-    return languageBucket.companies?.[normalizedCompanyId] || null;
-  }
-
-  getStoreBucket(companyId, store, createIfMissing = false, language = this.language) {
-    if (!store) return null;
-
-    if (companyId) {
-      const companyBucket = this.getCompanyBucket(companyId, createIfMissing, language);
-      if (!companyBucket) return null;
-
-      if (createIfMissing && !companyBucket[store]) {
-        companyBucket[store] = {};
-      }
-
-      return companyBucket[store] || null;
-    }
-
-    const languageBucket = this.getLanguageBucket(language, createIfMissing);
-    if (!languageBucket) return null;
-
-    if (createIfMissing && !languageBucket[store]) {
-      languageBucket[store] = {};
-    }
-
-    return languageBucket[store] || null;
-  }
-
   normalizeId(value) {
-    if (value == null) return null;
-
-    const match = String(value).match(/\d+/);
-    return match?.[0] || null;
+    return normalizeId(value);
   }
 
   normalizeLanguageCode(value) {
-    if (typeof value !== "string") return "";
+    return normalizeLanguageCode(value);
+  }
 
-    return value.trim().replace(/_/g, "-").toLowerCase();
+  formatMessage(key) {
+    return formatMessage(key);
+  }
+
+  resolveReferenceId(value) {
+    if (value == null) return null;
+    if (typeof value === "object") {
+      return this.normalizeId(
+        value.id || value["@id"] || value.people || value.language,
+      );
+    }
+    return this.normalizeId(value);
+  }
+
+  getLanguageBucket(language = this.language, createIfMissing = false) {
+    return readLanguageBucket(this.translates, language, createIfMissing);
+  }
+
+  getCompanyBucket(companyId, createIfMissing = false, language = this.language) {
+    return readCompanyBucket(
+      this.translates,
+      companyId,
+      createIfMissing,
+      language,
+    );
+  }
+
+  getStoreBucket(companyId, store, createIfMissing = false, language = this.language) {
+    return readStoreBucket(
+      this.translates,
+      companyId,
+      store,
+      createIfMissing,
+      language,
+    );
   }
 
   getCompaniesToCache() {
-    const candidates = [
-      this.defaultCompany,
-      this.currentCompany,
-    ].filter((company) => company?.id);
-
-    const unique = [];
-    const seen = new Set();
-
-    candidates.forEach((company) => {
-      const companyId = this.normalizeId(company.id);
-      if (!companyId || seen.has(companyId)) return;
-
-      seen.add(companyId);
-      unique.push(company);
-    });
-
-    return unique;
+    return collectCompaniesToCache(this.defaultCompany, this.currentCompany);
   }
 
+  // Always load current + main company so runtime resolution can apply
+  // current company -> main company -> global fallback (getMessageFromBuckets).
   getResolveCompaniesToCache() {
-    const company = this.currentCompany?.id
-      ? this.currentCompany
-      : this.defaultCompany;
-
-    return company?.id ? [company] : [];
+    return this.getCompaniesToCache();
   }
 
   getStoreList() {
     if (Array.isArray(this.stores)) {
       return this.stores.filter(Boolean);
     }
-
     return this.stores ? [this.stores] : [];
   }
 
   getPendingMessages() {
-    const messages = this.translateStore?.getters?.pendingMessages;
-    if (!messages || typeof messages !== "object" || Array.isArray(messages)) {
-      return {};
-    }
-
-    return messages;
-  }
-
-  getPendingLanguageBucket(language = this.language) {
-    const pendingMessages = this.getPendingMessages();
-    const normalizedLanguage = this.normalizeLanguageCode(language);
-    if (!normalizedLanguage) return null;
-
-    return pendingMessages[normalizedLanguage] || null;
-  }
-
-  getPendingCompanyBucket(companyId, language = this.language) {
-    const normalizedCompanyId = this.normalizeId(companyId);
-    if (!normalizedCompanyId) return null;
-
-    const languageBucket = this.getPendingLanguageBucket(language);
-    if (!languageBucket) return null;
-
-    const companiesBucket = languageBucket.companies;
-    if (!companiesBucket || typeof companiesBucket !== "object") {
-      return null;
-    }
-
-    return companiesBucket[normalizedCompanyId] || null;
-  }
-
-  getPendingStoreBucket(companyId, store, language = this.language) {
-    const normalizedStore = String(store || "").trim();
-    if (!normalizedStore) return null;
-
-    const companyBucket = this.getPendingCompanyBucket(companyId, language);
-    if (!companyBucket) return null;
-
-    return companyBucket[normalizedStore] || null;
+    return readPendingMessages(this.translateStore);
   }
 
   hasPendingTranslate(store, type, key) {
-    const pendingStoreBucket = this.getPendingStoreBucket(
+    return readHasPendingTranslate(
+      this.translateStore,
       this.defaultCompany?.id,
       store,
+      type,
+      key,
       this.language,
     );
-
-    return Boolean(pendingStoreBucket?.[type]?.[key]);
   }
 
   getStoreDiscoveryToken(store) {
-    return [
-      this.language,
-      String(store || ""),
-    ].join("::");
+    return `discover:${store}:${this.language}`;
   }
 
   canDiscoverStore() {
@@ -214,16 +142,15 @@ export default class Translate {
   }
 
   hasCachedBootstrapStore(store) {
-    if (!store) return false;
-
     const companies = this.getCompaniesToCache();
     if (companies.length === 0) return false;
-
-    return companies.every((company) => this.getStoreBucket(company.id, store) != null);
+    return companies.every(
+      (company) => this.getStoreBucket(company.id, store) != null,
+    );
   }
 
   hydrateDiscoveredStores() {
-    this.bootstrapStores.forEach((store) => {
+    this.getStoreList().forEach((store) => {
       if (this.hasCachedBootstrapStore(store)) {
         this.markStoreDiscovered(store);
       }
@@ -231,96 +158,55 @@ export default class Translate {
   }
 
   hasDiscoveredStore(store) {
-    if (!store) return false;
-
-    const token = this.getStoreDiscoveryToken(store);
-    if (this.discoveredStores.has(token)) {
-      return true;
-    }
-
-    if (this.hasCachedBootstrapStore(store)) {
-      this.markStoreDiscovered(store);
-      return true;
-    }
-
-    return false;
+    return this.discoveredStores.has(store);
   }
 
   markStoreDiscovered(store) {
-    if (!store) return;
-
-    this.discoveredStores.add(this.getStoreDiscoveryToken(store));
+    if (store) this.discoveredStores.add(store);
   }
 
   ensureStoreDiscovered(store) {
-    if (!store || !this.canDiscoverStore()) {
+    if (!store || this.hasDiscoveredStore(store) || !this.canDiscoverStore()) {
       return Promise.resolve(this.translates);
     }
 
-    if (this.hasDiscoveredStore(store)) {
-      return Promise.resolve(this.translates);
+    if (this.pendingStoreDiscoveries.has(store)) {
+      return this.pendingStoreDiscoveries.get(store);
     }
 
-    const token = this.getStoreDiscoveryToken(store);
-    if (this.pendingStoreDiscoveries.has(token)) {
-      return this.pendingStoreDiscoveries.get(token);
-    }
-
-    const discoveryPromise = Promise.resolve()
-      .then(() => this.discoveryStoreTranslate(store))
+    const discoveryPromise = this.discoveryStoreTranslate(store)
+      .catch(() => this.translates)
       .finally(() => {
-        this.pendingStoreDiscoveries.delete(token);
+        this.pendingStoreDiscoveries.delete(store);
       });
 
-    this.pendingStoreDiscoveries.set(token, discoveryPromise);
-
+    this.pendingStoreDiscoveries.set(store, discoveryPromise);
     return discoveryPromise;
   }
 
   notifyTranslationsUpdated() {
-    const globalObject =
-      typeof global !== "undefined" ? global : globalThis;
-
-    if (typeof globalObject?.refreshTranslationsUI === "function") {
-      globalObject.refreshTranslationsUI();
+    if (typeof this.translateActions?.setMessages === "function") {
+      this.translateActions.setMessages(this.translates);
     }
   }
 
   syncCachedMessagesToStore() {
-    if (typeof this.translateActions?.setMessages !== "function") {
-      return;
+    if (typeof this.translateActions?.setMessages === "function") {
+      this.translateActions.setMessages(this.translates);
     }
-
-    this.translateActions.setMessages({
-      ...this.translates,
-    });
   }
 
   getPersistRequestToken(store, type, key) {
-    return [
-      this.language,
-      this.normalizeId(this.defaultCompany?.id),
-      String(store || "").trim(),
-      String(type || "").trim(),
-      String(key || "").trim(),
-    ].join("::");
-  }
-
-  resolveReferenceId(value) {
-    if (!value) return null;
-
-    if (typeof value === "object") {
-      return this.normalizeId(value.id || value["@id"] || value.people || value.language);
-    }
-
-    return this.normalizeId(value);
+    return `${this.language}:${this.normalizeId(this.defaultCompany?.id)}:${store}:${type}:${key}`;
   }
 
   cacheTranslateRecord(record, fallbackCompanyId = null, fallbackLanguage = this.language) {
-    const companyId = this.resolveReferenceId(record?.people) || this.normalizeId(fallbackCompanyId);
+    const companyId =
+      this.resolveReferenceId(record?.people) || this.normalizeId(fallbackCompanyId);
     const language =
-      this.normalizeLanguageCode(record?.language?.language || record?.language?.locale || fallbackLanguage) ||
-      this.language;
+      this.normalizeLanguageCode(
+        record?.language?.language || record?.language?.locale || fallbackLanguage,
+      ) || this.language;
     const store = String(record?.store || "").trim();
     const type = String(record?.type || "").trim();
     const key = String(record?.key || "").trim();
@@ -330,42 +216,48 @@ export default class Translate {
       return false;
     }
 
-    const previousMessage = this.getStoreBucket(companyId, store, false, language)?.[type]?.[key];
+    const previousMessage = this.getStoreBucket(companyId, store, false, language)?.[
+      type
+    ]?.[key];
     this.findMessage(store, type, key, message, companyId, language);
 
     return previousMessage !== message;
   }
 
   getMessageFromBuckets(store, type, key) {
-    const companyIds = [
-      this.currentCompany?.id,
-      this.defaultCompany?.id,
-    ]
+    const companyIds = [this.currentCompany?.id, this.defaultCompany?.id]
       .map((value) => this.normalizeId(value))
       .filter(Boolean);
 
+    // Prefer current company, then main/default company, then language-global bucket.
+    // Empty/whitespace values do not count as a hit so fallback can still apply.
     for (const companyId of companyIds) {
-      const companyMessage =
-        this.getStoreBucket(companyId, store)?.[type]?.[key];
-
-      if (companyMessage) {
+      const companyMessage = this.getStoreBucket(companyId, store)?.[type]?.[key];
+      if (isNonEmptyMessage(companyMessage)) {
         return companyMessage;
       }
     }
 
-    return this.getStoreBucket(null, store)?.[type]?.[key];
+    const globalMessage = this.getStoreBucket(null, store)?.[type]?.[key];
+    if (isNonEmptyMessage(globalMessage)) {
+      return globalMessage;
+    }
+
+    return globalMessage;
   }
 
   persistMissingTranslate(store, type, key, translate) {
     if (!store || !type || !key || !this.defaultCompany?.id) return;
 
-    // Skip writes when the default company is not available in the current access scope.
     const defaultCompanyId = this.normalizeId(this.defaultCompany?.id);
     if (
       !Array.isArray(this.companies) ||
-      !this.companies.some((company) => this.normalizeId(company?.id) === defaultCompanyId)
-    )
+      !this.companies.some(
+        (company) => this.normalizeId(company?.id) === defaultCompanyId,
+      )
+    ) {
       return;
+    }
 
     if (this.hasPendingTranslate(store, type, key)) {
       return;
@@ -406,10 +298,14 @@ export default class Translate {
         key,
         translate,
         revised: false,
-      })
+      }),
     )
       .then((result) => {
-        const changed = this.cacheTranslateRecord(result, defaultCompanyId, this.language);
+        const changed = this.cacheTranslateRecord(
+          result,
+          defaultCompanyId,
+          this.language,
+        );
         this.removePendingTranslate(store, type, key);
         this.persist();
         if (changed) {
@@ -427,15 +323,13 @@ export default class Translate {
   }
 
   removePendingTranslate(store, type, key) {
-    if (!store || !type || !key || !this.defaultCompany?.id) return;
-
     if (typeof this.translateActions?.removePendingTranslate !== "function") {
       return;
     }
 
     this.translateActions.removePendingTranslate({
       language: this.language,
-      companyId: this.defaultCompany.id,
+      companyId: this.defaultCompany?.id,
       store,
       type,
       key,
@@ -443,54 +337,19 @@ export default class Translate {
   }
 
   getQueuedTranslateGroups() {
-    const defaultCompanyId = this.normalizeId(this.defaultCompany?.id);
-    if (!defaultCompanyId) {
-      return [];
-    }
-
-    const companyBucket = this.getPendingCompanyBucket(defaultCompanyId, this.language);
-    if (!companyBucket) {
-      return [];
-    }
-
-    const requests = [];
-    Object.entries(companyBucket).forEach(([store, storeBucket]) => {
-      if (!storeBucket || typeof storeBucket !== "object") {
-        return;
-      }
-
-      Object.entries(storeBucket).forEach(([type, typeBucket]) => {
-        if (!typeBucket || typeof typeBucket !== "object") {
-          return;
-        }
-
-        const keys = Object.keys(typeBucket)
-          .map((value) => String(value).trim())
-          .filter(Boolean);
-
-        if (keys.length === 0) {
-          return;
-        }
-
-        requests.push({
-          store,
-          type,
-          keys,
-        });
-      });
-    });
-
-    return requests;
+    return readQueuedGroups(
+      this.translateStore,
+      this.defaultCompany?.id,
+      this.language,
+    );
   }
 
   getQueuedTranslateGroupsForStore(store) {
-    const normalizedStore = String(store || "").trim();
-    if (!normalizedStore) {
-      return [];
-    }
-
-    return this.getQueuedTranslateGroups().filter(
-      (request) => request.store === normalizedStore
+    return readQueuedGroupsForStore(
+      this.translateStore,
+      this.defaultCompany?.id,
+      store,
+      this.language,
     );
   }
 
@@ -521,33 +380,44 @@ export default class Translate {
       return this.translates;
     }
 
-    const currentCompanyId = this.normalizeId(this.currentCompany?.id || this.defaultCompany?.id);
-    if (!currentCompanyId) {
+    // Resolve against every company we keep in cache (current + main) so fallback
+    // translations from the main company are available at runtime.
+    const companies = this.getCompaniesToCache();
+    if (companies.length === 0) {
       return this.translates;
     }
 
-    const response = await this.translateActions.resolveQueuedMessages({
-      people: "/people/" + currentCompanyId,
-      language: this.language,
-      requests,
-    });
-
-    const resolvedItems = Array.isArray(response)
-      ? response
-      : response?.member || response?.["hydra:member"] || [];
-
     let changed = false;
-    resolvedItems.forEach((item) => {
-      changed = this.cacheTranslateRecord(item, currentCompanyId, this.language) || changed;
-      this.removePendingTranslate(item.store, item.type, item.key);
-    });
+    const allResolvedItems = [];
+
+    for (const company of companies) {
+      const companyId = this.normalizeId(company?.id);
+      if (!companyId) continue;
+
+      const response = await this.translateActions.resolveQueuedMessages({
+        people: "/people/" + companyId,
+        language: this.language,
+        requests,
+      });
+
+      const resolvedItems = Array.isArray(response)
+        ? response
+        : response?.member || response?.["hydra:member"] || [];
+
+      resolvedItems.forEach((item) => {
+        changed =
+          this.cacheTranslateRecord(item, companyId, this.language) || changed;
+        this.removePendingTranslate(item.store, item.type, item.key);
+        allResolvedItems.push(item);
+      });
+    }
 
     if (changed) {
       this.persist();
       this.notifyTranslationsUpdated();
     }
 
-    return resolvedItems;
+    return allResolvedItems;
   }
 
   t(store, type, key) {
@@ -564,6 +434,7 @@ export default class Translate {
         }, 0);
       }
 
+      this.ensureStoreDiscovered(store);
       return fallbackTranslate;
     }
 
@@ -571,154 +442,59 @@ export default class Translate {
   }
 
   reload() {
-    this.clear();
-    return this.discoveryAll({ force: true });
+    this.translates = loadStorageObject(TRANSLATES_STORAGE_KEY);
+    this.syncCachedMessagesToStore();
   }
 
   clear() {
     this.translates = {};
     this.discoveredStores.clear();
     this.pendingStoreDiscoveries.clear();
-    this.pendingTranslateResolutionPromise = null;
-    this.pendingPersistRequests.clear();
-    if (typeof this.translateActions?.setPendingMessages === "function") {
-      this.translateActions.setPendingMessages({});
-    }
     this.persist();
   }
 
   shouldFetchStoreForCompany(store, company, force = false) {
     if (force) return true;
-
-    const companyId = this.normalizeId(company?.id);
-    if (!companyId || !store) return false;
-
-    const storeBucket = this.getStoreBucket(companyId, store, false, this.language);
-    return storeBucket == null;
+    if (!company?.id || !store) return false;
+    return this.getStoreBucket(company.id, store) == null;
   }
 
   async discoveryAll(options = {}) {
-    const companies =
-      typeof this.translateActions?.resolveQueuedMessages === "function"
-        ? this.getResolveCompaniesToCache()
-        : this.getCompaniesToCache();
-
-    for (const company of companies) {
-      for (const store of this.getStoreList()) {
-        await this.discoveryStoreTranslate(store, {
-          ...options,
-          companies: [company],
-        });
-      }
-    }
-
-    return this.translates;
+    return runDiscoveryAll(this, options);
   }
 
   async discoveryStoreTranslate(store, options = {}) {
-    if (!store) return this.translates;
-
-    const force = options.force === true;
-    if (!force && this.hasDiscoveredStore(store)) {
-      return this.translates;
-    }
-
-    const companies = Array.isArray(options.companies) && options.companies.length > 0
-      ? options.companies
-      : this.getCompaniesToCache();
-    if (companies.length === 0) {
-      this.markStoreDiscovered(store);
-      return this.translates;
-    }
-
-    let hasChanges = false;
-    for (const company of companies) {
-      const changed = await this.fetchTranslates(store, company, { force });
-      hasChanges = changed || hasChanges;
-    }
-
-    if (this.hasCachedBootstrapStore(store)) {
-      this.markStoreDiscovered(store);
-    }
-
-    if (hasChanges) {
-      this.persist();
-      this.notifyTranslationsUpdated();
-    }
-
-    return this.translates;
+    return runDiscoveryStoreTranslate(this, store, options);
   }
 
   async fetchTranslates(store, company, options = {}) {
-    if (!company?.id) return false;
-
-    const force = options.force === true;
-    if (!this.shouldFetchStoreForCompany(store, company, force)) {
-      return false;
-    }
-
-    return this.resolveStoreTranslates(store, company);
+    return runFetchTranslates(this, store, company, options);
   }
 
-  async resolveStoreTranslates(store, company) {
-    const companyId = this.normalizeId(company?.id);
-    if (!companyId) return false;
-
-    const requests = this.getQueuedTranslateGroupsForStore(store);
-    if (requests.length === 0) {
-      return false;
-    }
-
-    const response = await this.translateActions.resolveQueuedMessages({
-      people: "/people/" + companyId,
-      language: this.language,
-      requests,
-    });
-
-    const resolvedItems = Array.isArray(response)
-      ? response
-      : response?.member || response?.["hydra:member"] || [];
-
-    let changed = false;
-    resolvedItems.forEach((item) => {
-      changed = this.cacheTranslateRecord(item, companyId, this.language) || changed;
-      this.removePendingTranslate(item.store, item.type, item.key);
-    });
-
-    return changed;
+  async resolveStoreTranslates(store, company, options = {}) {
+    return runResolveStoreTranslates(this, store, company, options);
   }
 
   persist() {
     if (typeof localStorage !== "undefined") {
       localStorage.setItem("translates", JSON.stringify(this.translates));
     }
-
     this.syncCachedMessagesToStore();
   }
 
   findMessage(store, type, key, message, companyId = null, language = this.language) {
-    const storeBucket = this.getStoreBucket(companyId, store, true, language);
-    if (!storeBucket) {
+    const written = writeMessageToBucket(
+      this.translates,
+      store,
+      type,
+      key,
+      message,
+      companyId,
+      language,
+    );
+    if (written == null) {
       return this.formatMessage(key);
     }
-
-    if (!storeBucket[type]) {
-      storeBucket[type] = {};
-    }
-
-    if (message !== null)
-      storeBucket[type][key] = message;
-
-    return storeBucket[type][key] || this.formatMessage(key);
-  }
-
-  formatMessage(key) {
-    if (!key) return "";
-
-    return key
-      .replace(/([a-z])([A-Z])/g, "$1_$2")
-      .replace(/_/g, " ")
-      .replace(/-/g, " ")
-      .replace(/^\w/, (c) => c.toUpperCase());
+    return written || this.formatMessage(key);
   }
 }
