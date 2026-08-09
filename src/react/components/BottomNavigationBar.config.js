@@ -31,7 +31,7 @@ export const BOTTOM_NAVIGATION_PRESETS = {
           store: 'users',
           type: 'label',
           key: 'home',
-          fallback: 'Home',
+          fallback: 'Início',
         },
       },
       {
@@ -51,7 +51,7 @@ export const BOTTOM_NAVIGATION_PRESETS = {
           store: 'users',
           type: 'label',
           key: 'clients',
-          fallback: 'Clients',
+          fallback: 'Clientes',
         },
       },
       {
@@ -61,7 +61,7 @@ export const BOTTOM_NAVIGATION_PRESETS = {
           store: 'users',
           type: 'label',
           key: 'profile',
-          fallback: 'Profile',
+          fallback: 'Perfil',
         },
       },
     ],
@@ -89,7 +89,7 @@ export const BOTTOM_NAVIGATION_PRESETS = {
           store: 'configs',
           type: 'toolbar',
           key: 'home',
-          fallback: 'Home',
+          fallback: 'Início',
         },
       },
       {
@@ -119,7 +119,7 @@ export const BOTTOM_NAVIGATION_PRESETS = {
           store: 'configs',
           type: 'toolbar',
           key: 'profile',
-          fallback: 'Profile',
+          fallback: 'Perfil',
         },
       },
     ],
@@ -143,7 +143,7 @@ export const BOTTOM_NAVIGATION_PRESETS = {
   },
   managerDock: {
     items: [
-      {route: 'HomePage', icon: 'home', label: 'Home'},
+      {route: 'HomePage', icon: 'home', label: 'Início'},
       {route: 'CrmIndex', icon: 'dollar-sign', label: 'Oportunidades'},
       {route: 'ClientsIndex', icon: 'users', label: 'Clientes'},
       {route: 'ProfilePage', icon: 'user', label: 'Perfil'},
@@ -156,7 +156,7 @@ export const BOTTOM_NAVIGATION_PRESETS = {
   },
   deliveryDock: {
     items: [
-      {route: 'HomePage', icon: 'home', label: 'Home'},
+      {route: 'HomePage', icon: 'home', label: 'Início'},
       {route: 'DeliveryOrdersPage', icon: 'shopping-bag', label: 'Pedidos'},
       {
         route: 'DeliveryReceivablesPage',
@@ -181,9 +181,9 @@ export const BOTTOM_NAVIGATION_PRESETS = {
   },
   ppcDock: {
     items: [
-      {route: 'HomePage', icon: 'home', label: 'Home'},
+      {route: 'HomePage', icon: 'home', label: 'Início'},
       {route: 'DisplayList', icon: 'monitor', label: 'Displays'},
-      {route: 'ProfilePage', icon: 'user', label: 'Profile'},
+      {route: 'ProfilePage', icon: 'user', label: 'Perfil'},
     ],
     routeAliases: {},
   },
@@ -196,7 +196,7 @@ export const BOTTOM_NAVIGATION_PRESETS = {
           store: 'orders',
           type: 'label',
           key: 'orders',
-          fallback: 'Orders',
+          fallback: 'Pedidos',
         },
       },
       {
@@ -206,7 +206,7 @@ export const BOTTOM_NAVIGATION_PRESETS = {
           store: 'orders',
           type: 'label',
           key: 'profile',
-          fallback: 'Profile',
+          fallback: 'Perfil',
         },
       },
     ],
