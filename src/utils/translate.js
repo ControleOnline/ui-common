@@ -250,12 +250,11 @@ export default class Translate {
     if (!store || !type || !key || !this.defaultCompany?.id) return;
 
     const defaultCompanyId = this.normalizeId(this.defaultCompany?.id);
-    if (
-      !Array.isArray(this.companies) ||
-      !this.companies.some(
-        (company) => this.normalizeId(company?.id) === defaultCompanyId,
-      )
-    ) {
+    // Queueing is a local pending state used to drive resolve/discovery.
+    // Do NOT require defaultCompany to appear in this.companies: non-superadmin
+    // tenants often lack membership on the main company, but still must be able
+    // to resolve and cache the main catalog (read path). Backend gates writes.
+    if (!defaultCompanyId) {
       return;
     }
 
