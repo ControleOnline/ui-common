@@ -28,10 +28,16 @@ export const resolveRuntimeHost = () => {
   return toRawString(location?.host || '');
 };
 
+/**
+ * App-Domain header value.
+ * Browser (web multi-tenant): always prefer window.location.host so custom
+ * domains (e.g. erpjaguncos.com.br) resolve the correct tenant.
+ * Native / no location: fall back to configured DOMAIN from env.
+ */
 export const resolveAppDomain = configuredDomain => {
-  const configuredHost = tryParseHost(configuredDomain);
-  if (configuredHost) return configuredHost;
-  return tryParseHost(resolveRuntimeHost());
+  const runtimeHost = tryParseHost(resolveRuntimeHost());
+  if (runtimeHost) return runtimeHost;
+  return tryParseHost(configuredDomain);
 };
 
 export const resolveCompanyDomain = (company, fallbackDomain = '') => {
