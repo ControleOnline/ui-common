@@ -82,9 +82,9 @@ export const INTEGRATION_CONFIGS = {
     label: 'Asaas',
     accent: '#2563EB',
     icon: 'credit-card',
-    description: 'Chaves da conta usada para cobranca e PIX da empresa atual.',
+    description: 'Chaves da conta para cobranca/PIX e token exclusivo do Webhook Asaas.',
     saveLabel: 'Salvar Asaas',
-    requiredKeys: ['asaas-key', 'asaas-receiver-pix-key'],
+    requiredKeys: ['asaas-key', 'asaas-receiver-pix-key', 'asaas-webhook-token'],
     fields: [
       {
         key: 'asaas-key',
@@ -98,6 +98,13 @@ export const INTEGRATION_CONFIGS = {
         placeholder: 'Informe a chave PIX de recebimento',
         secureTextEntry: true,
       },
+      {
+        key: 'asaas-webhook-token',
+        label: 'Webhook token',
+        placeholder: 'Token de autenticacao do Webhook no painel Asaas',
+        secureTextEntry: true,
+      },
+
     ],
   },
   clicksign: {
