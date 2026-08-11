@@ -66,7 +66,17 @@ const normalizeSourceConfigs = source => {
   return {};
 };
 
-const normalizeTextValue = value => String(value ?? '').trim();
+const normalizeTextValue = value => {
+  let text = String(value ?? '').trim();
+  // Strip accidental surrounding quotes from double-encoded config values
+  if (
+    (text.startsWith('"') && text.endsWith('"') && text.length >= 2) ||
+    (text.startsWith("'") && text.endsWith("'") && text.length >= 2)
+  ) {
+    text = text.slice(1, -1).trim();
+  }
+  return text;
+};
 
 const isConnectedValue = value =>
   value === true ||
@@ -75,26 +85,22 @@ const isConnectedValue = value =>
   String(value).trim().toLowerCase() === 'true';
 
 const toConfigRequestValue = value => {
-  if (value === undefined) {
-    return JSON.stringify('');
+  // Plain strings must NOT be JSON.stringify'd here — the HTTP JSON body
+  // already serializes them. Stringify caused values to be stored with
+  // literal surrounding quotes (e.g. ""whsec_...""), breaking webhook auth.
+  if (value === undefined || value === null) {
+    return '';
   }
 
   if (typeof value === 'string') {
-    const trimmed = value.trim();
-
-    if (trimmed === '') {
-      return JSON.stringify('');
-    }
-
-    try {
-      JSON.parse(trimmed);
-      return value;
-    } catch {
-      return JSON.stringify(value);
-    }
+    return normalizeTextValue(value);
   }
 
-  return JSON.stringify(value);
+  if (typeof value === 'object') {
+    return JSON.stringify(value);
+  }
+
+  return String(value);
 };
 
 const buildFieldValues = (providerConfig, source) => {
