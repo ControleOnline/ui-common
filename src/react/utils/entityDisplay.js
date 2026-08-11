@@ -225,7 +225,12 @@ export const createEmptyAddressForm = (overrides = {}) => ({
   district: '',
   city: '',
   state: '',
-  country: 'Brasil',
+  uf: '',
+  country: 'BR',
+  countryCode: 'BR',
+  countryName: 'Brazil',
   complement: '',
+  latitude: null,
+  longitude: null,
   ...overrides,
 });
