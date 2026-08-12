@@ -26,6 +26,131 @@ const sortByLabel = (left, right) =>
       sensitivity: 'base',
     });
 
+const normalizeCategoryCandidate = value => {
+  const normalizedId = normalizeShopEntityId(value);
+
+  if (normalizedId) {
+    return normalizedId;
+  }
+
+  if (typeof value === 'string' || typeof value === 'number') {
+    return String(value || '').trim();
+  }
+
+  return '';
+};
+
+export const extractAddressCategoryIds = address => {
+  const candidates = [
+    address?.categories,
+    address?.category,
+    address?.addressCategories,
+    address?.address_categories,
+    address?.categoryAddresses,
+    address?.category_addresses,
+  ];
+  const result = new Set();
+
+  const collect = value => {
+    if (value === null || value === undefined || value === '') {
+      return;
+    }
+
+    if (Array.isArray(value)) {
+      value.forEach(collect);
+      return;
+    }
+
+    if (typeof value === 'object') {
+      [
+        value.category,
+        value.category_id,
+        value.categoryId,
+        value.id,
+        value['@id'],
+      ].forEach(collect);
+      return;
+    }
+
+    String(value)
+      .split(/\r?\n|,/)
+      .map(normalizeCategoryCandidate)
+      .filter(Boolean)
+      .forEach(id => result.add(id));
+  };
+
+  candidates.forEach(collect);
+
+  return Array.from(result);
+};
+
+export const addressMatchesFranchiseCategoryIds = (
+  address,
+  categoryIds = [],
+) => {
+  const selectedCategoryIds = new Set(
+    (Array.isArray(categoryIds) ? categoryIds : [])
+      .map(normalizeCategoryCandidate)
+      .filter(Boolean),
+  );
+
+  if (selectedCategoryIds.size === 0) {
+    return true;
+  }
+
+  return extractAddressCategoryIds(address).some(categoryId =>
+    selectedCategoryIds.has(categoryId),
+  );
+};
+
+export const filterShopFranchiseDirectory = ({
+  directory = [],
+  visibleCompanyIds = [],
+  addressCategoryIds = [],
+  legacyVisibleAddressIds = [],
+} = {}) => {
+  const visibleCompanyIdSet = new Set(
+    (Array.isArray(visibleCompanyIds) ? visibleCompanyIds : [])
+      .map(normalizeShopEntityId)
+      .filter(Boolean),
+  );
+  const legacyVisibleAddressIdSet = new Set(
+    (Array.isArray(legacyVisibleAddressIds) ? legacyVisibleAddressIds : [])
+      .map(normalizeShopEntityId)
+      .filter(Boolean),
+  );
+
+  if (visibleCompanyIdSet.size === 0) {
+    return [];
+  }
+
+  return (Array.isArray(directory) ? directory : [])
+    .map(company => {
+      const companyId = normalizeShopEntityId(company);
+
+      if (!visibleCompanyIdSet.has(companyId)) {
+        return null;
+      }
+
+      const shopAddresses = (company?.shopAddresses || []).filter(address => {
+        if (!addressMatchesFranchiseCategoryIds(address, addressCategoryIds)) {
+          return false;
+        }
+
+        return (
+          legacyVisibleAddressIdSet.size === 0 ||
+          legacyVisibleAddressIdSet.has(normalizeShopEntityId(address))
+        );
+      });
+
+      return {
+        ...company,
+        shopAddresses,
+      };
+    })
+    .filter(Boolean);
+};
+
 export const resolveFranchiseCompanyLabel = company =>
   String(company?.alias || company?.name || '').trim() ||
   `Franquia #${normalizeShopEntityId(company) || ''}`.trim();

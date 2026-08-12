@@ -6,6 +6,8 @@ jest.mock('@controleonline/ui-common/src/api', () => ({
 
 const {api} = require('@controleonline/ui-common/src/api');
 const {
+  extractAddressCategoryIds,
+  filterShopFranchiseDirectory,
   fetchAllShopFranchiseDirectory,
   fetchShopFranchiseDirectory,
 } = require('../../../react/utils/shopFranchises');
@@ -143,6 +145,47 @@ describe('shopFranchises', () => {
         id: 23,
         alias: 'Sul',
         shopAddresses: [{id: 701, nickname: 'Loja Sul'}],
+      },
+    ]);
+  });
+
+  it('extracts category ids from address category payload variants', () => {
+    expect(
+      extractAddressCategoryIds({
+        categories: [{id: 10}, '/categories/11'],
+        addressCategories: [{category: {id: 12}}],
+      }),
+    ).toEqual(['10', '11', '12']);
+  });
+
+  it('filters franchise addresses by selected categories and visible companies', () => {
+    const directory = filterShopFranchiseDirectory({
+      visibleCompanyIds: [21],
+      addressCategoryIds: [12],
+      directory: [
+        {
+          id: 21,
+          alias: 'Centro',
+          shopAddresses: [
+            {id: 501, nickname: 'Loja Centro', categories: [{id: 12}]},
+            {id: 502, nickname: 'Loja Oculta', categories: [{id: 13}]},
+          ],
+        },
+        {
+          id: 22,
+          alias: 'Norte',
+          shopAddresses: [{id: 601, categories: [{id: 12}]}],
+        },
+      ],
+    });
+
+    expect(directory).toEqual([
+      {
+        id: 21,
+        alias: 'Centro',
+        shopAddresses: [
+          {id: 501, nickname: 'Loja Centro', categories: [{id: 12}]},
+        ],
       },
     ]);
   });
