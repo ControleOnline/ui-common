@@ -42,6 +42,10 @@ export const SHOP_FRANCHISE_VISIBLE_COMPANY_IDS_CONFIG_KEY =
   'shop-franchise-visible-company-ids';
 export const SHOP_FRANCHISE_VISIBLE_ADDRESS_IDS_CONFIG_KEY =
   'shop-franchise-visible-address-ids';
+export const SHOP_FRANCHISE_ADDRESS_CATEGORY_IDS_CONFIG_KEY =
+  'shop-franchise-address-category-ids';
+export const SHOP_FRANCHISE_ADDRESS_CATEGORY_CONTEXT =
+  'shop-franchise-address';
 export const SHOP_LOYALTY_COUPONS_ENABLED_CONFIG_KEY =
   'shop-loyalty-coupons-enabled';
 export const SHOP_LOYALTY_PRODUCT_IDS_CONFIG_KEY = 
@@ -290,6 +294,9 @@ export const resolveShopSettings = configs => {
     ),
     visibleFranchiseAddressIds: normalizeShopEntityIds(
       configMap[SHOP_FRANCHISE_VISIBLE_ADDRESS_IDS_CONFIG_KEY],
+    ),
+    franchiseAddressCategoryIds: normalizeShopEntityIds(
+      configMap[SHOP_FRANCHISE_ADDRESS_CATEGORY_IDS_CONFIG_KEY],
     ),
     loyaltyProductIds: normalizeShopEntityIds(
       configMap[SHOP_LOYALTY_PRODUCT_IDS_CONFIG_KEY],
