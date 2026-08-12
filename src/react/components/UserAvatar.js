@@ -14,10 +14,15 @@ const UserAvatar = ({
   borderWidth = 1,
   textColor,
   style,
+  useGravatar = true,
 }) => {
   const sources = useMemo(
-    () => [normalizeUrl(imageUrl), getGravatarUrl(email, Math.max(size * 2, 80))].filter(Boolean),
-    [email, imageUrl, size],
+    () =>
+      [
+        normalizeUrl(imageUrl),
+        useGravatar ? getGravatarUrl(email, Math.max(size * 2, 80)) : '',
+      ].filter(Boolean),
+    [email, imageUrl, size, useGravatar],
   );
   const [sourceIndex, setSourceIndex] = useState(0);
 
