@@ -1,8 +1,81 @@
 import React, {useEffect, useMemo, useState} from 'react';
-import {Image, StyleSheet, Text, View} from 'react-native';
+import {Image, Platform, StyleSheet, Text, View} from 'react-native';
+import {env as APP_ENV} from '@env';
 import {getGravatarUrl, getUserInitials} from '../utils/userAvatar';
 
 const normalizeUrl = value => String(value || '').trim();
+
+const readSessionToken = () => {
+  if (typeof localStorage === 'undefined' || !localStorage?.getItem) {
+    return '';
+  }
+
+  try {
+    const session = JSON.parse(localStorage.getItem('session') || '{}');
+    return normalizeUrl(session?.api_key || session?.token);
+  } catch {
+    return '';
+  }
+};
+
+const useDisplayUri = uri => {
+  const [displayUri, setDisplayUri] = useState(normalizeUrl(uri));
+
+  useEffect(() => {
+    let cancelled = false;
+    let objectUrl = '';
+    const next = normalizeUrl(uri);
+
+    const run = async () => {
+      if (!next) {
+        setDisplayUri('');
+        return;
+      }
+
+      const isBackendDownload = /\/files\/[^/?#]+\/download/i.test(next);
+      const token = readSessionToken();
+
+      if (!isBackendDownload || Platform.OS !== 'web' || !token) {
+        setDisplayUri(next);
+        return;
+      }
+
+      try {
+        const headers = {
+          Accept: '*/*',
+          'API-TOKEN': token,
+        };
+        const host =
+          normalizeUrl(APP_ENV?.DOMAIN) ||
+          (typeof location !== 'undefined' ? location.host : '');
+        if (host) {
+          headers['App-Domain'] = host;
+        }
+
+        const response = await fetch(next, {method: 'GET', headers});
+        if (!response.ok) {
+          if (!cancelled) setDisplayUri(next);
+          return;
+        }
+
+        const blob = await response.blob();
+        objectUrl = URL.createObjectURL(blob);
+        if (!cancelled) setDisplayUri(objectUrl);
+      } catch {
+        if (!cancelled) setDisplayUri(next);
+      }
+    };
+
+    run();
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [uri]);
+
+  return displayUri;
+};
 
 const UserAvatar = ({
   imageUrl,
@@ -30,6 +103,9 @@ const UserAvatar = ({
     setSourceIndex(0);
   }, [sources]);
 
+  const currentSource = sources[sourceIndex];
+  const displayUri = useDisplayUri(currentSource);
+
   const containerStyle = [
     styles.container,
     style,
@@ -42,13 +118,12 @@ const UserAvatar = ({
       borderWidth,
     },
   ];
-  const currentSource = sources[sourceIndex];
 
   return (
     <View style={containerStyle}>
-      {currentSource ? (
+      {displayUri ? (
         <Image
-          source={{uri: currentSource}}
+          source={{uri: displayUri}}
           style={styles.image}
           onError={() => setSourceIndex(index => index + 1)}
         />
