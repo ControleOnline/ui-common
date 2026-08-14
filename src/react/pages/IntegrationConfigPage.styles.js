@@ -150,6 +150,25 @@ const styles = StyleSheet.create({
   inputDisabled: {
     opacity: 0.7,
   },
+  fileFieldWrap: {
+    gap: 8,
+  },
+  filePickerButton: {
+    minHeight: 48,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#BBF7D0',
+    backgroundColor: '#F0FDF4',
+    paddingHorizontal: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  filePickerButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#166534',
+  },
   fieldHint: {
     marginTop: 8,
     fontSize: 12,
