@@ -60,6 +60,16 @@ export const INTEGRATION_LIST = [
     accent: '#0F172A',
     icon: 'file-text',
   },
+  {
+    key: 'receita-federal',
+    label: 'Receita Federal',
+    route: 'IntegrationConfigPage',
+    routeParams: {
+      providerKey: 'receita-federal',
+    },
+    accent: '#166534',
+    icon: 'file-text',
+  },
 ];
 
 export const INTEGRATION_CONFIGS = {
