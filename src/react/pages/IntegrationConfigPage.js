@@ -513,19 +513,68 @@ export default function IntegrationConfigPage({ route }) {
                 <View key={field.key} style={styles.fieldGroup}>
                   <Text style={styles.fieldLabel}>{field.label}</Text>
                   <Text style={styles.fieldKey}>{field.key}</Text>
-                  <TextInput
-                    style={[
-                      styles.input,
-                      !editable && styles.inputDisabled,
-                    ]}
-                    value={configValues[field.key] || ''}
-                    onChangeText={value => updateField(field.key, value)}
-                    editable={editable}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    secureTextEntry={Boolean(field.secureTextEntry)}
-                    placeholder={field.placeholder}
-                  />
+                  {field.type === 'select' ? (
+                    <View style={styles.selectList}>
+                      {(field.options || []).map(option => {
+                        const selected = String(configValues[field.key] || '') === String(option.value);
+                        return (
+                          <TouchableOpacity
+                            key={String(option.value)}
+                            style={[
+                              styles.selectOption,
+                              selected && styles.selectOptionActive,
+                              !editable && styles.inputDisabled,
+                            ]}
+                            disabled={!editable}
+                            activeOpacity={0.85}
+                            onPress={() => updateField(field.key, String(option.value))}>
+                            <Text
+                              style={[
+                                styles.selectOptionText,
+                                selected && styles.selectOptionTextActive,
+                              ]}>
+                              {option.label}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </View>
+                  ) : field.type === 'file' ? (
+                    <View>
+                      <TextInput
+                        style={[
+                          styles.input,
+                          !editable && styles.inputDisabled,
+                        ]}
+                        value={configValues[field.key] || ''}
+                        onChangeText={value => updateField(field.key, value)}
+                        editable={editable}
+                        autoCapitalize="none"
+                        autoCorrect={false}
+                        placeholder={
+                          field.placeholder ||
+                          'IRI ou id do arquivo no gerenciador (contexto da empresa)'
+                        }
+                      />
+                      <Text style={styles.fieldHint}>
+                        Use o gerenciador de arquivos da empresa ativa para enviar o .pfx/.p12 e cole aqui o identificador/IRI do arquivo.
+                      </Text>
+                    </View>
+                  ) : (
+                    <TextInput
+                      style={[
+                        styles.input,
+                        !editable && styles.inputDisabled,
+                      ]}
+                      value={configValues[field.key] || ''}
+                      onChangeText={value => updateField(field.key, value)}
+                      editable={editable}
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      secureTextEntry={Boolean(field.secureTextEntry)}
+                      placeholder={field.placeholder}
+                    />
+                  )}
                 </View>
               ))}
             </View>

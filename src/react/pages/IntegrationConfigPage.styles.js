@@ -150,6 +150,37 @@ const styles = StyleSheet.create({
   inputDisabled: {
     opacity: 0.7,
   },
+  fieldHint: {
+    marginTop: 8,
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#64748B',
+    lineHeight: 18,
+  },
+  selectList: {
+    gap: 8,
+  },
+  selectOption: {
+    minHeight: 44,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#F8FAFC',
+    paddingHorizontal: 14,
+    justifyContent: 'center',
+  },
+  selectOptionActive: {
+    borderColor: '#166534',
+    backgroundColor: '#DCFCE7',
+  },
+  selectOptionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#0F172A',
+  },
+  selectOptionTextActive: {
+    color: '#166534',
+  },
   saveButton: {
     minHeight: 52,
     borderRadius: 18,
