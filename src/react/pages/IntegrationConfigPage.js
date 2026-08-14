@@ -105,10 +105,19 @@ const toConfigRequestValue = value => {
   return String(value);
 };
 
+
+const getConfigFields = providerConfig => {
+  if (!providerConfig) return [];
+  if (Array.isArray(providerConfig.tabs) && providerConfig.tabs.length > 0) {
+    return providerConfig.tabs.flatMap(tab => tab.fields || []);
+  }
+  return providerConfig.fields || [];
+};
+
 const buildFieldValues = (providerConfig, source) => {
   const sourceMap = normalizeSourceConfigs(source);
 
-  return (providerConfig?.fields || []).reduce((accumulator, field) => {
+  return getConfigFields(providerConfig).reduce((accumulator, field) => {
     accumulator[field.key] = normalizeTextValue(sourceMap[field.key]);
     return accumulator;
   }, {});
@@ -174,6 +183,25 @@ export default function IntegrationConfigPage({ route, navigation, embedded = fa
     () => getIntegrationConfig(providerKey),
     [providerKey],
   );
+  const configFields = useMemo(() => getConfigFields(providerConfig), [providerConfig]);
+  const fiscalTabs = providerConfig?.tabs || [];
+  const [activeFiscalTab, setActiveFiscalTab] = useState(
+    () => fiscalTabs[0]?.key || 'general',
+  );
+  const activeTabDef = useMemo(
+    () => fiscalTabs.find(tab => tab.key === activeFiscalTab) || fiscalTabs[0] || null,
+    [activeFiscalTab, fiscalTabs],
+  );
+  const visibleFields = useMemo(
+    () => (activeTabDef?.fields?.length ? activeTabDef.fields : configFields),
+    [activeTabDef, configFields],
+  );
+
+  useEffect(() => {
+    if (fiscalTabs.length && !fiscalTabs.some(tab => tab.key === activeFiscalTab)) {
+      setActiveFiscalTab(fiscalTabs[0].key);
+    }
+  }, [activeFiscalTab, fiscalTabs]);
   const returnPath = useMemo(() => {
     const routePath = normalizeTextValue(
       route?.params?.return_path || route?.params?.returnPath || '',
@@ -266,7 +294,7 @@ export default function IntegrationConfigPage({ route, navigation, embedded = fa
         },
       });
 
-      if ((providerConfig.fields || []).length > 0) {
+      if (configFields.length > 0) {
         const [configResponse, integrationResponse] = await Promise.all([
           api.fetch('/configs', {
             params: {
@@ -297,6 +325,7 @@ export default function IntegrationConfigPage({ route, navigation, embedded = fa
       }
     }
   }, [
+    configFields.length,
     currentCompany?.configs,
     providerConfig,
     providerIri,
@@ -376,7 +405,7 @@ export default function IntegrationConfigPage({ route, navigation, embedded = fa
       return;
     }
 
-    const configs = (providerConfig.fields || []).map(field => ({
+    const configs = configFields.map(field => ({
       configKey: field.key,
       configValue: toConfigRequestValue(normalizeTextValue(configValues[field.key])),
     }));
@@ -396,6 +425,7 @@ export default function IntegrationConfigPage({ route, navigation, embedded = fa
     }
   }, [
     configActions,
+    configFields,
     configValues,
     loadPageData,
     providerConfig,
@@ -454,6 +484,7 @@ export default function IntegrationConfigPage({ route, navigation, embedded = fa
         refreshControl={
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={providerConfig.accent} />
         }>
+        {!embedded ? (
         <View style={[styles.heroCard, shadowStyle, { backgroundColor: providerConfig.accent }]}>
           <View style={styles.heroCopy}>
             <Text style={styles.heroEyebrow}>INTEGRACAO</Text>
@@ -466,7 +497,13 @@ export default function IntegrationConfigPage({ route, navigation, embedded = fa
             <Icon name={providerConfig.icon} size={22} color={providerConfig.accent} />
           </View>
         </View>
+        ) : (
+          <View style={[styles.embeddedHeader, shadowStyle]}>
+            <Text style={styles.embeddedTitle}>Configuracoes fiscais</Text>
+          </View>
+        )}
 
+        {!embedded ? (
         <View style={[styles.statusCard, shadowStyle]}>
           <View style={styles.statusHeader}>
             <View style={styles.statusCopy}>
@@ -489,10 +526,15 @@ export default function IntegrationConfigPage({ route, navigation, embedded = fa
             </View>
           </View>
         </View>
+        ) : null}
 
         <View style={[styles.formCard, shadowStyle]}>
           <Text style={styles.cardTitle}>
-            {providerConfig.oauthConnect ? 'Conexao' : 'Credenciais'}
+            {providerConfig.oauthConnect
+              ? 'Conexao'
+              : fiscalTabs.length
+                ? (activeTabDef?.label || 'Configuracoes')
+                : 'Credenciais'}
           </Text>
           {!embedded ? (
             <Text style={styles.cardSubtitle}>
@@ -513,7 +555,32 @@ export default function IntegrationConfigPage({ route, navigation, embedded = fa
             </View>
           ) : (
             <View style={styles.fieldList}>
-              {providerConfig.fields.map(field => (
+              {fiscalTabs.length > 0 ? (
+                <View style={styles.subTabRow}>
+                  {fiscalTabs.map(tab => {
+                    const selected = tab.key === (activeTabDef?.key || activeFiscalTab);
+                    return (
+                      <TouchableOpacity
+                        key={tab.key}
+                        style={[styles.subTabButton, selected && styles.subTabButtonActive]}
+                        activeOpacity={0.85}
+                        onPress={() => setActiveFiscalTab(tab.key)}>
+                        <Text
+                          style={[
+                            styles.subTabLabel,
+                            selected && styles.subTabLabelActive,
+                          ]}>
+                          {tab.label}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              ) : null}
+              {activeTabDef?.description ? (
+                <Text style={styles.tabDescription}>{activeTabDef.description}</Text>
+              ) : null}
+              {visibleFields.map(field => (
                 <View key={field.key} style={styles.fieldGroup}>
                   <Text style={styles.fieldLabel}>{field.label}</Text>
                   {!embedded ? <Text style={styles.fieldKey}>{field.key}</Text> : null}

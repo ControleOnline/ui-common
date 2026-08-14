@@ -142,57 +142,215 @@ export const INTEGRATION_CONFIGS = {
     accent: '#166534',
     icon: 'file-text',
     description:
-      'Certificado digital e dados fiscais para emissao de NF-e / NFC-e (SEFAZ).',
-    saveLabel: 'Salvar Receita Federal',
+      'Configuracoes fiscais por tipo de documento (NF-e, cupom, NFS-e, CT-e, pre-notas).',
+    saveLabel: 'Salvar configuracoes fiscais',
+    // requiredKeys only enforce "Gerais" minima; tipos sao opcionais conforme operacao da empresa
     requiredKeys: [
+      'receita-federal-tax-regime',
       'receita-federal-certificate-file',
       'receita-federal-certificate-password',
-      'receita-federal-serie',
-      'receita-federal-last-nf',
-      'receita-federal-tax-regime',
-      'receita-federal-ibge-code',
     ],
-    fields: [
+    tabs: [
       {
-        key: 'receita-federal-certificate-file',
-        label: 'Certificado digital (.pfx / .p12)',
-        type: 'file',
-        accept: '.pfx,.p12,application/x-pkcs12',
-        fileContext: 'company_certificate',
-        companyScopedFilePicker: true,
-      },
-      {
-        key: 'receita-federal-certificate-password',
-        label: 'Senha do certificado',
-        placeholder: 'Informe a senha do certificado',
-        secureTextEntry: true,
-      },
-      {
-        key: 'receita-federal-serie',
-        label: 'Serie da NF',
-        placeholder: 'Ex.: 1',
-      },
-      {
-        key: 'receita-federal-last-nf',
-        label: 'Ultima NF / proximo numero',
-        placeholder: 'Ex.: 100',
-      },
-      {
-        key: 'receita-federal-tax-regime',
-        label: 'Regime tributario',
-        type: 'select',
-        options: [
-          { value: '1', label: 'Simples Nacional' },
-          { value: '2', label: 'Simples Nacional - excesso sublimite' },
-          { value: '3', label: 'Regime Normal' },
+        key: 'general',
+        label: 'Gerais',
+        description: 'Dados compartilhados pela empresa para emissao fiscal.',
+        fields: [
+          {
+            key: 'receita-federal-tax-regime',
+            label: 'Regime tributario',
+            type: 'select',
+            options: [
+              { value: '1', label: 'Simples Nacional' },
+              { value: '2', label: 'Simples Nacional - excesso sublimite' },
+              { value: '3', label: 'Regime Normal' },
+            ],
+          },
+          {
+            key: 'receita-federal-ibge-code',
+            label: 'Codigo IBGE (municipio)',
+            placeholder: 'Ex.: 3550308',
+          },
+          {
+            key: 'receita-federal-environment',
+            label: 'Ambiente SEFAZ',
+            type: 'select',
+            options: [
+              { value: '2', label: 'Homologacao' },
+              { value: '1', label: 'Producao' },
+            ],
+          },
+          {
+            key: 'receita-federal-certificate-file',
+            label: 'Certificado digital (.pfx / .p12)',
+            type: 'file',
+            accept: '.pfx,.p12,application/x-pkcs12',
+            fileContext: 'company_certificate',
+            companyScopedFilePicker: true,
+          },
+          {
+            key: 'receita-federal-certificate-password',
+            label: 'Senha do certificado',
+            placeholder: 'Informe a senha do certificado',
+            secureTextEntry: true,
+          },
         ],
       },
       {
-        key: 'receita-federal-ibge-code',
-        label: 'Codigo IBGE (municipio)',
-        placeholder: 'Ex.: 3550308',
+        key: 'nfe',
+        label: 'NF-e (produtos)',
+        description: 'Nota Fiscal Eletronica modelo 55 — saida de mercadorias.',
+        fields: [
+          {
+            key: 'receita-federal-nfe-enabled',
+            label: 'Habilitar NF-e',
+            type: 'select',
+            options: [
+              { value: '0', label: 'Nao' },
+              { value: '1', label: 'Sim' },
+            ],
+          },
+          {
+            key: 'receita-federal-nfe-serie',
+            label: 'Serie NF-e',
+            placeholder: 'Ex.: 1',
+          },
+          {
+            key: 'receita-federal-nfe-last-number',
+            label: 'Ultima NF-e / proximo numero',
+            placeholder: 'Ex.: 100',
+          },
+        ],
+      },
+      {
+        key: 'nfce',
+        label: 'NFC-e / Cupom',
+        description: 'Cupom fiscal eletronico modelo 65 — consumidor final.',
+        fields: [
+          {
+            key: 'receita-federal-nfce-enabled',
+            label: 'Habilitar NFC-e / cupom',
+            type: 'select',
+            options: [
+              { value: '0', label: 'Nao' },
+              { value: '1', label: 'Sim' },
+            ],
+          },
+          {
+            key: 'receita-federal-nfce-serie',
+            label: 'Serie NFC-e',
+            placeholder: 'Ex.: 1',
+          },
+          {
+            key: 'receita-federal-nfce-last-number',
+            label: 'Ultima NFC-e / proximo numero',
+            placeholder: 'Ex.: 100',
+          },
+          {
+            key: 'receita-federal-nfce-csc-id',
+            label: 'CSC ID (token)',
+            placeholder: 'Identificador do CSC',
+          },
+          {
+            key: 'receita-federal-nfce-csc',
+            label: 'CSC (codigo de seguranca)',
+            placeholder: 'Codigo CSC da SEFAZ',
+            secureTextEntry: true,
+          },
+        ],
+      },
+      {
+        key: 'nfse',
+        label: 'NFS-e (servicos)',
+        description: 'Nota de servicos eletronica — prestacao de servicos.',
+        fields: [
+          {
+            key: 'receita-federal-nfse-enabled',
+            label: 'Habilitar NFS-e',
+            type: 'select',
+            options: [
+              { value: '0', label: 'Nao' },
+              { value: '1', label: 'Sim' },
+            ],
+          },
+          {
+            key: 'receita-federal-nfse-serie',
+            label: 'Serie RPS / NFS-e',
+            placeholder: 'Ex.: 1',
+          },
+          {
+            key: 'receita-federal-nfse-last-number',
+            label: 'Ultimo RPS / proximo numero',
+            placeholder: 'Ex.: 50',
+          },
+          {
+            key: 'receita-federal-nfse-im',
+            label: 'Inscricao municipal',
+            placeholder: 'IM do prestador',
+          },
+          {
+            key: 'receita-federal-nfse-cnae',
+            label: 'CNAE principal (servico)',
+            placeholder: 'Ex.: 6201501',
+          },
+        ],
+      },
+      {
+        key: 'cte',
+        label: 'CT-e',
+        description: 'Conhecimento de Transporte Eletronico.',
+        fields: [
+          {
+            key: 'receita-federal-cte-enabled',
+            label: 'Habilitar CT-e',
+            type: 'select',
+            options: [
+              { value: '0', label: 'Nao' },
+              { value: '1', label: 'Sim' },
+            ],
+          },
+          {
+            key: 'receita-federal-cte-serie',
+            label: 'Serie CT-e',
+            placeholder: 'Ex.: 1',
+          },
+          {
+            key: 'receita-federal-cte-last-number',
+            label: 'Ultimo CT-e / proximo numero',
+            placeholder: 'Ex.: 10',
+          },
+        ],
+      },
+      {
+        key: 'prenota',
+        label: 'Pre-notas',
+        description: 'Rascunhos / pre-notas antes da autorizacao SEFAZ.',
+        fields: [
+          {
+            key: 'receita-federal-prenota-enabled',
+            label: 'Habilitar pre-notas',
+            type: 'select',
+            options: [
+              { value: '0', label: 'Nao' },
+              { value: '1', label: 'Sim' },
+            ],
+          },
+          {
+            key: 'receita-federal-prenota-default-type',
+            label: 'Tipo padrao ao gerar pre-nota',
+            type: 'select',
+            options: [
+              { value: 'nfe', label: 'NF-e (produtos)' },
+              { value: 'nfce', label: 'NFC-e / cupom' },
+              { value: 'nfse', label: 'NFS-e (servicos)' },
+              { value: 'cte', label: 'CT-e' },
+            ],
+          },
+        ],
       },
     ],
+    // fields flat list derived at runtime from tabs when present
+    fields: [],
   },
 };
 

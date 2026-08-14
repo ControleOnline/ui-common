@@ -150,6 +150,53 @@ const styles = StyleSheet.create({
   inputDisabled: {
     opacity: 0.7,
   },
+  embeddedHeader: {
+    borderRadius: 18,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 4,
+  },
+  embeddedTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: '#0F172A',
+  },
+  subTabRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+    marginBottom: 4,
+  },
+  subTabButton: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    backgroundColor: '#F8FAFC',
+  },
+  subTabButtonActive: {
+    borderColor: '#166534',
+    backgroundColor: '#DCFCE7',
+  },
+  subTabLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#64748B',
+  },
+  subTabLabelActive: {
+    color: '#166534',
+  },
+  tabDescription: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#64748B',
+    lineHeight: 18,
+    marginBottom: 8,
+  },
   fileFieldWrap: {
     gap: 8,
   },
