@@ -26,6 +26,7 @@ const ROUTE_PROVIDER_MAP = {
   UberIntegrationPage: 'uber',
   AsaasIntegrationPage: 'asaas',
   ClickSignIntegrationPage: 'clicksign',
+  ReceitaFederalIntegrationPage: 'receita-federal',
 };
 
 const shadowStyle = Platform.select({

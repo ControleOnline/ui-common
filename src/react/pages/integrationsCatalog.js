@@ -63,7 +63,7 @@ export const INTEGRATION_LIST = [
   {
     key: 'receita-federal',
     label: 'Receita Federal',
-    route: 'IntegrationConfigPage',
+    route: 'ReceitaFederalIntegrationPage',
     routeParams: {
       providerKey: 'receita-federal',
     },
