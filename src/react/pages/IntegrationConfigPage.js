@@ -18,6 +18,8 @@ import {
   getIntegrationByKey,
   parseIntegrationCollection,
 } from './integrationsCatalog';
+import DefaultUpload from '@controleonline/ui-default/src/react/components/upload/DefaultUpload';
+import { extractFileId, toFileIri, uploadFileToApi } from '@controleonline/ui-default/src/react/components/upload/fileUpload';
 import styles from './IntegrationConfigPage.styles';
 
 const ROUTE_PROVIDER_MAP = {
@@ -150,7 +152,7 @@ const openAuthorizationUrl = async authUrl => {
   await Linking.openURL(authUrl);
 };
 
-export default function IntegrationConfigPage({ route }) {
+export default function IntegrationConfigPage({ route, navigation, embedded = false }) {
   const peopleStore = useStore('people');
   const themeStore = useStore('theme');
   const configsStore = useStore('configs');
@@ -492,11 +494,13 @@ export default function IntegrationConfigPage({ route }) {
           <Text style={styles.cardTitle}>
             {providerConfig.oauthConnect ? 'Conexao' : 'Credenciais'}
           </Text>
-          <Text style={styles.cardSubtitle}>
-            {providerConfig.oauthConnect
-              ? 'Use o login oficial do Uber. A store sera localizada e gravada automaticamente na empresa ativa.'
-              : 'Salve as credenciais na empresa ativa. O hub de integracoes volta a mostrar o status correto quando voce retornar para a lista.'}
-          </Text>
+          {!embedded ? (
+            <Text style={styles.cardSubtitle}>
+              {providerConfig.oauthConnect
+                ? 'Use o login oficial do Uber. A store sera localizada e gravada automaticamente na empresa ativa.'
+                : 'Salve as credenciais na empresa ativa. O hub de integracoes volta a mostrar o status correto quando voce retornar para a lista.'}
+            </Text>
+          ) : null}
 
           {providerConfig.oauthConnect ? (
             <View style={styles.fieldList}>
@@ -512,7 +516,7 @@ export default function IntegrationConfigPage({ route }) {
               {providerConfig.fields.map(field => (
                 <View key={field.key} style={styles.fieldGroup}>
                   <Text style={styles.fieldLabel}>{field.label}</Text>
-                  <Text style={styles.fieldKey}>{field.key}</Text>
+                  {!embedded ? <Text style={styles.fieldKey}>{field.key}</Text> : null}
                   {field.type === 'select' ? (
                     <View style={styles.selectList}>
                       {(field.options || []).map(option => {
@@ -540,25 +544,90 @@ export default function IntegrationConfigPage({ route }) {
                       })}
                     </View>
                   ) : field.type === 'file' ? (
-                    <View>
-                      <TextInput
-                        style={[
-                          styles.input,
-                          !editable && styles.inputDisabled,
-                        ]}
-                        value={configValues[field.key] || ''}
-                        onChangeText={value => updateField(field.key, value)}
-                        editable={editable}
-                        autoCapitalize="none"
-                        autoCorrect={false}
-                        placeholder={
-                          field.placeholder ||
-                          'IRI ou id do arquivo no gerenciador (contexto da empresa)'
-                        }
+                    <View style={styles.fileFieldWrap}>
+                      {configValues[field.key] ? (
+                        <Text style={styles.fieldHint}>
+                          Arquivo vinculado (id: {String(configValues[field.key]).replace(/\D/g, '') || configValues[field.key]})
+                        </Text>
+                      ) : (
+                        <Text style={styles.fieldHint}>Nenhum certificado vinculado.</Text>
+                      )}
+                      <DefaultUpload
+                        relationStoreName="people"
+                        relationField="people"
+                        relationResource="people"
+                        entityId={providerId}
+                        companyId={providerId}
+                        context={field.fileContext || 'company_certificate'}
+                        libraryContexts={[field.fileContext || 'company_certificate']}
+                        acceptedTypes={field.accept || '.pfx,.p12,application/x-pkcs12'}
+                        fileType=""
+                        fileTypeLabel="certificado"
+                        title={field.label}
+                        triggerLabel="Gerenciar certificado"
+                        managerTitle="Gerenciador de arquivos"
+                        searchPlaceholder="Buscar certificado"
+                        uploadButtonLabel="Enviar certificado"
+                        emptyAttachmentLabel="Nenhum certificado anexado."
+                        emptyLibraryLabel="Nenhum arquivo encontrado."
+                        uploadSuccessMessage="Certificado enviado."
+                        attachSuccessMessage="Certificado vinculado."
+                        removeSuccessMessage="Certificado removido."
+                        showInlineContent={false}
+                        uploadResultAlreadyAttached
+                        requireEntity={false}
+                        onUploadFile={async ({ file, companyId, context, entityId }) => {
+                          const uploaded = await uploadFileToApi({
+                            file,
+                            context: context || field.fileContext || 'company_certificate',
+                            peopleId: companyId || providerId,
+                            entityId: entityId || providerId,
+                          });
+                          const id = extractFileId(uploaded);
+                          const iri = toFileIri(uploaded);
+                          const value = id ? String(id) : iri || '';
+                          if (!value) {
+                            throw new Error('Upload sem identificador de arquivo.');
+                          }
+                          updateField(field.key, value);
+                          return uploaded;
+                        }}
+                        onAttachFile={async fileObj => {
+                          const id = extractFileId(fileObj);
+                          const iri = toFileIri(fileObj);
+                          const value = id ? String(id) : iri || '';
+                          if (!value) {
+                            throw new Error('Arquivo sem identificador.');
+                          }
+                          updateField(field.key, value);
+                          return fileObj;
+                        }}
+                        onRemoveAttachment={async () => {
+                          updateField(field.key, '');
+                          return true;
+                        }}
+                        renderTrigger={({ openManager, uploading }) => (
+                          <TouchableOpacity
+                            style={[
+                              styles.filePickerButton,
+                              !editable && styles.inputDisabled,
+                            ]}
+                            disabled={!editable || uploading}
+                            activeOpacity={0.85}
+                            onPress={openManager}>
+                            {uploading ? (
+                              <ActivityIndicator color="#166534" />
+                            ) : (
+                              <Icon name="folder" size={16} color="#166534" />
+                            )}
+                            <Text style={styles.filePickerButtonText}>
+                              {configValues[field.key]
+                                ? 'Trocar certificado (gerenciador)'
+                                : 'Selecionar / enviar certificado'}
+                            </Text>
+                          </TouchableOpacity>
+                        )}
                       />
-                      <Text style={styles.fieldHint}>
-                        Use o gerenciador de arquivos da empresa ativa para enviar o .pfx/.p12 e cole aqui o identificador/IRI do arquivo.
-                      </Text>
                     </View>
                   ) : (
                     <TextInput

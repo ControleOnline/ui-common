@@ -135,6 +135,65 @@ export const INTEGRATION_CONFIGS = {
       },
     ],
   },
+
+  'receita-federal': {
+    key: 'receita-federal',
+    label: 'Receita Federal',
+    accent: '#166534',
+    icon: 'file-text',
+    description:
+      'Certificado digital e dados fiscais para emissao de NF-e / NFC-e (SEFAZ).',
+    saveLabel: 'Salvar Receita Federal',
+    requiredKeys: [
+      'receita-federal-certificate-file',
+      'receita-federal-certificate-password',
+      'receita-federal-serie',
+      'receita-federal-last-nf',
+      'receita-federal-tax-regime',
+      'receita-federal-ibge-code',
+    ],
+    fields: [
+      {
+        key: 'receita-federal-certificate-file',
+        label: 'Certificado digital (.pfx / .p12)',
+        type: 'file',
+        accept: '.pfx,.p12,application/x-pkcs12',
+        fileContext: 'company_certificate',
+        companyScopedFilePicker: true,
+      },
+      {
+        key: 'receita-federal-certificate-password',
+        label: 'Senha do certificado',
+        placeholder: 'Informe a senha do certificado',
+        secureTextEntry: true,
+      },
+      {
+        key: 'receita-federal-serie',
+        label: 'Serie da NF',
+        placeholder: 'Ex.: 1',
+      },
+      {
+        key: 'receita-federal-last-nf',
+        label: 'Ultima NF / proximo numero',
+        placeholder: 'Ex.: 100',
+      },
+      {
+        key: 'receita-federal-tax-regime',
+        label: 'Regime tributario',
+        type: 'select',
+        options: [
+          { value: '1', label: 'Simples Nacional' },
+          { value: '2', label: 'Simples Nacional - excesso sublimite' },
+          { value: '3', label: 'Regime Normal' },
+        ],
+      },
+      {
+        key: 'receita-federal-ibge-code',
+        label: 'Codigo IBGE (municipio)',
+        placeholder: 'Ex.: 3550308',
+      },
+    ],
+  },
 };
 
 export const getIntegrationListItem = key =>
