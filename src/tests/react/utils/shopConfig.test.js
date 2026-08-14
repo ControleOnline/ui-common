@@ -19,6 +19,14 @@ describe('shopConfig', () => {
     );
   });
 
+  it('normalizes franchise address category ids from the maps config', () => {
+    const result = resolveShopSettings({
+      'shop-franchise-address-category-ids': '["/categories/12", "13", 12]',
+    });
+
+    assert.deepEqual(result.franchiseAddressCategoryIds, ['12', '13']);
+  });
+
   it('persists the next boolean value when a toggle is clicked', async () => {
     const calls = [];
     const setValue = value => {
