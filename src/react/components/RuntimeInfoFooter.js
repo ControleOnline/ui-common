@@ -22,7 +22,7 @@ import {
 } from '@controleonline/ui-common/src/react/utils/runtimeFooter';
 import styles from './RuntimeInfoFooter.styles';
 
-const ROTATION_INTERVAL_MS = 6000;
+const ROTATION_INTERVAL_MS = 4000;
 const FADE_DURATION_MS = 260;
 const COMPACT_BREAKPOINT = 720;
 const MAX_INLINE_TEXT_LENGTH = 84;
@@ -95,14 +95,10 @@ const RuntimeInfoFooter = ({
     () => [primaryText, ...footerTextLines].filter(Boolean).join('  •  '),
     [footerTextLines, primaryText],
   );
+  // Always rotate when there is more than one entry (e.g. 1 footer line + primaryText).
+  // Do not fall back to concatenated inlineText in that case.
   const shouldRotate =
-    !showDebugInfo &&
-    rotationEntries.length > 1 &&
-    (
-      footerTextLines.length > 1 ||
-      width < COMPACT_BREAKPOINT ||
-      inlineText.length > MAX_INLINE_TEXT_LENGTH
-    );
+    !showDebugInfo && rotationEntries.length > 1;
   const footerEntries = useMemo(
     () =>
       Object.values(runtimeDebugSummary?.entries || {})
