@@ -4,6 +4,7 @@ import {env as APP_ENV} from '@env';
 import {getGravatarUrl, getUserInitials} from '../utils/userAvatar';
 
 const normalizeUrl = value => String(value || '').trim();
+const isBackendDownloadUrl = value => /\/files\/[^/?#]+\/download/i.test(normalizeUrl(value));
 
 const readSessionToken = () => {
   if (typeof localStorage === 'undefined' || !localStorage?.getItem) {
@@ -18,8 +19,16 @@ const readSessionToken = () => {
   }
 };
 
+const initialDisplayUri = uri => {
+  const normalized = normalizeUrl(uri);
+  if (Platform.OS === 'web' && isBackendDownloadUrl(normalized)) {
+    return '';
+  }
+  return normalized;
+};
+
 const useDisplayUri = uri => {
-  const [displayUri, setDisplayUri] = useState(normalizeUrl(uri));
+  const [displayUri, setDisplayUri] = useState(() => initialDisplayUri(uri));
 
   useEffect(() => {
     let cancelled = false;
@@ -32,11 +41,19 @@ const useDisplayUri = uri => {
         return;
       }
 
-      const isBackendDownload = /\/files\/[^/?#]+\/download/i.test(next);
+      const isBackendDownload = isBackendDownloadUrl(next);
       const token = readSessionToken();
 
-      if (!isBackendDownload || Platform.OS !== 'web' || !token) {
+      if (!isBackendDownload || Platform.OS !== 'web') {
         setDisplayUri(next);
+        return;
+      }
+
+      // Backend file downloads require session headers. Never expose the raw URL
+      // to <Image> on web, otherwise React Native Web issues an unauthenticated
+      // request before/after the authenticated fetch and produces a 403/404.
+      setDisplayUri('');
+      if (!token) {
         return;
       }
 
@@ -54,7 +71,6 @@ const useDisplayUri = uri => {
 
         const response = await fetch(next, {method: 'GET', headers});
         if (!response.ok) {
-          if (!cancelled) setDisplayUri(next);
           return;
         }
 
@@ -62,7 +78,7 @@ const useDisplayUri = uri => {
         objectUrl = URL.createObjectURL(blob);
         if (!cancelled) setDisplayUri(objectUrl);
       } catch {
-        if (!cancelled) setDisplayUri(next);
+        if (!cancelled) setDisplayUri('');
       }
     };
 
@@ -87,7 +103,7 @@ const UserAvatar = ({
   borderWidth = 1,
   textColor,
   style,
-  useGravatar = true,
+  useGravatar = false,
 }) => {
   const sources = useMemo(
     () =>
