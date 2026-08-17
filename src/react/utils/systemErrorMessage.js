@@ -15,7 +15,7 @@ const resolveMessageList = items =>
     .join('\n')
     .trim()
 
-export const resolveSystemErrorMessage = error => {
+const resolveSystemErrorMessage = error => {
   const resolveNestedMessage = value => {
     const nestedCandidates = [
       value?.response?.data,
@@ -75,4 +75,6 @@ export const resolveSystemErrorMessage = error => {
   )
 }
 
-export default resolveSystemErrorMessage
+module.exports = {
+  resolveSystemErrorMessage,
+}

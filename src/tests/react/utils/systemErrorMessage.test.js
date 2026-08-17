@@ -1,49 +1,52 @@
-const {describe, expect, it} = global
+const assert = require('node:assert/strict')
+const test = require('node:test')
 
 const {
   resolveSystemErrorMessage,
-} = require('../../../react/utils/systemErrorMessage')
+} = require('@controleonline/ui-common/src/react/utils/systemErrorMessage')
 
-describe('systemErrorMessage', () => {
-  it('prefers problem-json detail messages when available', () => {
-    expect(
-      resolveSystemErrorMessage({
-        title: 'An error occurred',
-        detail: 'Telefone ja cadastrado para outra pessoa.',
-      }),
-    ).toBe('Telefone ja cadastrado para outra pessoa.')
-  })
+test('resolveSystemErrorMessage prefers problem-json detail messages when available', () => {
+  assert.equal(
+    resolveSystemErrorMessage({
+      title: 'An error occurred',
+      detail: 'Telefone ja cadastrado para outra pessoa.',
+    }),
+    'Telefone ja cadastrado para outra pessoa.',
+  )
+})
 
-  it('formats constraint violations into a readable multiline message', () => {
-    expect(
-      resolveSystemErrorMessage({
-        violations: [
-          {propertyPath: 'ddd', message: 'DDD invalido.'},
-          {propertyPath: 'phone', message: 'Telefone obrigatorio.'},
-        ],
-      }),
-    ).toBe('DDD invalido.\nTelefone obrigatorio.')
-  })
+test('resolveSystemErrorMessage formats constraint violations into a readable multiline message', () => {
+  assert.equal(
+    resolveSystemErrorMessage({
+      violations: [
+        {propertyPath: 'ddd', message: 'DDD invalido.'},
+        {propertyPath: 'phone', message: 'Telefone obrigatorio.'},
+      ],
+    }),
+    'DDD invalido.\nTelefone obrigatorio.',
+  )
+})
 
-  it('accepts plain strings and legacy message arrays', () => {
-    expect(resolveSystemErrorMessage('Falha ao salvar.')).toBe('Falha ao salvar.')
-    expect(
-      resolveSystemErrorMessage({
-        message: [{message: 'Primeiro erro'}, {title: 'Segundo erro'}],
-      }),
-    ).toBe('Primeiro erro\nSegundo erro')
-  })
+test('resolveSystemErrorMessage accepts plain strings and legacy message arrays', () => {
+  assert.equal(resolveSystemErrorMessage('Falha ao salvar.'), 'Falha ao salvar.')
+  assert.equal(
+    resolveSystemErrorMessage({
+      message: [{message: 'Primeiro erro'}, {title: 'Segundo erro'}],
+    }),
+    'Primeiro erro\nSegundo erro',
+  )
+})
 
-  it('reads nested axios response payloads before the transport message', () => {
-    expect(
-      resolveSystemErrorMessage({
-        message: 'Request failed with status code 422',
-        response: {
-          data: {
-            'hydra:description': 'Arquivo com colunas invalidas.',
-          },
+test('resolveSystemErrorMessage reads nested axios response payloads before the transport message', () => {
+  assert.equal(
+    resolveSystemErrorMessage({
+      message: 'Request failed with status code 422',
+      response: {
+        data: {
+          'hydra:description': 'Arquivo com colunas invalidas.',
         },
-      }),
-    ).toBe('Arquivo com colunas invalidas.')
-  })
+      },
+    }),
+    'Arquivo com colunas invalidas.',
+  )
 })
