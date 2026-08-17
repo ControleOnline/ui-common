@@ -23,6 +23,16 @@ test('Receita Federal route resolves without relying only on route params', () =
   assert.match(page, /ROUTE_PROVIDER_MAP\[route\?\.name\]/);
 });
 
+test('embedded fiscal configuration keeps reads and writes on the company being edited', () => {
+  assert.match(utils, /route\?\.params\?\.companyId/);
+  assert.match(utils, /resolveProviderId/);
+  assert.match(utils, /resolveFallbackConfigs/);
+  assert.match(page, /resolveProviderId\(\{ route, currentCompany \}\)/);
+  assert.match(page, /api\.fetch\('\/configs', \{ params: \{ people: providerIri \} \}\)/);
+  assert.match(page, /addManyConfigs\(\{ configs, people: providerIri/);
+  assert.match(page, /syncConfigValues\(fallbackConfigs\)/);
+});
+
 test('certificate picker remains scoped to the active company', () => {
   assert.match(fields, /companyId=\{providerId\}/);
   assert.match(fields, /entityId=\{providerId\}/);

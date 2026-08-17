@@ -21,6 +21,8 @@ import {
   isConnectedValue,
   normalizeTextValue,
   openAuthorizationUrl,
+  resolveFallbackConfigs,
+  resolveProviderId,
   routeNameToPath,
   toConfigRequestValue,
 } from './IntegrationConfigPage.utils';
@@ -90,17 +92,24 @@ export default function IntegrationConfigPage({ route, embedded = false }) {
   const [authLoading, setAuthLoading] = useState(false);
   const [configValues, setConfigValues] = useState({});
   const [integrationSummary, setIntegrationSummary] = useState(null);
-  const providerId = currentCompany?.id;
-  const providerIri = useMemo(
-    () => (providerId ? `/people/${String(providerId).replace(/\D/g, '')}` : ''),
-    [providerId],
+
+  // Company details can edit a company that is not the globally selected one.
+  // The embedded route id is authoritative for all fiscal reads and writes.
+  const providerId = useMemo(
+    () => resolveProviderId({ route, currentCompany }),
+    [route?.params?.companyId, currentCompany?.id],
+  );
+  const providerIri = useMemo(() => (providerId ? `/people/${providerId}` : ''), [providerId]);
+  const fallbackConfigs = useMemo(
+    () => resolveFallbackConfigs({ providerId, currentCompany }),
+    [providerId, currentCompany?.id, currentCompany?.configs],
   );
 
   const syncConfigValues = useCallback(source => {
     setConfigValues(providerConfig ? buildFieldValues(providerConfig, source) : {});
   }, [providerConfig]);
 
-  useEffect(() => syncConfigValues(currentCompany?.configs), [currentCompany?.configs, syncConfigValues]);
+  useEffect(() => syncConfigValues(fallbackConfigs), [fallbackConfigs, syncConfigValues]);
   useEffect(() => {
     const oauthStatus = normalizeTextValue(route?.params?.oauth_status).toLowerCase();
     const oauthError = normalizeTextValue(route?.params?.oauth_error);
@@ -132,12 +141,12 @@ export default function IntegrationConfigPage({ route, embedded = false }) {
       }
     } catch (error) {
       showError(formatApiError(error));
-      syncConfigValues(currentCompany?.configs);
+      syncConfigValues(fallbackConfigs);
       setIntegrationSummary(null);
     } finally {
       if (showLoading) setLoading(false);
     }
-  }, [configFields.length, currentCompany?.configs, providerConfig, providerIri, providerId, showError, syncConfigValues]);
+  }, [configFields.length, fallbackConfigs, providerConfig, providerIri, providerId, showError, syncConfigValues]);
 
   useFocusEffect(useCallback(() => { loadPageData(); }, [loadPageData]));
   const onRefresh = useCallback(async () => {
