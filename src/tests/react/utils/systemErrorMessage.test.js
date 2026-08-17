@@ -1,59 +1,77 @@
-const {describe, expect, it} = global
+const assert = require('node:assert/strict')
+const test = require('node:test')
 
 const {
   resolveSystemErrorMessage,
-} = require('../../../react/utils/systemErrorMessage')
+} = require('@controleonline/ui-common/src/react/utils/systemErrorMessage')
 
-describe('systemErrorMessage', () => {
-  it('prefers problem-json detail messages when available', () => {
-    expect(
-      resolveSystemErrorMessage({
-        title: 'An error occurred',
-        detail: 'Telefone ja cadastrado para outra pessoa.',
-      }),
-    ).toBe('Telefone ja cadastrado para outra pessoa.')
-  })
+test('resolveSystemErrorMessage prefers problem-json detail messages when available', () => {
+  assert.equal(
+    resolveSystemErrorMessage({
+      title: 'An error occurred',
+      detail: 'Telefone ja cadastrado para outra pessoa.',
+    }),
+    'Telefone ja cadastrado para outra pessoa.',
+  )
+})
 
-  it('reads canonical hydra error envelopes', () => {
-    expect(
-      resolveSystemErrorMessage({
-        '@type': 'Error',
-        'hydra:title': 'An error occurred',
-        'hydra:description': 'Pedido sem endereco de entrega valido.',
-      }),
-    ).toBe('Pedido sem endereco de entrega valido.')
-  })
+test('resolveSystemErrorMessage reads canonical hydra error envelopes', () => {
+  assert.equal(
+    resolveSystemErrorMessage({
+      '@type': 'Error',
+      'hydra:title': 'An error occurred',
+      'hydra:description': 'Pedido sem endereco de entrega valido.',
+    }),
+    'Pedido sem endereco de entrega valido.',
+  )
+})
 
-  it('reads hydra envelopes nested under response data', () => {
-    expect(
-      resolveSystemErrorMessage({
-        response: {
-          data: {
-            '@type': 'Error',
-            'hydra:description': 'Pedido sem endereco de entrega valido.',
-          },
+test('resolveSystemErrorMessage reads hydra envelopes nested under response data', () => {
+  assert.equal(
+    resolveSystemErrorMessage({
+      response: {
+        data: {
+          '@type': 'Error',
+          'hydra:description': 'Pedido sem endereco de entrega valido.',
         },
-      }),
-    ).toBe('Pedido sem endereco de entrega valido.')
-  })
+      },
+    }),
+    'Pedido sem endereco de entrega valido.',
+  )
+})
 
-  it('formats constraint violations into a readable multiline message', () => {
-    expect(
-      resolveSystemErrorMessage({
-        violations: [
-          {propertyPath: 'ddd', message: 'DDD invalido.'},
-          {propertyPath: 'phone', message: 'Telefone obrigatorio.'},
-        ],
-      }),
-    ).toBe('DDD invalido.\nTelefone obrigatorio.')
-  })
+test('resolveSystemErrorMessage formats constraint violations into a readable multiline message', () => {
+  assert.equal(
+    resolveSystemErrorMessage({
+      violations: [
+        {propertyPath: 'ddd', message: 'DDD invalido.'},
+        {propertyPath: 'phone', message: 'Telefone obrigatorio.'},
+      ],
+    }),
+    'DDD invalido.\nTelefone obrigatorio.',
+  )
+})
 
-  it('accepts plain strings and legacy message arrays', () => {
-    expect(resolveSystemErrorMessage('Falha ao salvar.')).toBe('Falha ao salvar.')
-    expect(
-      resolveSystemErrorMessage({
-        message: [{message: 'Primeiro erro'}, {title: 'Segundo erro'}],
-      }),
-    ).toBe('Primeiro erro\nSegundo erro')
-  })
+test('resolveSystemErrorMessage accepts plain strings and legacy message arrays', () => {
+  assert.equal(resolveSystemErrorMessage('Falha ao salvar.'), 'Falha ao salvar.')
+  assert.equal(
+    resolveSystemErrorMessage({
+      message: [{message: 'Primeiro erro'}, {title: 'Segundo erro'}],
+    }),
+    'Primeiro erro\nSegundo erro',
+  )
+})
+
+test('resolveSystemErrorMessage reads nested axios response payloads before the transport message', () => {
+  assert.equal(
+    resolveSystemErrorMessage({
+      message: 'Request failed with status code 422',
+      response: {
+        data: {
+          'hydra:description': 'Arquivo com colunas invalidas.',
+        },
+      },
+    }),
+    'Arquivo com colunas invalidas.',
+  )
 })

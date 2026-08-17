@@ -1,8 +1,7 @@
-import { getDeviceTypeLabel } from '@controleonline/ui-common/src/react/utils/printerDevices';
-
 const DEVICE_RUNTIME_FOOTER_TEXT_CONFIG_KEY = 'device-runtime-footer-text';
 
 const safeTrim = value => String(value || '').trim();
+const getRuntimeFooterDeviceTypeLabel = value => safeTrim(value).toUpperCase();
 
 const POS_OPERATION_MODE_TRANSLATION_KEYS = {
   counter: 'counterService',
@@ -254,7 +253,7 @@ const getRuntimeFooterOperationalTypeLabel = ({device, deviceConfig} = {}) => {
   });
 
   return operationalTypeInfo.value
-    ? getDeviceTypeLabel(operationalTypeInfo.value)
+    ? getRuntimeFooterDeviceTypeLabel(operationalTypeInfo.value)
     : '';
 };
 
@@ -382,7 +381,7 @@ const getRuntimeFooterDebugInfo = ({device, appVersion, deviceConfig}) => {
     deviceConfig,
   });
   const operationalTypeLabel = operationalTypeInfo.value
-    ? getDeviceTypeLabel(operationalTypeInfo.value)
+    ? getRuntimeFooterDeviceTypeLabel(operationalTypeInfo.value)
     : '';
   const operationModeLabel =
     operationalTypeLabel === 'PDV'

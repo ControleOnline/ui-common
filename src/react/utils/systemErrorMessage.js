@@ -17,7 +17,30 @@ const resolveMessageList = items =>
     .join('\n')
     .trim()
 
-export const resolveSystemErrorMessage = error => {
+const resolveSystemErrorMessage = error => {
+  const resolveNestedMessage = value => {
+    const nestedCandidates = [
+      value?.response?.data,
+      value?.data,
+      value?.response,
+      value?.body,
+      value?.cause,
+    ]
+
+    for (const candidate of nestedCandidates) {
+      if (!candidate || candidate === value) {
+        continue
+      }
+
+      const nestedMessage = resolveSystemErrorMessage(candidate)
+      if (nestedMessage) {
+        return nestedMessage
+      }
+    }
+
+    return ''
+  }
+
   if (error === undefined || error === null) {
     return ''
   }
@@ -38,18 +61,9 @@ export const resolveSystemErrorMessage = error => {
     return resolveMessageList(error.violations)
   }
 
-  if (error?.response?.data) {
-    const responseMessage = resolveSystemErrorMessage(error.response.data)
-    if (responseMessage) {
-      return responseMessage
-    }
-  }
-
-  if (error?.body) {
-    const bodyMessage = resolveSystemErrorMessage(error.body)
-    if (bodyMessage) {
-      return bodyMessage
-    }
+  const nestedMessage = resolveNestedMessage(error)
+  if (nestedMessage) {
+    return nestedMessage
   }
 
   return normalizeText(
@@ -64,4 +78,6 @@ export const resolveSystemErrorMessage = error => {
   )
 }
 
-export default resolveSystemErrorMessage
+module.exports = {
+  resolveSystemErrorMessage,
+}
