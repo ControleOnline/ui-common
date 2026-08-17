@@ -50,6 +50,17 @@ export const buildFieldValues = (providerConfig, source) => {
   }, {});
 };
 
+export const resolveProviderId = ({ route, currentCompany }) => {
+  const routeCompanyId = String(route?.params?.companyId || '').replace(/\D/g, '');
+  if (routeCompanyId) return Number(routeCompanyId);
+
+  const currentCompanyId = String(currentCompany?.id || '').replace(/\D/g, '');
+  return currentCompanyId ? Number(currentCompanyId) : null;
+};
+
+export const resolveFallbackConfigs = ({ providerId, currentCompany }) =>
+  Number(providerId) === Number(currentCompany?.id) ? currentCompany?.configs || {} : {};
+
 export const isConnectedValue = value =>
   value === true || value === 1 || value === '1' || String(value).trim().toLowerCase() === 'true';
 
