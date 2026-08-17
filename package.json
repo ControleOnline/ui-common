@@ -6,7 +6,8 @@
   "license": "MIT",
   "main": "src/react/index.js",
   "scripts": {
-    "test": "npm run test:imports-status && npm run test:runtime-language && npm run test:runtime-footer && npm run test:invoice-presentation",
+    "test": "npm run test:receita-federal && npm run test:imports-status && npm run test:runtime-language && npm run test:runtime-footer && npm run test:invoice-presentation",
+    "test:receita-federal": "node --test src/tests/react/pages/receitaFederalIntegrationContract.test.mjs",
     "test:imports-status": "mkdir -p node_modules/@controleonline && ln -sfn ../.. node_modules/@controleonline/ui-common && node --test src/tests/react/utils/importStatus.test.js",
     "test:runtime-language": "node --test src/tests/react/utils/runtimeLanguage.test.js",
     "test:runtime-footer": "node --test src/tests/react/utils/runtimeFooter.test.js",
