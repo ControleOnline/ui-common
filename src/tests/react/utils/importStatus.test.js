@@ -1,11 +1,12 @@
 const assert = require('node:assert/strict')
-const {test} = global
+const {test} = require('node:test')
 
 const {
   getImportErrorDetail,
   getImportStatusMeta,
   normalizeImportStatus,
   resolveImportLabels,
+  resolveImportTranslator,
   resolveImportStatusLabel,
 } = require('@controleonline/ui-common/src/react/utils/importStatus')
 
@@ -67,6 +68,22 @@ test('resolveImportLabels only reads translation keys without hardcoded fallback
   ])
   assert.equal(labels.refreshLabel, 'imports.button.refresh')
   assert.equal(labels.processingHelpLabel, 'imports.message.processing_after_upload')
+})
+
+test('resolveImportTranslator preserves translator object context', () => {
+  const translator = {
+    prefix: 'translated',
+    t(type, scope, key) {
+      return `${this.prefix}.${type}.${scope}.${key}`
+    },
+  }
+
+  const translate = resolveImportTranslator(translator)
+
+  assert.equal(
+    translate('imports', 'button', 'refresh'),
+    'translated.imports.button.refresh',
+  )
 })
 
 test('resolveImportStatusLabel falls back to the raw backend status before the generic empty label', () => {

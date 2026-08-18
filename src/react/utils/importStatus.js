@@ -84,6 +84,14 @@ function resolveImportLabels(translate) {
   }
 }
 
+function resolveImportTranslator(translator = globalThis?.t) {
+  if (typeof translator?.t !== 'function') {
+    return undefined
+  }
+
+  return translator.t.bind(translator)
+}
+
 function resolveImportStatusLabel(statusMeta, labels = {}) {
   if (statusMeta?.labelKey === 'processing') return labels.processingLabel
   if (statusMeta?.labelKey === 'error') return labels.errorLabel
@@ -96,5 +104,6 @@ module.exports = {
   getImportStatusMeta,
   normalizeImportStatus,
   resolveImportLabels,
+  resolveImportTranslator,
   resolveImportStatusLabel,
 }
