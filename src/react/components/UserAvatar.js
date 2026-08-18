@@ -4,6 +4,8 @@ import {env as APP_ENV} from '@env';
 import {getGravatarUrl, getUserInitials} from '../utils/userAvatar';
 
 const normalizeUrl = value => String(value || '').trim();
+const isBackendDownloadUrl = value => /\/files\/[^/?#]+\/download/i.test(normalizeUrl(value));
+const shouldProxyBackendDownload = value => Platform.OS === 'web' && isBackendDownloadUrl(value);
 
 const readSessionToken = () => {
   if (typeof localStorage === 'undefined' || !localStorage?.getItem) {
@@ -18,8 +20,14 @@ const readSessionToken = () => {
   }
 };
 
+const resolveInitialDisplayUri = uri => {
+  const normalizedUri = normalizeUrl(uri);
+
+  return shouldProxyBackendDownload(normalizedUri) ? '' : normalizedUri;
+};
+
 const useDisplayUri = uri => {
-  const [displayUri, setDisplayUri] = useState(normalizeUrl(uri));
+  const [displayUri, setDisplayUri] = useState(resolveInitialDisplayUri(uri));
 
   useEffect(() => {
     let cancelled = false;
@@ -32,11 +40,15 @@ const useDisplayUri = uri => {
         return;
       }
 
-      const isBackendDownload = /\/files\/[^/?#]+\/download/i.test(next);
       const token = readSessionToken();
 
-      if (!isBackendDownload || Platform.OS !== 'web' || !token) {
+      if (!shouldProxyBackendDownload(next)) {
         setDisplayUri(next);
+        return;
+      }
+
+      if (!token) {
+        setDisplayUri('');
         return;
       }
 
@@ -54,7 +66,7 @@ const useDisplayUri = uri => {
 
         const response = await fetch(next, {method: 'GET', headers});
         if (!response.ok) {
-          if (!cancelled) setDisplayUri(next);
+          if (!cancelled) setDisplayUri('');
           return;
         }
 
@@ -62,7 +74,7 @@ const useDisplayUri = uri => {
         objectUrl = URL.createObjectURL(blob);
         if (!cancelled) setDisplayUri(objectUrl);
       } catch {
-        if (!cancelled) setDisplayUri(next);
+        if (!cancelled) setDisplayUri('');
       }
     };
 
@@ -87,7 +99,7 @@ const UserAvatar = ({
   borderWidth = 1,
   textColor,
   style,
-  useGravatar = true,
+  useGravatar = false,
 }) => {
   const sources = useMemo(
     () =>
