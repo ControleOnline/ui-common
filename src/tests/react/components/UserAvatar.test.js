@@ -1,6 +1,5 @@
 const React = require('react');
 const renderer = require('react-test-renderer');
-const {jest} = require('@jest/globals');
 
 jest.mock('react-native', () => ({
   Image: props => React.createElement('Image', props),
