@@ -1,14 +1,19 @@
 const React = require('react');
 const renderer = require('react-test-renderer');
 
-jest.mock('react-native', () => ({
-  Image: props => React.createElement('Image', props),
-  StyleSheet: {
-    create: styles => styles,
-  },
-  Text: props => React.createElement('Text', props, props.children),
-  View: props => React.createElement('View', props, props.children),
-}));
+jest.mock('react-native', () => {
+  const mockReact = require('react');
+
+  return {
+    Image: props => mockReact.createElement('Image', props),
+    Platform: {OS: 'web'},
+    StyleSheet: {
+      create: styles => styles,
+    },
+    Text: props => mockReact.createElement('Text', props, props.children),
+    View: props => mockReact.createElement('View', props, props.children),
+  };
+});
 
 const UserAvatar = require('../../../react/components/UserAvatar').default;
 
