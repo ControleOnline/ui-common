@@ -13,7 +13,7 @@ jest.mock('react-native', () => {
     Text: props => mockReact.createElement('Text', props, props.children),
     View: props => mockReact.createElement('View', props, props.children),
   };
-});
+}, {virtual: true});
 
 const UserAvatar = require('../../../react/components/UserAvatar').default;
 
