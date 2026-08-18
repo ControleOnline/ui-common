@@ -5,6 +5,7 @@ import {getGravatarUrl, getUserInitials} from '../utils/userAvatar';
 
 const normalizeUrl = value => String(value || '').trim();
 const isBackendDownloadUrl = value => /\/files\/[^/?#]+\/download/i.test(normalizeUrl(value));
+const shouldProxyBackendDownload = value => Platform.OS === 'web' && isBackendDownloadUrl(value);
 
 const readSessionToken = () => {
   if (typeof localStorage === 'undefined' || !localStorage?.getItem) {
@@ -19,16 +20,14 @@ const readSessionToken = () => {
   }
 };
 
-const initialDisplayUri = uri => {
-  const normalized = normalizeUrl(uri);
-  if (Platform.OS === 'web' && isBackendDownloadUrl(normalized)) {
-    return '';
-  }
-  return normalized;
+const resolveInitialDisplayUri = uri => {
+  const normalizedUri = normalizeUrl(uri);
+
+  return shouldProxyBackendDownload(normalizedUri) ? '' : normalizedUri;
 };
 
 const useDisplayUri = uri => {
-  const [displayUri, setDisplayUri] = useState(() => initialDisplayUri(uri));
+  const [displayUri, setDisplayUri] = useState(() => resolveInitialDisplayUri(uri));
 
   useEffect(() => {
     let cancelled = false;
@@ -41,10 +40,9 @@ const useDisplayUri = uri => {
         return;
       }
 
-      const isBackendDownload = isBackendDownloadUrl(next);
       const token = readSessionToken();
 
-      if (!isBackendDownload || Platform.OS !== 'web') {
+      if (!shouldProxyBackendDownload(next)) {
         setDisplayUri(next);
         return;
       }
@@ -71,6 +69,7 @@ const useDisplayUri = uri => {
 
         const response = await fetch(next, {method: 'GET', headers});
         if (!response.ok) {
+          if (!cancelled) setDisplayUri('');
           return;
         }
 
