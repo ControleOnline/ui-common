@@ -21,6 +21,7 @@ const {
     getImportErrorDetail,
     getImportStatusMeta,
     resolveImportLabels,
+    resolveImportTranslator,
     resolveImportStatusLabel: resolveImportStatusLabelValue,
 } = require('@controleonline/ui-common/src/react/utils/importStatus');
 
@@ -32,7 +33,7 @@ const formatDate = (dateString) => {
 const Imports = ({ context = {}, onClose }) => {
     const peopleStore = useStore('people');
     const themeStore = useStore('theme');
-    const { getters: peopleGetters } = peopleStore.getters;
+    const peopleGetters = peopleStore.getters || {};
     const { currentCompany } = peopleGetters;
     const themeColors = themeStore?.getters?.colors || {};
     const buttonPalette = useMemo(
@@ -63,7 +64,7 @@ const Imports = ({ context = {}, onClose }) => {
         doneLabel,
         noStatusLabel,
         processingHelpLabel,
-    } = resolveImportLabels(global.t?.t);
+    } = resolveImportLabels(resolveImportTranslator());
 
     const navigation = useNavigation();
 
