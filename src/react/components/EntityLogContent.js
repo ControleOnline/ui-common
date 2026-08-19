@@ -567,7 +567,7 @@ const EntityLogBranch = ({
                   <Text style={styles.relationButtonMeta}>
                     {candidate.isCollection
                       ? `${candidate.items.length} item(ns)`
-                      : candidate.items[0]?.label || 'Ver historico'}
+                      : candidate.items[0]?.label || 'Ver histórico'}
                   </Text>
                 </TouchableOpacity>
 

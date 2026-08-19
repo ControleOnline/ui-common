@@ -125,7 +125,7 @@ const Checkout = () => {
 
     if (!paidStatusIri) {
       invoiceActions.setError(
-        'Nao foi possivel resolver o status pago da invoice do PDV.',
+        'Não foi possível resolver o status pago da invoice do PDV.',
       );
       return;
     }
@@ -259,7 +259,7 @@ const Checkout = () => {
       } catch (error) {
         const errorMessage = normalizeGatewayPaymentError(
           error,
-          'Nao foi possivel concluir o pagamento remoto.',
+          'Não foi possível concluir o pagamento remoto.',
         );
         const wasCanceled = isRemotePaymentCancellation({
           status: error?.status,
