@@ -55,7 +55,7 @@ import {
   getPosOperationModeLabel,
   getDeviceDetailRoute,
   getDeviceListIdentifier,
-  buildDeviceListParams,
+  expandDeviceListParamSets,
   isPdvPrinterEnabled,
 } from './deviceListHelpers';
 
@@ -205,40 +205,45 @@ export const createDeviceTypeTab = ({
 
         try {
           const requestPageSize = Math.max(pageSize, API_PAGE_SIZE);
-          let page = 1;
           let loadedItems = [];
           let reportedTotal = 0;
 
-          while (true) {
-            const pageItems = await deviceConfigStore.actions.getItems(
-              buildDeviceListParams({
-                companyId,
+          const paramSets = expandDeviceListParamSets({
+            companyId,
+            page: 1,
+            pageSize: requestPageSize,
+            queryTypes,
+          });
+
+          for (const baseParams of paramSets) {
+            let page = 1;
+            while (true) {
+              const pageItems = await deviceConfigStore.actions.getItems({
+                ...baseParams,
                 page,
-                pageSize: requestPageSize,
-                queryTypes,
-              }),
-            );
-            const previousLength = loadedItems.length;
-            loadedItems = mergeDeviceConfigs(loadedItems, pageItems);
-            reportedTotal = Math.max(
-              reportedTotal,
-              Number(
-                deviceConfigStore.getters.totalItems ||
-                  loadedItems.length ||
-                  0,
-              ),
-            );
+              });
+              const previousLength = loadedItems.length;
+              loadedItems = mergeDeviceConfigs(loadedItems, pageItems);
+              reportedTotal = Math.max(
+                reportedTotal,
+                Number(
+                  deviceConfigStore.getters.totalItems ||
+                    loadedItems.length ||
+                    0,
+                ),
+              );
 
-            if (
-              !Array.isArray(pageItems) ||
-              pageItems.length === 0 ||
-              loadedItems.length >= reportedTotal ||
-              loadedItems.length === previousLength
-            ) {
-              break;
+              if (
+                !Array.isArray(pageItems) ||
+                pageItems.length === 0 ||
+                loadedItems.length >= reportedTotal ||
+                loadedItems.length === previousLength
+              ) {
+                break;
+              }
+
+              page += 1;
             }
-
-            page += 1;
           }
 
           setDeviceConfigs(loadedItems);
