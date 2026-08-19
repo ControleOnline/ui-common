@@ -1,43 +1,57 @@
-import { StyleSheet } from 'react-native';
+import {StyleSheet} from 'react-native';
 
-const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
-  card: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderRadius: 10,
-    width: '80%',
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginBottom: 10,
-  },
-  message: {
-    fontSize: 14,
-    marginBottom: 20,
-  },
-  actions: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    gap: 10,
-  },
-  cancelButton: {
-    padding: 10,
-  },
-  confirmButton: {
-    padding: 10,
-    backgroundColor: '#007AFF',
-    borderRadius: 5,
-  },
-  confirmButtonText: {
-    color: '#fff',
-  },
-});
+/**
+ * Theme-aware styles for ConfirmModal.
+ * Colors must come from themeStore.getters.colors (canonical tokens only).
+ */
+const createStyles = palette =>
+  StyleSheet.create({
+    overlay: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: palette.modalOverlay,
+    },
+    card: {
+      backgroundColor: palette.modalBackground,
+      padding: 20,
+      borderRadius: 10,
+      width: '80%',
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: palette.modalBorder,
+    },
+    title: {
+      fontSize: 18,
+      fontWeight: 'bold',
+      marginBottom: 10,
+      color: palette.modalHeaderText,
+    },
+    message: {
+      fontSize: 14,
+      marginBottom: 20,
+      color: palette.modalText,
+    },
+    actions: {
+      flexDirection: 'row',
+      justifyContent: 'flex-end',
+      gap: 10,
+    },
+    cancelButton: {
+      padding: 10,
+    },
+    cancelButtonText: {
+      color: palette.buttonTextSecondary,
+    },
+    confirmButton: {
+      padding: 10,
+      backgroundColor: palette.buttonBackground,
+      borderRadius: 5,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: palette.buttonBorder,
+    },
+    confirmButtonText: {
+      color: palette.buttonText,
+    },
+  });
 
-export default styles;
+export default createStyles;
