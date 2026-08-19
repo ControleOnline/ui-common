@@ -64,6 +64,7 @@ import {
   resolvePosOperationMode,
   resolvePosPrintMode,
 } from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
+import { buildDeviceAliasStoreUpdates } from '@controleonline/ui-common/src/react/utils/deviceAliasSync';
 
 import {
   filterDeviceConfigsByCompany,
@@ -1059,6 +1060,22 @@ const DeviceDetailPage = () => {
         alias: trimmed,
       });
       const nextAlias = String(savedDevice?.alias || trimmed).trim();
+
+      // Keep store in sync so initialAlias does not overwrite local state
+      // when the editingAlias→false effect runs.
+      const { mergedDevice, nextDeviceConfig } = buildDeviceAliasStoreUpdates({
+        deviceId,
+        nextAlias,
+        runtimeDevice,
+        runtimeDeviceConfig,
+        savedDevice,
+        normalizeEntityId,
+      });
+      actionsRef.current.deviceActions.setItem?.(mergedDevice);
+      if (nextDeviceConfig && actionsRef.current.deviceConfigActions?.setItem) {
+        actionsRef.current.deviceConfigActions.setItem(nextDeviceConfig);
+      }
+
       setAlias(nextAlias);
       setAliasInput(nextAlias);
       setEditingAlias(false);
@@ -1068,7 +1085,15 @@ const DeviceDetailPage = () => {
     } finally {
       setSavingAlias(false);
     }
-  }, [aliasInput, alias, deviceId, cancelEditAlias, showSystemError]);
+  }, [
+    aliasInput,
+    alias,
+    deviceId,
+    cancelEditAlias,
+    showSystemError,
+    runtimeDevice,
+    runtimeDeviceConfig,
+  ]);
 
   const saveDevicePaymentTarget = useCallback(async (override = {}) => {
     const nextDevicePaymentTarget =
