@@ -64,4 +64,5 @@ export const resolveSystemErrorMessage = error => {
   )
 }
 
+export { resolveSystemErrorMessage }
 export default resolveSystemErrorMessage
