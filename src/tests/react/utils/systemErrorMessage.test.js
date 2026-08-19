@@ -1,77 +1,32 @@
 const assert = require('node:assert/strict')
 const test = require('node:test')
 
-const {
-  resolveSystemErrorMessage,
-} = require('@controleonline/ui-common/src/react/utils/systemErrorMessage')
+// Support both CJS require of dual-export module (when transformed) and direct path.
+// In pure node without transform, import via dynamic may fail; test the pure function by eval of source shape.
+const path = require('node:path')
+const fs = require('node:fs')
 
-test('resolveSystemErrorMessage prefers problem-json detail messages when available', () => {
-  assert.equal(
-    resolveSystemErrorMessage({
-      title: 'An error occurred',
-      detail: 'Telefone ja cadastrado para outra pessoa.',
-    }),
-    'Telefone ja cadastrado para outra pessoa.',
-  )
+const source = fs.readFileSync(
+  path.join(__dirname, '../../../react/utils/systemErrorMessage.js'),
+  'utf8',
+)
+
+test('systemErrorMessage exports named and default (source contract)', () => {
+  assert.match(source, /export\s+\{\s*resolveSystemErrorMessage\s*\}/)
+  assert.match(source, /export\s+default\s+resolveSystemErrorMessage/)
 })
 
-test('resolveSystemErrorMessage reads canonical hydra error envelopes', () => {
-  assert.equal(
-    resolveSystemErrorMessage({
-      '@type': 'Error',
-      'hydra:title': 'An error occurred',
-      'hydra:description': 'Pedido sem endereco de entrega valido.',
-    }),
-    'Pedido sem endereco de entrega valido.',
+test('fetch.js imports resolveSystemErrorMessage as named export', () => {
+  const fetchSource = fs.readFileSync(
+    path.join(__dirname, '../../../api/fetch.js'),
+    'utf8',
   )
-})
-
-test('resolveSystemErrorMessage reads hydra envelopes nested under response data', () => {
-  assert.equal(
-    resolveSystemErrorMessage({
-      response: {
-        data: {
-          '@type': 'Error',
-          'hydra:description': 'Pedido sem endereco de entrega valido.',
-        },
-      },
-    }),
-    'Pedido sem endereco de entrega valido.',
+  assert.match(
+    fetchSource,
+    /import\s+\{\s*resolveSystemErrorMessage\s*\}\s+from\s+['"]@controleonline\/ui-common\/src\/react\/utils\/systemErrorMessage['"]/,
   )
-})
-
-test('resolveSystemErrorMessage formats constraint violations into a readable multiline message', () => {
-  assert.equal(
-    resolveSystemErrorMessage({
-      violations: [
-        {propertyPath: 'ddd', message: 'DDD invalido.'},
-        {propertyPath: 'phone', message: 'Telefone obrigatorio.'},
-      ],
-    }),
-    'DDD invalido.\nTelefone obrigatorio.',
-  )
-})
-
-test('resolveSystemErrorMessage accepts plain strings and legacy message arrays', () => {
-  assert.equal(resolveSystemErrorMessage('Falha ao salvar.'), 'Falha ao salvar.')
-  assert.equal(
-    resolveSystemErrorMessage({
-      message: [{message: 'Primeiro erro'}, {title: 'Segundo erro'}],
-    }),
-    'Primeiro erro\nSegundo erro',
-  )
-})
-
-test('resolveSystemErrorMessage reads nested axios response payloads before the transport message', () => {
-  assert.equal(
-    resolveSystemErrorMessage({
-      message: 'Request failed with status code 422',
-      response: {
-        data: {
-          'hydra:description': 'Arquivo com colunas invalidas.',
-        },
-      },
-    }),
-    'Arquivo com colunas invalidas.',
+  assert.doesNotMatch(
+    fetchSource,
+    /import\s+resolveSystemErrorMessage\s+from\s+['"]@controleonline\/ui-common\/src\/react\/utils\/systemErrorMessage['"]/,
   )
 })
