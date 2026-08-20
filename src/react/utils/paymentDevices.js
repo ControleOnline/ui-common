@@ -2,9 +2,11 @@ import {Platform} from 'react-native';
 
 export const PAYMENT_GATEWAY_CIELO = 'cielo';
 export const PAYMENT_GATEWAY_INFINITE_PAY = 'infinite-pay';
+export const PAYMENT_GATEWAY_GETNET = 'getnet';
 export const PAYMENT_GATEWAYS = [
   PAYMENT_GATEWAY_CIELO,
   PAYMENT_GATEWAY_INFINITE_PAY,
+  PAYMENT_GATEWAY_GETNET,
 ];
 export const POS_GATEWAY_CONFIG_KEY = 'pos-gateway';
 export const PDV_PRINTER_ENABLED_CONFIG_KEY = 'printer-enabled';
@@ -151,6 +153,9 @@ export const normalizePaymentGateway = value => {
   }
   if (compactGateway === PAYMENT_GATEWAY_CIELO) {
     return PAYMENT_GATEWAY_CIELO;
+  }
+  if (compactGateway === 'getnet' || compactGateway === PAYMENT_GATEWAY_GETNET) {
+    return PAYMENT_GATEWAY_GETNET;
   }
 
   return compactGateway;
@@ -309,6 +314,7 @@ export const getPaymentDeviceLabel = deviceConfig =>
 export const getPaymentGatewayLabel = gateway => {
   if (gateway === PAYMENT_GATEWAY_CIELO) return 'Cielo';
   if (gateway === PAYMENT_GATEWAY_INFINITE_PAY) return 'Infinite Pay';
+  if (gateway === PAYMENT_GATEWAY_GETNET) return 'Getnet';
   return 'Gateway nao configurado';
 };
 
