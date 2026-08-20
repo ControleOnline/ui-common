@@ -1952,6 +1952,7 @@ const DeviceDetailPage = () => {
                     activeOpacity={0.8}
                     disabled={savingAlias || deletingDevice}
                     accessibilityLabel="Apagar device"
+                    testID="device-detail-delete-btn"
                   >
                     <Icon
                       name="trash-2"
