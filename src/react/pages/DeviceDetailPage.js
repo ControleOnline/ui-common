@@ -494,6 +494,7 @@ const DeviceDetailPage = () => {
   const [editingAlias, setEditingAlias] = useState(false);
   const [aliasInput,   setAliasInput]   = useState(alias);
   const [savingAlias,  setSavingAlias]  = useState(false);
+  const [deletingDevice, setDeletingDevice] = useState(false);
   const aliasInputRef = useRef(null);
 
   useEffect(() => {
@@ -1069,6 +1070,27 @@ const DeviceDetailPage = () => {
       setSavingAlias(false);
     }
   }, [aliasInput, alias, deviceId, cancelEditAlias, showSystemError]);
+
+  const handleDeleteDevice = useCallback(() => {
+    if (!deviceId || deletingDevice) {
+      return;
+    }
+
+    const label = String(alias || deviceString || deviceId).trim();
+    const message = `Excluir o device "${label}"? Esta ação não pode ser desfeita.`;
+
+    confirm(message, async () => {
+      setDeletingDevice(true);
+      try {
+        await actionsRef.current.deviceActions.remove(deviceId);
+        navigation.navigate('DevicesIndex');
+      } catch (error) {
+        showSystemError(error, 'Nao foi possivel apagar o device.');
+      } finally {
+        setDeletingDevice(false);
+      }
+    });
+  }, [alias, deletingDevice, deviceId, deviceString, navigation, showSystemError]);
 
   const saveDevicePaymentTarget = useCallback(async (override = {}) => {
     const nextDevicePaymentTarget =
@@ -1882,10 +1904,32 @@ const DeviceDetailPage = () => {
                     ]}
                     onPress={editingAlias ? saveAlias : startEditAlias}
                     activeOpacity={0.8}
-                    disabled={savingAlias}
+                    disabled={savingAlias || deletingDevice}
                   >
                     <Icon
                       name={savingAlias ? 'save' : editingAlias ? 'check' : 'edit-2'}
+                      size={16}
+                      color={themeColors.buttonIcon}
+                    />
+                  </TouchableOpacity>
+                )}
+                {!!deviceId && !editingAlias && (
+                  <TouchableOpacity
+                    style={[
+                      styles.editAliasBtn,
+                      {
+                        backgroundColor: themeColors.buttonBackground,
+                        borderColor: themeColors.buttonBackground,
+                        opacity: deletingDevice ? 0.6 : 1,
+                      },
+                    ]}
+                    onPress={handleDeleteDevice}
+                    activeOpacity={0.8}
+                    disabled={savingAlias || deletingDevice}
+                    accessibilityLabel="Apagar device"
+                  >
+                    <Icon
+                      name="trash-2"
                       size={16}
                       color={themeColors.buttonIcon}
                     />
