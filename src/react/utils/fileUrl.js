@@ -81,6 +81,44 @@ const resolveDownloadHost = ({company = null, appDomain = ''} = {}) => {
   return resolveCompanyDomain(company, fallbackDomain);
 };
 
+/**
+ * Environment / platform hosts (staging, dev, localhost) are not tenant domains.
+ * Injecting them into /{host}/files/{id}/download produces URLs like
+ * https://s.controleonline.com/staging.controleonline.com/files/... → 403.
+ * Keep app-domain header only; do not path-inject environment hosts.
+ * app-community#432
+ */
+const isEnvironmentLikeHost = host => {
+  const normalized = normalizeText(host).toLowerCase();
+  if (!normalized) return false;
+  if (
+    normalized === 'localhost' ||
+    normalized.startsWith('localhost:') ||
+    normalized === '127.0.0.1' ||
+    normalized.startsWith('127.0.0.1:')
+  ) {
+    return true;
+  }
+  // staging.*, dev.*, *.staging.*, etc.
+  if (
+    /^(staging|dev|local|test|qa)([.-]|$)/i.test(normalized) ||
+    /\.(staging|dev|local|test)\./i.test(normalized) ||
+    normalized.endsWith('.local')
+  ) {
+    return true;
+  }
+  // Explicit known platform hosts used as ENV DOMAIN, not company domains
+  if (
+    normalized === 'staging.controleonline.com' ||
+    normalized === 'dev.controleonline.com' ||
+    normalized === 'manager.controleonline.com' ||
+    normalized === 'pos.controleonline.com'
+  ) {
+    return true;
+  }
+  return false;
+};
+
 const buildBackendDownloadUrl = (fileId, options = {}) => {
   const normalizedId = String(fileId || '').trim();
   if (!normalizedId) {
@@ -97,6 +135,11 @@ const buildTenantDownloadUrl = (url, host) => {
   const absoluteUrl = ensureAbsoluteUrl(stripDomainQueryParams(url));
   const normalizedHost = normalizeText(host);
   if (!absoluteUrl || !normalizedHost) {
+    return absoluteUrl;
+  }
+
+  // Do not inject environment hosts into the path (app-community#432).
+  if (isEnvironmentLikeHost(normalizedHost)) {
     return absoluteUrl;
   }
 
