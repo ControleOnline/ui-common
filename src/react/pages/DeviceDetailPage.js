@@ -494,6 +494,7 @@ const DeviceDetailPage = () => {
   const [editingAlias, setEditingAlias] = useState(false);
   const [aliasInput,   setAliasInput]   = useState(alias);
   const [savingAlias,  setSavingAlias]  = useState(false);
+  const [removingDevice, setRemovingDevice] = useState(false);
   const aliasInputRef = useRef(null);
 
   useEffect(() => {
@@ -1069,6 +1070,34 @@ const DeviceDetailPage = () => {
       setSavingAlias(false);
     }
   }, [aliasInput, alias, deviceId, cancelEditAlias, showSystemError]);
+
+  const confirmRemoveDevice = useCallback(() => {
+    if (!deviceId || removingDevice) {
+      return;
+    }
+    Alert.alert(
+      'Excluir device',
+      `Tem certeza que deseja excluir o device "${alias || deviceString || deviceId}"? Esta ação não pode ser desfeita.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Excluir',
+          style: 'destructive',
+          onPress: async () => {
+            setRemovingDevice(true);
+            try {
+              await actionsRef.current.deviceActions.remove(deviceId);
+              navigation.navigate('DevicesIndex');
+            } catch (error) {
+              showSystemError(error, 'Não foi possível excluir o device.');
+            } finally {
+              setRemovingDevice(false);
+            }
+          },
+        },
+      ],
+    );
+  }, [deviceId, removingDevice, alias, deviceString, navigation, showSystemError]);
 
   const saveDevicePaymentTarget = useCallback(async (override = {}) => {
     const nextDevicePaymentTarget =
@@ -1882,10 +1911,32 @@ const DeviceDetailPage = () => {
                     ]}
                     onPress={editingAlias ? saveAlias : startEditAlias}
                     activeOpacity={0.8}
-                    disabled={savingAlias}
+                    disabled={savingAlias || removingDevice}
                   >
                     <Icon
                       name={savingAlias ? 'save' : editingAlias ? 'check' : 'edit-2'}
+                      size={16}
+                      color={themeColors.buttonIcon}
+                    />
+                  </TouchableOpacity>
+                )}
+                {!!deviceId && !editingAlias && (
+                  <TouchableOpacity
+                    style={[
+                      styles.editAliasBtn,
+                      {
+                        backgroundColor: themeColors.buttonBackground,
+                        borderColor: themeColors.buttonBackground,
+                        marginLeft: 8,
+                      },
+                    ]}
+                    onPress={confirmRemoveDevice}
+                    activeOpacity={0.8}
+                    disabled={removingDevice || savingAlias}
+                    accessibilityLabel="Excluir device"
+                  >
+                    <Icon
+                      name={removingDevice ? 'loader' : 'trash-2'}
                       size={16}
                       color={themeColors.buttonIcon}
                     />
