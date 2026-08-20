@@ -8,6 +8,7 @@ import pdvDeviceType, {
   PDV_SUBFILTER_KEYS,
   pdvCieloDeviceType,
   pdvInfinitePayDeviceType,
+  pdvGetnetDeviceType,
 } from './pdv';
 import printerDeviceType from './printer';
 import {createDeviceTypeTab} from './shared';
@@ -17,6 +18,7 @@ const registeredDeviceTypes = [
   pdvDeviceType,
   pdvCieloDeviceType,
   pdvInfinitePayDeviceType,
+  pdvGetnetDeviceType,
   displayDeviceType,
   printerDeviceType,
   ipCameraDeviceType,

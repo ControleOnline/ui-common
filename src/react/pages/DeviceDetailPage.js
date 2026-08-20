@@ -2350,6 +2350,8 @@ const DeviceDetailPage = () => {
                   {label: 'Nenhum', value: ''},
                   {label: 'Infinite Pay', value: 'infinite-pay'},
                   {label: 'Cielo', value: 'cielo'},
+                  {label: 'Getnet', value: 'getnet'},
+
                 ],
                 value: pdvGateway || '',
                 optionColors: {
