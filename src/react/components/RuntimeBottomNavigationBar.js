@@ -6,21 +6,17 @@ import {app_type} from '@appType';
 import BottomNavigationBar from '@controleonline/ui-common/src/react/components/BottomNavigationBar';
 import {
   getBottomNavigationPreset,
-  resolveBottomNavigationItems,
   resolveBottomNavigationRoute,
 } from '@controleonline/ui-common/src/react/components/BottomNavigationBar.config';
 import {
-  filterRuntimeMenuModulesByType,
   normalizeAppType,
   normalizeRuntimeMenuResponse,
   resolveRuntimeMenuLabel,
 } from '@controleonline/ui-common/src/react/utils/runtimeMenu';
-
-const sortRuntimeMenuItems = (left, right) => {
-  const orderDiff = Number(left?.sortOrder || 0) - Number(right?.sortOrder || 0);
-  if (orderDiff !== 0) return orderDiff;
-  return String(left?.label || '').localeCompare(String(right?.label || ''));
-};
+const {
+  mapRuntimeMenusToNavItems,
+  resolveToolbarRuntimeMenus,
+} = require('@controleonline/ui-common/src/react/utils/bottomNavigationToolbar');
 
 const RuntimeBottomNavigationBar = ({
   activeRouteName: activeRouteNameProp,
@@ -50,32 +46,18 @@ const RuntimeBottomNavigationBar = ({
   const routeAliases = routeAliasesProp || preset?.routeAliases || {};
   const appType = normalizeAppType(app_type);
 
+  // Always consult menus-people for role-aware toolbar; preset is fallback only.
   useEffect(() => {
     if (!currentCompany?.id || !menuType) {
-      setRuntimeMenus([]);
-      return undefined;
-    }
-
-    if (preset) {
-      const presetMenus = Array.isArray(preset?.items)
-        ? resolveBottomNavigationItems(
-            preset.items.map((item, index) => ({
-              ...item,
-              menuType,
-              sortOrder: Number(item?.sortOrder || (index + 1) * 10),
-            })),
-            global.t?.t,
-          )
-        : [];
-
-      setRuntimeMenus([
-        {
-          id: presetKey || 'runtime-bottom-navigation',
-          label: preset?.label || presetKey || '',
-          icon: preset?.icon || '',
-          menus: presetMenus,
-        },
-      ]);
+      setRuntimeMenus(
+        resolveToolbarRuntimeMenus({
+          apiMenus: [],
+          preset,
+          presetKey,
+          menuType,
+          translate: global.t?.t,
+        }),
+      );
       return undefined;
     }
 
@@ -91,31 +73,38 @@ const RuntimeBottomNavigationBar = ({
         },
       })
       .then(result => {
-        if (!cancelled) {
-          setRuntimeMenus(
-            normalizeRuntimeMenuResponse(result, {
-              appType,
-              allowFallback: false,
-            }),
-          );
-        }
+        if (cancelled) return;
+        const apiMenus = normalizeRuntimeMenuResponse(result, {
+          appType,
+          allowFallback: false,
+        });
+        setRuntimeMenus(
+          resolveToolbarRuntimeMenus({
+            apiMenus,
+            preset,
+            presetKey,
+            menuType,
+            translate: global.t?.t,
+          }),
+        );
       })
       .catch(() => {
-        if (!cancelled) {
-          setRuntimeMenus([]);
-        }
+        if (cancelled) return;
+        setRuntimeMenus(
+          resolveToolbarRuntimeMenus({
+            apiMenus: [],
+            preset,
+            presetKey,
+            menuType,
+            translate: global.t?.t,
+          }),
+        );
       });
 
     return () => {
       cancelled = true;
     };
-  }, [
-    appType,
-    currentCompany?.id,
-    menuType,
-    preset,
-    presetKey,
-  ]);
+  }, [appType, currentCompany?.id, menuType, preset, presetKey]);
 
   const colors = useMemo(() => {
     if (colorsOverride) {
@@ -131,21 +120,27 @@ const RuntimeBottomNavigationBar = ({
   const navItems = useMemo(() => {
     const mapper = typeof itemMapper === 'function' ? itemMapper : item => item;
     const filter = typeof itemFilter === 'function' ? itemFilter : () => true;
+    const translate = global.t?.t;
 
-    return filterRuntimeMenuModulesByType(runtimeMenus, menuType)
-      .flatMap(module => (Array.isArray(module?.menus) ? module.menus : []))
-      .map(item => mapper({...item}))
+    return mapRuntimeMenusToNavItems(runtimeMenus, menuType)
+      .map(item => {
+        const label =
+          resolveRuntimeMenuLabel(
+            {menuKey: item.menuKey, label: item.label},
+            translate,
+          ) ||
+          (typeof item.label === 'string' ? item.label : '') ||
+          item.menuKey ||
+          item.route;
+
+        return mapper({
+          ...item,
+          label,
+        });
+      })
       .filter(Boolean)
       .filter(filter)
-      .sort(sortRuntimeMenuItems)
-      .map(item => ({
-        route: item.route,
-        icon: item.icon || 'circle',
-        label: resolveRuntimeMenuLabel(item, global.t?.t),
-        routeParams: item.routeParams,
-        menuType: item.menuType,
-      }))
-      .filter(item => Boolean(item.route));
+      .filter(item => Boolean(item?.route));
   }, [itemFilter, itemMapper, menuType, runtimeMenus]);
 
   const resolvedActiveRoute = resolveBottomNavigationRoute(
