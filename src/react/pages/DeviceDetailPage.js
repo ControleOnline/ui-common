@@ -63,6 +63,8 @@ import {
   resolvePosCashManagementMode,
   resolvePosOperationMode,
   resolvePosPrintMode,
+  POS_LOCAL_CHARGE_ENABLED_CONFIG_KEY,
+  isPosLocalChargeEnabled,
 } from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
 
 import {
@@ -420,6 +422,9 @@ const DeviceDetailPage = () => {
   const [posOperationMode, setPosOperationMode] = useState(
     resolvePosOperationMode(normalizedInitialConfigs),
   );
+  const [posLocalChargeEnabled, setPosLocalChargeEnabled] = useState(
+    isPosLocalChargeEnabled(normalizedInitialConfigs),
+  );
   const [productShowcaseId, setProductShowcaseId] = useState(
     normalizeEntityId(normalizedInitialConfigs?.[POS_PRODUCT_SHOWCASE_CONFIG_KEY]),
   );
@@ -660,6 +665,7 @@ const DeviceDetailPage = () => {
       setPdvGateway(getPaymentGatewayFromConfigs(nextConfigs));
       setPdvPrinterEnabled(isPdvPrinterEnabled(nextConfigs));
       setPosOperationMode(resolvePosOperationMode(nextConfigs));
+      setPosLocalChargeEnabled(isPosLocalChargeEnabled(nextConfigs));
       setProductShowcaseId(
         normalizeEntityId(nextConfigs[POS_PRODUCT_SHOWCASE_CONFIG_KEY]),
       );
@@ -711,6 +717,7 @@ const DeviceDetailPage = () => {
     setPdvGateway('');
     setPdvPrinterEnabled(true);
     setPosOperationMode(resolvePosOperationMode({}));
+    setPosLocalChargeEnabled(isPosLocalChargeEnabled({}));
     setProductShowcaseId('');
     setAndroidKioskEnabled(false);
     setAndroidLauncherEnabled(false);
@@ -1247,6 +1254,8 @@ const DeviceDetailPage = () => {
   const savePosOperationMode = useCallback(async (override = {}) => {
     const nextPosOperationMode =
       override.posOperationMode ?? posOperationMode;
+    const nextPosLocalChargeEnabled =
+      override.posLocalChargeEnabled ?? posLocalChargeEnabled;
     const nextAndroidKioskEnabled =
       override.androidKioskEnabled ?? androidKioskEnabled;
     const nextCheckOrderType =
@@ -1273,6 +1282,7 @@ const DeviceDetailPage = () => {
     try {
       const nextOperationConfigs = {
         [POS_OPERATION_MODE_CONFIG_KEY]: nextPosOperationMode,
+        [POS_LOCAL_CHARGE_ENABLED_CONFIG_KEY]: nextPosLocalChargeEnabled ? '1' : '0',
         [DEVICE_ANDROID_KIOSK_ENABLED_CONFIG_KEY]: nextAndroidKioskEnabled
           ? '1'
           : '0',
@@ -1318,6 +1328,7 @@ const DeviceDetailPage = () => {
     androidKioskEnabled,
     isPdvDevice,
     posOperationMode,
+    posLocalChargeEnabled,
     refreshCurrentConfig,
     savingPosOperationMode,
     showSystemError,
@@ -2072,6 +2083,17 @@ const DeviceDetailPage = () => {
                 onValueChange: nextValue => {
                   setAndroidKioskEnabled(nextValue);
                   savePosOperationMode({androidKioskEnabled: nextValue});
+                },
+              })}
+
+              {renderSwitchRow({
+                disabled: savingPosOperationMode,
+                label: 'Cobrança local',
+                value: posLocalChargeEnabled,
+                valueLabel: posLocalChargeEnabled ? 'Autorizada' : 'Bloqueada',
+                onValueChange: nextValue => {
+                  setPosLocalChargeEnabled(nextValue);
+                  savePosOperationMode({posLocalChargeEnabled: nextValue});
                 },
               })}
 
