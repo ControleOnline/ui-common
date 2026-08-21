@@ -502,9 +502,16 @@ const DeviceDetailPage = () => {
   const [savingAlias,  setSavingAlias]  = useState(false);
   const [deletingDevice, setDeletingDevice] = useState(false);
   const aliasInputRef = useRef(null);
+  // After a successful save, skip one initialAlias sync so a stale store
+  // snapshot cannot overwrite the newly saved name before React re-renders.
+  const skipAliasSyncFromStoreRef = useRef(false);
 
   useEffect(() => {
     if (editingAlias) {
+      return;
+    }
+    if (skipAliasSyncFromStoreRef.current) {
+      skipAliasSyncFromStoreRef.current = false;
       return;
     }
 
@@ -1084,6 +1091,8 @@ const DeviceDetailPage = () => {
         actionsRef.current.deviceConfigActions.setItem(nextDeviceConfig);
       }
 
+      // Guard the sync effect against a one-frame stale initialAlias.
+      skipAliasSyncFromStoreRef.current = true;
       setAlias(nextAlias);
       setAliasInput(nextAlias);
       setEditingAlias(false);
