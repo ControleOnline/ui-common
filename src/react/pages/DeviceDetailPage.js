@@ -63,6 +63,8 @@ import {
   resolvePosCashManagementMode,
   resolvePosOperationMode,
   resolvePosPrintMode,
+  POS_LOCAL_CHARGE_ENABLED_CONFIG_KEY,
+  isPosLocalChargeEnabled,
 } from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
 
 import {
@@ -420,6 +422,9 @@ const DeviceDetailPage = () => {
   const [posOperationMode, setPosOperationMode] = useState(
     resolvePosOperationMode(normalizedInitialConfigs),
   );
+  const [posLocalChargeEnabled, setPosLocalChargeEnabled] = useState(
+    isPosLocalChargeEnabled(normalizedInitialConfigs),
+  );
   const [productShowcaseId, setProductShowcaseId] = useState(
     normalizeEntityId(normalizedInitialConfigs?.[POS_PRODUCT_SHOWCASE_CONFIG_KEY]),
   );
@@ -494,7 +499,6 @@ const DeviceDetailPage = () => {
   const [editingAlias, setEditingAlias] = useState(false);
   const [aliasInput,   setAliasInput]   = useState(alias);
   const [savingAlias,  setSavingAlias]  = useState(false);
-  const [removingDevice, setRemovingDevice] = useState(false);
   const aliasInputRef = useRef(null);
 
   useEffect(() => {
@@ -661,6 +665,7 @@ const DeviceDetailPage = () => {
       setPdvGateway(getPaymentGatewayFromConfigs(nextConfigs));
       setPdvPrinterEnabled(isPdvPrinterEnabled(nextConfigs));
       setPosOperationMode(resolvePosOperationMode(nextConfigs));
+      setPosLocalChargeEnabled(isPosLocalChargeEnabled(nextConfigs));
       setProductShowcaseId(
         normalizeEntityId(nextConfigs[POS_PRODUCT_SHOWCASE_CONFIG_KEY]),
       );
@@ -712,6 +717,7 @@ const DeviceDetailPage = () => {
     setPdvGateway('');
     setPdvPrinterEnabled(true);
     setPosOperationMode(resolvePosOperationMode({}));
+    setPosLocalChargeEnabled(isPosLocalChargeEnabled({}));
     setProductShowcaseId('');
     setAndroidKioskEnabled(false);
     setAndroidLauncherEnabled(false);
@@ -1071,34 +1077,6 @@ const DeviceDetailPage = () => {
     }
   }, [aliasInput, alias, deviceId, cancelEditAlias, showSystemError]);
 
-  const confirmRemoveDevice = useCallback(() => {
-    if (!deviceId || removingDevice) {
-      return;
-    }
-    Alert.alert(
-      'Excluir device',
-      `Tem certeza que deseja excluir o device "${alias || deviceString || deviceId}"? Esta ação não pode ser desfeita.`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Excluir',
-          style: 'destructive',
-          onPress: async () => {
-            setRemovingDevice(true);
-            try {
-              await actionsRef.current.deviceActions.remove(deviceId);
-              navigation.navigate('DevicesIndex');
-            } catch (error) {
-              showSystemError(error, 'Não foi possível excluir o device.');
-            } finally {
-              setRemovingDevice(false);
-            }
-          },
-        },
-      ],
-    );
-  }, [deviceId, removingDevice, alias, deviceString, navigation, showSystemError]);
-
   const saveDevicePaymentTarget = useCallback(async (override = {}) => {
     const nextDevicePaymentTarget =
       override.devicePaymentTarget ?? devicePaymentTarget;
@@ -1276,6 +1254,8 @@ const DeviceDetailPage = () => {
   const savePosOperationMode = useCallback(async (override = {}) => {
     const nextPosOperationMode =
       override.posOperationMode ?? posOperationMode;
+    const nextPosLocalChargeEnabled =
+      override.posLocalChargeEnabled ?? posLocalChargeEnabled;
     const nextAndroidKioskEnabled =
       override.androidKioskEnabled ?? androidKioskEnabled;
     const nextCheckOrderType =
@@ -1302,6 +1282,7 @@ const DeviceDetailPage = () => {
     try {
       const nextOperationConfigs = {
         [POS_OPERATION_MODE_CONFIG_KEY]: nextPosOperationMode,
+        [POS_LOCAL_CHARGE_ENABLED_CONFIG_KEY]: nextPosLocalChargeEnabled ? '1' : '0',
         [DEVICE_ANDROID_KIOSK_ENABLED_CONFIG_KEY]: nextAndroidKioskEnabled
           ? '1'
           : '0',
@@ -1347,6 +1328,7 @@ const DeviceDetailPage = () => {
     androidKioskEnabled,
     isPdvDevice,
     posOperationMode,
+    posLocalChargeEnabled,
     refreshCurrentConfig,
     savingPosOperationMode,
     showSystemError,
@@ -1911,32 +1893,10 @@ const DeviceDetailPage = () => {
                     ]}
                     onPress={editingAlias ? saveAlias : startEditAlias}
                     activeOpacity={0.8}
-                    disabled={savingAlias || removingDevice}
+                    disabled={savingAlias}
                   >
                     <Icon
                       name={savingAlias ? 'save' : editingAlias ? 'check' : 'edit-2'}
-                      size={16}
-                      color={themeColors.buttonIcon}
-                    />
-                  </TouchableOpacity>
-                )}
-                {!!deviceId && !editingAlias && (
-                  <TouchableOpacity
-                    style={[
-                      styles.editAliasBtn,
-                      {
-                        backgroundColor: themeColors.buttonBackground,
-                        borderColor: themeColors.buttonBackground,
-                        marginLeft: 8,
-                      },
-                    ]}
-                    onPress={confirmRemoveDevice}
-                    activeOpacity={0.8}
-                    disabled={removingDevice || savingAlias}
-                    accessibilityLabel="Excluir device"
-                  >
-                    <Icon
-                      name={removingDevice ? 'loader' : 'trash-2'}
                       size={16}
                       color={themeColors.buttonIcon}
                     />
@@ -2123,6 +2083,17 @@ const DeviceDetailPage = () => {
                 onValueChange: nextValue => {
                   setAndroidKioskEnabled(nextValue);
                   savePosOperationMode({androidKioskEnabled: nextValue});
+                },
+              })}
+
+              {renderSwitchRow({
+                disabled: savingPosOperationMode,
+                label: 'Cobrança local',
+                value: posLocalChargeEnabled,
+                valueLabel: posLocalChargeEnabled ? 'Autorizada' : 'Bloqueada',
+                onValueChange: nextValue => {
+                  setPosLocalChargeEnabled(nextValue);
+                  savePosOperationMode({posLocalChargeEnabled: nextValue});
                 },
               })}
 
