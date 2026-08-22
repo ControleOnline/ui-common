@@ -91,193 +91,34 @@ import {
   getPrinterLabel,
   getPrinterOptions,
 } from '@controleonline/ui-common/src/react/utils/printerDevices';
+import { buildDeviceAliasStoreUpdates } from '@controleonline/ui-common/src/react/utils/deviceAliasSync';
 
 import { inlineStyle_667_12, inlineStyle_1301_61 } from './DeviceDetailPage.styles';
 
-const hex = {
-  success: '#10b981',
-  danger:  '#c10015',
-  warning: '#e67e22',
-  info:    '#0EA5E9',
-  purple:  '#8B5CF6',
-};
-
-const PAYMENT_ICONS = {
-  dinheiro: 'dollar-sign',
-  pix:      'zap',
-  debito:   'credit-card',
-  credito:  'credit-card',
-  default:  'hash',
-};
-
-const paymentIcon = label => {
-  const l = String(label || '').toLowerCase();
-  if (l.includes('pix'))    return PAYMENT_ICONS.pix;
-  if (l.includes('debit'))  return PAYMENT_ICONS.debito;
-  if (l.includes('crédit') || l.includes('credit')) return PAYMENT_ICONS.credito;
-  if (l.includes('dinh'))   return PAYMENT_ICONS.dinheiro;
-  return PAYMENT_ICONS.default;
-};
-
-const DISPLAY_DEVICE_TYPE = 'DISPLAY';
-const PDV_DEVICE_TYPE = 'PDV';
-const DISPLAY_DEVICE_LINK_CONFIG_KEY = 'display-id';
-const DISPLAY_DEVICE_PRINTER_CONFIG_KEY = 'printer';
-const tt = (type, key) => global.t?.t('configs', type, key);
-
-const PDV_TAB_OPERATION = 'operation';
-const PDV_TAB_ORDERS = 'orders';
-const PDV_TAB_DEVICE = 'device';
-const PDV_TAB_PAYMENT_TYPES = 'payment-types';
-const PDV_TAB_MOVEMENT = 'movement';
-
-const PDV_DETAIL_TABS = [
-  {key: PDV_TAB_OPERATION, icon: 'sliders', labelKey: 'pdvOperation'},
-  {key: PDV_TAB_ORDERS, icon: 'list', labelKey: 'pdvOrders'},
-  {key: PDV_TAB_DEVICE, icon: 'cpu', labelKey: 'pdvDevice'},
-  {key: PDV_TAB_PAYMENT_TYPES, icon: 'credit-card', labelKey: 'pdvPayments'},
-  {key: PDV_TAB_MOVEMENT, icon: 'bar-chart-2', labelKey: 'pdvMovement'},
-];
-
-const formatApiError = (error, fallback) => {
-  if (typeof error === 'string') {
-    return error.trim() || fallback;
-  }
-
-  if (Array.isArray(error?.message)) {
-    return (
-      error.message
-        .map(item => item?.message || item?.title || String(item || '').trim())
-        .filter(Boolean)
-        .join('\n') || fallback
-    );
-  }
-
-  return error?.message || error?.description || fallback;
-};
-
-const getDisplayLabel = display => {
-  const name = String(display?.display || '').trim();
-  const type = String(display?.displayType || '').trim().toUpperCase();
-
-  if (name && type) {
-    return `${name} (${type})`;
-  }
-
-  if (name) {
-    return name;
-  }
-
-  return `Display #${normalizeEntityId(display) || '--'}`;
-};
-
-const getProductShowcaseLabel = showcase => {
-  const name = String(showcase?.name || '').trim();
-  const externalCode = String(showcase?.externalStoreCode || '').trim();
-  if (name && externalCode) return `${name} (${externalCode})`;
-  return name || `Vitrine #${normalizeEntityId(showcase) || '--'}`;
-};
-
-const getIsOpen = configs => {
-  return isPosCashRegisterOpen(configs);
-};
-
-const confirm = (msg, cb) => {
-  if (Platform.OS === 'web') {
-    if (window.confirm(msg)) cb();
-  } else {
-    Alert.alert('Confirmação', msg, [
-      { text: 'Cancelar', style: 'cancel' },
-      { text: 'Confirmar', onPress: cb },
-    ]);
-  }
-};
-
-const getDeviceSwitchProps = ({
-  disabled = false,
-  palette,
-  value = false,
-}) => {
-  const offTrackColor = disabled
-    ? palette.switchDisabledTrack
-    : palette.switchOffTrack;
-  const onTrackColor = disabled
-    ? palette.switchDisabledTrack
-    : palette.switchOnTrack;
-
-  return {
-    ios_backgroundColor: offTrackColor,
-    thumbColor: disabled
-      ? palette.switchDisabledThumb
-      : value
-        ? palette.switchOnThumb
-        : palette.switchOffThumb,
-    trackColor: {
-      false: offTrackColor,
-      true: onTrackColor,
-    },
-  };
-};
-
-const OptionButtonChip = ({
-  label,
-  selected,
-  disabled,
-  colors: optionColors,
-  tooltip,
-  onPress,
-}) => {
-  const [hovered, setHovered] = useState(false);
-  const showTooltip = Platform.OS === 'web' && disabled && Boolean(tooltip) && hovered;
-
-  return (
-    <Pressable
-      onHoverIn={() => setHovered(true)}
-      onHoverOut={() => setHovered(false)}
-      style={[styles.optionButtonHoverWrap, hovered && styles.optionButtonHoverWrapActive]}
-    >
-      <TouchableOpacity
-        style={[
-          styles.optionButton,
-          selected && styles.optionButtonActive,
-          optionColors && {
-            backgroundColor: selected
-              ? optionColors.buttonBackground
-              : optionColors.buttonBackgroundSecondary,
-            borderColor: selected
-              ? optionColors.buttonBorder
-              : optionColors.buttonBorderSecondary,
-          },
-          disabled && {opacity: 0.55},
-        ]}
-        accessibilityHint={tooltip || undefined}
-        activeOpacity={disabled ? 1 : 0.85}
-        disabled={disabled}
-        onPress={disabled ? undefined : onPress}
-      >
-        <Text
-          style={[
-            styles.optionButtonText,
-            selected && styles.optionButtonTextActive,
-            optionColors && {
-              color: selected
-                ? optionColors.buttonText
-                : optionColors.buttonTextSecondary,
-            },
-          ]}
-        >
-          {label}
-        </Text>
-      </TouchableOpacity>
-
-      {showTooltip ? (
-        <View pointerEvents="none" style={styles.optionButtonTooltip}>
-          <Text style={styles.optionButtonTooltipText}>{tooltip}</Text>
-        </View>
-      ) : null}
-    </Pressable>
-  );
-};
+import {
+  hex,
+  DISPLAY_DEVICE_TYPE,
+  PDV_DEVICE_TYPE,
+  DISPLAY_DEVICE_LINK_CONFIG_KEY,
+  DISPLAY_DEVICE_PRINTER_CONFIG_KEY,
+  PDV_TAB_OPERATION,
+  PDV_TAB_ORDERS,
+  PDV_TAB_DEVICE,
+  PDV_TAB_PAYMENT_TYPES,
+  PDV_TAB_MOVEMENT,
+  PDV_DETAIL_TABS,
+  tt,
+} from './Devices/detail/deviceDetailConstants';
+import {
+  paymentIcon,
+  formatApiError,
+  getDisplayLabel,
+  getProductShowcaseLabel,
+  getIsOpen,
+  confirm,
+  getDeviceSwitchProps,
+} from './Devices/detail/deviceDetailHelpers';
+import OptionButtonChip from './Devices/detail/OptionButtonChip';
 
 const DeviceDetailPage = () => {
   const route      = useRoute();
@@ -496,9 +337,15 @@ const DeviceDetailPage = () => {
   const [savingAlias,  setSavingAlias]  = useState(false);
   const [removingDevice, setRemovingDevice] = useState(false);
   const aliasInputRef = useRef(null);
+  const skipAliasSyncFromStoreRef = useRef(false);
 
   useEffect(() => {
     if (editingAlias) {
+      return;
+    }
+
+    if (skipAliasSyncFromStoreRef.current) {
+      skipAliasSyncFromStoreRef.current = false;
       return;
     }
 
@@ -1060,6 +907,21 @@ const DeviceDetailPage = () => {
         alias: trimmed,
       });
       const nextAlias = String(savedDevice?.alias || trimmed).trim();
+
+      const { mergedDevice, nextDeviceConfig } = buildDeviceAliasStoreUpdates({
+        deviceId,
+        nextAlias,
+        runtimeDevice,
+        runtimeDeviceConfig,
+        savedDevice,
+        normalizeEntityId,
+      });
+      actionsRef.current.deviceActions.setItem?.(mergedDevice);
+      if (nextDeviceConfig && actionsRef.current.deviceConfigActions?.setItem) {
+        actionsRef.current.deviceConfigActions.setItem(nextDeviceConfig);
+      }
+
+      skipAliasSyncFromStoreRef.current = true;
       setAlias(nextAlias);
       setAliasInput(nextAlias);
       setEditingAlias(false);
