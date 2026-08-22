@@ -93,6 +93,7 @@ import {
 } from '@controleonline/ui-common/src/react/utils/printerDevices';
 import { buildDeviceAliasStoreUpdates } from '@controleonline/ui-common/src/react/utils/deviceAliasSync';
 import { createDeviceDetailRenderers } from './DeviceDetailRenderers';
+import DeviceDetailHeader from './DeviceDetailHeader';
 
 import { inlineStyle_667_12, inlineStyle_1301_61 } from '../../DeviceDetailPage.styles';
 
@@ -1617,84 +1618,22 @@ const DeviceDetailScreen = () => {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: brandColors.background }]}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-
-        {/* Cabeçalho do dispositivo */}
-        <View style={styles.deviceHeader}>
-          <View style={styles.deviceHeaderLeft}>
-            <View style={[styles.deviceIconBox, { backgroundColor: withOpacity(accent, 0.1) }]}>
-              <Icon name="monitor" size={20} color={accent} />
-            </View>
-
-            <View style={styles.aliasBlock}>
-              <View style={styles.aliasRow}>
-                {editingAlias ? (
-                  <TextInput
-                    ref={aliasInputRef}
-                    style={styles.aliasInput}
-                    value={aliasInput}
-                    onChangeText={setAliasInput}
-                    onSubmitEditing={saveAlias}
-                    returnKeyType="done"
-                    autoCapitalize="words"
-                    selectTextOnFocus
-                  />
-                ) : (
-                  <Text style={styles.deviceAlias} numberOfLines={1} ellipsizeMode="tail">
-                    {alias}
-                  </Text>
-                )}
-
-                {!!deviceId && (
-                  <TouchableOpacity
-                    style={[
-                      styles.editAliasBtn,
-                      {
-                        backgroundColor: themeColors.buttonBackground,
-                        borderColor: themeColors.buttonBackground,
-                      },
-                    ]}
-                    onPress={editingAlias ? saveAlias : startEditAlias}
-                    activeOpacity={0.8}
-                    disabled={savingAlias || removingDevice}
-                  >
-                    <Icon
-                      name={savingAlias ? 'save' : editingAlias ? 'check' : 'edit-2'}
-                      size={16}
-                      color={themeColors.buttonIcon}
-                    />
-                  </TouchableOpacity>
-                )}
-                {!!deviceId && !editingAlias && (
-                  <TouchableOpacity
-                    style={[
-                      styles.editAliasBtn,
-                      {
-                        backgroundColor: themeColors.buttonBackground,
-                        borderColor: themeColors.buttonBackground,
-                        marginLeft: 8,
-                      },
-                    ]}
-                    onPress={confirmRemoveDevice}
-                    activeOpacity={0.8}
-                    disabled={removingDevice || savingAlias}
-                    accessibilityLabel="Excluir device"
-                  >
-                    <Icon
-                      name={removingDevice ? 'loader' : 'trash-2'}
-                      size={16}
-                      color={themeColors.buttonIcon}
-                    />
-                  </TouchableOpacity>
-                )}
-              </View>
-
-              <Text style={styles.deviceString} numberOfLines={1} ellipsizeMode="middle">
-                {deviceString}
-              </Text>
-            </View>
-          </View>
-
-        </View>
+        <DeviceDetailHeader
+          accent={accent}
+          alias={alias}
+          aliasInput={aliasInput}
+          aliasInputRef={aliasInputRef}
+          deviceId={deviceId}
+          deviceString={deviceString}
+          editingAlias={editingAlias}
+          removingDevice={removingDevice}
+          savingAlias={savingAlias}
+          themeColors={themeColors}
+          onAliasChange={setAliasInput}
+          onConfirmRemove={confirmRemoveDevice}
+          onSaveAlias={saveAlias}
+          onStartEdit={startEditAlias}
+        />
 
         {loadingActiveTabData && (
           <StateStore
