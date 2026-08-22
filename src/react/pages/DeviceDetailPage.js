@@ -1075,28 +1075,25 @@ const DeviceDetailPage = () => {
     if (!deviceId || removingDevice) {
       return;
     }
-    Alert.alert(
-      'Excluir device',
-      `Tem certeza que deseja excluir o device "${alias || deviceString || deviceId}"? Esta ação não pode ser desfeita.`,
-      [
-        { text: 'Cancelar', style: 'cancel' },
-        {
-          text: 'Excluir',
-          style: 'destructive',
-          onPress: async () => {
-            setRemovingDevice(true);
-            try {
-              await actionsRef.current.deviceActions.remove(deviceId);
-              navigation.navigate('DevicesIndex');
-            } catch (error) {
-              showSystemError(error, 'Não foi possível excluir o device.');
-            } finally {
-              setRemovingDevice(false);
-            }
-          },
-        },
-      ],
-    );
+    const label = String(alias || deviceString || deviceId).trim();
+    const message = `Tem certeza que deseja excluir o device "${label}"? Esta ação não pode ser desfeita.`;
+    // Use web-safe confirm() (window.confirm on web; Alert.alert on native).
+    // Alert.alert alone is a no-op on Manager web — root cause of "click does nothing".
+    confirm(message, async () => {
+      setRemovingDevice(true);
+      try {
+        await actionsRef.current.deviceActions.remove(deviceId);
+        if (navigation?.canGoBack?.()) {
+          navigation.goBack();
+        } else {
+          navigation.navigate('DevicesIndex');
+        }
+      } catch (error) {
+        showSystemError(error, 'Não foi possível excluir o device.');
+      } finally {
+        setRemovingDevice(false);
+      }
+    });
   }, [deviceId, removingDevice, alias, deviceString, navigation, showSystemError]);
 
   const saveDevicePaymentTarget = useCallback(async (override = {}) => {
@@ -1934,6 +1931,7 @@ const DeviceDetailPage = () => {
                     activeOpacity={0.8}
                     disabled={removingDevice || savingAlias}
                     accessibilityLabel="Excluir device"
+                    testID="device-detail-delete-btn"
                   >
                     <Icon
                       name={removingDevice ? 'loader' : 'trash-2'}
