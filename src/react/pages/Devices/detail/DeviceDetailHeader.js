@@ -92,6 +92,7 @@ export default function DeviceDetailHeader({
                 activeOpacity={0.8}
                 disabled={removingDevice || savingAlias}
                 accessibilityLabel="Excluir device"
+                testID="device-detail-delete-btn"
               >
                 <Icon
                   name={removingDevice ? 'loader' : 'trash-2'}
