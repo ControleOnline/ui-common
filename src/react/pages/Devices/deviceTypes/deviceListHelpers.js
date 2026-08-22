@@ -138,6 +138,12 @@ export const getDeviceListIdentifier = deviceConfig =>
     deviceConfig,
   }).runtimeDetail || String(deviceConfig?.device?.device || '').trim();
 
+/**
+ * Build list params for device_configs collection.
+ * Always send a single scalar `type` when filtering (API SearchFilter exact).
+ * Callers with multiple queryTypes must request each type separately and merge.
+ * Empty queryTypes = no type filter (All).
+ */
 export const buildDeviceListParams = ({
   companyId,
   page,
@@ -151,15 +157,41 @@ export const buildDeviceListParams = ({
     'order[id]': 'DESC',
   };
 
-  if (Array.isArray(queryTypes) && queryTypes.length === 1) {
-    params.type = queryTypes[0];
+  const types = Array.isArray(queryTypes)
+    ? queryTypes.map(t => String(t || '').trim()).filter(Boolean)
+    : [];
+
+  if (types.length === 1) {
+    params.type = types[0];
   }
 
-  if (Array.isArray(queryTypes) && queryTypes.length > 1) {
-    params.type = queryTypes;
-  }
+  // Multi-type: do NOT set params.type as array — API exact filter is unreliable
+  // with type[]= on some platforms; callers must fetch each type and merge.
 
   return params;
+};
+
+/**
+ * Expand queryTypes into one or more single-type param sets for sequential fetch.
+ * Empty → one set without type (All). Single → one set. Multiple → one set per type.
+ */
+export const expandDeviceListParamSets = ({
+  companyId,
+  page,
+  pageSize = PAGE_SIZE,
+  queryTypes = [],
+}) => {
+  const types = Array.isArray(queryTypes)
+    ? queryTypes.map(t => String(t || '').trim()).filter(Boolean)
+    : [];
+
+  if (types.length === 0) {
+    return [buildDeviceListParams({companyId, page, pageSize, queryTypes: []})];
+  }
+
+  return types.map(type =>
+    buildDeviceListParams({companyId, page, pageSize, queryTypes: [type]}),
+  );
 };
 
 export {
