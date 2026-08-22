@@ -43,9 +43,15 @@ export default function DeviceDetailHeader({
                 returnKeyType="done"
                 autoCapitalize="words"
                 selectTextOnFocus
+                testID="device-alias-input"
               />
             ) : (
-              <Text style={styles.deviceAlias} numberOfLines={1} ellipsizeMode="tail">
+              <Text
+                style={styles.deviceAlias}
+                numberOfLines={1}
+                ellipsizeMode="tail"
+                testID="device-alias-text"
+              >
                 {alias}
               </Text>
             )}
@@ -62,6 +68,8 @@ export default function DeviceDetailHeader({
                 onPress={editingAlias ? onSaveAlias : onStartEdit}
                 activeOpacity={0.8}
                 disabled={savingAlias || removingDevice}
+                testID={editingAlias ? 'device-alias-save' : 'device-alias-edit'}
+                accessibilityLabel={editingAlias ? 'Salvar alias' : 'Editar alias'}
               >
                 <Icon
                   name={savingAlias ? 'save' : editingAlias ? 'check' : 'edit-2'}
