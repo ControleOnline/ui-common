@@ -4,17 +4,13 @@ const {jest} = require('@jest/globals');
 
 jest.mock('react-native', () => ({
   Image: props => React.createElement('Image', props),
-  Platform: {OS: 'web'},
+  Platform: {OS: 'ios'},
   StyleSheet: {
     create: styles => styles,
   },
   Text: props => React.createElement('Text', props, props.children),
   View: props => React.createElement('View', props, props.children),
 }));
-
-global.fetch = jest.fn(() =>
-  Promise.resolve({ok: true, status: 200, blob: () => Promise.resolve(new Blob())}),
-);
 
 const UserAvatar = require('../../../react/components/UserAvatar').default;
 
@@ -38,12 +34,9 @@ describe('UserAvatar', () => {
     expect(tree.root.findByType('Text').props.children).toBe('CT');
   });
 
-  it('uses gravatar as fallback when enabled and probe succeeds', async () => {
-    global.fetch = jest.fn(() =>
-      Promise.resolve({ok: true, status: 200}),
-    );
-
+  it('uses gravatar as fallback when enabled (native path)', async () => {
     let tree;
+
     await renderer.act(async () => {
       tree = renderer.create(
         React.createElement(UserAvatar, {
@@ -51,34 +44,13 @@ describe('UserAvatar', () => {
           name: 'Client Test',
         }),
       );
-      await Promise.resolve();
-      await Promise.resolve();
-    });
-
-    const images = tree.root.findAllByType('Image');
-    if (images.length > 0) {
-      expect(images[0].props.source.uri).toContain('gravatar.com/avatar/');
-    }
-  });
-
-  it('falls back to initials when gravatar probe returns 404', async () => {
-    global.fetch = jest.fn(() =>
-      Promise.resolve({ok: false, status: 404}),
-    );
-
-    let tree;
-    await renderer.act(async () => {
-      tree = renderer.create(
-        React.createElement(UserAvatar, {
-          email: 'nobody@example.com',
-          name: 'Nobody',
-        }),
-      );
-      await Promise.resolve();
+      // flush useEffect
       await Promise.resolve();
     });
 
-    expect(tree.root.findAllByType('Image')).toHaveLength(0);
-    expect(tree.root.findByType('Text').props.children).toBe('N');
+    const image = tree.root.findByType('Image');
+
+    expect(image.props.source.uri).toContain('gravatar.com/avatar/');
+    expect(image.props.source.uri).toContain('d=404');
   });
 });

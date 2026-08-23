@@ -8,6 +8,12 @@ const normalizeUrl = value => String(value || '').trim();
 const isGravatarUrl = uri =>
   /gravatar\.com\/avatar\//i.test(String(uri || ''));
 
+const isBackendDownloadUrl = uri =>
+  /\/files\/[^/?#]+\/download/i.test(String(uri || ''));
+
+/** Session cache: gravatar URL → true (ok) | false (missing). Avoids repeat probes. */
+const gravatarProbeCache = new Map();
+
 const readSessionToken = () => {
   if (typeof localStorage === 'undefined' || !localStorage?.getItem) {
     return '';
@@ -22,31 +28,68 @@ const readSessionToken = () => {
 };
 
 /**
+ * Probe Gravatar (d=404) via fetch BEFORE exposing URL to <Image>.
+ * Browser "Failed to load resource" for <img> 404 is avoided; XHR 404 is
+ * expected once per unique hash and cached for the session.
+ */
+const probeGravatar = async url => {
+  if (gravatarProbeCache.has(url)) {
+    return gravatarProbeCache.get(url);
+  }
+
+  try {
+    let response = await fetch(url, {
+      method: 'HEAD',
+      mode: 'cors',
+      cache: 'force-cache',
+    });
+    if (response.status === 405 || response.status === 501) {
+      response = await fetch(url, {
+        method: 'GET',
+        mode: 'cors',
+        cache: 'force-cache',
+      });
+    }
+    const ok = response.ok;
+    gravatarProbeCache.set(url, ok);
+    return ok;
+  } catch {
+    gravatarProbeCache.set(url, false);
+    return false;
+  }
+};
+
+/**
  * Resolve display URI.
  * - Backend /files/.../download on web: authenticated blob fetch.
- * - Gravatar (d=404): HEAD/GET probe first so the browser never issues a
- *   failing <img> request that pollutes the console with expected 404s.
- * - Other URLs: pass through.
+ * - Gravatar (d=404) on web: probe first; never set <img src> on expected 404.
+ * - Other URLs / native: pass through (native Image onError handles 404).
  */
 const useDisplayUri = uri => {
   const [displayUri, setDisplayUri] = useState('');
+  const [resolved, setResolved] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     let objectUrl = '';
     const next = normalizeUrl(uri);
 
+    setResolved(false);
+    setDisplayUri('');
+
     const run = async () => {
       if (!next) {
-        if (!cancelled) setDisplayUri('');
+        if (!cancelled) {
+          setDisplayUri('');
+          setResolved(true);
+        }
         return;
       }
 
-      const isBackendDownload = /\/files\/[^/?#]+\/download/i.test(next);
       const token = readSessionToken();
 
       // Authenticated backend download on web
-      if (isBackendDownload && Platform.OS === 'web' && token) {
+      if (isBackendDownloadUrl(next) && Platform.OS === 'web' && token) {
         try {
           const headers = {
             Accept: '*/*',
@@ -61,51 +104,43 @@ const useDisplayUri = uri => {
 
           const response = await fetch(next, {method: 'GET', headers});
           if (!response.ok) {
-            if (!cancelled) setDisplayUri('');
+            if (!cancelled) {
+              setDisplayUri('');
+              setResolved(true);
+            }
             return;
           }
 
           const blob = await response.blob();
           objectUrl = URL.createObjectURL(blob);
-          if (!cancelled) setDisplayUri(objectUrl);
+          if (!cancelled) {
+            setDisplayUri(objectUrl);
+            setResolved(true);
+          }
         } catch {
-          if (!cancelled) setDisplayUri('');
+          if (!cancelled) {
+            setDisplayUri('');
+            setResolved(true);
+          }
         }
         return;
       }
 
-      // Gravatar with intentional d=404: probe before exposing to <img>
+      // Gravatar d=404: probe on web so <img> never receives a known-missing URL
       if (isGravatarUrl(next) && Platform.OS === 'web') {
-        try {
-          // Prefer HEAD to avoid body; some CDNs still allow it.
-          let response = await fetch(next, {
-            method: 'HEAD',
-            mode: 'cors',
-            cache: 'force-cache',
-          });
-          // Fallback GET if HEAD not allowed
-          if (response.status === 405 || response.status === 501) {
-            response = await fetch(next, {
-              method: 'GET',
-              mode: 'cors',
-              cache: 'force-cache',
-            });
-          }
-          if (response.ok) {
-            if (!cancelled) setDisplayUri(next);
-          } else {
-            // Expected 404 → fall through to initials (empty displayUri)
-            if (!cancelled) setDisplayUri('');
-          }
-        } catch {
-          // Network / CORS failure → treat as missing, use initials
-          if (!cancelled) setDisplayUri('');
+        const ok = await probeGravatar(next);
+        if (!cancelled) {
+          setDisplayUri(ok ? next : '');
+          setResolved(true);
         }
         return;
       }
 
-      // Default: use as-is (native or non-special URLs)
-      if (!cancelled) setDisplayUri(next);
+      // Default: use as-is (native, or non-special web URLs)
+      if (!cancelled) {
+        setDisplayUri(next);
+        setResolved(true);
+      }
     };
 
     run();
@@ -116,7 +151,7 @@ const useDisplayUri = uri => {
     };
   }, [uri]);
 
-  return displayUri;
+  return {displayUri, resolved};
 };
 
 const UserAvatar = ({
@@ -146,20 +181,22 @@ const UserAvatar = ({
   }, [sources]);
 
   const currentSource = sources[sourceIndex];
-  const displayUri = useDisplayUri(currentSource);
+  const {displayUri, resolved} = useDisplayUri(currentSource);
 
-  // When probe clears a gravatar (404), advance to next source / initials
+  // After probe resolves empty for gravatar/backend → try next source or initials
   useEffect(() => {
-    if (!currentSource) return;
-    if (displayUri) return;
-    // Probe finished with empty → try next source (or initials)
-    if (isGravatarUrl(currentSource) || /\/files\/[^/?#]+\/download/i.test(currentSource)) {
-      setSourceIndex(index => {
-        if (index + 1 < sources.length) return index + 1;
-        return index; // stay; initials will render because displayUri empty
-      });
+    if (!currentSource || !resolved || displayUri) {
+      return;
     }
-  }, [currentSource, displayUri, sources.length]);
+    if (
+      isGravatarUrl(currentSource) ||
+      isBackendDownloadUrl(currentSource)
+    ) {
+      setSourceIndex(index =>
+        index + 1 < sources.length ? index + 1 : index,
+      );
+    }
+  }, [currentSource, displayUri, resolved, sources.length]);
 
   const containerStyle = [
     styles.container,
