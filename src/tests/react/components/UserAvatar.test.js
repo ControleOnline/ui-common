@@ -4,6 +4,7 @@ const {jest} = require('@jest/globals');
 
 jest.mock('react-native', () => ({
   Image: props => React.createElement('Image', props),
+  Platform: {OS: 'ios'},
   StyleSheet: {
     create: styles => styles,
   },
@@ -33,20 +34,23 @@ describe('UserAvatar', () => {
     expect(tree.root.findByType('Text').props.children).toBe('CT');
   });
 
-  it('uses gravatar as fallback when enabled', () => {
+  it('uses gravatar as fallback when enabled (native path)', async () => {
     let tree;
 
-    renderer.act(() => {
+    await renderer.act(async () => {
       tree = renderer.create(
         React.createElement(UserAvatar, {
           email: 'client@example.com',
           name: 'Client Test',
         }),
       );
+      // flush useEffect
+      await Promise.resolve();
     });
 
     const image = tree.root.findByType('Image');
 
     expect(image.props.source.uri).toContain('gravatar.com/avatar/');
+    expect(image.props.source.uri).toContain('d=404');
   });
 });
