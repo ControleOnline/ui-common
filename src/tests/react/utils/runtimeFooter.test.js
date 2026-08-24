@@ -1,5 +1,10 @@
 const assert = require('node:assert/strict')
-const {after, before, test} = require('node:test')
+const {beforeAll, afterAll, test} = global
+const {jest} = require('@jest/globals')
+
+jest.mock('@controleonline/ui-common/src/react/utils/printerDevices', () => ({
+  getDeviceTypeLabel: value => String(value || ''),
+}))
 
 const {
   getRuntimeFooterDebugInfo,
@@ -11,6 +16,7 @@ const {
   getRuntimeFooterWebIdentifierCandidates,
   getRuntimeFooterWebHost,
   normalizeRuntimeFooterText,
+  shouldShowRuntimeFooter,
 } = require('../../../react/utils/runtimeFooter')
 
 const originalLocationDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'location')
@@ -41,7 +47,7 @@ const restoreLocation = () => {
   delete globalThis.location
 }
 
-before(() => {
+beforeAll(() => {
   global.t = {
     getMessageFromBuckets: (store, type, key) =>
       store === 'common' && type === 'option'
@@ -50,7 +56,7 @@ before(() => {
   }
 })
 
-after(() => {
+afterAll(() => {
   global.t = originalTranslator
 })
 
@@ -444,4 +450,10 @@ test('rotates each footer line before the runtime version entry', () => {
     }),
     ['www.site.com', '(11) 99999-9999', 'web (203.0.113.42) / v1.3.6'],
   )
+})
+
+test('hides runtime device information on the customer paylist only', () => {
+  assert.equal(shouldShowRuntimeFooter('PaylistPage'), false)
+  assert.equal(shouldShowRuntimeFooter('LoginPage'), true)
+  assert.equal(shouldShowRuntimeFooter('WalletsPage'), true)
 })

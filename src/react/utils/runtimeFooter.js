@@ -1,7 +1,12 @@
+import { getDeviceTypeLabel } from '@controleonline/ui-common/src/react/utils/printerDevices';
+
 const DEVICE_RUNTIME_FOOTER_TEXT_CONFIG_KEY = 'device-runtime-footer-text';
+const RUNTIME_FOOTER_HIDDEN_ROUTES = new Set(['PaylistPage']);
+
+const shouldShowRuntimeFooter = currentRouteName =>
+  !RUNTIME_FOOTER_HIDDEN_ROUTES.has(String(currentRouteName || '').trim());
 
 const safeTrim = value => String(value || '').trim();
-const getRuntimeFooterDeviceTypeLabel = value => safeTrim(value).toUpperCase();
 
 const POS_OPERATION_MODE_TRANSLATION_KEYS = {
   counter: 'counterService',
@@ -253,7 +258,7 @@ const getRuntimeFooterOperationalTypeLabel = ({device, deviceConfig} = {}) => {
   });
 
   return operationalTypeInfo.value
-    ? getRuntimeFooterDeviceTypeLabel(operationalTypeInfo.value)
+    ? getDeviceTypeLabel(operationalTypeInfo.value)
     : '';
 };
 
@@ -381,7 +386,7 @@ const getRuntimeFooterDebugInfo = ({device, appVersion, deviceConfig}) => {
     deviceConfig,
   });
   const operationalTypeLabel = operationalTypeInfo.value
-    ? getRuntimeFooterDeviceTypeLabel(operationalTypeInfo.value)
+    ? getDeviceTypeLabel(operationalTypeInfo.value)
     : '';
   const operationModeLabel =
     operationalTypeLabel === 'PDV'
@@ -489,4 +494,5 @@ module.exports = {
   getRuntimeFooterText,
   getRuntimeFooterWebHost,
   normalizeRuntimeFooterText,
+  shouldShowRuntimeFooter,
 };
