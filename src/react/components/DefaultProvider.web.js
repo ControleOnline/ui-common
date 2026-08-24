@@ -100,6 +100,20 @@ const resolveDeviceConfigPeopleIri = ({appType, currentCompany, user}) => {
 
   return '';
 };
+const isTenantAdministrativeAuthority = company => {
+  const userFlags = company?.user || {};
+  return !!(
+    userFlags.owner_enabled ||
+    userFlags.director_enabled ||
+    userFlags.manager_enabled ||
+    userFlags.admin_enabled ||
+    company?.owner_enabled ||
+    company?.director_enabled ||
+    company?.manager_enabled
+  );
+};
+
+
 
 const normalizeRuntimeIp = value => String(value || '').trim();
 
@@ -716,6 +730,13 @@ export const DefaultProvider = ({
       return;
     }
 
+    // Non-admin users cannot mutate device context/financial policy (API 403).
+    // Skip bootstrap write; keep local runtime configs in memory only.
+    if (!isTenantAdministrativeAuthority(currentCompany)) {
+      setDeviceRuntimeConfigSynced(true);
+      return;
+    }
+
     deviceConfigsActions
       .addDeviceConfigs({
         device: device.id,
@@ -735,6 +756,7 @@ export const DefaultProvider = ({
     deviceConfigFetched,
     deviceConfigPeopleIri,
     deviceRuntimeConfigSynced,
+    currentCompany,
     deviceConfigsActions,
     device_config?.configs,
     isLogged,
