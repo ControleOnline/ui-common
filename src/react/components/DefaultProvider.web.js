@@ -15,6 +15,7 @@ import PrintService from '@controleonline/ui-common/src/react/components/PrintSe
 import RemoteCheckoutService from '@controleonline/ui-common/src/react/components/RemoteCheckoutService';
 import ProductCatalogCacheService from '@controleonline/ui-common/src/react/components/ProductCatalogCacheService';
 import RuntimeInfoFooter from '@controleonline/ui-common/src/react/components/RuntimeInfoFooter';
+import {shouldShowRuntimeFooter} from '@controleonline/ui-common/src/react/utils/runtimeFooter';
 import { useStore } from '@store';
 import { api } from '@controleonline/ui-common/src/api';
 import {app_type} from '@appType';
@@ -234,6 +235,7 @@ export const DefaultProvider = ({
     user,
   });
   const isPublicRouteActive = isPublicRoute(currentRouteName);
+  const showRuntimeFooter = shouldShowRuntimeFooter(currentRouteName);
   const currentTranslationConfig = JSON.parse(
     localStorage.getItem('config') || '{}',
   );
@@ -959,7 +961,7 @@ export const DefaultProvider = ({
             },
           ]}>
           <View style={[providerStyles.content, runtimeUiScaleStyle]}>{children}</View>
-              {!isShopClientApp && bottomNavigationCount === 0 && (
+              {!isShopClientApp && showRuntimeFooter && bottomNavigationCount === 0 && (
                 <RuntimeInfoFooter
                   appVersion={appVersion}
                   defaultCompany={defaultCompany}
