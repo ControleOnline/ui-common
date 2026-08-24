@@ -16,6 +16,7 @@ const {
   getRuntimeFooterWebIdentifierCandidates,
   getRuntimeFooterWebHost,
   normalizeRuntimeFooterText,
+  shouldShowRuntimeFooter,
 } = require('../../../react/utils/runtimeFooter')
 
 const originalLocationDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'location')
@@ -449,4 +450,10 @@ test('rotates each footer line before the runtime version entry', () => {
     }),
     ['www.site.com', '(11) 99999-9999', 'web (203.0.113.42) / v1.3.6'],
   )
+})
+
+test('hides runtime device information on the customer paylist only', () => {
+  assert.equal(shouldShowRuntimeFooter('PaylistPage'), false)
+  assert.equal(shouldShowRuntimeFooter('LoginPage'), true)
+  assert.equal(shouldShowRuntimeFooter('WalletsPage'), true)
 })
