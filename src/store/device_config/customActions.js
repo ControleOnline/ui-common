@@ -121,7 +121,13 @@ export const addDeviceConfigs = ({commit, getters}, params) => {
       return d;
     })
     .catch(e => {
-      console.error('addDeviceConfigs API error:', e);
+      const status = Number(e?.status || e?.code || e?.response?.status || 0);
+      // 403 is expected for non-tenant-admin users during runtime bootstrap.
+      if (status === 403) {
+        console.debug('addDeviceConfigs skipped (no tenant admin authority):', e?.message || e);
+      } else {
+        console.error('addDeviceConfigs API error:', e);
+      }
       commit(types.SET_ERROR, e.message);
       throw e;
     })
