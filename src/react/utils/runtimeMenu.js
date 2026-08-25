@@ -302,7 +302,7 @@ export const flattenRuntimeMenuItemsByType = (menus, menuType) =>
   );
 
 export const resolveRuntimeMenuLabel = (menu, translate) =>
-  translate?.('menu', 'menu', menu?.menuKey) || menu?.label || menu?.menuKey || '';
+  menu?.label || translate?.('menu', 'menu', menu?.menuKey) || menu?.menuKey || '';
 
 export const getRuntimeMenuRoutes = menus =>
   new Set(
