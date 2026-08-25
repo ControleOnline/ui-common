@@ -337,6 +337,9 @@ export default function useDeviceDetailStateA() {
     () =>
       String(runtimeDevice?.type || runtimeDevice?.deviceType || '')
         .trim()
+        .toUpperCase(),
+    [runtimeDevice?.deviceType, runtimeDevice?.type],
+  );
   return {
     navigation,
     deviceId,
