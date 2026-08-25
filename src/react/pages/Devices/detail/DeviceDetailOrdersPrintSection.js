@@ -254,8 +254,6 @@ export default function DeviceDetailOrdersPrintSection(ctx) {
           </View>
         </View>
       )}
-
-      {shouldShowDeviceBehavior && (
     </>
   );
 }
