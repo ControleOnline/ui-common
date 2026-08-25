@@ -354,7 +354,8 @@ const DeviceDetailScreen = () => {
     sendCatalogRefreshCommand, sendingCatalogRefresh,
     showPdvMovementTab, showPdvPaymentTypesTab, showPdvOperationTab,
     inflowData, productTotal, wallets, filteredProducts, search, setSearch,
-    loadingMovementData, deviceId, savePaymentTypeConfigs, savingPaymentTypes,
+    loadingMovementData, deviceId, currentCompany, configs,
+    savePaymentTypeConfigs, savingPaymentTypes,
   };
 
   return (

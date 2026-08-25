@@ -10,7 +10,8 @@ import styles from '../../DeviceDetailPage.styles';
  */
 export default function DeviceDetailPaymentSection(ctx) {
   const {
-    showPdvPaymentTypesTab, renderHelpButton, deviceId, savePaymentTypeConfigs, savingPaymentTypes,
+    showPdvPaymentTypesTab, renderHelpButton, currentCompany, configs,
+    savePaymentTypeConfigs, savingPaymentTypes,
   } = ctx;
 
   if (!showPdvPaymentTypesTab) return null;
@@ -34,7 +35,5 @@ export default function DeviceDetailPaymentSection(ctx) {
             onPersistSelectedPaymentTypeIds={savePaymentTypeConfigs}
           />
         </View>
-      )}
-
   );
 }
