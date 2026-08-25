@@ -17,8 +17,6 @@ import {
   POS_CASH_MANAGEMENT_MODE_CASH_REGISTER,
   POS_CASH_MANAGEMENT_MODE_DAILY,
   POS_OPERATION_MODE_CONFIG_KEY,
-  DEVICE_ORDER_VISIBILITY_COMPANY,
-  DEVICE_ORDER_VISIBILITY_DEVICE,
   resolvePosOperationMode,
 } from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
 import { normalizeEntityId } from '@controleonline/ui-common/src/react/utils/paymentDevices';
@@ -45,8 +43,6 @@ export default function DeviceDetailPdvConfigSection(ctx) {
     androidKioskEnabled, setAndroidKioskEnabled,
     androidLauncherEnabled, setAndroidLauncherEnabled,
     saveLauncherMode, savingLauncherMode,
-    orderVisibility, setOrderVisibility, saveDeviceOrderVisibility, savingOrderVisibility,
-    shouldShowOrderVisibility,
     deliveryEnabled, setDeliveryEnabled, saveDeviceDeliverySettings, savingDeliverySettings,
     deviceAlertSoundEnabled, setDeviceAlertSoundEnabled, deviceAlertSoundUrl, setDeviceAlertSoundUrl,
     saveDeviceAlertSoundConfig, savingAlertSound,
@@ -386,8 +382,6 @@ export default function DeviceDetailPdvConfigSection(ctx) {
           </View>
         </View>
       )}
-
-      {shouldShowOrderVisibility && (
     </>
   );
 }
