@@ -28,6 +28,7 @@ import {
   resolvePrinterSelectionValue,
   resolveSelectedPrinter,
 } from '@controleonline/ui-common/src/react/print/selection';
+import {resolvePrintRoutingError} from '@controleonline/ui-common/src/react/utils/printRouting';
 
 const resolveCurrentItemId = storeGetters =>
   storeGetters?.item?.['@id']
@@ -396,7 +397,14 @@ export const usePrintButtonController = ({
         return;
       }
 
-      setError(global.t?.t('orders', 'title', 'selectPrinter') || 'Selecione a impressora.');
+      setError(
+        resolvePrintRoutingError({
+          targetDeviceId: selectedPrinter?.device,
+          selectedPrinter,
+        }) ||
+          global.t?.t('orders', 'title', 'selectPrinter') ||
+          'Selecione a impressora.',
+      );
       return;
     }
 
