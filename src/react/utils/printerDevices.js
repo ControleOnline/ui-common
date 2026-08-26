@@ -463,3 +463,45 @@ export const getManagedPrinterDevices = ({
     getPrinterLabel(left).localeCompare(getPrinterLabel(right)),
   );
 };
+
+/**
+ * Device ids whose open spools this runtime should poll/print.
+ * Managed network printers expose `device` (not `deviceId`).
+ */
+export const resolveSpoolDeviceIdsForRuntime = ({
+  runtimeDeviceId = '',
+  runtimeDeviceType = '',
+  isWebRuntime = false,
+  managedPrinters = [],
+  includeLocalDevice = true,
+} = {}) => {
+  const normalizedRuntimeId = normalizeDeviceId(runtimeDeviceId);
+  if (!normalizedRuntimeId || isWebRuntime) {
+    return [];
+  }
+
+  const managedIds = (Array.isArray(managedPrinters) ? managedPrinters : [])
+    .map(printer => normalizeDeviceId(printer?.device || printer?.deviceId))
+    .filter(Boolean);
+
+  const type = normalizeDeviceType(runtimeDeviceType);
+
+  if (type === PDV_DEVICE_TYPE) {
+    return Array.from(
+      new Set(
+        [
+          ...(includeLocalDevice ? [normalizedRuntimeId] : []),
+          ...managedIds,
+        ].filter(Boolean),
+      ),
+    );
+  }
+
+  if (type === DISPLAY_DEVICE_TYPE) {
+    return Array.from(new Set(managedIds));
+  }
+
+  // PRINT/PRINTER terminals do not poll their own spool; the manager PDV does.
+  return [];
+};
+

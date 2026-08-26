@@ -2,6 +2,9 @@ import {api} from '@controleonline/ui-common/src/api';
 import * as types from '@controleonline/ui-default/src/store/default/mutation_types';
 import {isWebRuntimeDevice} from '@controleonline/ui-common/src/react/utils/deviceRuntime';
 
+/** Max age for company device_configs cache used by print routing (ms). */
+export const COMPANY_DEVICE_CONFIGS_CACHE_TTL_MS = 30 * 1000;
+
 const normalizePeopleKey = value =>
   String(value || '')
     .replace(/\D+/g, '')
@@ -32,6 +35,74 @@ const getStoredDevice = () => {
   }
 
   return {};
+};
+
+const resolveConfigId = config => {
+  if (!config) {
+    return '';
+  }
+  if (config.id != null && String(config.id).trim() !== '') {
+    return String(config.id).trim();
+  }
+  const iri = String(config['@id'] || '').trim();
+  if (!iri) {
+    return '';
+  }
+  const parts = iri.split('/');
+  return String(parts[parts.length - 1] || '').trim();
+};
+
+/**
+ * Merge a saved device_config into the company list and clear loadedKey so the
+ * next ensureCompanyDeviceConfigsLoaded can refresh (print routing picks up
+ * manager/destination changes without app rebuild).
+ */
+const mergeSavedConfigIntoCompanyItems = (commit, getters, saved) => {
+  if (!saved) {
+    return;
+  }
+
+  const currentItems = Array.isArray(getters.items) ? getters.items : [];
+  const savedId = resolveConfigId(saved);
+  const savedDeviceId = String(
+    saved?.device?.device || saved?.device?.id || saved?.device || '',
+  ).trim();
+  const savedType = String(saved?.type || '').trim().toUpperCase();
+
+  let replaced = false;
+  const nextItems = currentItems.map(item => {
+    const itemId = resolveConfigId(item);
+    if (savedId && itemId && savedId === itemId) {
+      replaced = true;
+      return {...item, ...saved};
+    }
+
+    const itemDeviceId = String(
+      item?.device?.device || item?.device?.id || item?.device || '',
+    ).trim();
+    const itemType = String(item?.type || '').trim().toUpperCase();
+    if (
+      savedDeviceId &&
+      itemDeviceId &&
+      savedDeviceId === itemDeviceId &&
+      savedType &&
+      itemType === savedType
+    ) {
+      replaced = true;
+      return {...item, ...saved};
+    }
+
+    return item;
+  });
+
+  if (!replaced && savedId) {
+    nextItems.push(saved);
+  }
+
+  commit(types.SET_ITEMS, nextItems);
+  // Force next ensure to re-fetch when TTL allows (other runtimes still refresh via TTL).
+  commit(types.SET_LOADED_KEY, '');
+  commit(types.SET_LOADED_AT, 0);
 };
 
 export const addDeviceConfigs = ({commit, getters}, params) => {
@@ -82,6 +153,7 @@ export const addDeviceConfigs = ({commit, getters}, params) => {
   if (isRuntimeWebDevice) {
     commit(types.SET_ITEM, nextItem);
     if (!canPersistRuntimeWebDevice) {
+      mergeSavedConfigIntoCompanyItems(commit, getters, nextItem);
       return Promise.resolve(nextItem);
     }
   }
@@ -118,6 +190,7 @@ export const addDeviceConfigs = ({commit, getters}, params) => {
           : nextItem.configs || getters.item?.configs || {},
       };
       commit(types.SET_ITEM, d);
+      mergeSavedConfigIntoCompanyItems(commit, getters, d);
       return d;
     })
     .catch(e => {
@@ -174,10 +247,16 @@ export const ensureCompanyDeviceConfigsLoaded = (context, params = {}) => {
     return Promise.resolve([]);
   }
 
-  if (
+  const force = params?.force === true;
+  const loadedAt = Number(context.getters.loadedAt) || 0;
+  const cacheAgeMs = loadedAt > 0 ? Date.now() - loadedAt : Number.POSITIVE_INFINITY;
+  const cacheFresh =
+    !force &&
     context.getters.loadedKey === peopleKey &&
-    Array.isArray(context.getters.items)
-  ) {
+    Array.isArray(context.getters.items) &&
+    cacheAgeMs < COMPANY_DEVICE_CONFIGS_CACHE_TTL_MS;
+
+  if (cacheFresh) {
     return Promise.resolve(context.getters.items);
   }
 
@@ -188,3 +267,7 @@ export const ensureCompanyDeviceConfigsLoaded = (context, params = {}) => {
   return getCompanyDeviceConfigs(context, params);
 };
 
+export const invalidateCompanyDeviceConfigsCache = ({commit}) => {
+  commit(types.SET_LOADED_KEY, '');
+  commit(types.SET_LOADED_AT, 0);
+};
