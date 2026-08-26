@@ -26,8 +26,44 @@ import {
 } from './deviceListHelpers';
 import styles from '../../Devices.styles';
 
+/**
+ * Normalize DefaultTable card `item` into a device group shape.
+ * DefaultTable can hand us either a grouped object ({device, deviceConfigs})
+ * or a flat device_config entity from the store (no deviceConfigs array).
+ * Accessing `.deviceConfigs[0]` on a flat item throws TypeError (app-community#627 KDS).
+ */
+const normalizeDeviceGroup = item => {
+  if (!item || typeof item !== 'object') {
+    return null;
+  }
+
+  if (Array.isArray(item.deviceConfigs)) {
+    return item;
+  }
+
+  // Flat device_config row from store — promote to single-config group.
+  if (item.device != null || item.type != null || item.id != null) {
+    return {
+      key:
+        item.key ||
+        item['@id'] ||
+        (item.id != null ? `config:${item.id}` : undefined),
+      device: item.device && typeof item.device === 'object' ? item.device : {},
+      deviceConfigs: [item],
+      primaryConfig: item,
+      alias:
+        item.alias ||
+        item.device?.alias ||
+        item.device?.device ||
+        undefined,
+    };
+  }
+
+  return null;
+};
+
 export default function DeviceGroupCard({
-  item: deviceGroup,
+  item,
   brandColors,
   creatingPdv,
   goToDetail,
@@ -38,6 +74,13 @@ export default function DeviceGroupCard({
   runtimeDeviceType,
   showCurrentPdvSetup,
 }) {
+        const deviceGroup = normalizeDeviceGroup(item);
+        if (!deviceGroup) {
+          return null;
+        }
+        const deviceConfigs = Array.isArray(deviceGroup.deviceConfigs)
+          ? deviceGroup.deviceConfigs
+          : [];
         const isCurrentDevice = isCurrentDeviceGroup({
           deviceGroup,
           runtimeDeviceIdentifier,
@@ -52,7 +95,8 @@ export default function DeviceGroupCard({
         const primaryConfig =
           sessionConfig ||
           filteredTypeConfig ||
-          deviceGroup.deviceConfigs[0] ||
+          deviceGroup.primaryConfig ||
+          deviceConfigs[0] ||
           null;
         const normalizedType = primaryConfig
           ? getDeviceConfigType(primaryConfig)
@@ -150,7 +194,7 @@ export default function DeviceGroupCard({
                 </Text>
 
                 <View style={styles.deviceConfigRow}>
-                  {deviceGroup.deviceConfigs.map(deviceConfig => {
+                  {deviceConfigs.map(deviceConfig => {
                     const configType = getDeviceConfigType(deviceConfig);
                     const configAccent = getDeviceTypeAccent(configType);
                     const isSessionConfig =
