@@ -64,6 +64,7 @@ import {
   resolvePosOperationMode,
   resolvePosPrintMode,
 } from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
+import { buildDeviceAliasStoreUpdates } from '@controleonline/ui-common/src/react/utils/deviceAliasSync';
 
 import {
   filterDeviceConfigsByCompany,
@@ -496,9 +497,14 @@ const DeviceDetailPage = () => {
   const [savingAlias,  setSavingAlias]  = useState(false);
   const [removingDevice, setRemovingDevice] = useState(false);
   const aliasInputRef = useRef(null);
+  const skipAliasSyncFromStoreRef = useRef(false);
 
   useEffect(() => {
     if (editingAlias) {
+      return;
+    }
+    if (skipAliasSyncFromStoreRef.current) {
+      skipAliasSyncFromStoreRef.current = false;
       return;
     }
 
@@ -1060,6 +1066,19 @@ const DeviceDetailPage = () => {
         alias: trimmed,
       });
       const nextAlias = String(savedDevice?.alias || trimmed).trim();
+      const { mergedDevice, nextDeviceConfig } = buildDeviceAliasStoreUpdates({
+        deviceId,
+        nextAlias,
+        runtimeDevice,
+        runtimeDeviceConfig,
+        savedDevice,
+        normalizeEntityId,
+      });
+      actionsRef.current.deviceActions.setItem?.(mergedDevice);
+      if (nextDeviceConfig && actionsRef.current.deviceConfigActions?.setItem) {
+        actionsRef.current.deviceConfigActions.setItem(nextDeviceConfig);
+      }
+      skipAliasSyncFromStoreRef.current = true;
       setAlias(nextAlias);
       setAliasInput(nextAlias);
       setEditingAlias(false);
