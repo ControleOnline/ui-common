@@ -1,20 +1,6 @@
 import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {api} from '@controleonline/ui-common/src/api';
-import {
-  decodeNetworkPrinterPayload,
-  printOnNetworkPrinter,
-} from '@controleonline/ui-common/src/react/services/NetworkPrinterService';
-import {
-  DEFAULT_NETWORK_PRINTER_PORT,
-  DEFAULT_NETWORK_PRINTER_CODE_PAGE,
-  DISPLAY_DEVICE_TYPE,
-  PDV_DEVICE_TYPE,
-  getManagedPrinterDevices,
-  getPrinterHost,
-  NETWORK_PRINTER_CODE_PAGE_CONFIG_KEY,
-  NETWORK_PRINTER_PORT_CONFIG_KEY,
-  normalizePrinterPort,
-} from '@controleonline/ui-common/src/react/utils/printerDevices';
+import {getManagedPrinterDevices} from '@controleonline/ui-common/src/react/utils/printerDevices';
 import {isWebRuntimeDevice} from '@controleonline/ui-common/src/react/utils/deviceRuntime';
 import {
   isLocalCieloPrintCapableDeviceConfig,
@@ -30,29 +16,17 @@ import {PRINT_JOB_TYPE_SPOOL} from '@controleonline/ui-common/src/react/print/jo
 import {printOnLocalCielo} from '@controleonline/ui-common/src/react/print/providers/local';
 import {executeRemotePrintRequest} from '@controleonline/ui-common/src/react/print/providers/remote';
 import {resolveSpoolDeviceIdsForRuntime} from '@controleonline/ui-common/src/react/utils/printRouting';
+import {
+  SPOOL_ACK_RETRY_DELAY_MS,
+  normalizeDeviceType,
+  resolveSpoolId as resolveSpoolIdPure,
+  fetchOpenSpoolsForDevices,
+  resolveRequestedTargetDeviceId,
+  resolveRequestedTargetDeviceTypeValue,
+} from '@controleonline/ui-common/src/react/utils/printSpoolUtils';
+import {printOnManagedNetworkPrinter} from '@controleonline/ui-common/src/react/utils/printManagedPrinter';
+import {usePrintSpoolEffects} from '@controleonline/ui-common/src/react/hooks/usePrintSpoolEffects';
 import {useStore} from '@store';
-
-const SOCKET_PRINT_POLL_INTERVAL_DISCONNECTED = 10000;
-const SOCKET_PRINT_POLL_DELAY_CONNECTED = 60000;
-const SPOOL_ACK_RETRY_DELAY_MS = 10000;
-
-const normalizeDeviceType = value => String(value || '').trim().toUpperCase();
-
-const extractCollectionMembers = data => {
-  if (Array.isArray(data)) {
-    return data;
-  }
-
-  if (Array.isArray(data?.member)) {
-    return data.member;
-  }
-
-  if (Array.isArray(data?.['hydra:member'])) {
-    return data['hydra:member'];
-  }
-
-  return [];
-};
 
 const PrintService = () => {
   const peopleStore = useStore('people');
@@ -66,13 +40,11 @@ const PrintService = () => {
   const deviceConfigGetters = deviceConfigStore.getters;
   const websocketStore = useStore('websocket');
   const websocketGetters = websocketStore.getters;
-
   const {item: storagedDevice} = deviceGetters;
   const {reload, print, items: spool, message, messages} = printGetters;
   const {currentCompany} = peopleGetters;
   const {item: runtimeDeviceConfig, items: companyDeviceConfigs = []} = deviceConfigGetters;
   const {summary: websocketSummary} = websocketGetters;
-
   const isPrintingRef = useRef(false);
   const spoolRef = useRef([]);
   // Once the device prints locally, only the backend ack may remain pending.
@@ -80,31 +52,13 @@ const PrintService = () => {
   const connectedPollTimeoutRef = useRef(null);
   const ackRetryTimeoutRef = useRef(null);
   const [lastPrintCommandAt, setLastPrintCommandAt] = useState(null);
-
   const markPrintCommand = useCallback(() => {
     setLastPrintCommandAt(Date.now());
   }, []);
-
   useEffect(() => {
     spoolRef.current = Array.isArray(spool) ? spool : [];
   }, [spool]);
-
-  const resolveSpoolId = useCallback(value => {
-    if (!value) return null;
-    if (typeof value === 'number') return value;
-    if (typeof value === 'string') {
-      const numericValue = value.replace(/\D/g, '');
-      return numericValue ? Number(numericValue) : null;
-    }
-
-    return (
-      resolveSpoolId(value?.id) ||
-      resolveSpoolId(value?.spoolId) ||
-      resolveSpoolId(value?.spool) ||
-      resolveSpoolId(value?.['@id'])
-    );
-  }, []);
-
+  const resolveSpoolId = resolveSpoolIdPure;
   const resolveTargetDevice = useCallback(
     printJob =>
       normalizeDeviceId(
@@ -112,26 +66,22 @@ const PrintService = () => {
       ),
     [storagedDevice?.id],
   );
-
   const clearAckRetry = useCallback(() => {
     if (ackRetryTimeoutRef.current) {
       clearTimeout(ackRetryTimeoutRef.current);
       ackRetryTimeoutRef.current = null;
     }
   }, []);
-
   const scheduleAckRetry = useCallback(() => {
     clearAckRetry();
     ackRetryTimeoutRef.current = setTimeout(() => {
       printActions.setReload(true);
     }, SPOOL_ACK_RETRY_DELAY_MS);
   }, [clearAckRetry, printActions]);
-
   const hasPendingSpoolAck = useCallback(
     spoolId => hasTrackedSpool(pendingAckSpoolsRef.current, spoolId),
     [],
   );
-
   const rememberPendingSpoolAck = useCallback(
     spoolId => {
       rememberTrackedSpool(pendingAckSpoolsRef.current, spoolId, {
@@ -140,7 +90,6 @@ const PrintService = () => {
     },
     [],
   );
-
   const forgetPendingSpoolAck = useCallback(
     spoolId => {
       forgetTrackedSpool(pendingAckSpoolsRef.current, spoolId);
@@ -150,7 +99,6 @@ const PrintService = () => {
     },
     [clearAckRetry],
   );
-
   const syncPendingSpoolAcks = useCallback(
     openSpools => {
       const openSpoolIds = (Array.isArray(openSpools) ? openSpools : []).map(
@@ -163,7 +111,6 @@ const PrintService = () => {
     },
     [clearAckRetry, resolveSpoolId],
   );
-
   const finalizeSpoolAck = useCallback(
     async spoolId => {
       if (!spoolId) {
@@ -176,7 +123,6 @@ const PrintService = () => {
     },
     [forgetPendingSpoolAck, printActions],
   );
-
   const runtimeDeviceType = useMemo(
     () =>
       normalizeDeviceType(
@@ -186,12 +132,10 @@ const PrintService = () => {
       ),
     [runtimeDeviceConfig?.device?.type, runtimeDeviceConfig?.type, storagedDevice?.type],
   );
-
   const canUseLocalCieloPrint = useMemo(
     () => isLocalCieloPrintCapableDeviceConfig(runtimeDeviceConfig),
     [runtimeDeviceConfig],
   );
-
   const managedPrinters = useMemo(
     () =>
       getManagedPrinterDevices({
@@ -201,12 +145,10 @@ const PrintService = () => {
       }),
     [companyDeviceConfigs, currentCompany?.id, storagedDevice?.id],
   );
-
   const isWebDevice = useMemo(
     () => isWebRuntimeDevice(storagedDevice),
     [storagedDevice],
   );
-
   const spoolDeviceIds = useMemo(
     () =>
       resolveSpoolDeviceIdsForRuntime({
@@ -224,12 +166,10 @@ const PrintService = () => {
       storagedDevice?.id,
     ],
   );
-
   const shouldHandleSpool = useMemo(
     () => spoolDeviceIds.length > 0,
     [spoolDeviceIds],
   );
-
   const resolveManagedPrinter = useCallback(
     printJob => {
       const targetDeviceId = resolveTargetDevice(printJob);
@@ -241,19 +181,6 @@ const PrintService = () => {
     },
     [managedPrinters, resolveTargetDevice],
   );
-
-  useEffect(() => {
-    if (!currentCompany?.id) {
-      return;
-    }
-
-    printActions
-      .ensurePrintDependenciesLoaded({
-        companyId: currentCompany.id,
-      })
-      .catch(() => {});
-  }, [currentCompany?.id, printActions]);
-
   const loadOpenSpools = useCallback(async () => {
     if (!shouldHandleSpool) {
       pendingAckSpoolsRef.current.clear();
@@ -262,7 +189,6 @@ const PrintService = () => {
       printActions.setReload(false);
       return [];
     }
-
     const deviceIds = Array.from(new Set(spoolDeviceIds.filter(Boolean)));
 
     if (deviceIds.length === 0) {
@@ -274,39 +200,7 @@ const PrintService = () => {
     }
 
     try {
-      const spoolCollections = await Promise.all(
-        deviceIds.map(deviceId =>
-          api
-            .fetch('spools', {
-              params: {
-                'device.device': deviceId,
-                'status.realStatus': 'open',
-              },
-            })
-            .then(extractCollectionMembers)
-            .catch(() => []),
-        ),
-      );
-
-      const mergedSpools = [];
-      const spoolIds = new Set();
-
-      spoolCollections.flat().forEach(item => {
-        const spoolId = resolveSpoolId(item);
-        const spoolKey = spoolId ? String(spoolId) : JSON.stringify(item);
-
-        if (!spoolIds.has(spoolKey)) {
-          spoolIds.add(spoolKey);
-          mergedSpools.push(item);
-        }
-      });
-
-      mergedSpools.sort((left, right) => {
-        const leftId = resolveSpoolId(left) || 0;
-        const rightId = resolveSpoolId(right) || 0;
-        return leftId - rightId;
-      });
-
+      const mergedSpools = await fetchOpenSpoolsForDevices(api, deviceIds);
       syncPendingSpoolAcks(mergedSpools);
       printActions.setItems(mergedSpools);
       return mergedSpools;
@@ -316,12 +210,10 @@ const PrintService = () => {
   }, [
     clearAckRetry,
     printActions,
-    resolveSpoolId,
     shouldHandleSpool,
     spoolDeviceIds,
     syncPendingSpoolAcks,
   ]);
-
   const removeSpoolFromQueue = useCallback(
     spoolId => {
       if (!spoolId) {
@@ -331,7 +223,6 @@ const PrintService = () => {
         printActions.setItems(nextQueue);
         return;
       }
-
       const nextQueue = (spoolRef.current || []).filter(
         item => resolveSpoolId(item) !== spoolId,
       );
@@ -340,7 +231,6 @@ const PrintService = () => {
     },
     [printActions, resolveSpoolId],
   );
-
   const getSpoolData = useCallback(
     async printJob => {
       const spoolId = resolveSpoolId(printJob);
@@ -356,37 +246,16 @@ const PrintService = () => {
     },
     [printActions, resolveSpoolId],
   );
-
   const printManagedSpool = useCallback(
     async (printJob, spoolData) => {
       const managedPrinter = resolveManagedPrinter(spoolData || printJob);
-      if (!managedPrinter) {
-        return false;
-      }
-
-      const printerHost = getPrinterHost(managedPrinter);
-      const printerPort = normalizePrinterPort(
-        managedPrinter?.configs?.[NETWORK_PRINTER_PORT_CONFIG_KEY] ||
-          DEFAULT_NETWORK_PRINTER_PORT,
-      );
-      const printerCodePage =
-        managedPrinter?.configs?.[NETWORK_PRINTER_CODE_PAGE_CONFIG_KEY] ||
-        DEFAULT_NETWORK_PRINTER_CODE_PAGE;
-
-      await printOnNetworkPrinter({
-        host: printerHost,
-        port: printerPort,
-        codePage: printerCodePage,
-        payload: decodeNetworkPrinterPayload(spoolData?.file?.content, {
-          codePage: printerCodePage,
-        }),
+      return printOnManagedNetworkPrinter({
+        managedPrinter,
+        content: spoolData?.file?.content,
       });
-
-      return true;
     },
     [resolveManagedPrinter],
   );
-
   const processResolvedSpool = useCallback(
     async ({printJob, spoolData, removeFromQueue = false}) => {
       const spoolId = resolveSpoolId(spoolData || printJob);
@@ -414,7 +283,6 @@ const PrintService = () => {
         }
         return {spoolId, printed: false};
       }
-
       const managedPrinterPrinted = await printManagedSpool(printJob, spoolData);
 
       if (!managedPrinterPrinted) {
@@ -446,7 +314,6 @@ const PrintService = () => {
       if (removeFromQueue) {
         removeSpoolFromQueue(spoolId);
       }
-
       return {spoolId, printed: true};
     },
     [
@@ -460,35 +327,19 @@ const PrintService = () => {
       scheduleAckRetry,
     ],
   );
-
   const resolveRequestedTargetDevice = useCallback(
-    printJob =>
-      normalizeDeviceId(
-        printJob?.targetPrinterDevice ||
-          printJob?.device?.device ||
-          printJob?.device ||
-          storagedDevice?.id,
-      ),
+    printJob => resolveRequestedTargetDeviceId(printJob, storagedDevice?.id),
     [storagedDevice?.id],
   );
-
   const resolveRequestedTargetDeviceType = useCallback(
-    printJob =>
-      normalizeDeviceType(
-        printJob?.targetPrinterType ||
-          printJob?.deviceType ||
-          printJob?.type ||
-          storagedDevice?.type,
-      ),
-    [storagedDevice?.type],
+    printJob => resolveRequestedTargetDeviceTypeValue(printJob),
+    [],
   );
-	
   const goPrint = useCallback(
     async printJob => {
       if (isPrintingRef.current) {
         return;
       }
-
       const spoolId = resolveSpoolId(printJob);
       if (!spoolId) {
         removeSpoolFromQueue(null);
@@ -521,7 +372,6 @@ const PrintService = () => {
       resolveSpoolId,
     ],
   );
-
   const executePrintRequest = useCallback(
     async printJob => {
       const requestKey = String(printJob?.requestKey || '').trim();
@@ -559,7 +409,6 @@ const PrintService = () => {
           });
           return;
         }
-
         const targetDeviceId = resolveRequestedTargetDevice(printJob);
         const targetDeviceType = resolveRequestedTargetDeviceType(printJob);
 
@@ -623,127 +472,26 @@ const PrintService = () => {
       spoolDeviceIds,
     ],
   );
-
-  useEffect(() => {
-    if (shouldHandleSpool) {
-      printActions.setReload(true);
-      return;
-    }
-
-    printActions.setItems([]);
-    printActions.setReload(false);
-  }, [printActions, shouldHandleSpool]);
-
-  useEffect(() => {
-    if (!reload) {
-      return;
-    }
-
-    loadOpenSpools();
-  }, [loadOpenSpools, reload]);
-
-  useEffect(() => {
-    if (!shouldHandleSpool || websocketSummary?.connected === true) {
-      return;
-    }
-
-    printActions.setReload(true);
-    const intervalId = setInterval(() => {
-      printActions.setReload(true);
-    }, SOCKET_PRINT_POLL_INTERVAL_DISCONNECTED);
-
-    return () => {
-      clearInterval(intervalId);
-    };
-  }, [printActions, shouldHandleSpool, websocketSummary?.connected]);
-
-  useEffect(() => {
-    if (connectedPollTimeoutRef.current) {
-      clearTimeout(connectedPollTimeoutRef.current);
-      connectedPollTimeoutRef.current = null;
-    }
-
-    if (!shouldHandleSpool || !websocketSummary?.connected || !lastPrintCommandAt) {
-      return;
-    }
-
-    const elapsed = Date.now() - lastPrintCommandAt;
-    const delay = Math.max(SOCKET_PRINT_POLL_DELAY_CONNECTED - elapsed, 0);
-
-    connectedPollTimeoutRef.current = setTimeout(() => {
-      printActions.setReload(true);
-    }, delay);
-
-    return () => {
-      if (connectedPollTimeoutRef.current) {
-        clearTimeout(connectedPollTimeoutRef.current);
-        connectedPollTimeoutRef.current = null;
-      }
-    };
-  }, [
-    lastPrintCommandAt,
+  usePrintSpoolEffects({
+    currentCompanyId: currentCompany?.id,
     printActions,
     shouldHandleSpool,
-    websocketSummary?.connected,
-  ]);
-
-  useEffect(() => {
-    if (print && print.length > 0) {
-      for (const p of print) {
-        printActions.addToQueue(() => executePrintRequest(p));
-      }
-      printActions.initQueue(() => {
-        printActions.setPrint([]);
-      });
-    }
-  }, [
-    executePrintRequest,
+    loadOpenSpools,
+    reload,
+    websocketConnected: websocketSummary?.connected,
+    lastPrintCommandAt,
+    connectedPollTimeoutRef,
     print,
-    printActions,
-  ]);
-
-  useEffect(() => {
-    if (!spoolRef.current?.length || isPrintingRef.current) {
-      return;
-    }
-
-    goPrint(spoolRef.current[0]);
-  }, [goPrint, spool]);
-
-  useEffect(
-    () => () => {
-      clearAckRetry();
-    },
-    [clearAckRetry],
-  );
-
-  useEffect(() => {
-    if (!message || Object.keys(message).length === 0) {
-      return;
-    }
-
-    if (message?.action === 'print' || message?.store === 'print') {
-      if (shouldHandleSpool) {
-        markPrintCommand();
-        printActions.setReload(true);
-      }
-    }
-
-    printActions.setMessage(null);
-  }, [markPrintCommand, message, printActions, shouldHandleSpool]);
-
-  useEffect(() => {
-    if (
-      messages &&
-      messages.length > 0 &&
-      (!message || Object.keys(message).length === 0)
-    ) {
-      const queuedMessages = [...messages];
-      printActions.setMessage(queuedMessages.pop());
-      printActions.setMessages(queuedMessages);
-    }
-  }, [messages, message, printActions]);
-
+    executePrintRequest,
+    spoolRef,
+    isPrintingRef,
+    goPrint,
+    spool,
+    clearAckRetry,
+    message,
+    messages,
+    markPrintCommand,
+  });
   return null;
 };
 

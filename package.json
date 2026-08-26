@@ -11,7 +11,7 @@
     "test:runtime-language": "node --test src/tests/react/utils/runtimeLanguage.test.js",
     "test:runtime-footer": "node --test src/tests/react/utils/runtimeFooter.test.js",
     "test:invoice-presentation": "node --test src/tests/react/utils/invoicePresentation.test.mjs",
-    "test:print-routing": "node --test src/tests/react/utils/printRouting.test.mjs",
+    "test:print-routing": "node --test src/tests/react/utils/printRouting.test.mjs src/tests/react/utils/printSpoolUtils.test.mjs",
     "test:coverage": "c8 --reporter=clover --report-dir coverage npm test"
   },
   "devDependencies": {
