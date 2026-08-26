@@ -6,7 +6,7 @@
   "license": "MIT",
   "main": "src/react/index.js",
   "scripts": {
-    "test": "npm run test:receita-federal && npm run test:imports-status && npm run test:runtime-language && npm run test:runtime-footer && npm run test:invoice-presentation && npm run test:system-error-message && npm run test:bottom-navigation-toolbar && npm run test:copy-device-configs && npm run test:print-routing",
+    "test": "npm run test:receita-federal && npm run test:imports-status && npm run test:runtime-language && npm run test:runtime-footer && npm run test:runtime-footer-marquee && npm run test:invoice-presentation && npm run test:system-error-message && npm run test:bottom-navigation-toolbar && npm run test:copy-device-configs && npm run test:print-routing",
     "test:receita-federal": "node --test src/tests/react/pages/receitaFederalIntegrationContract.test.mjs",
     "test:imports-status": "mkdir -p node_modules/@controleonline && ln -sfn ../.. node_modules/@controleonline/ui-common && node --test src/tests/react/utils/importStatus.test.js",
     "test:runtime-language": "node --test src/tests/react/utils/runtimeLanguage.test.js",
@@ -16,7 +16,8 @@
     "test:coverage": "c8 --reporter=clover --report-dir coverage npm test",
     "test:bottom-navigation-toolbar": "node --test src/tests/react/utils/bottomNavigationToolbar.test.js",
     "test:copy-device-configs": "node --test src/tests/react/utils/copyDeviceConfigs.test.mjs",
-    "test:print-routing": "node --test src/tests/react/utils/printRouting.test.mjs src/tests/react/utils/printSpoolUtils.test.mjs"
+    "test:print-routing": "node --test src/tests/react/utils/printRouting.test.mjs src/tests/react/utils/printSpoolUtils.test.mjs",
+    "test:runtime-footer-marquee": "node --test src/tests/react/components/RuntimeFooterMarqueeText.test.js"
   },
   "devDependencies": {
     "c8": "^10.1.3"
