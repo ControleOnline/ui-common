@@ -16,7 +16,7 @@
     "test:coverage": "c8 --reporter=clover --report-dir coverage npm test",
     "test:bottom-navigation-toolbar": "node --test src/tests/react/utils/bottomNavigationToolbar.test.js",
     "test:copy-device-configs": "node --test src/tests/react/utils/copyDeviceConfigs.test.mjs",
-    "test:print-routing": "node --test src/tests/react/utils/printRouting.test.mjs"
+    "test:print-routing": "node --test src/tests/react/utils/printRouting.test.mjs src/tests/react/utils/printSpoolUtils.test.mjs"
   },
   "devDependencies": {
     "c8": "^10.1.3"
