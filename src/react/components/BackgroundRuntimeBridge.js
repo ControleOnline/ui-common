@@ -29,8 +29,8 @@ import {
   getPrinterHost,
   normalizeDeviceType,
   normalizePrinterPort,
-  resolveSpoolDeviceIdsForRuntime,
 } from '@controleonline/ui-common/src/react/utils/printerDevices';
+import {resolveSpoolDeviceIdsForRuntime} from '@controleonline/ui-common/src/react/utils/printRouting';
 
 const backgroundRuntimeModule = NativeModules?.BackgroundRuntime;
 

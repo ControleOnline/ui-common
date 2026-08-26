@@ -29,6 +29,7 @@ import {
 import {PRINT_JOB_TYPE_SPOOL} from '@controleonline/ui-common/src/react/print/jobs';
 import {printOnLocalCielo} from '@controleonline/ui-common/src/react/print/providers/local';
 import {executeRemotePrintRequest} from '@controleonline/ui-common/src/react/print/providers/remote';
+import {resolveSpoolDeviceIdsForRuntime} from '@controleonline/ui-common/src/react/utils/printRouting';
 import {useStore} from '@store';
 
 const SOCKET_PRINT_POLL_INTERVAL_DISCONNECTED = 10000;
