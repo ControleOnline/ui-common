@@ -201,56 +201,28 @@ const PrintService = () => {
     [companyDeviceConfigs, currentCompany?.id, storagedDevice?.id],
   );
 
-  const managedPrinterDeviceIds = useMemo(
-    () =>
-      Array.from(
-        new Set(
-          managedPrinters
-            .map(printer => normalizeDeviceId(printer?.device))
-            .filter(Boolean),
-        ),
-      ),
-    [managedPrinters],
-  );
-
   const isWebDevice = useMemo(
     () => isWebRuntimeDevice(storagedDevice),
     [storagedDevice],
   );
 
-  const spoolDeviceIds = useMemo(() => {
-    if (!storagedDevice?.id) {
-      return [];
-    }
-
-    if (isWebDevice) {
-      return [];
-    }
-
-    if (runtimeDeviceType === PDV_DEVICE_TYPE) {
-      const deviceId = normalizeDeviceId(storagedDevice.id);
-      return Array.from(
-        new Set(
-          [
-            ...(canUseLocalCieloPrint ? [deviceId] : []),
-            ...managedPrinterDeviceIds,
-          ].filter(Boolean),
-        ),
-      );
-    }
-
-    if (runtimeDeviceType === DISPLAY_DEVICE_TYPE) {
-      return managedPrinterDeviceIds;
-    }
-
-    return [];
-  }, [
-    isWebDevice,
-    canUseLocalCieloPrint,
-    managedPrinterDeviceIds,
-    runtimeDeviceType,
-    storagedDevice?.id,
-  ]);
+  const spoolDeviceIds = useMemo(
+    () =>
+      resolveSpoolDeviceIdsForRuntime({
+        runtimeDeviceId: storagedDevice?.id,
+        runtimeDeviceType,
+        isWebRuntime: isWebDevice,
+        managedPrinters,
+        includeLocalDevice: canUseLocalCieloPrint,
+      }),
+    [
+      canUseLocalCieloPrint,
+      isWebDevice,
+      managedPrinters,
+      runtimeDeviceType,
+      storagedDevice?.id,
+    ],
+  );
 
   const shouldHandleSpool = useMemo(
     () => spoolDeviceIds.length > 0,
