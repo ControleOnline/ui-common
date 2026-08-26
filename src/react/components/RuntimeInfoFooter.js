@@ -21,6 +21,7 @@ import {
   getRuntimeFooterTextLines,
 } from '@controleonline/ui-common/src/react/utils/runtimeFooter';
 import styles from './RuntimeInfoFooter.styles';
+import RuntimeFooterMarqueeText from './RuntimeFooterMarqueeText';
 
 const ROTATION_INTERVAL_MS = 4000;
 const FADE_DURATION_MS = 260;
@@ -256,21 +257,17 @@ const RuntimeInfoFooter = ({
               ]}
             />
           </View>
-          <Animated.Text
-            numberOfLines={1}
-            ellipsizeMode="tail"
-            minimumFontScale={0.85}
-            style={[
-              styles.primaryText,
-              {
-                opacity: showDebugInfo ? 1 : fadeOpacity,
-              },
-              {
-                color: textColor,
-              },
-            ]}>
-            {showDebugInfo ? inlineText || primaryText || device?.id || '--' : displayedText}
-          </Animated.Text>
+          <RuntimeFooterMarqueeText
+            text={
+              showDebugInfo
+                ? inlineText || primaryText || device?.id || '--'
+                : displayedText
+            }
+            color={textColor}
+            opacity={showDebugInfo ? 1 : fadeOpacity}
+            style={styles.primaryText}
+            testID="runtime-footer-primary-text"
+          />
           <View style={styles.loadingWrap}>
             {hasStoreLoading && (
               <ActivityIndicator color={loadingColor} size="small" />
