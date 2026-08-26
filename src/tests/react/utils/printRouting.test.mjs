@@ -1,53 +1,14 @@
-/**
- * app-community#628 — print routing between devices
- * Pure unit coverage of resolveSpoolDeviceIdsForRuntime contract
- * (managed printers expose `.device`, not `.deviceId`).
- */
-const assert = require('node:assert/strict');
-const {describe, it} = require('node:test');
+import {describe, it} from 'node:test';
+import assert from 'node:assert/strict';
+import {
+  PRINT_ROUTE_MISSING_DESTINATION,
+  resolvePrintRoutingError,
+  resolveSpoolDeviceIdsForRuntime,
+} from '../../../react/utils/printRouting.js';
 
-const normalizeDeviceId = value => String(value || '').trim();
-const normalizeDeviceType = value => String(value || '').trim().toUpperCase();
+const PRINT_DEVICE_TYPE = 'PRINT';
 const PDV_DEVICE_TYPE = 'PDV';
 const DISPLAY_DEVICE_TYPE = 'DISPLAY';
-const PRINT_DEVICE_TYPE = 'PRINT';
-
-/** Mirror of resolveSpoolDeviceIdsForRuntime (contract under test). */
-const resolveSpoolDeviceIdsForRuntime = ({
-  runtimeDeviceId = '',
-  runtimeDeviceType = '',
-  isWebRuntime = false,
-  managedPrinters = [],
-  includeLocalDevice = true,
-} = {}) => {
-  const normalizedRuntimeId = normalizeDeviceId(runtimeDeviceId);
-  if (!normalizedRuntimeId || isWebRuntime) {
-    return [];
-  }
-
-  const managedIds = (Array.isArray(managedPrinters) ? managedPrinters : [])
-    .map(printer => normalizeDeviceId(printer?.device || printer?.deviceId))
-    .filter(Boolean);
-
-  const type = normalizeDeviceType(runtimeDeviceType);
-
-  if (type === PDV_DEVICE_TYPE) {
-    return Array.from(
-      new Set(
-        [
-          ...(includeLocalDevice ? [normalizedRuntimeId] : []),
-          ...managedIds,
-        ].filter(Boolean),
-      ),
-    );
-  }
-
-  if (type === DISPLAY_DEVICE_TYPE) {
-    return Array.from(new Set(managedIds));
-  }
-
-  return [];
-};
 
 describe('resolveSpoolDeviceIdsForRuntime (print routing #628)', () => {
   const managedPrinters = [
@@ -65,16 +26,13 @@ describe('resolveSpoolDeviceIdsForRuntime (print routing #628)', () => {
     assert.deepEqual(ids.sort(), ['pdv-1', 'printer-a', 'printer-b'].sort());
   });
 
-  it('does not rely on printer.deviceId (regression of BackgroundRuntimeBridge bug)', () => {
-    const brokenShape = [{deviceId: 'should-not-be-used', type: PRINT_DEVICE_TYPE}];
+  it('accepts deviceId fallback and prefers device', () => {
     const idsWithOnlyDeviceId = resolveSpoolDeviceIdsForRuntime({
       runtimeDeviceId: 'pdv-1',
       runtimeDeviceType: PDV_DEVICE_TYPE,
-      managedPrinters: brokenShape,
+      managedPrinters: [{deviceId: 'should-not-be-used', type: PRINT_DEVICE_TYPE}],
       includeLocalDevice: false,
     });
-    // deviceId alone is accepted as fallback, but preferred field is device.
-    // Preferred path:
     const preferred = resolveSpoolDeviceIdsForRuntime({
       runtimeDeviceId: 'pdv-1',
       runtimeDeviceType: PDV_DEVICE_TYPE,
@@ -111,5 +69,18 @@ describe('resolveSpoolDeviceIdsForRuntime (print routing #628)', () => {
       includeLocalDevice: false,
     });
     assert.deepEqual(ids, []);
+  });
+});
+
+describe('resolvePrintRoutingError', () => {
+  it('returns a visible message when routing has no destination', () => {
+    assert.equal(resolvePrintRoutingError({}), PRINT_ROUTE_MISSING_DESTINATION);
+  });
+
+  it('is silent when a printer device is selected', () => {
+    assert.equal(
+      resolvePrintRoutingError({selectedPrinter: {device: 'printer-a'}}),
+      '',
+    );
   });
 });
