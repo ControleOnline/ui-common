@@ -94,6 +94,8 @@ import {
 import { buildDeviceAliasStoreUpdates } from '@controleonline/ui-common/src/react/utils/deviceAliasSync';
 import { createDeviceDetailRenderers } from './DeviceDetailRenderers';
 import DeviceDetailHeader from './DeviceDetailHeader';
+import CopyDeviceConfigModal from '@controleonline/ui-common/src/react/components/CopyDeviceConfigModal';
+import useDeviceDetailCopyConfig from './useDeviceDetailCopyConfig';
 import DeviceDetailPdvConfigSection from './DeviceDetailPdvConfigSection';
 import DeviceDetailOrdersPrintSection from './DeviceDetailOrdersPrintSection';
 import DeviceDetailAlertsCommandsSection from './DeviceDetailAlertsCommandsSection';
@@ -357,6 +359,24 @@ const DeviceDetailScreen = () => {
     loadingMovementData, deviceId, savePaymentTypeConfigs, savingPaymentTypes,
   };
 
+  const {
+    copyModalVisible,
+    copyingConfig,
+    openCopyConfigModal,
+    closeCopyConfigModal,
+    handleCopyConfigConfirm,
+  } = useDeviceDetailCopyConfig({
+    actionsRef,
+    alias,
+    currentCompanyId: currentCompany?.id,
+    deviceString,
+    loadCompanyConfigs,
+    messageApi,
+    refreshCurrentConfig,
+    showSystemError,
+  });
+
+
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: brandColors.background }]}>
       <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
@@ -373,6 +393,8 @@ const DeviceDetailScreen = () => {
           themeColors={themeColors}
           onAliasChange={setAliasInput}
           onConfirmRemove={confirmRemoveDevice}
+          onCopyConfig={openCopyConfigModal}
+          copyingConfig={copyingConfig}
           onSaveAlias={saveAlias}
           onStartEdit={startEditAlias}
         />
@@ -453,6 +475,17 @@ const DeviceDetailScreen = () => {
         <DeviceDetailPaymentSection {...detailCtx} />
 
       </ScrollView>
+          <CopyDeviceConfigModal
+        visible={copyModalVisible}
+        onClose={closeCopyConfigModal}
+        onConfirm={handleCopyConfigConfirm}
+        companyDeviceConfigs={companyDeviceConfigs}
+        companyId={currentCompany?.id}
+        destinationDeviceString={deviceString}
+        destinationAlias={alias}
+        loading={loadingCompanyDeviceConfigs}
+        confirming={copyingConfig}
+      />
     </SafeAreaView>
   );
 };

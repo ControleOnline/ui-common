@@ -18,9 +18,11 @@ export default function DeviceDetailHeader({
   editingAlias,
   removingDevice,
   savingAlias,
+  copyingConfig,
   themeColors,
   onAliasChange,
   onConfirmRemove,
+  onCopyConfig,
   onSaveAlias,
   onStartEdit,
 }) {
@@ -88,9 +90,32 @@ export default function DeviceDetailHeader({
                     marginLeft: 8,
                   },
                 ]}
+                onPress={onCopyConfig}
+                activeOpacity={0.8}
+                disabled={removingDevice || savingAlias || copyingConfig || !deviceString}
+                accessibilityLabel="Copiar configurações de outro device"
+                testID="device-detail-copy-config-btn"
+              >
+                <Icon
+                  name={copyingConfig ? 'loader' : 'copy'}
+                  size={16}
+                  color={themeColors.buttonIcon}
+                />
+              </TouchableOpacity>
+            )}
+            {!!deviceId && !editingAlias && (
+              <TouchableOpacity
+                style={[
+                  styles.editAliasBtn,
+                  {
+                    backgroundColor: themeColors.buttonBackground,
+                    borderColor: themeColors.buttonBackground,
+                    marginLeft: 8,
+                  },
+                ]}
                 onPress={onConfirmRemove}
                 activeOpacity={0.8}
-                disabled={removingDevice || savingAlias}
+                disabled={removingDevice || savingAlias || copyingConfig}
                 accessibilityLabel="Excluir device"
                 testID="device-detail-delete-btn"
               >
