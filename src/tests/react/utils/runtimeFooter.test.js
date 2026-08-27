@@ -1,10 +1,5 @@
 const assert = require('node:assert/strict')
-const {beforeAll, afterAll, test} = global
-const {jest} = require('@jest/globals')
-
-jest.mock('@controleonline/ui-common/src/react/utils/printerDevices', () => ({
-  getDeviceTypeLabel: value => String(value || ''),
-}))
+const {after, before, test} = require('node:test')
 
 const {
   getRuntimeFooterDebugInfo,
@@ -46,7 +41,7 @@ const restoreLocation = () => {
   delete globalThis.location
 }
 
-beforeAll(() => {
+before(() => {
   global.t = {
     getMessageFromBuckets: (store, type, key) =>
       store === 'common' && type === 'option'
@@ -55,7 +50,7 @@ beforeAll(() => {
   }
 })
 
-afterAll(() => {
+after(() => {
   global.t = originalTranslator
 })
 

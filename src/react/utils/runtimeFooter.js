@@ -1,6 +1,6 @@
-import { getDeviceTypeLabel } from '@controleonline/ui-common/src/react/utils/printerDevices';
-
 const DEVICE_RUNTIME_FOOTER_TEXT_CONFIG_KEY = 'device-runtime-footer-text';
+const PRINTER_DEVICE_TYPES = new Set(['PRINT', 'PRINTER']);
+const IP_CAMERA_DEVICE_TYPE = 'IP_CAMERA';
 
 const safeTrim = value => String(value || '').trim();
 
@@ -24,6 +24,20 @@ const normalizeComparableText = value =>
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '');
+
+const getRuntimeFooterDeviceTypeLabel = type => {
+  const normalizedType = safeTrim(type).toUpperCase();
+
+  if (PRINTER_DEVICE_TYPES.has(normalizedType)) {
+    return 'Impressora';
+  }
+
+  if (normalizedType === IP_CAMERA_DEVICE_TYPE) {
+    return 'Camera IP';
+  }
+
+  return normalizedType || 'DEVICE';
+};
 
 const getRuntimeFooterTranslation = (store, type, key) =>
   safeTrim(globalThis?.t?.getMessageFromBuckets?.(store, type, key));
@@ -254,7 +268,7 @@ const getRuntimeFooterOperationalTypeLabel = ({device, deviceConfig} = {}) => {
   });
 
   return operationalTypeInfo.value
-    ? getDeviceTypeLabel(operationalTypeInfo.value)
+    ? getRuntimeFooterDeviceTypeLabel(operationalTypeInfo.value)
     : '';
 };
 
@@ -382,7 +396,7 @@ const getRuntimeFooterDebugInfo = ({device, appVersion, deviceConfig}) => {
     deviceConfig,
   });
   const operationalTypeLabel = operationalTypeInfo.value
-    ? getDeviceTypeLabel(operationalTypeInfo.value)
+    ? getRuntimeFooterDeviceTypeLabel(operationalTypeInfo.value)
     : '';
   const operationModeLabel =
     operationalTypeLabel === 'PDV'
