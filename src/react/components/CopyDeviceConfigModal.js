@@ -86,7 +86,7 @@ export default function CopyDeviceConfigModal({
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={handleClose}>
       <View style={styles.overlay}>
-        <View style={styles.card}>
+        <View style={styles.card} testID="copy-device-config-modal">
           <View style={styles.header}>
             <Text style={styles.title}>
               {tt('device_action', 'copyConfigTitle') || 'Copiar configurações'}
@@ -99,7 +99,7 @@ export default function CopyDeviceConfigModal({
             </TouchableOpacity>
           </View>
 
-          <Text style={styles.message}>
+          <Text style={styles.message} testID="copy-device-config-hint">
             {tt('device_action', 'copyConfigHint') ||
               `Escolha o device origem. As configurações serão aplicadas em "${
                 destinationAlias || destinationDeviceString || 'destino'
@@ -123,7 +123,8 @@ export default function CopyDeviceConfigModal({
                     style={[styles.option, isSelected && styles.optionSelected]}
                     onPress={() => setSelectedDeviceString(option.deviceString)}
                     disabled={confirming}
-                    activeOpacity={0.8}>
+                    activeOpacity={0.8}
+                    testID={`copy-device-config-option-${option.deviceString}`}>
                     <View style={styles.optionTextBlock}>
                       <Text style={styles.optionAlias} numberOfLines={1}>
                         {option.alias}
@@ -144,7 +145,7 @@ export default function CopyDeviceConfigModal({
           )}
 
           {selected ? (
-            <View style={styles.preview}>
+            <View style={styles.preview} testID="copy-device-config-preview">
               <Text style={styles.previewTitle}>
                 {tt('device_action', 'copyConfigPreview') ||
                   'Será sobrescrito no destino:'}
@@ -173,7 +174,8 @@ export default function CopyDeviceConfigModal({
                 styles.confirmButton,
                 (!selected || confirming) && styles.confirmDisabled,
               ]}
-              disabled={!selected || confirming}>
+              disabled={!selected || confirming}
+              testID="copy-device-config-confirm">
               {confirming ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
