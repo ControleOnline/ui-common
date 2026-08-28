@@ -385,9 +385,6 @@ export default function DeviceDetailPdvConfigSection(ctx) {
             <Text style={styles.deviceString}>Salva automaticamente</Text>
           </View>
         </View>
-      )}
-
-      {shouldShowOrderVisibility && (
     </>
   );
 }
