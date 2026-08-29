@@ -23,6 +23,7 @@ const FileField = ({ field, value, editable, providerId, updateField }) => (
       acceptedTypes={field.accept || '.pfx,.p12,application/x-pkcs12'}
       fileType=""
       fileTypeLabel="certificado"
+      knownFileIds={[extractFileId(value)].filter(Boolean)}
       title={field.label}
       triggerLabel="Gerenciar certificado"
       managerTitle="Gerenciador de arquivos"
