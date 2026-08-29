@@ -20,8 +20,8 @@ const AddImportModal = ({
     onClose,
     onSuccess,
     context = {},
-    allowedExtensions = [],
-    acceptedTypes = '*/*',
+    allowedExtensions = [], // default will be set to ['csv'] if empty
+    // acceptedTypes will be derived from allowedExtensions for security
     helperLabel,
     modalTitle,
     fileLabel,
@@ -29,6 +29,7 @@ const AddImportModal = ({
     cancelLabel,
     importSuccessLabel,
     importErrorLabel,
+    importType = null,
 }) => {
     const fallbackModalTitle = global.t?.t('imports', 'title', 'new_import');
     const fallbackFileLabel = global.t?.t('imports', 'label', 'file');
@@ -44,6 +45,12 @@ const AddImportModal = ({
     const _importSuccessLabel = importSuccessLabel ?? fallbackSuccessLabel;
     const _importErrorLabel = importErrorLabel ?? fallbackErrorLabel;
     const _helperLabel = helperLabel ?? fallbackInvalidFileLabel;
+    // Resolve allowed extensions securely – default to CSV only
+    const _allowedExtensions = (allowedExtensions && allowedExtensions.length > 0) ? allowedExtensions : ['csv'];
+    // Build acceptedTypes string for file input (e.g., ".csv,.xml,.zip")
+    const _acceptedTypes = _allowedExtensions.map(ext => `.${ext}`).join(',');
+    // Determine import type: prioritize prop, then infer from allowed extensions, default to 'csv'
+    const _importType = importType ?? (_allowedExtensions.includes('xml') ? 'xml' : (_allowedExtensions.includes('zip') ? 'zip' : 'csv'));
     const { showError, showSuccess } = useMessage();
     const peopleStore = useStore('people');
     const importsStore = useStore('imports');
@@ -62,8 +69,8 @@ const AddImportModal = ({
 
 
     const handleUploadImportFile = async ({ file }) => {
-        if (allowedExtensions.length > 0) {
-            const extensionRegex = new RegExp(`\\.(${allowedExtensions.join('|')})$`, 'i');
+        if (_allowedExtensions.length > 0) {
+            const extensionRegex = new RegExp(`\\.(${_allowedExtensions.join('|')})$`, 'i');
             if (!file?.name?.toLowerCase().match(extensionRegex)) {
                 throw new Error(_helperLabel);
             }
@@ -72,7 +79,7 @@ const AddImportModal = ({
         try {
             await importActions.uploadImportFile({
                 file,
-                importType: context.context,
+                importType: _importType,
                 peopleId: currentCompany.id,
             });
             showSuccess(_importSuccessLabel);
@@ -106,7 +113,7 @@ const AddImportModal = ({
                 </View>
 
                 <ScrollView style={styles.content}>
-                    <Text style={styles.label>{_fileLabel}</Text>
+                    <Text style={styles.label}>{_fileLabel}</Text>
                     <DefaultUpload
                         relationField="import"
                         relationResource="imports"
@@ -114,7 +121,7 @@ const AddImportModal = ({
                         companyId={currentCompany.id}
                         context={`imports-${context.context || 'default'}`}
                         libraryContexts={[`imports-${context.context || 'default'}`]}
-                        acceptedTypes={acceptedTypes}
+                        acceptedTypes={_acceptedTypes}
                         fileType=""
                         title={_fileLabel}
                         triggerLabel={_selectFileLabel}
