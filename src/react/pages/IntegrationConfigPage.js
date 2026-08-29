@@ -16,8 +16,8 @@ import {
 import {
   getIntegrationConfig,
   getIntegrationByKey,
-  parseIntegrationCollection,
 } from './integrationsCatalog';
+import { fetchPeopleConfigs } from './fetchPeopleConfigs';
 import DefaultUpload from '@controleonline/ui-default/src/react/components/upload/DefaultUpload';
 import { extractFileId, toFileIri, uploadFileToApi } from '@controleonline/ui-default/src/react/components/upload/fileUpload';
 import styles from './IntegrationConfigPage.styles';
@@ -254,11 +254,14 @@ export default function IntegrationConfigPage({ route, embedded = false }) {
         params: { provider_id: providerId },
       });
       if (configFields.length > 0) {
-        const [configResponse, integrationResponse] = await Promise.all([
-          api.fetch('/configs', { params: { people: providerIri } }),
+        const [configItems, integrationResponse] = await Promise.all([
+          fetchPeopleConfigs({
+            peopleIri: providerIri,
+            configKeys: configFields.map(field => field.key),
+          }),
           integrationPromise,
         ]);
-        syncConfigValues(parseIntegrationCollection(configResponse));
+        syncConfigValues(configItems);
         setIntegrationSummary(getIntegrationByKey(integrationResponse, providerConfig.key));
         return;
       }
@@ -269,7 +272,7 @@ export default function IntegrationConfigPage({ route, embedded = false }) {
     } finally {
       if (showLoading) setLoading(false);
     }
-  }, [configFields.length, providerConfig, providerIri, providerId, showError, syncConfigValues]);
+  }, [configFields, providerConfig, providerIri, providerId, showError, syncConfigValues]);
 
   useFocusEffect(useCallback(() => { loadPageData(); }, [loadPageData]));
 
