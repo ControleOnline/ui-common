@@ -12,6 +12,7 @@ import { useStore } from '@store';
 import AnimatedModal from './AnimatedModal';
 import { useMessage } from '@controleonline/ui-common/src/react/components/MessageService';
 import DefaultUpload from '@controleonline/ui-default/src/react/components/upload/DefaultUpload';
+import { resolveSystemErrorMessage } from '@controleonline/ui-common/src/react/utils/systemErrorMessage';
 import styles from './AddImportModal.styles';
 
 const AddImportModal = ({ visible, onClose, onSuccess, context = {} }) => {
@@ -53,8 +54,11 @@ const AddImportModal = ({ visible, onClose, onSuccess, context = {} }) => {
             if (onSuccess) onSuccess();
             handleClose();
             return file;
-        } catch {
-            throw new Error(importErrorLabel);
+        } catch (error) {
+            const importFeedback =
+                resolveSystemErrorMessage(error) || importErrorLabel;
+            showError(importFeedback);
+            throw new Error(importFeedback);
         }
     };
 

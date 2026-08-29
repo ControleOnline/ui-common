@@ -30,6 +30,7 @@ import {
   normalizeDeviceType,
   normalizePrinterPort,
 } from '@controleonline/ui-common/src/react/utils/printerDevices';
+import {resolveSpoolDeviceIdsForRuntime} from '@controleonline/ui-common/src/react/utils/printRouting';
 
 const backgroundRuntimeModule = NativeModules?.BackgroundRuntime;
 
@@ -125,32 +126,17 @@ const BackgroundRuntimeBridge = () => {
     [companyDeviceConfigs, currentCompanyId, runtimeDeviceId],
   );
 
-  const spoolDeviceIds = useMemo(() => {
-    if (!runtimeDeviceId || isWebRuntimeDevice(runtimeDevice)) {
-      return [];
-    }
-
-    if (runtimeDeviceType === PDV_DEVICE_TYPE) {
-      return Array.from(
-        new Set([
-          runtimeDeviceId,
-          ...managedPrinters.map(printer => normalizeDeviceId(printer?.deviceId)),
-        ].filter(Boolean)),
-      );
-    }
-
-    if (runtimeDeviceType === DISPLAY_DEVICE_TYPE) {
-      return Array.from(
-        new Set(
-          managedPrinters
-            .map(printer => normalizeDeviceId(printer?.deviceId))
-            .filter(Boolean),
-        ),
-      );
-    }
-
-    return [];
-  }, [managedPrinters, runtimeDevice, runtimeDeviceId, runtimeDeviceType]);
+  const spoolDeviceIds = useMemo(
+    () =>
+      resolveSpoolDeviceIdsForRuntime({
+        runtimeDeviceId,
+        runtimeDeviceType,
+        isWebRuntime: isWebRuntimeDevice(runtimeDevice),
+        managedPrinters,
+        includeLocalDevice: true,
+      }),
+    [managedPrinters, runtimeDevice, runtimeDeviceId, runtimeDeviceType],
+  );
 
   const registration = useMemo(() => {
     if (!isLogged || !sessionToken || !runtimeDeviceId || !currentCompanyId) {

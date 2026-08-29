@@ -155,6 +155,117 @@ export const resolveFranchiseCompanyLabel = company =>
   String(company?.alias || company?.name || '').trim() ||
   `Franquia #${normalizeShopEntityId(company) || ''}`.trim();
 
+/**
+ * Resolve the franchise company entity from a people_link relative to the
+ * viewed franchisor/company id. DB rows may store the viewed company as
+ * `company` or as `people` (inverted association).
+ */
+export const extractFranchiseCompanyFromLink = (link, viewerCompanyId) => {
+  const viewerId = normalizeShopEntityId(viewerCompanyId);
+  const companySide = link?.company;
+  const peopleSide = link?.people;
+  const companyId = normalizeShopEntityId(companySide);
+  const peopleId = normalizeShopEntityId(peopleSide);
+
+  if (viewerId && companyId === viewerId) {
+    return peopleSide;
+  }
+  if (viewerId && peopleId === viewerId) {
+    return companySide;
+  }
+  // Fallback: franchisee is typically the `people` side of linkType=franchisee.
+  return peopleSide || companySide || null;
+};
+
+const fetchFranchiseLinksPage = async ({
+  companyId,
+  side,
+  page = 1,
+  itemsPerPage = SHOP_FRANCHISE_PAGE_SIZE,
+  search = '',
+}) => {
+  const id = normalizeShopEntityId(companyId);
+  if (!id) {
+    return [];
+  }
+
+  const params = {
+    page: Math.max(1, Number(page) || 1),
+    itemsPerPage: normalizeItemsPerPage(itemsPerPage),
+    linkType: SHOP_FRANCHISE_LINK_TYPE,
+    [side]: toEntityIri(id, 'people'),
+  };
+
+  if (String(search || '').trim()) {
+    params.search = String(search).trim();
+  }
+
+  const response = await api.fetch('people_links', {params});
+  return extractCollectionItems(response);
+};
+
+/**
+ * Authenticated franchise directory via people_links (both sides).
+ * GET /people?link.company=… does not reliably return franchisee PJs.
+ */
+const fetchFranchiseCompaniesFromLinks = async ({
+  companyId,
+  search = '',
+  itemsPerPage = SHOP_FRANCHISE_PAGE_SIZE,
+} = {}) => {
+  const viewerId = normalizeShopEntityId(companyId);
+  if (!viewerId) {
+    return [];
+  }
+
+  const pageSize = normalizeItemsPerPage(itemsPerPage);
+  const byId = new Map();
+
+  for (const side of ['company', 'people']) {
+    let page = 1;
+    while (true) {
+      const links = await fetchFranchiseLinksPage({
+        companyId: viewerId,
+        side,
+        page,
+        itemsPerPage: pageSize,
+        search,
+      });
+      const pageLinks = Array.isArray(links) ? links : [];
+
+      pageLinks.forEach(link => {
+        const franchise = extractFranchiseCompanyFromLink(link, viewerId);
+        const franchiseId = normalizeShopEntityId(franchise);
+        if (!franchiseId || franchiseId === viewerId) {
+          return;
+        }
+        if (!byId.has(franchiseId)) {
+          byId.set(
+            franchiseId,
+            typeof franchise === 'object' && franchise
+              ? franchise
+              : {id: franchiseId},
+          );
+        }
+      });
+
+      if (pageLinks.length < pageSize) {
+        break;
+      }
+      page += 1;
+    }
+  }
+
+  return Array.from(byId.values())
+    .map(normalizeFranchiseDirectoryItem)
+    .sort((left, right) =>
+      sortByLabel(
+        resolveFranchiseCompanyLabel(left),
+        resolveFranchiseCompanyLabel(right),
+      ),
+    );
+};
+
 export const fetchShopFranchiseCompanies = async ({
   companyId,
   search = '',
@@ -171,25 +282,29 @@ export const fetchShopFranchiseCompanies = async ({
     params.search = String(search).trim();
   }
 
-  const response = publicDirectory
-    ? await api.fetch('/shop/franchises', {params})
-    : await api.fetch('people', {
-        params: {
-          ...params,
-          'link.company': toEntityIri(companyId, 'people'),
-          'link.linkType': SHOP_FRANCHISE_LINK_TYPE,
-        },
-      });
-  const items = extractCollectionItems(response);
+  if (publicDirectory) {
+    const response = await api.fetch('/shop/franchises', {params});
+    const items = extractCollectionItems(response);
+    return items
+      .map(normalizeFranchiseDirectoryItem)
+      .sort((left, right) =>
+        sortByLabel(
+          resolveFranchiseCompanyLabel(left),
+          resolveFranchiseCompanyLabel(right),
+        ),
+      );
+  }
 
-  return items
-    .map(normalizeFranchiseDirectoryItem)
-    .sort((left, right) =>
-      sortByLabel(
-        resolveFranchiseCompanyLabel(left),
-        resolveFranchiseCompanyLabel(right),
-      ),
-    );
+  // Management path: people_links dual-side (company + people).
+  // Page param is ignored for dual aggregation; callers that need full list
+  // should use fetchAllShopFranchiseDirectory.
+  const all = await fetchFranchiseCompaniesFromLinks({
+    companyId,
+    search,
+    itemsPerPage,
+  });
+  const start = (Math.max(1, Number(page) || 1) - 1) * normalizeItemsPerPage(itemsPerPage);
+  return all.slice(start, start + normalizeItemsPerPage(itemsPerPage));
 };
 
 export const fetchAllShopFranchiseDirectory = async ({
@@ -198,37 +313,42 @@ export const fetchAllShopFranchiseDirectory = async ({
   search = '',
   itemsPerPage = SHOP_FRANCHISE_PAGE_SIZE,
 } = {}) => {
-  const normalizedItemsPerPage = normalizeItemsPerPage(itemsPerPage);
-  const items = [];
-  let page = 1;
+  if (publicDirectory) {
+    const normalizedItemsPerPage = normalizeItemsPerPage(itemsPerPage);
+    const items = [];
+    let page = 1;
 
-  while (true) {
-    const pageItems = await fetchShopFranchiseCompanies({
-      companyId,
-      publicDirectory,
-      search,
-      page,
-      itemsPerPage: normalizedItemsPerPage,
-    });
-    const normalizedPageItems = Array.isArray(pageItems) ? pageItems : [];
-
-    items.push(...normalizedPageItems);
-
-    if (normalizedPageItems.length < normalizedItemsPerPage) {
-      break;
+    while (true) {
+      const pageItems = await fetchShopFranchiseCompanies({
+        companyId,
+        publicDirectory: true,
+        search,
+        page,
+        itemsPerPage: normalizedItemsPerPage,
+      });
+      const normalizedPageItems = Array.isArray(pageItems) ? pageItems : [];
+      items.push(...normalizedPageItems);
+      if (normalizedPageItems.length < normalizedItemsPerPage) {
+        break;
+      }
+      page += 1;
     }
 
-    page += 1;
+    return items
+      .map(normalizeFranchiseDirectoryItem)
+      .sort((left, right) =>
+        sortByLabel(
+          resolveFranchiseCompanyLabel(left),
+          resolveFranchiseCompanyLabel(right),
+        ),
+      );
   }
 
-  return items
-    .map(normalizeFranchiseDirectoryItem)
-    .sort((left, right) =>
-      sortByLabel(
-        resolveFranchiseCompanyLabel(left),
-        resolveFranchiseCompanyLabel(right),
-      ),
-    );
+  return fetchFranchiseCompaniesFromLinks({
+    companyId,
+    search,
+    itemsPerPage,
+  });
 };
 
 export const fetchShopFranchiseAddresses = async ({
@@ -270,4 +390,5 @@ export const fetchShopFranchiseDirectory = async ({
 
   return companies.map(normalizeFranchiseDirectoryItem);
 };
+
 // TODO(store-first): quando este arquivo for mexido, mover a leitura para stores, remover api.fetch e evitar repassar dados em objetos quando o store ja resolver isso.

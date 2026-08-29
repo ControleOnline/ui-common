@@ -1,3 +1,5 @@
+import { mapPasswordErrorMessage } from './passwordPolicy'
+
 const normalizeText = value => String(value || '').trim()
 
 const resolveMessageList = items =>
@@ -23,19 +25,19 @@ export const resolveSystemErrorMessage = error => {
   }
 
   if (typeof error === 'string') {
-    return error.trim()
+    return mapPasswordErrorMessage(error.trim())
   }
 
   if (Array.isArray(error)) {
-    return resolveMessageList(error)
+    return mapPasswordErrorMessage(resolveMessageList(error))
   }
 
   if (Array.isArray(error?.message)) {
-    return resolveMessageList(error.message)
+    return mapPasswordErrorMessage(resolveMessageList(error.message))
   }
 
   if (Array.isArray(error?.violations)) {
-    return resolveMessageList(error.violations)
+    return mapPasswordErrorMessage(resolveMessageList(error.violations))
   }
 
   if (error?.response?.data) {
@@ -52,15 +54,17 @@ export const resolveSystemErrorMessage = error => {
     }
   }
 
-  return normalizeText(
-    error?.['hydra:description'] ||
-      error?.['hydra:title'] ||
-      error?.detail ||
-      error?.description ||
-      error?.errmsg ||
-      error?.error ||
-      error?.message ||
-      error?.title,
+  return mapPasswordErrorMessage(
+    normalizeText(
+      error?.['hydra:description'] ||
+        error?.['hydra:title'] ||
+        error?.detail ||
+        error?.description ||
+        error?.errmsg ||
+        error?.error ||
+        error?.message ||
+        error?.title,
+    ),
   )
 }
 

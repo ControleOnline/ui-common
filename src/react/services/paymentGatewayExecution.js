@@ -1,9 +1,11 @@
 import {runCieloCheckoutPayment} from './Cielo/Checkout';
 import {runInfinitePayCheckoutPayment} from './InfinitePay/Checkout';
+import {runGetnetCheckoutPayment} from './Getnet/Checkout';
 
 import {
   PAYMENT_GATEWAY_CIELO,
   PAYMENT_GATEWAY_INFINITE_PAY,
+  PAYMENT_GATEWAY_GETNET,
 } from '../utils/paymentDevices';
 
 export const normalizeGatewayPaymentError = (
@@ -79,6 +81,24 @@ export const runConfiguredGatewayPayment = async ({
 
     if (!response?.success || response?.code === 1 || response?.code === 2) {
       throw response;
+    }
+
+    return {
+      paidAmount,
+      response,
+    };
+  }
+
+  if (gateway === PAYMENT_GATEWAY_GETNET) {
+    const {response, paidAmount} = await runGetnetCheckoutPayment({
+      installments,
+      order,
+      payment,
+      total: resolvedTotal,
+    });
+
+    if (!response?.success) {
+      throw new Error(normalizeGatewayPaymentError(response?.result));
     }
 
     return {
