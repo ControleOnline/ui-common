@@ -400,7 +400,9 @@ const Imports = ({ context = {}, onClose }) => {
                 onSuccess={() => {
                     setCurrentPage(1);
                     fetchImports(searchQuery, 1);
+                    if (onImportComplete) onImportComplete();
                 }}
+                onImportComplete={onImportComplete}
             />
         </View>
     );

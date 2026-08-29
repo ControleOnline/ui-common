@@ -11,7 +11,8 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useStore } from '@store';
 import AnimatedModal from './AnimatedModal';
 import { useMessage } from '@controleonline/ui-common/src/react/components/MessageService';
-import DefaultUpload from '@controleonline/ui-default/src/react/components/upload/DefaultUpload';
+import ImportsPage from '@controleonline/ui-common/src/react/pages/Imports';
+import { useState } from 'react';
 import { resolveSystemErrorMessage } from '@controleonline/ui-common/src/react/utils/systemErrorMessage';
 import styles from './AddImportModal.styles';
 
@@ -66,16 +67,19 @@ const AddImportModal = ({
         buttonIcon: themeColors.buttonIcon || themeColors.buttonText,
     };
 
-
+    const [showImportList, setShowImportList] = useState(false);
+    const [importResult, setImportResult] = useState(null); // true = success, false = error
+    const [uploading, setUploading] = useState(false);
 
     const handleUploadImportFile = async ({ file }) => {
         if (_allowedExtensions.length > 0) {
-            const extensionRegex = new RegExp(`\\.(${_allowedExtensions.join('|')})$`, 'i');
+            const extensionRegex = new RegExp(`\\\\.(${_allowedExtensions.join('|')})$`, 'i');
             if (!file?.name?.toLowerCase().match(extensionRegex)) {
                 throw new Error(_helperLabel);
             }
         }
 
+        setUploading(true);
         try {
             await importActions.uploadImportFile({
                 file,
@@ -83,18 +87,25 @@ const AddImportModal = ({
                 peopleId: currentCompany.id,
             });
             showSuccess(_importSuccessLabel);
+            // Indicate successful import and open import list
+            setImportResult(true);
+            setShowImportList(true);
             if (onSuccess) onSuccess();
-            handleClose();
             return file;
         } catch (error) {
             const importFeedback =
                 resolveSystemErrorMessage(error) || _importErrorLabel;
             showError(importFeedback);
+            setImportResult(false);
             throw new Error(importFeedback);
+        } finally {
+            setUploading(false);
         }
     };
 
     const handleClose = () => {
+        setShowImportList(false);
+        setImportResult(null);
         onClose();
     };
 
@@ -112,53 +123,26 @@ const AddImportModal = ({
                     </TouchableOpacity>
                 </View>
 
-                <ScrollView style={styles.content}>
-                    <Text style={styles.label}>{_fileLabel}</Text>
-                    <DefaultUpload
-                        relationField="import"
-                        relationResource="imports"
-                        entityId={context.context || 'import'}
-                        companyId={currentCompany.id}
-                        context={`imports-${context.context || 'default'}`}
-                        libraryContexts={[`imports-${context.context || 'default'}`]}
-                        acceptedTypes={_acceptedTypes}
-                        fileType=""
-                        title={_fileLabel}
-                        triggerLabel={_selectFileLabel}
-                        managerTitle={_modalTitle}
-                        searchPlaceholder={_selectFileLabel}
-                        uploadButtonLabel={_selectFileLabel}
-                        emptyAttachmentLabel=""
-                        emptyLibraryLabel={_selectFileLabel}
-                        showInlineContent={false}
-                        uploadResultAlreadyAttached
-                        requireEntity={false}
-                        onUploadFile={handleUploadImportFile}
-                        renderTrigger={({openManager, uploading}) => (
-                            <TouchableOpacity
-                                onPress={openManager}
-                                disabled={uploading}
-                                style={[
-                                    styles.filePicker,
-                                    {
-                                        backgroundColor: buttonPalette.buttonBackground,
-                                        borderColor: buttonPalette.buttonBorder,
-                                    },
-                                ]}
-                            >
-                                <Text numberOfLines={1} style={[styles.fileName, { color: buttonPalette.buttonText }]}>
-                                    {selectFileLabel}
-                                </Text>
-                                {uploading ? (
-                                    <ActivityIndicator color={buttonPalette.buttonIcon} />
-                                ) : (
-                                    <Icon name="upload-file" size={22} color={buttonPalette.buttonIcon} />
-                                )}
-                            </TouchableOpacity>
-                        )}
-                    />
+                <ScrollView style={styles.content} keyboardShouldPersistTaps="always">
+    <TouchableOpacity
+        onPress={handleUploadImportFile}
+        style={[styles.filePicker, { backgroundColor: buttonPalette.buttonBackground, borderColor: buttonPalette.buttonBorder }]}
+    >
+        <Text numberOfLines={1} style={[styles.fileName, { color: buttonPalette.buttonText }]}>{_selectFileLabel}</Text>
+        {uploading ? (
+            <ActivityIndicator color={buttonPalette.buttonIcon} />
+        ) : (
+            <Icon name="upload-file" size={22} color={buttonPalette.buttonIcon} />
+        )}
+    </TouchableOpacity>
+    <TouchableOpacity
+        onPress={() => setShowImportList(true)}
+        style={[styles.filePicker, { marginTop: 10, backgroundColor: buttonPalette.buttonBackground, borderColor: buttonPalette.buttonBorder }]}
+    >
+        <Text style={[styles.fileName, { color: buttonPalette.buttonText }]}>{global.t?.t('imports', 'button', 'view_imports') || 'View Imports'}</Text>
+    </TouchableOpacity>
+</ScrollView>
 
-                </ScrollView>
 
                 <View style={styles.footer}>
                     <TouchableOpacity onPress={handleClose} style={styles.secondaryButton}>
