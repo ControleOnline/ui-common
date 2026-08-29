@@ -70,7 +70,6 @@ const normalizeSourceConfigs = source => {
 
 const normalizeTextValue = value => {
   let text = String(value ?? '').trim();
-  // Strip accidental surrounding quotes from double-encoded config values
   if (
     (text.startsWith('"') && text.endsWith('"') && text.length >= 2) ||
     (text.startsWith("'") && text.endsWith("'") && text.length >= 2)
@@ -87,9 +86,6 @@ const isConnectedValue = value =>
   String(value).trim().toLowerCase() === 'true';
 
 const toConfigRequestValue = value => {
-  // Plain strings must NOT be JSON.stringify'd here — the HTTP JSON body
-  // already serializes them. Stringify caused values to be stored with
-  // literal surrounding quotes (e.g. ""whsec_...""), breaking webhook auth.
   if (value === undefined || value === null) {
     return '';
   }
@@ -104,7 +100,6 @@ const toConfigRequestValue = value => {
 
   return String(value);
 };
-
 
 const getConfigFields = providerConfig => {
   if (!providerConfig) return [];
@@ -161,33 +156,31 @@ const openAuthorizationUrl = async authUrl => {
   await Linking.openURL(authUrl);
 };
 
-export default function IntegrationConfigPage({ route, navigation, embedded = false }) {
+const isMethodNotAllowed = error => {
+  const status = Number(error?.status || error?.code || error?.body?.status || 0);
+  const message = String(error?.message || '').toLowerCase();
+  return status === 404 || status === 405 || message.includes('method not allowed');
+};
+
+export default function IntegrationConfigPage({ route, embedded = false }) {
   const peopleStore = useStore('people');
   const themeStore = useStore('theme');
   const configsStore = useStore('configs');
-  const { currentCompany } = peopleStore.getters;
-  const { colors: themeColors } = themeStore.getters;
-  const configActions = configsStore.actions;
-  const { isSaving } = configsStore.getters;
+  const { currentCompany } = peopleStore.getters || {};
+  const { colors: themeColors } = themeStore.getters || {};
+  const configActions = configsStore.actions || {};
+  const { isSaving } = configsStore.getters || {};
   const { showError, showSuccess } = useToastMessage();
   const oauthNoticeRef = useRef('');
 
   const providerKey = useMemo(
-    () =>
-      route?.params?.providerKey ||
-      ROUTE_PROVIDER_MAP[route?.name] ||
-      '',
+    () => route?.params?.providerKey || ROUTE_PROVIDER_MAP[route?.name] || '',
     [route?.name, route?.params?.providerKey],
   );
-  const providerConfig = useMemo(
-    () => getIntegrationConfig(providerKey),
-    [providerKey],
-  );
+  const providerConfig = useMemo(() => getIntegrationConfig(providerKey), [providerKey]);
   const configFields = useMemo(() => getConfigFields(providerConfig), [providerConfig]);
   const fiscalTabs = providerConfig?.tabs || [];
-  const [activeFiscalTab, setActiveFiscalTab] = useState(
-    () => fiscalTabs[0]?.key || 'general',
-  );
+  const [activeFiscalTab, setActiveFiscalTab] = useState(() => fiscalTabs[0]?.key || 'general');
   const activeTabDef = useMemo(
     () => fiscalTabs.find(tab => tab.key === activeFiscalTab) || fiscalTabs[0] || null,
     [activeFiscalTab, fiscalTabs],
@@ -202,28 +195,16 @@ export default function IntegrationConfigPage({ route, navigation, embedded = fa
       setActiveFiscalTab(fiscalTabs[0].key);
     }
   }, [activeFiscalTab, fiscalTabs]);
+
   const returnPath = useMemo(() => {
-    const routePath = normalizeTextValue(
-      route?.params?.return_path || route?.params?.returnPath || '',
-    );
-
-    if (routePath) {
-      return routePath.startsWith('/') ? routePath : `/${routePath}`;
-    }
-
+    const routePath = normalizeTextValue(route?.params?.return_path || route?.params?.returnPath || '');
+    if (routePath) return routePath.startsWith('/') ? routePath : `/${routePath}`;
     const normalizedRoutePath = routeNameToPath(route?.name);
     return normalizedRoutePath ? `/${normalizedRoutePath}` : '/uber-integration-page';
   }, [route?.name, route?.params?.returnPath, route?.params?.return_path]);
 
   const brandColors = useMemo(
-    () =>
-      resolveThemePalette(
-        {
-          ...themeColors,
-          ...(currentCompany?.theme?.colors || {}),
-        },
-        colors,
-      ),
+    () => resolveThemePalette({ ...themeColors, ...(currentCompany?.theme?.colors || {}) }, colors),
     [themeColors, currentCompany?.id],
   );
 
@@ -232,48 +213,33 @@ export default function IntegrationConfigPage({ route, navigation, embedded = fa
   const [authLoading, setAuthLoading] = useState(false);
   const [configValues, setConfigValues] = useState({});
   const [integrationSummary, setIntegrationSummary] = useState(null);
+  const [saveNotice, setSaveNotice] = useState('');
 
-  const providerId = currentCompany?.id;
-  const providerIri = useMemo(
-    () => (providerId ? `/people/${String(providerId).replace(/\D/g, '')}` : ''),
-    [providerId],
-  );
+  const providerId = useMemo(() => {
+    const fromRoute = String(route?.params?.companyId || route?.params?.clientId || '').replace(/\D/g, '');
+    if (fromRoute) return fromRoute;
+    if (embedded) return '';
+    return String(currentCompany?.id || '').replace(/\D/g, '');
+  }, [embedded, route?.params?.clientId, route?.params?.companyId, currentCompany?.id]);
 
-  const syncConfigValues = useCallback(
-    source => {
-      if (!providerConfig) {
-        setConfigValues({});
-        return;
-      }
+  const providerIri = providerId ? `/people/${providerId}` : '';
 
-      setConfigValues(buildFieldValues(providerConfig, source));
-    },
-    [providerConfig],
-  );
-
-  useEffect(() => {
-    syncConfigValues(currentCompany?.configs);
-  }, [currentCompany?.configs, syncConfigValues]);
+  const syncConfigValues = useCallback(source => {
+    if (!providerConfig) {
+      setConfigValues({});
+      return;
+    }
+    setConfigValues(buildFieldValues(providerConfig, source));
+  }, [providerConfig]);
 
   useEffect(() => {
     const oauthStatus = normalizeTextValue(route?.params?.oauth_status).toLowerCase();
     const oauthError = normalizeTextValue(route?.params?.oauth_error);
     const oauthKey = `${oauthStatus}|${oauthError}`;
-
-    if (!oauthStatus || oauthNoticeRef.current === oauthKey) {
-      return;
-    }
-
+    if (!oauthStatus || oauthNoticeRef.current === oauthKey) return;
     oauthNoticeRef.current = oauthKey;
-
-    if (oauthStatus === 'success') {
-      showSuccess('Uber conectado com sucesso.');
-      return;
-    }
-
-    if (oauthStatus === 'error') {
-      showError(formatUberOAuthError(oauthError));
-    }
+    if (oauthStatus === 'success') showSuccess('Uber conectado com sucesso.');
+    if (oauthStatus === 'error') showError(formatUberOAuthError(oauthError));
   }, [route?.params?.oauth_error, route?.params?.oauth_status, showError, showSuccess]);
 
   const loadPageData = useCallback(async ({ showLoading = true } = {}) => {
@@ -282,102 +248,79 @@ export default function IntegrationConfigPage({ route, navigation, embedded = fa
       setLoading(false);
       return;
     }
-
-    if (showLoading) {
-      setLoading(true);
-    }
-
+    if (showLoading) setLoading(true);
     try {
       const integrationPromise = api.fetch('/marketplace/integrations', {
-        params: {
-          provider_id: providerId,
-        },
+        params: { provider_id: providerId },
       });
-
       if (configFields.length > 0) {
         const [configResponse, integrationResponse] = await Promise.all([
-          api.fetch('/configs', {
-            params: {
-              people: providerIri,
-            },
-          }),
+          api.fetch('/configs', { params: { people: providerIri } }),
           integrationPromise,
         ]);
-
         syncConfigValues(parseIntegrationCollection(configResponse));
-        setIntegrationSummary(
-          getIntegrationByKey(integrationResponse, providerConfig.key),
-        );
+        setIntegrationSummary(getIntegrationByKey(integrationResponse, providerConfig.key));
         return;
       }
-
-      const integrationResponse = await integrationPromise;
-      setIntegrationSummary(
-        getIntegrationByKey(integrationResponse, providerConfig.key),
-      );
+      setIntegrationSummary(getIntegrationByKey(await integrationPromise, providerConfig.key));
     } catch (error) {
       showError(formatApiError(error));
-      syncConfigValues(currentCompany?.configs);
       setIntegrationSummary(null);
     } finally {
-      if (showLoading) {
-        setLoading(false);
-      }
+      if (showLoading) setLoading(false);
     }
-  }, [
-    configFields.length,
-    currentCompany?.configs,
-    providerConfig,
-    providerIri,
-    providerId,
-    showError,
-    syncConfigValues,
-  ]);
+  }, [configFields.length, providerConfig, providerIri, providerId, showError, syncConfigValues]);
 
-  useFocusEffect(
-    useCallback(() => {
-      loadPageData();
-    }, [loadPageData]),
-  );
+  useFocusEffect(useCallback(() => { loadPageData(); }, [loadPageData]));
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    try {
-      await loadPageData({ showLoading: false });
-    } finally {
-      setRefreshing(false);
-    }
+    try { await loadPageData({ showLoading: false }); } finally { setRefreshing(false); }
   }, [loadPageData]);
 
   const updateField = useCallback((fieldKey, value) => {
-    setConfigValues(currentValues => ({
-      ...currentValues,
-      [fieldKey]: value,
-    }));
+    setConfigValues(currentValues => ({ ...currentValues, [fieldKey]: value }));
   }, []);
 
+  const persistConfigs = useCallback(async payload => {
+    if (typeof configActions.addManyConfigs === 'function') {
+      try {
+        return await configActions.addManyConfigs(payload);
+      } catch (error) {
+        if (!isMethodNotAllowed(error)) throw error;
+      }
+    }
+    if (typeof configActions.addConfigs !== 'function') {
+      throw new Error('Nao foi possivel salvar: acao de configs indisponivel.');
+    }
+    for (const item of payload.configs) {
+      await configActions.addConfigs({
+        configKey: item.configKey,
+        configValue: item.configValue,
+        people: payload.people,
+        module: payload.module,
+        visibility: payload.visibility,
+      });
+    }
+    return true;
+  }, [configActions]);
+
   const handleOAuthConnect = useCallback(async () => {
-    if (!providerIri || !providerConfig || !providerConfig.oauthConnect) {
+    if (!providerIri || !providerConfig?.oauthConnect) {
       showError('Nao foi possivel identificar a integracao selecionada.');
       return;
     }
-
     setAuthLoading(true);
     try {
       const response = await api.fetch(providerConfig.authorizationEndpoint, {
         method: 'POST',
-        body: {
-          provider_id: providerId,
-          return_path: returnPath,
-        },
+        body: { provider_id: providerId, return_path: returnPath },
       });
-
       const authUrl = extractAuthorizationUrl(response);
       if (!authUrl) {
         showError('Nao foi possivel iniciar o login do Uber.');
         return;
       }
-
       await openAuthorizationUrl(authUrl);
       showSuccess('Abrindo login do Uber.');
     } catch (error) {
@@ -394,45 +337,36 @@ export default function IntegrationConfigPage({ route, navigation, embedded = fa
       ? requiredKeys.every(fieldKey => normalizeTextValue(configValues[fieldKey]) !== '')
       : false;
   const statusTone = connected ? '#16A34A' : '#e67e22';
-  const statusText = connected ? 'Conectado' : 'Pendente';
-  const editable = Boolean(providerIri && providerConfig && !isSaving && !loading && !providerConfig.oauthConnect);
-  const actionLoading = providerConfig?.oauthConnect ? authLoading : isSaving;
-  const actionDisabled = providerConfig?.oauthConnect ? authLoading || loading : !editable;
+  const editable = Boolean(providerIri && providerConfig && !providerConfig.oauthConnect);
+  const actionLoading = providerConfig?.oauthConnect ? authLoading : Boolean(isSaving);
+  const actionDisabled = providerConfig?.oauthConnect ? authLoading || loading : !editable || actionLoading;
 
   const saveIntegration = useCallback(async () => {
     if (!providerIri || !providerConfig || providerConfig.oauthConnect) {
       showError('Nao foi possivel identificar a integracao selecionada.');
       return;
     }
-
     const configs = configFields.map(field => ({
       configKey: field.key,
       configValue: toConfigRequestValue(normalizeTextValue(configValues[field.key])),
     }));
-
+    setSaveNotice('');
     try {
-      await configActions.addManyConfigs({
+      await persistConfigs({
         configs,
         people: providerIri,
         module: 4,
         visibility: 'public',
       });
-
+      setSaveNotice('Configuracoes fiscais salvas nesta empresa.');
       showSuccess(`${providerConfig.label} salvo com sucesso.`);
       await loadPageData({ showLoading: false });
     } catch (error) {
-      showError(error?.message || 'Nao foi possivel salvar a integracao.');
+      const message = error?.message || 'Nao foi possivel salvar a integracao.';
+      setSaveNotice(message);
+      showError(message);
     }
-  }, [
-    configActions,
-    configFields,
-    configValues,
-    loadPageData,
-    providerConfig,
-    providerIri,
-    showError,
-    showSuccess,
-  ]);
+  }, [configFields, configValues, loadPageData, persistConfigs, providerConfig, providerIri, showError, showSuccess]);
 
   if (!providerConfig) {
     return (
@@ -440,9 +374,7 @@ export default function IntegrationConfigPage({ route, navigation, embedded = fa
         <View style={styles.centerState}>
           <Icon name="alert-triangle" size={32} color="#e67e22" />
           <Text style={styles.centerStateTitle}>Integracao indisponivel</Text>
-          <Text style={styles.centerStateText}>
-            A tela solicitada nao possui configuracao cadastrada.
-          </Text>
+          <Text style={styles.centerStateText}>A tela solicitada nao possui configuracao cadastrada.</Text>
         </View>
       </SafeAreaView>
     );
@@ -453,10 +385,8 @@ export default function IntegrationConfigPage({ route, navigation, embedded = fa
       <SafeAreaView style={styles.container} edges={['bottom']}>
         <View style={styles.centerState}>
           <Icon name="building" size={32} color="#94A3B8" />
-          <Text style={styles.centerStateTitle}>Selecione uma empresa</Text>
-          <Text style={styles.centerStateText}>
-            A configuracao da integracao depende da empresa ativa.
-          </Text>
+          <Text style={styles.centerStateTitle}>Empresa nao identificada</Text>
+          <Text style={styles.centerStateText}>Abra a ficha da empresa para gravar as configuracoes fiscais nela.</Text>
         </View>
       </SafeAreaView>
     );
@@ -468,9 +398,7 @@ export default function IntegrationConfigPage({ route, navigation, embedded = fa
         <View style={styles.centerState}>
           <ActivityIndicator size="large" color={providerConfig.accent} />
           <Text style={styles.centerStateTitle}>Carregando integracao</Text>
-          <Text style={styles.centerStateText}>
-            Buscando as credenciais salvas para a empresa ativa.
-          </Text>
+          <Text style={styles.centerStateText}>Buscando as credenciais salvas desta empresa.</Text>
         </View>
       </SafeAreaView>
     );
@@ -481,22 +409,18 @@ export default function IntegrationConfigPage({ route, navigation, embedded = fa
       <ScrollView
         contentContainerStyle={styles.scroll}
         showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={providerConfig.accent} />
-        }>
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={providerConfig.accent} />}>
         {!embedded ? (
-        <View style={[styles.heroCard, shadowStyle, { backgroundColor: providerConfig.accent }]}>
-          <View style={styles.heroCopy}>
-            <Text style={styles.heroEyebrow}>INTEGRACAO</Text>
-            <Text style={styles.heroTitle}>{providerConfig.label}</Text>
-            <Text style={styles.heroText}>
-              {providerConfig.description}
-            </Text>
+          <View style={[styles.heroCard, shadowStyle, { backgroundColor: providerConfig.accent }]}>
+            <View style={styles.heroCopy}>
+              <Text style={styles.heroEyebrow}>INTEGRACAO</Text>
+              <Text style={styles.heroTitle}>{providerConfig.label}</Text>
+              <Text style={styles.heroText}>{providerConfig.description}</Text>
+            </View>
+            <View style={styles.heroBadge}>
+              <Icon name={providerConfig.icon} size={22} color={providerConfig.accent} />
+            </View>
           </View>
-          <View style={styles.heroBadge}>
-            <Icon name={providerConfig.icon} size={22} color={providerConfig.accent} />
-          </View>
-        </View>
         ) : (
           <View style={[styles.embeddedHeader, shadowStyle]}>
             <Text style={styles.embeddedTitle}>Configuracoes fiscais</Text>
@@ -504,53 +428,33 @@ export default function IntegrationConfigPage({ route, navigation, embedded = fa
         )}
 
         {!embedded ? (
-        <View style={[styles.statusCard, shadowStyle]}>
-          <View style={styles.statusHeader}>
-            <View style={styles.statusCopy}>
-              <Text style={styles.sectionTitle}>Status</Text>
-              <Text style={styles.sectionSubtitle}>
-                {providerConfig.oauthConnect
-                  ? 'A integracao fica conectada quando o login do Uber termina e o store e salvo automaticamente.'
-                  : 'A integracao so aparece como conectada quando todos os campos obrigatorios foram salvos na empresa ativa.'}
-              </Text>
-            </View>
-
-            <View
-              style={[
-                styles.statusBadge,
-                { backgroundColor: withOpacity(statusTone, 0.12) },
-              ]}>
-              <Text style={[styles.statusBadgeText, { color: statusTone }]}>
-                {statusText}
-              </Text>
+          <View style={[styles.statusCard, shadowStyle]}>
+            <View style={styles.statusHeader}>
+              <View style={styles.statusCopy}>
+                <Text style={styles.sectionTitle}>Status</Text>
+                <Text style={styles.sectionSubtitle}>
+                  {providerConfig.oauthConnect
+                    ? 'A integracao fica conectada quando o login do Uber termina e o store e salvo automaticamente.'
+                    : 'A integracao so aparece como conectada quando todos os campos obrigatorios foram salvos nesta empresa.'}
+                </Text>
+              </View>
+              <View style={[styles.statusBadge, { backgroundColor: withOpacity(statusTone, 0.12) }]}>
+                <Text style={[styles.statusBadgeText, { color: statusTone }]}>{connected ? 'Conectado' : 'Pendente'}</Text>
+              </View>
             </View>
           </View>
-        </View>
         ) : null}
 
         <View style={[styles.formCard, shadowStyle]}>
           <Text style={styles.cardTitle}>
-            {providerConfig.oauthConnect
-              ? 'Conexao'
-              : fiscalTabs.length
-                ? (activeTabDef?.label || 'Configuracoes')
-                : 'Credenciais'}
+            {providerConfig.oauthConnect ? 'Conexao' : fiscalTabs.length ? (activeTabDef?.label || 'Configuracoes') : 'Credenciais'}
           </Text>
-          {!embedded ? (
-            <Text style={styles.cardSubtitle}>
-              {providerConfig.oauthConnect
-                ? 'Use o login oficial do Uber. A store sera localizada e gravada automaticamente na empresa ativa.'
-                : 'Salve as credenciais na empresa ativa. O hub de integracoes volta a mostrar o status correto quando voce retornar para a lista.'}
-            </Text>
-          ) : null}
 
           {providerConfig.oauthConnect ? (
             <View style={styles.fieldList}>
               <View style={styles.fieldGroup}>
                 <Text style={styles.fieldLabel}>Uber OAuth</Text>
-                <Text style={styles.fieldKey}>
-                  Nao ha campos manuais. O login autoriza o app e salva o store automaticamente.
-                </Text>
+                <Text style={styles.fieldKey}>Nao ha campos manuais. O login autoriza o app e salva o store automaticamente.</Text>
               </View>
             </View>
           ) : (
@@ -565,21 +469,13 @@ export default function IntegrationConfigPage({ route, navigation, embedded = fa
                         style={[styles.subTabButton, selected && styles.subTabButtonActive]}
                         activeOpacity={0.85}
                         onPress={() => setActiveFiscalTab(tab.key)}>
-                        <Text
-                          style={[
-                            styles.subTabLabel,
-                            selected && styles.subTabLabelActive,
-                          ]}>
-                          {tab.label}
-                        </Text>
+                        <Text style={[styles.subTabLabel, selected && styles.subTabLabelActive]}>{tab.label}</Text>
                       </TouchableOpacity>
                     );
                   })}
                 </View>
               ) : null}
-              {activeTabDef?.description ? (
-                <Text style={styles.tabDescription}>{activeTabDef.description}</Text>
-              ) : null}
+              {activeTabDef?.description ? <Text style={styles.tabDescription}>{activeTabDef.description}</Text> : null}
               {visibleFields.map(field => (
                 <View key={field.key} style={styles.fieldGroup}>
                   <Text style={styles.fieldLabel}>{field.label}</Text>
@@ -591,34 +487,22 @@ export default function IntegrationConfigPage({ route, navigation, embedded = fa
                         return (
                           <TouchableOpacity
                             key={String(option.value)}
-                            style={[
-                              styles.selectOption,
-                              selected && styles.selectOptionActive,
-                              !editable && styles.inputDisabled,
-                            ]}
+                            style={[styles.selectOption, selected && styles.selectOptionActive, !editable && styles.inputDisabled]}
                             disabled={!editable}
                             activeOpacity={0.85}
                             onPress={() => updateField(field.key, String(option.value))}>
-                            <Text
-                              style={[
-                                styles.selectOptionText,
-                                selected && styles.selectOptionTextActive,
-                              ]}>
-                              {option.label}
-                            </Text>
+                            <Text style={[styles.selectOptionText, selected && styles.selectOptionTextActive]}>{option.label}</Text>
                           </TouchableOpacity>
                         );
                       })}
                     </View>
                   ) : field.type === 'file' ? (
                     <View style={styles.fileFieldWrap}>
-                      {configValues[field.key] ? (
-                        <Text style={styles.fieldHint}>
-                          Arquivo vinculado (id: {String(configValues[field.key]).replace(/\D/g, '') || configValues[field.key]})
-                        </Text>
-                      ) : (
-                        <Text style={styles.fieldHint}>Nenhum certificado vinculado.</Text>
-                      )}
+                      <Text style={styles.fieldHint}>
+                        {configValues[field.key]
+                          ? `Arquivo vinculado (id: ${String(configValues[field.key]).replace(/\D/g, '') || configValues[field.key]})`
+                          : 'Nenhum certificado vinculado.'}
+                      </Text>
                       <DefaultUpload
                         relationStoreName="people"
                         relationField="people"
@@ -651,21 +535,15 @@ export default function IntegrationConfigPage({ route, navigation, embedded = fa
                             entityId: entityId || providerId,
                           });
                           const id = extractFileId(uploaded);
-                          const iri = toFileIri(uploaded);
-                          const value = id ? String(id) : iri || '';
-                          if (!value) {
-                            throw new Error('Upload sem identificador de arquivo.');
-                          }
+                          const value = id ? String(id) : toFileIri(uploaded) || '';
+                          if (!value) throw new Error('Upload sem identificador de arquivo.');
                           updateField(field.key, value);
                           return uploaded;
                         }}
                         onAttachFile={async fileObj => {
                           const id = extractFileId(fileObj);
-                          const iri = toFileIri(fileObj);
-                          const value = id ? String(id) : iri || '';
-                          if (!value) {
-                            throw new Error('Arquivo sem identificador.');
-                          }
+                          const value = id ? String(id) : toFileIri(fileObj) || '';
+                          if (!value) throw new Error('Arquivo sem identificador.');
                           updateField(field.key, value);
                           return fileObj;
                         }}
@@ -675,22 +553,13 @@ export default function IntegrationConfigPage({ route, navigation, embedded = fa
                         }}
                         renderTrigger={({ openManager, uploading }) => (
                           <TouchableOpacity
-                            style={[
-                              styles.filePickerButton,
-                              !editable && styles.inputDisabled,
-                            ]}
+                            style={[styles.filePickerButton, !editable && styles.inputDisabled]}
                             disabled={!editable || uploading}
                             activeOpacity={0.85}
                             onPress={openManager}>
-                            {uploading ? (
-                              <ActivityIndicator color="#166534" />
-                            ) : (
-                              <Icon name="folder" size={16} color="#166534" />
-                            )}
+                            {uploading ? <ActivityIndicator color="#166534" /> : <Icon name="folder" size={16} color="#166534" />}
                             <Text style={styles.filePickerButtonText}>
-                              {configValues[field.key]
-                                ? 'Trocar certificado (gerenciador)'
-                                : 'Selecionar / enviar certificado'}
+                              {configValues[field.key] ? 'Trocar certificado (gerenciador)' : 'Selecionar / enviar certificado'}
                             </Text>
                           </TouchableOpacity>
                         )}
@@ -698,10 +567,7 @@ export default function IntegrationConfigPage({ route, navigation, embedded = fa
                     </View>
                   ) : (
                     <TextInput
-                      style={[
-                        styles.input,
-                        !editable && styles.inputDisabled,
-                      ]}
+                      style={[styles.input, !editable && styles.inputDisabled]}
                       value={configValues[field.key] || ''}
                       onChangeText={value => updateField(field.key, value)}
                       editable={editable}
@@ -716,24 +582,15 @@ export default function IntegrationConfigPage({ route, navigation, embedded = fa
             </View>
           )}
 
+          {saveNotice ? <Text style={styles.fieldHint}>{saveNotice}</Text> : null}
           <TouchableOpacity
-            style={[
-              styles.saveButton,
-              { backgroundColor: providerConfig.accent },
-              actionDisabled && styles.saveButtonDisabled,
-            ]}
+            style={[styles.saveButton, { backgroundColor: providerConfig.accent }, actionDisabled && styles.saveButtonDisabled]}
             disabled={actionDisabled}
             activeOpacity={0.9}
             onPress={providerConfig.oauthConnect ? handleOAuthConnect : saveIntegration}>
-            {actionLoading ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <Icon name={providerConfig.oauthConnect ? 'log-in' : 'save'} size={16} color="#FFFFFF" />
-            )}
+            {actionLoading ? <ActivityIndicator color="#FFFFFF" /> : <Icon name={providerConfig.oauthConnect ? 'log-in' : 'save'} size={16} color="#FFFFFF" />}
             <Text style={styles.saveButtonText}>
-              {providerConfig.oauthConnect
-                ? providerConfig.connectLabel || 'Conectar'
-                : providerConfig.saveLabel}
+              {actionLoading ? 'Salvando...' : (providerConfig.oauthConnect ? providerConfig.connectLabel || 'Conectar' : providerConfig.saveLabel)}
             </Text>
           </TouchableOpacity>
         </View>
@@ -741,4 +598,3 @@ export default function IntegrationConfigPage({ route, navigation, embedded = fa
     </SafeAreaView>
   );
 }
-// TODO(store-first): quando este arquivo for mexido, mover a leitura para stores, remover api.fetch e evitar repassar dados em objetos quando o store ja resolver isso.
