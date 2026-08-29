@@ -35,7 +35,7 @@ export const getConfigFields = providerConfig => {
   return providerConfig.fields || [];
 };
 
-export const buildFieldValues = (providerConfig, source) => {
+export const mergeTabValues = (fields, source, current = {}) => {
   const sourceMap = Array.isArray(source)
     ? source.reduce((acc, item) => {
         const key = String(item?.configKey || '').trim();
@@ -44,22 +44,24 @@ export const buildFieldValues = (providerConfig, source) => {
       }, {})
     : source && typeof source === 'object' ? source : {};
 
-  return getConfigFields(providerConfig).reduce((acc, field) => {
-    acc[field.key] = normalizeTextValue(sourceMap[field.key]);
-    return acc;
-  }, {});
+  const next = { ...current };
+  (fields || []).forEach(field => {
+    next[field.key] = Object.prototype.hasOwnProperty.call(sourceMap, field.key)
+      ? normalizeTextValue(sourceMap[field.key])
+      : normalizeTextValue(next[field.key]);
+  });
+  return next;
 };
 
-export const resolveProviderId = ({ route, currentCompany }) => {
-  const routeCompanyId = String(route?.params?.companyId || '').replace(/\D/g, '');
-  if (routeCompanyId) return Number(routeCompanyId);
+export const buildFieldValues = (providerConfig, source) =>
+  mergeTabValues(getConfigFields(providerConfig), source, {});
 
-  const currentCompanyId = String(currentCompany?.id || '').replace(/\D/g, '');
-  return currentCompanyId ? Number(currentCompanyId) : null;
+export const resolveProviderId = ({ route, currentCompany, embedded = false }) => {
+  const fromRoute = String(route?.params?.companyId || route?.params?.clientId || '').replace(/\D/g, '');
+  if (fromRoute) return fromRoute;
+  if (embedded) return '';
+  return String(currentCompany?.id || '').replace(/\D/g, '');
 };
-
-export const resolveFallbackConfigs = ({ providerId, currentCompany }) =>
-  Number(providerId) === Number(currentCompany?.id) ? currentCompany?.configs || {} : {};
 
 export const isConnectedValue = value =>
   value === true || value === 1 || value === '1' || String(value).trim().toLowerCase() === 'true';
@@ -92,4 +94,10 @@ export const openAuthorizationUrl = async authUrl => {
     return;
   }
   await Linking.openURL(authUrl);
+};
+
+export const isMethodNotAllowed = error => {
+  const status = Number(error?.status || error?.code || error?.body?.status || 0);
+  const message = String(error?.message || '').toLowerCase();
+  return status === 404 || status === 405 || message.includes('method not allowed');
 };

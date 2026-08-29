@@ -6,6 +6,7 @@ const catalog = fs.readFileSync(new URL('../../../react/pages/integrationsCatalo
 const page = fs.readFileSync(new URL('../../../react/pages/IntegrationConfigPage.js', import.meta.url), 'utf8');
 const fields = fs.readFileSync(new URL('../../../react/pages/IntegrationConfigFields.js', import.meta.url), 'utf8');
 const utils = fs.readFileSync(new URL('../../../react/pages/IntegrationConfigPage.utils.js', import.meta.url), 'utf8');
+const fetchConfigs = fs.readFileSync(new URL('../../../react/pages/fetchPeopleConfigs.js', import.meta.url), 'utf8');
 
 test('Receita Federal catalog exposes company fiscal configuration', () => {
   assert.match(catalog, /key: 'receita-federal'/);
@@ -16,6 +17,8 @@ test('Receita Federal catalog exposes company fiscal configuration', () => {
   assert.match(catalog, /receita-federal-certificate-password/);
   assert.match(catalog, /secureTextEntry: true/);
   assert.match(catalog, /\.pfx,\.p12,application\/x-pkcs12/);
+  assert.match(catalog, /key: 'general'/);
+  assert.match(catalog, /key: 'cte'/);
 });
 
 test('Receita Federal route resolves without relying only on route params', () => {
@@ -25,12 +28,24 @@ test('Receita Federal route resolves without relying only on route params', () =
 
 test('embedded fiscal configuration keeps reads and writes on the company being edited', () => {
   assert.match(utils, /route\?\.params\?\.companyId/);
+  assert.match(utils, /route\?\.params\?\.clientId/);
   assert.match(utils, /resolveProviderId/);
-  assert.match(utils, /resolveFallbackConfigs/);
-  assert.match(page, /resolveProviderId\(\{ route, currentCompany \}\)/);
-  assert.match(page, /api\.fetch\('\/configs', \{ params: \{ people: providerIri \} \}\)/);
-  assert.match(page, /addManyConfigs\(\{ configs, people: providerIri/);
-  assert.match(page, /syncConfigValues\(fallbackConfigs\)/);
+  assert.match(utils, /if \(embedded\) return ''/);
+  assert.doesNotMatch(utils, /resolveFallbackConfigs/);
+  assert.doesNotMatch(page, /fallbackConfigs/);
+  assert.match(page, /resolveProviderId\(\{ route, currentCompany, embedded \}\)/);
+  assert.match(page, /fetchPeopleConfigs/);
+  assert.match(page, /visibleFields/);
+  assert.match(page, /persistConfigs\(\{ configs, people: providerIri/);
+});
+
+test('fiscal tabs load and save only the current tab keys', () => {
+  assert.match(fetchConfigs, /configKey: keys/);
+  assert.match(fetchConfigs, /itemsPerPage: keys\.length/);
+  assert.match(page, /configKeys: tabKeys/);
+  assert.match(page, /visibleFields\.map\(field => \(\{/);
+  assert.match(page, /Salvar \$\{activeTabDef\?\.label/);
+  assert.doesNotMatch(page, /itemsPerPage: 100/);
 });
 
 test('certificate picker remains scoped to the active company', () => {
