@@ -9,19 +9,20 @@ import useToastMessage from '@controleonline/ui-crm/src/react/hooks/useToastMess
 import { useStore } from '@store';
 import { colors } from '@controleonline/../../src/styles/colors';
 import { resolveThemePalette, withOpacity } from '@controleonline/../../src/styles/branding';
-import { getIntegrationConfig, getIntegrationByKey, parseIntegrationCollection } from './integrationsCatalog';
+import { getIntegrationConfig, getIntegrationByKey } from './integrationsCatalog';
+import { fetchPeopleConfigs } from './fetchPeopleConfigs';
 import IntegrationConfigFields from './IntegrationConfigFields';
 import {
   ROUTE_PROVIDER_MAP,
-  buildFieldValues,
   extractAuthorizationUrl,
   formatApiError,
   formatUberOAuthError,
   getConfigFields,
   isConnectedValue,
+  isMethodNotAllowed,
+  mergeTabValues,
   normalizeTextValue,
   openAuthorizationUrl,
-  resolveFallbackConfigs,
   resolveProviderId,
   routeNameToPath,
   toConfigRequestValue,
@@ -50,7 +51,7 @@ export default function IntegrationConfigPage({ route, embedded = false }) {
   const configsStore = useStore('configs');
   const { currentCompany } = peopleStore.getters;
   const { colors: themeColors } = themeStore.getters;
-  const configActions = configsStore.actions;
+  const configActions = configsStore.actions || {};
   const { isSaving } = configsStore.getters;
   const { showError, showSuccess } = useToastMessage();
   const oauthNoticeRef = useRef('');
@@ -71,6 +72,10 @@ export default function IntegrationConfigPage({ route, embedded = false }) {
     () => (activeTabDef?.fields?.length ? activeTabDef.fields : configFields),
     [activeTabDef, configFields],
   );
+  const visibleFieldKeys = useMemo(
+    () => visibleFields.map(field => field.key).join('|'),
+    [visibleFields],
+  );
 
   useEffect(() => {
     if (fiscalTabs.length && !fiscalTabs.some(tab => tab.key === activeFiscalTab)) setActiveFiscalTab(fiscalTabs[0].key);
@@ -88,28 +93,22 @@ export default function IntegrationConfigPage({ route, embedded = false }) {
     [themeColors, currentCompany?.id],
   );
   const [loading, setLoading] = useState(true);
+  const [tabLoading, setTabLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [authLoading, setAuthLoading] = useState(false);
   const [configValues, setConfigValues] = useState({});
   const [integrationSummary, setIntegrationSummary] = useState(null);
 
-  // Company details can edit a company that is not the globally selected one.
-  // The embedded route id is authoritative for all fiscal reads and writes.
   const providerId = useMemo(
-    () => resolveProviderId({ route, currentCompany }),
-    [route?.params?.companyId, currentCompany?.id],
+    () => resolveProviderId({ route, currentCompany, embedded }),
+    [embedded, route?.params?.companyId, route?.params?.clientId, currentCompany?.id],
   );
   const providerIri = useMemo(() => (providerId ? `/people/${providerId}` : ''), [providerId]);
-  const fallbackConfigs = useMemo(
-    () => resolveFallbackConfigs({ providerId, currentCompany }),
-    [providerId, currentCompany?.id, currentCompany?.configs],
-  );
 
-  const syncConfigValues = useCallback(source => {
-    setConfigValues(providerConfig ? buildFieldValues(providerConfig, source) : {});
-  }, [providerConfig]);
+  useEffect(() => {
+    setConfigValues({});
+  }, [providerIri]);
 
-  useEffect(() => syncConfigValues(fallbackConfigs), [fallbackConfigs, syncConfigValues]);
   useEffect(() => {
     const oauthStatus = normalizeTextValue(route?.params?.oauth_status).toLowerCase();
     const oauthError = normalizeTextValue(route?.params?.oauth_error);
@@ -127,26 +126,28 @@ export default function IntegrationConfigPage({ route, embedded = false }) {
       return;
     }
     if (showLoading) setLoading(true);
+    else setTabLoading(true);
     try {
+      const tabKeys = visibleFields.map(field => field.key);
       const integrationPromise = api.fetch('/marketplace/integrations', { params: { provider_id: providerId } });
-      if (configFields.length) {
-        const [configResponse, integrationResponse] = await Promise.all([
-          api.fetch('/configs', { params: { people: providerIri } }),
+      if (tabKeys.length) {
+        const [configItems, integrationResponse] = await Promise.all([
+          fetchPeopleConfigs({ peopleIri: providerIri, configKeys: tabKeys }),
           integrationPromise,
         ]);
-        syncConfigValues(parseIntegrationCollection(configResponse));
+        setConfigValues(current => mergeTabValues(visibleFields, configItems, current));
         setIntegrationSummary(getIntegrationByKey(integrationResponse, providerConfig.key));
-      } else {
-        setIntegrationSummary(getIntegrationByKey(await integrationPromise, providerConfig.key));
+        return;
       }
+      setIntegrationSummary(getIntegrationByKey(await integrationPromise, providerConfig.key));
     } catch (error) {
       showError(formatApiError(error));
-      syncConfigValues(fallbackConfigs);
       setIntegrationSummary(null);
     } finally {
-      if (showLoading) setLoading(false);
+      setLoading(false);
+      setTabLoading(false);
     }
-  }, [configFields.length, fallbackConfigs, providerConfig, providerIri, providerId, showError, syncConfigValues]);
+  }, [providerConfig, providerIri, providerId, showError, visibleFieldKeys, visibleFields]);
 
   useFocusEffect(useCallback(() => { loadPageData(); }, [loadPageData]));
   const onRefresh = useCallback(async () => {
@@ -156,6 +157,29 @@ export default function IntegrationConfigPage({ route, embedded = false }) {
   const updateField = useCallback((fieldKey, value) => {
     setConfigValues(current => ({ ...current, [fieldKey]: value }));
   }, []);
+
+  const persistConfigs = useCallback(async payload => {
+    if (typeof configActions.addManyConfigs === 'function') {
+      try {
+        return await configActions.addManyConfigs(payload);
+      } catch (error) {
+        if (!isMethodNotAllowed(error)) throw error;
+      }
+    }
+    if (typeof configActions.addConfigs !== 'function') {
+      throw new Error('Nao foi possivel salvar: acao de configs indisponivel.');
+    }
+    for (const item of payload.configs) {
+      await configActions.addConfigs({
+        configKey: item.configKey,
+        configValue: item.configValue,
+        people: payload.people,
+        module: payload.module,
+        visibility: payload.visibility,
+      });
+    }
+    return true;
+  }, [configActions]);
 
   const handleOAuthConnect = useCallback(async () => {
     if (!providerIri || !providerConfig?.oauthConnect) {
@@ -181,29 +205,32 @@ export default function IntegrationConfigPage({ route, embedded = false }) {
     ? isConnectedValue(integrationSummary.connected)
     : requiredKeys.length > 0 && requiredKeys.every(key => normalizeTextValue(configValues[key]) !== '');
   const statusTone = connected ? '#16A34A' : '#e67e22';
-  const editable = Boolean(providerIri && providerConfig && !isSaving && !loading && !providerConfig.oauthConnect);
-  const actionLoading = providerConfig?.oauthConnect ? authLoading : isSaving;
-  const actionDisabled = providerConfig?.oauthConnect ? authLoading || loading : !editable;
+  const editable = Boolean(providerIri && providerConfig && !providerConfig.oauthConnect);
+  const actionLoading = providerConfig?.oauthConnect ? authLoading : Boolean(isSaving || tabLoading);
+  const actionDisabled = providerConfig?.oauthConnect ? authLoading || loading : !editable || actionLoading;
+  const saveLabel = fiscalTabs.length
+    ? `Salvar ${activeTabDef?.label || 'aba'}`
+    : providerConfig?.saveLabel;
 
   const saveIntegration = useCallback(async () => {
     if (!providerIri || !providerConfig || providerConfig.oauthConnect) {
       showError('Nao foi possivel identificar a integracao selecionada.');
       return;
     }
-    const configs = configFields.map(field => ({
+    const configs = visibleFields.map(field => ({
       configKey: field.key,
       configValue: toConfigRequestValue(normalizeTextValue(configValues[field.key])),
     }));
     try {
-      await configActions.addManyConfigs({ configs, people: providerIri, module: 4, visibility: 'public' });
-      showSuccess(`${providerConfig.label} salvo com sucesso.`);
+      await persistConfigs({ configs, people: providerIri, module: 4, visibility: 'public' });
+      showSuccess(`${activeTabDef?.label || providerConfig.label} salvo com sucesso.`);
       await loadPageData({ showLoading: false });
     } catch (error) { showError(error?.message || 'Nao foi possivel salvar a integracao.'); }
-  }, [configActions, configFields, configValues, loadPageData, providerConfig, providerIri, showError, showSuccess]);
+  }, [activeTabDef, configValues, loadPageData, persistConfigs, providerConfig, providerIri, showError, showSuccess, visibleFields]);
 
   if (!providerConfig) return <CenterState icon="alert-triangle" iconColor="#e67e22" title="Integracao indisponivel" text="A tela solicitada nao possui configuracao cadastrada." />;
-  if (!providerId) return <CenterState icon="building" iconColor="#94A3B8" title="Selecione uma empresa" text="A configuracao da integracao depende da empresa ativa." />;
-  if (loading) return <CenterState backgroundColor={brandColors.background} spinnerColor={providerConfig.accent} title="Carregando integracao" text="Buscando as credenciais salvas para a empresa ativa." />;
+  if (!providerId) return <CenterState icon="building" iconColor="#94A3B8" title="Empresa nao identificada" text="Abra a ficha da empresa para gravar as configuracoes fiscais nela." />;
+  if (loading) return <CenterState backgroundColor={brandColors.background} spinnerColor={providerConfig.accent} title="Carregando integracao" text="Buscando as credenciais desta aba." />;
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: brandColors.background }]} edges={['bottom']}>
@@ -227,7 +254,7 @@ export default function IntegrationConfigPage({ route, embedded = false }) {
                 <Text style={styles.sectionTitle}>Status</Text>
                 <Text style={styles.sectionSubtitle}>{providerConfig.oauthConnect
                   ? 'A integracao fica conectada quando o login do Uber termina e o store e salvo automaticamente.'
-                  : 'A integracao so aparece como conectada quando todos os campos obrigatorios foram salvos na empresa ativa.'}</Text>
+                  : 'A integracao so aparece como conectada quando todos os campos obrigatorios foram salvos nesta empresa.'}</Text>
               </View>
               <View style={[styles.statusBadge, { backgroundColor: withOpacity(statusTone, 0.12) }]}>
                 <Text style={[styles.statusBadgeText, { color: statusTone }]}>{connected ? 'Conectado' : 'Pendente'}</Text>
@@ -240,7 +267,7 @@ export default function IntegrationConfigPage({ route, embedded = false }) {
           <Text style={styles.cardTitle}>{providerConfig.oauthConnect ? 'Conexao' : fiscalTabs.length ? activeTabDef?.label || 'Configuracoes' : 'Credenciais'}</Text>
           {!embedded ? <Text style={styles.cardSubtitle}>{providerConfig.oauthConnect
             ? 'Use o login oficial do Uber. A store sera localizada e gravada automaticamente na empresa ativa.'
-            : 'Salve as credenciais na empresa ativa. O hub de integracoes volta a mostrar o status correto quando voce retornar para a lista.'}</Text> : null}
+            : 'Cada aba carrega e grava apenas as chaves dela.'}</Text> : null}
 
           {providerConfig.oauthConnect ? (
             <View style={styles.fieldList}><View style={styles.fieldGroup}>
@@ -257,6 +284,7 @@ export default function IntegrationConfigPage({ route, embedded = false }) {
                 </TouchableOpacity>;
               })}</View> : null}
               {activeTabDef?.description ? <Text style={styles.tabDescription}>{activeTabDef.description}</Text> : null}
+              {tabLoading ? <ActivityIndicator color={providerConfig.accent} /> : null}
               <IntegrationConfigFields fields={visibleFields} configValues={configValues} editable={editable}
                 embedded={embedded} providerId={providerId} updateField={updateField} />
             </View>
@@ -265,11 +293,10 @@ export default function IntegrationConfigPage({ route, embedded = false }) {
           <TouchableOpacity style={[styles.saveButton, { backgroundColor: providerConfig.accent }, actionDisabled && styles.saveButtonDisabled]}
             disabled={actionDisabled} activeOpacity={0.9} onPress={providerConfig.oauthConnect ? handleOAuthConnect : saveIntegration}>
             {actionLoading ? <ActivityIndicator color="#FFFFFF" /> : <Icon name={providerConfig.oauthConnect ? 'log-in' : 'save'} size={16} color="#FFFFFF" />}
-            <Text style={styles.saveButtonText}>{providerConfig.oauthConnect ? providerConfig.connectLabel || 'Conectar' : providerConfig.saveLabel}</Text>
+            <Text style={styles.saveButtonText}>{providerConfig.oauthConnect ? providerConfig.connectLabel || 'Conectar' : saveLabel}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 }
-// TODO(store-first): quando este arquivo for mexido, mover a leitura para stores, remover api.fetch e evitar repassar dados em objetos quando o store ja resolver isso.
