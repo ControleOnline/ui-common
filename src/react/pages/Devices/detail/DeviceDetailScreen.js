@@ -326,7 +326,8 @@ const DeviceDetailScreen = () => {
     shouldShowOrderVisibility,
     shouldShowRemotePayment,
     shouldShowDeviceBehavior,
-    shouldShowRemoteCommands
+    shouldShowRemoteCommands,
+    currentCompany,
   } = { ...state, ...loaders, ...actions, ...saves };
 
   const detailCtx = {
@@ -357,6 +358,7 @@ const DeviceDetailScreen = () => {
     showPdvMovementTab, showPdvPaymentTypesTab, showPdvOperationTab,
     inflowData, productTotal, wallets, filteredProducts, search, setSearch,
     loadingMovementData, deviceId, savePaymentTypeConfigs, savingPaymentTypes,
+    configs, currentCompany,
   };
 
   const {

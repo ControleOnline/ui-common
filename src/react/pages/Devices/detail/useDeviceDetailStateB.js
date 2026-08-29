@@ -51,9 +51,7 @@ export default function useDeviceDetailStateB(deps) {
     setAlias, editingAlias, setEditingAlias, aliasInput, setAliasInput, savingAlias, setSavingAlias, removingDevice, setRemovingDevice, aliasInputRef, skipAliasSyncFromStoreRef, isOpen,
     hasLocalPaymentGateway, paymentDeviceOptions, displayOptions, printerOptions, selectedPosOperationModeOption, pickerMode, packageVersion, appVersion, runtimeDeviceId, runtimeDeviceType,
   } = deps;
-        .toUpperCase(),
-    [runtimeDevice?.deviceType, runtimeDevice?.type],
-  );
+
   const isEditingRuntimeDevice = useMemo(
     () =>
       !!runtimeDeviceId &&
@@ -64,8 +62,37 @@ export default function useDeviceDetailStateB(deps) {
 
   const resolveDeviceContext = useCallback(async () => {
     if (deviceString && deviceType) {
+      return {
+        deviceData: null,
+        deviceString,
+        deviceType,
+      };
+    }
+
+    if (!deviceId) {
+      return {
+        deviceData: null,
+        deviceString: '',
+        deviceType: '',
+      };
+    }
+
+    const fetchedDevice = await actionsRef.current.deviceActions
+      .get(deviceId)
+      .catch(() => null);
+
+    return {
+      deviceData: fetchedDevice,
+      deviceString: String(fetchedDevice?.device || '').trim(),
+      deviceType: String(fetchedDevice?.type || fetchedDevice?.deviceType || '')
+        .trim()
+        .toUpperCase(),
+    };
+  }, [deviceId, deviceString, deviceType]);
+
   return {
     isEditingRuntimeDevice,
     resolveDeviceContext,
   };
 }
+
