@@ -27,7 +27,7 @@ const {
 
 const formatDate = (dateString) => {
     const d = new Date(dateString);
-    return d.toLocaleString(); // Formato local legível
+    return d.toLocaleString();
 };
 
 const Imports = ({ context = {}, onClose }) => {
@@ -57,6 +57,12 @@ const Imports = ({ context = {}, onClose }) => {
     const importType = context.context;
     const title = context.title;
     const searchPlaceholder = context.searchPlaceholder;
+    const allowedExtensions = Array.isArray(context.allowedExtensions)
+        ? context.allowedExtensions
+        : importType === 'invoice_tax' || importType === 'xml'
+            ? ['xml', 'zip']
+            : ['csv'];
+    const showCsvTemplate = allowedExtensions.includes('csv');
     const {
         refreshLabel,
         processingLabel,
@@ -255,11 +261,9 @@ const Imports = ({ context = {}, onClose }) => {
             });
 
             const csvText = typeof response === 'string' ? response : await response.text?.();
-            console.log('CSV recebido:', csvText.slice(0, 200));
 
             if (!csvText) throw new Error('CSV vazio');
 
-            // mobile: verifica se o diretório está disponível
             const dirUri = Directory?.cacheDocumentDirectory || Directory?.documentDirectory;
 
             if (dirUri) {
@@ -272,21 +276,18 @@ const Imports = ({ context = {}, onClose }) => {
                     await Sharing.shareAsync(fileUri);
                 }
 
-                console.log(`Arquivo CSV criado em: ${fileUri}`);
                 return fileUri;
             } else if (typeof window !== 'undefined') {
-                // fallback web
                 const blob = new Blob([csvText], { type: 'text/csv' });
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
                 link.download = `modelo_${importType}.csv`;
                 link.click();
                 URL.revokeObjectURL(link.href);
-                console.log('Download CSV disparado no web');
                 return 'web-download';
-            } else {
-                throw new Error('FileSystem não disponível');
             }
+
+            throw new Error('FileSystem não disponível');
         } catch (err) {
             console.error('Erro detalhado ao baixar CSV:', err);
             throw new Error('Falha ao baixar o modelo CSV');
@@ -306,6 +307,7 @@ const Imports = ({ context = {}, onClose }) => {
             <View style={styles.subHeader}>
                 <View style={styles.topRow}>
                     <View style={styles.topRowActions}>
+                        {showCsvTemplate ? (
                         <TouchableOpacity style={styles.downloadButton} onPress={downloadTemplate}>
                             <View
                                 style={{
@@ -323,6 +325,7 @@ const Imports = ({ context = {}, onClose }) => {
                                 <Text style={[styles.downloadText, { color: buttonPalette.buttonText }]}>Baixar Modelo</Text>
                             </View>
                         </TouchableOpacity>
+                        ) : null}
 
                         <TouchableOpacity
                             style={[
@@ -397,6 +400,8 @@ const Imports = ({ context = {}, onClose }) => {
                 visible={showAddImportModal}
                 onClose={() => setShowAddImportModal(false)}
                 context={context}
+                importType={importType}
+                allowedExtensions={allowedExtensions}
                 onSuccess={() => {
                     setCurrentPage(1);
                     fetchImports(searchQuery, 1);
@@ -407,4 +412,3 @@ const Imports = ({ context = {}, onClose }) => {
 };
 
 export default Imports;
-// TODO(store-first): quando este arquivo for mexido, mover a leitura para stores, remover api.fetch e evitar repassar dados em objetos quando o store ja resolver isso.
