@@ -1,67 +1,34 @@
 import React from 'react';
-import { Text, View, Switch, TextInput, TouchableOpacity, Platform } from 'react-native';
+import { Text, View, TextInput, TouchableOpacity } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/Feather';
 import styles from '../../DeviceDetailPage.styles';
-import {
-  POS_OPERATION_MODE_OPTIONS,
-  POS_OPERATION_MODE_COUNTER,
-  POS_PRINT_MODE_ORDER,
-  POS_PRINT_MODE_FORM,
-  POS_CHECK_ORDER_TYPE_NONE,
-  POS_CHECK_ORDER_TYPE_TAB,
-  POS_CHECK_ORDER_TYPE_TABLE,
-  POS_CHECK_ORDER_TYPE_STAMP,
-  POS_CHECK_ORDER_MANAGEMENT_MODE_MANAGE,
-  POS_CHECK_ORDER_MANAGEMENT_MODE_EXISTING_ONLY,
-  POS_CASH_MANAGEMENT_MODE_CASH_REGISTER,
-  POS_CASH_MANAGEMENT_MODE_DAILY,
-  POS_OPERATION_MODE_CONFIG_KEY,
-  DEVICE_ORDER_VISIBILITY_COMPANY,
-  DEVICE_ORDER_VISIBILITY_DEVICE,
-  resolvePosOperationMode,
-} from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
-import { normalizeEntityId } from '@controleonline/ui-common/src/react/utils/paymentDevices';
-import { getProductShowcaseLabel } from './deviceDetailHelpers';
-import { tt } from './deviceDetailConstants';
 
-/**
- * Extracted from DeviceDetailScreen for modularization (≤500 lines).
- * Refs: app-community#382
- */
 export default function DeviceDetailAlertsCommandsSection(ctx) {
   const {
-    themeColors, brandColors, palette,
-    renderHelpButton, renderOptionButtons, renderSwitchRow, renderProduct,
-    posOperationMode, setPosOperationMode, savePosOperationMode, savingPosOperationMode,
-    productShowcaseId, setProductShowcaseId, saveProductShowcaseConfig,
-    productShowcases, loadingProductShowcases, savingProductShowcase, pickerMode,
-    counterAutoPrintEnabled, setCounterAutoPrintEnabled,
-    counterPrintMode, setCounterPrintMode,
-    checkOrderType, setCheckOrderType,
-    checkOrderManagementMode, setCheckOrderManagementMode,
-    cashManagementMode, setCashManagementMode,
-    counterCashManagementMode, setCounterCashManagementMode,
-    androidKioskEnabled, setAndroidKioskEnabled,
-    androidLauncherEnabled, setAndroidLauncherEnabled,
-    saveLauncherMode, savingLauncherMode,
-    orderVisibility, setOrderVisibility, saveDeviceOrderVisibility, savingOrderVisibility,
-    shouldShowOrderVisibility,
-    deliveryEnabled, setDeliveryEnabled, saveDeviceDeliverySettings, savingDeliverySettings,
-    deviceAlertSoundEnabled, setDeviceAlertSoundEnabled, deviceAlertSoundUrl, setDeviceAlertSoundUrl,
-    saveDeviceAlertSoundConfig, savingAlertSound,
-    runtimeDebugInfoEnabled, setRuntimeDebugInfoEnabled, saveDeviceRuntimeDebugInfo, savingRuntimeDebugInfo,
-    devicePaymentTarget, setDevicePaymentTarget, saveDevicePaymentTarget, savingPaymentTarget,
-    paymentDeviceOptions, displayOptions, printerOptions,
-    pdvGateway, setPdvGateway, pdvPrinterEnabled, setPdvPrinterEnabled, savePdvSettings, savingPdvSettings,
-    hasLocalPaymentGateway, loyaltyCouponsEnabled,
-    sendCatalogRefreshCommand, sendingCatalogRefresh,
-    displayAutoPrintProduct, setDisplayAutoPrintProduct,
-    displayAllowPrinterChange, setDisplayAllowPrinterChange,
-    saveDisplayPrintingConfig, savingDisplayPrinting,
-    linkedDisplayId, setLinkedDisplayId,
-    isDisplayDevice, isPdvDevice,
-    styles: _styles,
+    themeColors,
+    renderHelpButton,
+    renderSwitchRow,
+    pickerMode,
+    deviceAlertSoundEnabled,
+    setDeviceAlertSoundEnabled,
+    deviceAlertSoundUrl,
+    setDeviceAlertSoundUrl,
+    saveDeviceAlertSoundConfig,
+    savingAlertSound,
+    deviceRuntimeDebugInfoEnabled,
+    setDeviceRuntimeDebugInfoEnabled,
+    saveDeviceRuntimeDebugInfo,
+    savingRuntimeDebugInfo,
+    devicePaymentTarget,
+    setDevicePaymentTarget,
+    saveDevicePaymentTarget,
+    paymentDeviceOptions,
+    sendCatalogRefreshCommand,
+    sendingCatalogRefresh,
+    shouldShowDeviceBehavior = true,
+    shouldShowRemotePayment = true,
+    shouldShowRemoteCommands = true,
   } = ctx;
 
   return (
@@ -111,37 +78,36 @@ export default function DeviceDetailAlertsCommandsSection(ctx) {
           </View>
         </View>
       </View>
-      )}
 
       {shouldShowDeviceBehavior && (
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>
-          <Icon name="activity" size={13} /> {'  '}Rodapé do Sistema
-        </Text>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>
+            <Icon name="activity" size={13} /> {'  '}Rodape do Sistema
+          </Text>
 
-        <View style={styles.configCard}>
-          <View style={styles.sectionTitleRow}>
-            <Text style={styles.configTitle}>Debug do socket no rodapé</Text>
-            {renderHelpButton(
-              'Debug do socket no rodapé',
-              'Quando habilitado, este device troca a bolinha discreta do socket pelos detalhes de debug publicados pelos serviços do runtime no rodapé global do sistema.',
-            )}
+          <View style={styles.configCard}>
+            <View style={styles.sectionTitleRow}>
+              <Text style={styles.configTitle}>Debug do socket no rodape</Text>
+              {renderHelpButton(
+                'Debug do socket no rodape',
+                'Quando habilitado, este device troca a bolinha discreta do socket pelos detalhes de debug publicados pelos servicos do runtime no rodape global do sistema.',
+              )}
+            </View>
+
+            {renderSwitchRow({
+              disabled: savingRuntimeDebugInfo,
+              label: 'Exibir debug detalhado',
+              value: deviceRuntimeDebugInfoEnabled,
+              valueLabel: deviceRuntimeDebugInfoEnabled ? 'Ativo' : 'Inativo',
+              onValueChange: nextValue => {
+                setDeviceRuntimeDebugInfoEnabled(nextValue);
+                saveDeviceRuntimeDebugInfo({
+                  deviceRuntimeDebugInfoEnabled: nextValue,
+                });
+              },
+            })}
           </View>
-
-          {renderSwitchRow({
-            disabled: savingRuntimeDebugInfo,
-            label: 'Exibir debug detalhado',
-            value: deviceRuntimeDebugInfoEnabled,
-            valueLabel: deviceRuntimeDebugInfoEnabled ? 'Ativo' : 'Inativo',
-            onValueChange: nextValue => {
-              setDeviceRuntimeDebugInfoEnabled(nextValue);
-              saveDeviceRuntimeDebugInfo({
-                deviceRuntimeDebugInfoEnabled: nextValue,
-              });
-            },
-          })}
         </View>
-      </View>
       )}
 
       {shouldShowRemotePayment && (
@@ -155,7 +121,7 @@ export default function DeviceDetailAlertsCommandsSection(ctx) {
               <Text style={styles.configTitle}>Device preferencial para pagamento</Text>
               {renderHelpButton(
                 'Device preferencial para pagamento',
-                'Esse destino funciona como fallback desta origem quando a empresa não definiu uma ordem padrão no configurador geral. Quando a empresa tiver devices padrão para pagamento remoto, essa ordem global tem prioridade.',
+                'Esse destino funciona como fallback desta origem quando a empresa nao definiu uma ordem padrao no configurador geral.',
               )}
             </View>
 
@@ -173,10 +139,10 @@ export default function DeviceDetailAlertsCommandsSection(ctx) {
                   });
                 }}>
                 <Picker.Item
-                  label="Usar devices padrão da empresa"
+                  label="Usar devices padrao da empresa"
                   value=""
                 />
-                {paymentDeviceOptions.map(option => (
+                {(paymentDeviceOptions || []).map(option => (
                   <Picker.Item
                     key={option.deviceId}
                     label={`${option.alias} (${option.gatewayLabel})`}
@@ -197,10 +163,10 @@ export default function DeviceDetailAlertsCommandsSection(ctx) {
 
           <View style={styles.configCard}>
             <View style={styles.sectionTitleRow}>
-              <Text style={styles.configTitle}>Catálogo do PDV</Text>
+              <Text style={styles.configTitle}>Catalogo do PDV</Text>
               {renderHelpButton(
-                'Catálogo do PDV',
-                'Limpa o cache local de produtos e categorias deste device. O recarregamento acontece no próximo uso do PDV.',
+                'Catalogo do PDV',
+                'Limpa o cache local de produtos e categorias deste device. O recarregamento acontece no proximo uso do PDV.',
               )}
             </View>
 
