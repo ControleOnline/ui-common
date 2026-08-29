@@ -391,12 +391,38 @@ export const api = {
 
     return safeUri;
   },
-  post: async function (uri, body = {}) {
-    const options = {
+  get: async function (uri, options = {}) {
+    return await this.fetch(uri, {
+      ...options,
+      method: 'GET',
+    });
+  },
+  post: async function (uri, body = {}, options = {}) {
+    return await this.fetch(uri, {
+      ...options,
       method: 'POST',
-      body: body,
-    };
-    return await this.fetch(uri, options);
+      body,
+    });
+  },
+  put: async function (uri, body = {}, options = {}) {
+    return await this.fetch(uri, {
+      ...options,
+      method: 'PUT',
+      body,
+    });
+  },
+  patch: async function (uri, body = {}, options = {}) {
+    return await this.fetch(uri, {
+      ...options,
+      method: 'PATCH',
+      body,
+    });
+  },
+  delete: async function (uri, options = {}) {
+    return await this.fetch(uri, {
+      ...options,
+      method: 'DELETE',
+    });
   },
   loadSmokeIndex: async function (config = {}) {
     return await requestSmoke('/tests', {}, config);
