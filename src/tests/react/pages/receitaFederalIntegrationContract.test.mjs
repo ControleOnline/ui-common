@@ -39,13 +39,18 @@ test('embedded fiscal configuration keeps reads and writes on the company being 
   assert.match(page, /persistConfigs\(\{ configs, people: providerIri/);
 });
 
-test('fiscal tabs load and save only the current tab keys', () => {
+test('fiscal tabs load all keys once; save only the current tab keys', () => {
   assert.match(fetchConfigs, /configKey: keys/);
   assert.match(fetchConfigs, /itemsPerPage: keys\.length/);
-  assert.match(page, /configKeys: tabKeys/);
+  // Load all fiscal keys on mount/focus so tab switches do not re-fetch or toast.
+  assert.match(page, /allFieldKeys/);
+  assert.match(page, /needsMarketplaceIntegration/);
+  assert.match(page, /configKeys: keys/);
   assert.match(page, /visibleFields\.map\(field => \(\{/);
   assert.match(page, /Salvar \$\{activeTabDef\?\.label/);
   assert.doesNotMatch(page, /itemsPerPage: 100/);
+  // Pure config (receita-federal) must not spam /marketplace/integrations on every tab.
+  assert.match(page, /needsMarketplaceIntegration = Boolean\(providerConfig\?\.oauthConnect\)/);
 });
 
 test('certificate picker remains scoped to the active company', () => {
