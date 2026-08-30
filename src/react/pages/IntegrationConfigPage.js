@@ -230,6 +230,15 @@ export default function IntegrationConfigPage({ route, embedded = false }) {
   }, [embedded, route?.params?.clientId, route?.params?.companyId, currentCompany?.id]);
 
   const providerIri = providerId ? `/people/${providerId}` : '';
+  const allConfigFields = useMemo(() => getConfigFields(providerConfig), [providerConfig]);
+  const allFieldKeys = useMemo(
+    () => allConfigFields.map(field => field.key).filter(Boolean),
+    [allConfigFields],
+  );
+  const allFieldKeysSig = useMemo(() => allFieldKeys.join('|'), [allFieldKeys]);
+  // Pure config providers (e.g. receita-federal) do not use marketplace/integrations.
+  const needsMarketplaceIntegration = Boolean(providerConfig?.oauthConnect);
+
 
   useEffect(() => {
     setConfigValues({});
@@ -253,25 +262,33 @@ export default function IntegrationConfigPage({ route, embedded = false }) {
       return;
     }
     if (showLoading) setLoading(true);
-    else setTabLoading(true);
     try {
-      const tabKeys = visibleFields.map(field => field.key);
-      const integrationPromise = api.fetch('/marketplace/integrations', {
-        params: { provider_id: providerId },
-      });
-      if (tabKeys.length > 0) {
-        const [configItems, integrationResponse] = await Promise.all([
-          fetchPeopleConfigs({
-            peopleIri: providerIri,
-            configKeys: tabKeys,
-          }),
-          integrationPromise,
-        ]);
-        setConfigValues(current => mergeTabValues(visibleFields, configItems, current));
-        setIntegrationSummary(getIntegrationByKey(integrationResponse, providerConfig.key));
-        return;
+      const keys = allFieldKeys.length
+        ? allFieldKeys
+        : visibleFields.map(field => field.key).filter(Boolean);
+
+      if (keys.length) {
+        const configItems = await fetchPeopleConfigs({
+          peopleIri: providerIri,
+          configKeys: keys,
+        });
+        const mergeFields = allConfigFields.length ? allConfigFields : visibleFields;
+        setConfigValues(current => mergeTabValues(mergeFields, configItems, current));
       }
-      setIntegrationSummary(getIntegrationByKey(await integrationPromise, providerConfig.key));
+
+      if (needsMarketplaceIntegration) {
+        try {
+          const integrationResponse = await api.fetch('/marketplace/integrations', {
+            params: { provider_id: providerId },
+          });
+          setIntegrationSummary(getIntegrationByKey(integrationResponse, providerConfig.key));
+        } catch (integrationError) {
+          showError(formatApiError(integrationError));
+          setIntegrationSummary(null);
+        }
+      } else {
+        setIntegrationSummary(null);
+      }
     } catch (error) {
       showError(formatApiError(error));
       setIntegrationSummary(null);
@@ -279,8 +296,18 @@ export default function IntegrationConfigPage({ route, embedded = false }) {
       setLoading(false);
       setTabLoading(false);
     }
-  }, [providerConfig, providerIri, providerId, showError, visibleFieldKeys, visibleFields]);
+  }, [
+    allConfigFields,
+    allFieldKeys,
+    allFieldKeysSig,
+    needsMarketplaceIntegration,
+    providerConfig,
+    providerIri,
+    providerId,
+    showError,
+  ]);
 
+  // Reload only when company/provider identity or full key set changes — not on fiscal sub-tab switch.
   useFocusEffect(useCallback(() => { loadPageData(); }, [loadPageData]));
 
   const onRefresh = useCallback(async () => {
