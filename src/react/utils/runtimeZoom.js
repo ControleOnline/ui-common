@@ -22,7 +22,10 @@ export const normalizeRuntimeZoomPercent = value => {
 export const resolveRuntimeZoomScale = value =>
   normalizeRuntimeZoomPercent(value) / 100;
 
-export const buildRuntimeZoomStyle = (value, {isWeb = false} = {}) => {
+export const buildRuntimeZoomStyle = (
+  value,
+  {isWeb = false, viewport = null} = {},
+) => {
   const scale = resolveRuntimeZoomScale(value);
 
   if (scale === 1) {
@@ -33,11 +36,32 @@ export const buildRuntimeZoomStyle = (value, {isWeb = false} = {}) => {
     return {zoom: scale};
   }
 
-  const inverseSize = `${100 / scale}%`;
+  const inverseScale = 1 / scale;
+  const nativeBase = {
+    transform: [{scale}],
+    transformOrigin: 'top left',
+    alignSelf: 'flex-start',
+  };
+
+  const viewportWidth = Number(viewport?.width);
+  const viewportHeight = Number(viewport?.height);
+
+  if (
+    Number.isFinite(viewportWidth) &&
+    Number.isFinite(viewportHeight) &&
+    viewportWidth > 0 &&
+    viewportHeight > 0
+  ) {
+    return {
+      ...nativeBase,
+      width: viewportWidth * inverseScale,
+      height: viewportHeight * inverseScale,
+    };
+  }
 
   return {
-    height: inverseSize,
-    transform: [{scale}],
-    width: inverseSize,
+    ...nativeBase,
+    width: `${100 * inverseScale}%`,
+    height: `${100 * inverseScale}%`,
   };
 };
