@@ -26,6 +26,8 @@ const RuntimeFooterMarqueeText = ({
 
   const shouldMarquee =
     containerWidth > 0 && contentWidth > containerWidth + 2;
+  const resolvedOpacity =
+    typeof opacity === 'number' ? opacity : Platform.OS === 'web' ? 1 : opacity;
 
   useEffect(() => {
     if (animationRef.current) {
@@ -102,7 +104,7 @@ const RuntimeFooterMarqueeText = ({
         style: {
           flexDirection: 'row',
           alignItems: 'center',
-          opacity,
+          opacity: resolvedOpacity,
           transform: [{translateX}],
           alignSelf: shouldMarquee ? 'flex-start' : 'stretch',
         },

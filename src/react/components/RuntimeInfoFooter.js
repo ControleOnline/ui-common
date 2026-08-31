@@ -258,7 +258,10 @@ const RuntimeInfoFooter = ({
   const backgroundColor = colors?.footerBackground;
   const borderColor = colors?.footerBorder;
   const textColor =
-    colors?.footerText || colors?.textSecondary || colors?.text || '#64748B';
+    colors?.footerText ||
+    colors?.textSecondary ||
+    colors?.text ||
+    '#0f172a';
   const loadingColor = colors?.footerLink || colors?.primary || textColor;
   const shellProps = useModernWebChromeProps ? {} : {pointerEvents: 'none'};
   const shellStyle = useModernWebChromeProps
@@ -296,7 +299,9 @@ const RuntimeInfoFooter = ({
                 : displayedText
             }
             color={textColor}
-            opacity={showDebugInfo ? 1 : fadeOpacity}
+            opacity={
+              Platform.OS === 'web' || showDebugInfo ? 1 : fadeOpacity
+            }
             style={styles.primaryText}
             testID="runtime-footer-primary-text"
           />
