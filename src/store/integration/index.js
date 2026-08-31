@@ -17,7 +17,7 @@ export default {
     add: false,
     columns: [
       {name: 'id', label: 'ID', isIdentity: true, editable: false, externalFilter: true},
-      {name: 'queueName', label: 'Fila', editable: false, externalFilter: true},
+      {name: 'queueName', label: 'Fila', editable: false, externalFilter: false},
       {
         name: 'status',
         label: 'Status',
