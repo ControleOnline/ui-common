@@ -65,23 +65,25 @@ const RuntimeInfoFooter = ({
     [appVersion, device, deviceConfigItem, footerDebugInfo.primaryText],
   );
   const peopleStore = useStore('people');
+  const configsStore = useStore('configs');
   const currentCompany = peopleStore?.getters?.currentCompany || {};
+  const storeDefaultCompany = peopleStore?.getters?.defaultCompany || {};
+  const companyConfigs = configsStore?.getters?.items;
   const companyFooterText = useMemo(() => {
-    const fromCurrent = getRuntimeFooterText(currentCompany);
-    if (fromCurrent) {
-      return fromCurrent;
-    }
-
-    const fromDefault = getRuntimeFooterText(defaultCompany);
-    if (fromDefault) {
-      return fromDefault;
-    }
-
-    return getRuntimeFooterText(null, deviceConfigItem?.configs);
+    const candidates = [
+      getRuntimeFooterText(currentCompany),
+      getRuntimeFooterText(storeDefaultCompany),
+      getRuntimeFooterText(defaultCompany),
+      getRuntimeFooterText(null, companyConfigs),
+      getRuntimeFooterText(null, deviceConfigItem?.configs),
+    ];
+    return candidates.find(Boolean) || '';
   }, [
+    companyConfigs,
     currentCompany?.configs,
     defaultCompany?.configs,
     deviceConfigItem?.configs,
+    storeDefaultCompany?.configs,
   ]);
   const footerTextLines = useMemo(
     () => getRuntimeFooterTextLines(companyFooterText),
@@ -241,8 +243,9 @@ const RuntimeInfoFooter = ({
     : inlineText;
   const backgroundColor = colors?.footerBackground;
   const borderColor = colors?.footerBorder;
-  const textColor = colors?.footerText;
-  const loadingColor = colors?.footerLink;
+  const textColor =
+    colors?.footerText || colors?.textSecondary || colors?.text || '#64748B';
+  const loadingColor = colors?.footerLink || colors?.primary || textColor;
   const shellProps = useModernWebChromeProps ? {} : {pointerEvents: 'none'};
   const shellStyle = useModernWebChromeProps
     ? [styles.shell, {pointerEvents: 'none'}]
