@@ -127,11 +127,6 @@ const BottomNavigationBar = ({
     <View {...hostProps} style={hostStyle}>
       <View style={styles.stack}>
         <View style={styles.dock} testID={testID}>
-          {runtimeFooter ? (
-            <View style={styles.footerSlot}>
-              <RuntimeInfoFooter {...footerProps} />
-            </View>
-          ) : null}
           <View style={styles.itemsRow}>
             {routeItems.map(item => {
               const isActive = effectiveActiveRoute === item.route;
@@ -169,6 +164,11 @@ const BottomNavigationBar = ({
               );
             })}
           </View>
+          {runtimeFooter ? (
+            <View style={styles.footerSlot}>
+              <RuntimeInfoFooter {...footerProps} />
+            </View>
+          ) : null}
         </View>
       </View>
     </View>

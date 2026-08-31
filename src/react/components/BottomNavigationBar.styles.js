@@ -83,8 +83,10 @@ const createStyles = ({
     footerSlot: {
       width: '100%',
       paddingHorizontal: 4,
-      paddingTop: 2,
+      paddingTop: 0,
       paddingBottom: 2,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: 'rgba(15, 23, 42, 0.08)',
     },
     itemsRow: {
       flexDirection: 'row',
