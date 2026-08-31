@@ -78,38 +78,8 @@ const buildRuntimeFooterDisplayName = ({
   return parts.join(' • ');
 };
 
-};
-
-
-  if (typeof value === 'string') {
-    const parsed = parseJsonStringValue(value);
-    return parsed && typeof parsed === 'object' ? parsed : {};
-  }
-
-  return typeof value === 'object' ? value : {};
-};
-
 const parseDeviceMetadata = metadata => parseObjectValue(metadata);
 const parseDeviceConfigs = configs => parseObjectValue(configs);
-const resolveConfigBag = configs => {
-  if (configs === null || configs === undefined) {
-    return undefined;
-  }
-
-  if (Array.isArray(configs)) {
-    const hit = configs.find(entry => {
-      const key = safeTrim(
-        entry?.configKey || entry?.key || entry?.name || entry?.config_key,
-      );
-      return key === DEVICE_RUNTIME_FOOTER_TEXT_CONFIG_KEY;
-    });
-    return hit?.value ?? hit?.configValue ?? hit?.config_value;
-  }
-
-  const parsed = parseObjectValue(configs);
-  return parsed?.[DEVICE_RUNTIME_FOOTER_TEXT_CONFIG_KEY];
-};
-
 const isWebRuntimeDevice = device => {
   const metadata = parseDeviceMetadata(device?.metadata);
   const runtime = safeTrim(metadata?.runtime).toLowerCase();
