@@ -121,7 +121,11 @@ export const fetchOrderProducts = async orderRef => {
   return extractCollectionItems(response);
 };
 
-export const searchCompanyProducts = async ({ companyId, query = '' }) => {
+export const searchCompanyProducts = async ({
+  companyId,
+  query = '',
+  categoryId = null,
+}) => {
   if (!companyId) {
     return [];
   }
@@ -134,6 +138,14 @@ export const searchCompanyProducts = async ({ companyId, query = '' }) => {
 
   if (String(query || '').trim()) {
     params.product = String(query).trim();
+  }
+
+  // ProductCategoryTreeFilter — includes the category and its descendants.
+  // Prefer server-side filter: product payloads do not always embed productCategory
+  // under the product:read serialization group.
+  const normalizedCategoryId = normalizeEntityId(categoryId);
+  if (normalizedCategoryId) {
+    params['productCategory.category'] = normalizedCategoryId;
   }
 
   const response = await api.fetch('products', { params });

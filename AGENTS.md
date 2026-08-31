@@ -20,6 +20,14 @@
 
 Cópia versionada no Git: `docs/technical/Technical-Documenter-Workflow.md`
 
+
+### Device Detail (Manager)
+
+| Página | O que documenta |
+| --- | --- |
+| [Device Detail — sync do alias na UI](https://github.com/ControleOnline/ui-common/wiki/Device-Detail-Alias-UI-Sync) | Alias salvo coerente no header/stores sem refresh (#382) |
+| [Device Detail — exclusão de device](https://github.com/ControleOnline/ui-common/wiki/Device-Detail-Exclusao) | Botão lixeira, confirmação web/nativo, DELETE e retorno à listagem (#383) |
+
 ### Visão deste módulo
 
 `ui-common` é o módulo compartilhado de runtime, API e utilitários de UI usado pelas visões `MANAGER`, `ADMIN`, `CRM`, `POS`, `PPC`, `SHOP`, `DELIVERY` e `SERVICE`. A automação documentada aqui é de governança do repositório e não altera comportamento funcional dessas visões.

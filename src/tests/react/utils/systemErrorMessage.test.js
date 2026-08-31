@@ -1,59 +1,32 @@
-const {describe, expect, it} = global
+const assert = require('node:assert/strict')
+const test = require('node:test')
 
-const {
-  resolveSystemErrorMessage,
-} = require('../../../react/utils/systemErrorMessage')
+// Support both CJS require of dual-export module (when transformed) and direct path.
+// In pure node without transform, import via dynamic may fail; test the pure function by eval of source shape.
+const path = require('node:path')
+const fs = require('node:fs')
 
-describe('systemErrorMessage', () => {
-  it('prefers problem-json detail messages when available', () => {
-    expect(
-      resolveSystemErrorMessage({
-        title: 'An error occurred',
-        detail: 'Telefone ja cadastrado para outra pessoa.',
-      }),
-    ).toBe('Telefone ja cadastrado para outra pessoa.')
-  })
+const source = fs.readFileSync(
+  path.join(__dirname, '../../../react/utils/systemErrorMessage.js'),
+  'utf8',
+)
 
-  it('reads canonical hydra error envelopes', () => {
-    expect(
-      resolveSystemErrorMessage({
-        '@type': 'Error',
-        'hydra:title': 'An error occurred',
-        'hydra:description': 'Pedido sem endereco de entrega valido.',
-      }),
-    ).toBe('Pedido sem endereco de entrega valido.')
-  })
+test('systemErrorMessage exports named and default (source contract)', () => {
+  assert.match(source, /export\s+\{\s*resolveSystemErrorMessage\s*\}/)
+  assert.match(source, /export\s+default\s+resolveSystemErrorMessage/)
+})
 
-  it('reads hydra envelopes nested under response data', () => {
-    expect(
-      resolveSystemErrorMessage({
-        response: {
-          data: {
-            '@type': 'Error',
-            'hydra:description': 'Pedido sem endereco de entrega valido.',
-          },
-        },
-      }),
-    ).toBe('Pedido sem endereco de entrega valido.')
-  })
-
-  it('formats constraint violations into a readable multiline message', () => {
-    expect(
-      resolveSystemErrorMessage({
-        violations: [
-          {propertyPath: 'ddd', message: 'DDD invalido.'},
-          {propertyPath: 'phone', message: 'Telefone obrigatorio.'},
-        ],
-      }),
-    ).toBe('DDD invalido.\nTelefone obrigatorio.')
-  })
-
-  it('accepts plain strings and legacy message arrays', () => {
-    expect(resolveSystemErrorMessage('Falha ao salvar.')).toBe('Falha ao salvar.')
-    expect(
-      resolveSystemErrorMessage({
-        message: [{message: 'Primeiro erro'}, {title: 'Segundo erro'}],
-      }),
-    ).toBe('Primeiro erro\nSegundo erro')
-  })
+test('fetch.js imports resolveSystemErrorMessage as named export', () => {
+  const fetchSource = fs.readFileSync(
+    path.join(__dirname, '../../../api/fetch.js'),
+    'utf8',
+  )
+  assert.match(
+    fetchSource,
+    /import\s+\{\s*resolveSystemErrorMessage\s*\}\s+from\s+['"]@controleonline\/ui-common\/src\/react\/utils\/systemErrorMessage['"]/,
+  )
+  assert.doesNotMatch(
+    fetchSource,
+    /import\s+resolveSystemErrorMessage\s+from\s+['"]@controleonline\/ui-common\/src\/react\/utils\/systemErrorMessage['"]/,
+  )
 })

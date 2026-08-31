@@ -3,6 +3,7 @@ import {
   getPaymentGateway,
   PAYMENT_GATEWAY_CIELO,
   PAYMENT_GATEWAY_INFINITE_PAY,
+  PAYMENT_GATEWAY_GETNET,
 } from '@controleonline/ui-common/src/react/utils/paymentDevices';
 import {createDeviceTypeTab} from './shared';
 
@@ -14,9 +15,11 @@ const emptyState = {
 
 export const PDV_CIELO_FILTER = 'PDV_CIELO';
 export const PDV_INFINITE_PAY_FILTER = 'PDV_INFINITE_PAY';
+export const PDV_GETNET_FILTER = 'PDV_GETNET';
 export const PDV_SUBFILTER_KEYS = [
   PDV_CIELO_FILTER,
   PDV_INFINITE_PAY_FILTER,
+  PDV_GETNET_FILTER,
 ];
 
 const pdvDeviceType = {
@@ -83,6 +86,14 @@ export const pdvInfinitePayDeviceType = createPdvGatewayDeviceType({
   gateway: PAYMENT_GATEWAY_INFINITE_PAY,
   title: 'Nenhum pdv Infinite Pay encontrado',
   accentResolver: ({brandColors, hex}) => brandColors?.primary || hex.success,
+});
+
+export const pdvGetnetDeviceType = createPdvGatewayDeviceType({
+  key: PDV_GETNET_FILTER,
+  label: 'Getnet',
+  gateway: PAYMENT_GATEWAY_GETNET,
+  title: 'Nenhum pdv Getnet encontrado',
+  accentResolver: ({brandColors, hex}) => brandColors?.primary || hex.info || hex.success,
 });
 
 export default pdvDeviceType;

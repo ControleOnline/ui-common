@@ -36,6 +36,8 @@ const {
   resolvePosCashManagementMode,
   resolvePosOperationMode,
   resolvePosPrintMode,
+  POS_LOCAL_CHARGE_ENABLED_CONFIG_KEY,
+  isPosLocalChargeEnabled,
   resolvePosCheckOrderType,
   shouldEnableAndroidKioskMode,
   shouldEnableAndroidLauncherMode,
@@ -382,3 +384,39 @@ describe('deviceConfigBootstrap POS operation helpers', () => {
     ).toBe(true)
   })
 })
+
+describe('deviceConfigBootstrap local charge capability', () => {
+  it('defaults waiter to blocked and other modes to allowed when config missing', () => {
+    expect(
+      isPosLocalChargeEnabled({
+        [POS_OPERATION_MODE_CONFIG_KEY]: 'waiter',
+      }),
+    ).toBe(false)
+    expect(
+      isPosLocalChargeEnabled({
+        [POS_OPERATION_MODE_CONFIG_KEY]: 'cashier',
+      }),
+    ).toBe(true)
+    expect(
+      isPosLocalChargeEnabled({
+        [POS_OPERATION_MODE_CONFIG_KEY]: 'single-item',
+      }),
+    ).toBe(true)
+  })
+
+  it('honors explicit pos-local-charge-enabled over mode default', () => {
+    expect(
+      isPosLocalChargeEnabled({
+        [POS_OPERATION_MODE_CONFIG_KEY]: 'waiter',
+        [POS_LOCAL_CHARGE_ENABLED_CONFIG_KEY]: '1',
+      }),
+    ).toBe(true)
+    expect(
+      isPosLocalChargeEnabled({
+        [POS_OPERATION_MODE_CONFIG_KEY]: 'cashier',
+        [POS_LOCAL_CHARGE_ENABLED_CONFIG_KEY]: '0',
+      }),
+    ).toBe(false)
+  })
+})
+

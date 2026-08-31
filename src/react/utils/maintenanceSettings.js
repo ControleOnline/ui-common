@@ -9,6 +9,22 @@ export const MAINTENANCE_ROUTINE_ITEMS = [
     defaultEnabled: true,
     defaultCronExpression: '* * * * *',
   },
+  {
+    key: 'cleanup_ephemeral_integrations',
+    title: 'Limpeza de integracoes efemeras',
+    description:
+      'Remove Websocket e PushNotification abertos ha mais de 24 horas.',
+    defaultEnabled: false,
+    defaultCronExpression: '0 * * * *',
+  },
+  {
+    key: 'open_overdue_opportunities',
+    title: 'Oportunidades vencidas para aberto',
+    description:
+      'Move oportunidades de CRM de pendente para aberto quando a data de retorno ja passou.',
+    defaultEnabled: true,
+    defaultCronExpression: '* * * * *',
+  },
 ];
 
 export const normalizeMaintenanceRoutines = value => {

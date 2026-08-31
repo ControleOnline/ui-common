@@ -7,25 +7,25 @@ export const LOG_POLICY_ITEMS = [
     key: 'backend_error',
     title: 'Erros do backend',
     description:
-      'Registra excecoes e falhas HTTP do backend. E o grupo principal para erros 500.',
+      'Registra exceções e falhas HTTP do backend. É o grupo principal para erros 500.',
   },
   {
     key: 'entity',
-    title: 'Historico de entidades',
+    title: 'Histórico de entidades',
     description:
-      'Mantem os diffs de criacao, alteracao e remocao das entidades do sistema.',
+      'Mantém os diffs de criação, alteração e remoção das entidades do sistema.',
   },
   {
     key: 'generic',
-    title: 'Logs genericos',
+    title: 'Logs genéricos',
     description:
-      'Agrupa logs tecnicos de integracao, workers e eventos que nao sao timeline de entidade.',
+      'Agrupa logs técnicos de integração, workers e eventos que não são timeline de entidade.',
   },
   {
     key: 'operation_patterns',
-    title: 'Padroes operacionais',
+    title: 'Padrões operacionais',
     description:
-      'Mantem registros tecnicos ligados a padroes e diagnosticos operacionais do sistema.',
+      'Mantém registros técnicos ligados a padrões e diagnósticos operacionais do sistema.',
   },
   {
     key: 'frontend_debug',

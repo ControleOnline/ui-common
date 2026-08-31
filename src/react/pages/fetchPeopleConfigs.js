@@ -15,5 +15,7 @@ export async function fetchPeopleConfigs({ peopleIri, configKeys = [] }) {
     },
   });
 
-  return parseIntegrationCollection(response).filter(item => keys.includes(String(item?.configKey || '').trim()));
+  return parseIntegrationCollection(response).filter(item =>
+    keys.includes(String(item?.configKey || '').trim()),
+  );
 }

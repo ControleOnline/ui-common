@@ -59,4 +59,42 @@ describe('fileUrl helpers', () => {
       headers: {},
     });
   });
+
+  it('does not path-inject environment hosts like staging (app-community#432)', () => {
+    const source = resolveDefaultFileSource(
+      {
+        id: 8444,
+        url: '/files/8444/download',
+      },
+      {
+        company: {
+          domain: 'staging.controleonline.com',
+        },
+        headers: {
+          Authorization: 'Bearer token',
+        },
+      },
+    );
+
+    expect(source).toEqual({
+      uri: 'https://api.controleonline.com/files/8444/download',
+      headers: {
+        Authorization: 'Bearer token',
+        'app-domain': 'staging.controleonline.com',
+      },
+    });
+    expect(source.uri).not.toContain('staging.controleonline.com/files');
+  });
+
+  it('does not path-inject when fallback DOMAIN is manager platform host', () => {
+    // DOMAIN mock is manager.controleonline.com; no company → environment-like
+    const source = resolveDefaultFileSource(
+      {id: 9, url: '/files/9/download'},
+      {headers: {Authorization: 'Bearer t'}},
+    );
+
+    expect(source.uri).toBe('https://api.controleonline.com/files/9/download');
+    expect(source.headers['app-domain']).toBe('manager.controleonline.com');
+    expect(source.uri).not.toMatch(/manager\.controleonline\.com\/files/);
+  });
 });

@@ -15,6 +15,7 @@ import PrintService from '@controleonline/ui-common/src/react/components/PrintSe
 import RemoteCheckoutService from '@controleonline/ui-common/src/react/components/RemoteCheckoutService';
 import ProductCatalogCacheService from '@controleonline/ui-common/src/react/components/ProductCatalogCacheService';
 import RuntimeInfoFooter from '@controleonline/ui-common/src/react/components/RuntimeInfoFooter';
+import {shouldShowRuntimeFooter} from '@controleonline/ui-common/src/react/utils/runtimeFooter';
 import { useStore } from '@store';
 import { api } from '@controleonline/ui-common/src/api';
 import {app_type} from '@appType';
@@ -100,6 +101,20 @@ const resolveDeviceConfigPeopleIri = ({appType, currentCompany, user}) => {
 
   return '';
 };
+const isTenantAdministrativeAuthority = company => {
+  const userFlags = company?.user || {};
+  return !!(
+    userFlags.owner_enabled ||
+    userFlags.director_enabled ||
+    userFlags.manager_enabled ||
+    userFlags.admin_enabled ||
+    company?.owner_enabled ||
+    company?.director_enabled ||
+    company?.manager_enabled
+  );
+};
+
+
 
 const normalizeRuntimeIp = value => String(value || '').trim();
 
@@ -234,6 +249,7 @@ export const DefaultProvider = ({
     user,
   });
   const isPublicRouteActive = isPublicRoute(currentRouteName);
+  const showRuntimeFooter = shouldShowRuntimeFooter(currentRouteName);
   const currentTranslationConfig = JSON.parse(
     localStorage.getItem('config') || '{}',
   );
@@ -716,6 +732,13 @@ export const DefaultProvider = ({
       return;
     }
 
+    // Non-admin users cannot mutate device context/financial policy (API 403).
+    // Skip bootstrap write; keep local runtime configs in memory only.
+    if (!isTenantAdministrativeAuthority(currentCompany)) {
+      setDeviceRuntimeConfigSynced(true);
+      return;
+    }
+
     deviceConfigsActions
       .addDeviceConfigs({
         device: device.id,
@@ -735,6 +758,7 @@ export const DefaultProvider = ({
     deviceConfigFetched,
     deviceConfigPeopleIri,
     deviceRuntimeConfigSynced,
+    currentCompany,
     deviceConfigsActions,
     device_config?.configs,
     isLogged,
@@ -959,7 +983,7 @@ export const DefaultProvider = ({
             },
           ]}>
           <View style={[providerStyles.content, runtimeUiScaleStyle]}>{children}</View>
-              {!isShopClientApp && bottomNavigationCount === 0 && (
+              {!isShopClientApp && showRuntimeFooter && bottomNavigationCount === 0 && (
                 <RuntimeInfoFooter
                   appVersion={appVersion}
                   defaultCompany={defaultCompany}

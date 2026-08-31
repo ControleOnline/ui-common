@@ -25,7 +25,7 @@ import {
 import styles from './LinkedOrderProductsTab.styles';
 
 const formatApiError = error => {
-  if (!error) return 'Nao foi possivel concluir a operacao.';
+  if (!error) return 'Não foi possível concluir a operação.';
   if (typeof error === 'string') return error;
   if (Array.isArray(error?.message)) {
     return error.message
@@ -34,7 +34,7 @@ const formatApiError = error => {
       .join('\n');
   }
 
-  return error?.message || error?.description || error?.errmsg || 'Nao foi possivel concluir a operacao.';
+  return error?.message || error?.description || error?.errmsg || 'Não foi possível concluir a operação.';
 };
 
 const resolveProductLabel = orderProduct => {
@@ -60,7 +60,7 @@ const LinkedOrderProductsTab = ({
   contract,
   canEdit,
   emptyTitle = 'Nenhum produto adicionado.',
-  emptySubtitle = 'Voce pode vincular produtos a este documento quando precisar.',
+  emptySubtitle = 'Você pode vincular produtos a este documento quando precisar.',
   searchPlaceholder = 'Buscar produto para adicionar...',
 }) => {
   const peopleStore = useStore('people');

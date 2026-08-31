@@ -246,6 +246,7 @@ export default function useDeviceDetailStateA() {
   const hasLoadedMovementDataRef = useRef(false);
   const hasInitializedPdvTabRef = useRef(false);
 
+  // Edição inline do alias
   const [alias,        setAlias]        = useState(initialAlias || '');
   const [editingAlias, setEditingAlias] = useState(false);
   const [aliasInput,   setAliasInput]   = useState(alias);

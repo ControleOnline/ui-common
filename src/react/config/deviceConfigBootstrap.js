@@ -27,6 +27,8 @@ export const DISPLAY_SIZE_MIN = 1;
 export const DISPLAY_SIZE_MAX = 10;
 export const DISPLAY_SIZE_DEFAULT = 5;
 export const POS_OPERATION_MODE_CONFIG_KEY = 'pos-operation-mode';
+/** Independent of operation mode: whether this device may run local charge/payment. */
+export const POS_LOCAL_CHARGE_ENABLED_CONFIG_KEY = 'pos-local-charge-enabled';
 export const POS_PRODUCT_SHOWCASE_CONFIG_KEY = 'pos-product-showcase-id';
 export const DEVICE_ANDROID_KIOSK_ENABLED_CONFIG_KEY =
   'android-kiosk-enabled';
@@ -488,7 +490,31 @@ export const isPosCashRegisterOpen = configs => {
 export const isPosCashRegisterClosed = configs =>
   !isPosCashRegisterOpen(configs);
 
+export const normalizePosLocalChargeEnabled = (value, operationMode) => {
+  if (!isMissingConfigValue(value)) {
+    return isTruthyValue(value);
+  }
+
+  const mode = normalizePosOperationMode(operationMode);
+  // Waiter defaults to no local charge; all other modes keep legacy charge capability.
+  return mode !== POS_OPERATION_MODE_WAITER;
+};
+
+/**
+ * Whether the device is allowed to execute local payment/charge.
+ * Independent of pos-operation-mode and pay_before_production.
+ * Missing config preserves legacy: waiter=false, other modes=true.
+ */
+export const isPosLocalChargeEnabled = configs => {
+  const parsed = parseConfigsObject(configs);
+  return normalizePosLocalChargeEnabled(
+    parsed?.[POS_LOCAL_CHARGE_ENABLED_CONFIG_KEY],
+    parsed?.[POS_OPERATION_MODE_CONFIG_KEY],
+  );
+};
+
 export const getPosOperationModeOption = mode => {
+
   const normalizedMode = normalizePosOperationMode(mode);
 
   return POS_OPERATION_MODE_OPTIONS.find(
