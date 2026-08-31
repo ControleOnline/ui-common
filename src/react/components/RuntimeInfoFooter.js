@@ -64,10 +64,25 @@ const RuntimeInfoFooter = ({
       }),
     [appVersion, device, deviceConfigItem, footerDebugInfo.primaryText],
   );
-  const companyFooterText = useMemo(
-    () => getRuntimeFooterText(defaultCompany),
-    [defaultCompany?.configs],
-  );
+  const peopleStore = useStore('people');
+  const currentCompany = peopleStore?.getters?.currentCompany || {};
+  const companyFooterText = useMemo(() => {
+    const fromCurrent = getRuntimeFooterText(currentCompany);
+    if (fromCurrent) {
+      return fromCurrent;
+    }
+
+    const fromDefault = getRuntimeFooterText(defaultCompany);
+    if (fromDefault) {
+      return fromDefault;
+    }
+
+    return getRuntimeFooterText(null, deviceConfigItem?.configs);
+  }, [
+    currentCompany?.configs,
+    defaultCompany?.configs,
+    deviceConfigItem?.configs,
+  ]);
   const footerTextLines = useMemo(
     () => getRuntimeFooterTextLines(companyFooterText),
     [companyFooterText],
