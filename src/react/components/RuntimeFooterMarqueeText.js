@@ -26,8 +26,9 @@ const RuntimeFooterMarqueeText = ({
 
   const shouldMarquee =
     containerWidth > 0 && contentWidth > containerWidth + 2;
-  const resolvedOpacity =
-    typeof opacity === 'number' ? opacity : Platform.OS === 'web' ? 1 : opacity;
+  // Never bind Animated.Value to opacity — RN Web leaves the label invisible
+  // mid-transition (observed opacity ~0.12 with text present in DOM).
+  const resolvedOpacity = 1;
 
   useEffect(() => {
     if (animationRef.current) {
