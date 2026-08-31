@@ -2,6 +2,7 @@ import React, {useEffect, useMemo, useRef, useState} from 'react';
 import {
   ActivityIndicator,
   Animated,
+  Platform,
   Text,
   View,
   useWindowDimensions,
@@ -27,6 +28,7 @@ const ROTATION_INTERVAL_MS = 4000;
 const FADE_DURATION_MS = 260;
 const COMPACT_BREAKPOINT = 720;
 const MAX_INLINE_TEXT_LENGTH = 84;
+const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
 const RuntimeInfoFooter = ({
   appVersion,
@@ -201,9 +203,15 @@ const RuntimeInfoFooter = ({
         Animated.timing(fadeOpacity, {
           toValue: 0,
           duration: FADE_DURATION_MS,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }).start(({finished}) => {
-          if (!finished || cancelled) {
+          if (cancelled) {
+            return;
+          }
+
+          if (!finished) {
+            fadeOpacity.setValue(1);
+            scheduleTransition();
             return;
           }
 
@@ -212,11 +220,15 @@ const RuntimeInfoFooter = ({
           Animated.timing(fadeOpacity, {
             toValue: 1,
             duration: FADE_DURATION_MS,
-            useNativeDriver: true,
+            useNativeDriver: USE_NATIVE_DRIVER,
           }).start(({finished: fadeInFinished}) => {
-            if (fadeInFinished && !cancelled) {
-              scheduleTransition();
+            if (cancelled) {
+              return;
             }
+            if (!fadeInFinished) {
+              fadeOpacity.setValue(1);
+            }
+            scheduleTransition();
           });
         });
       }, ROTATION_INTERVAL_MS);
@@ -238,9 +250,11 @@ const RuntimeInfoFooter = ({
     return null;
   }
 
-  const displayedText = shouldRotate
-    ? rotationEntries[activeIndex]
-    : inlineText;
+  const displayedText = (
+    shouldRotate
+      ? rotationEntries[activeIndex]
+      : inlineText
+  ) || primaryText || device?.id || '';
   const backgroundColor = colors?.footerBackground;
   const borderColor = colors?.footerBorder;
   const textColor =

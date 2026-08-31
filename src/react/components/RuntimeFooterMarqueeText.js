@@ -1,6 +1,7 @@
 const React = require('react');
 const {useEffect, useRef, useState} = React;
-const {Animated, Text, View} = require('react-native');
+const {Animated, Platform, Text, View} = require('react-native');
+const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
 const GAP_PX = 32;
 const MS_PER_PX = 28;
@@ -47,12 +48,12 @@ const RuntimeFooterMarqueeText = ({
         Animated.timing(translateX, {
           toValue: -distance,
           duration,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
         Animated.timing(translateX, {
           toValue: 0,
           duration: 0,
-          useNativeDriver: true,
+          useNativeDriver: USE_NATIVE_DRIVER,
         }),
       ]),
     );
