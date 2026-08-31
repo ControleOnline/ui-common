@@ -1,8 +1,6 @@
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {
   ActivityIndicator,
-  Animated,
-  Platform,
   Text,
   View,
   useWindowDimensions,
@@ -25,10 +23,8 @@ import styles from './RuntimeInfoFooter.styles';
 import RuntimeFooterMarqueeText from './RuntimeFooterMarqueeText';
 
 const ROTATION_INTERVAL_MS = 4000;
-const FADE_DURATION_MS = 260;
 const COMPACT_BREAKPOINT = 720;
 const MAX_INLINE_TEXT_LENGTH = 84;
-const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 
 const RuntimeInfoFooter = ({
   appVersion,
@@ -40,7 +36,6 @@ const RuntimeInfoFooter = ({
   const {width} = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const [activeIndex, setActiveIndex] = useState(0);
-  const fadeOpacity = useRef(new Animated.Value(1)).current;
   const allStores = useStores(state => state);
   const deviceConfigStore = useStore('device_config');
   const runtimeDebugStore = useStore('runtime_debug');
@@ -190,9 +185,7 @@ const RuntimeInfoFooter = ({
   useEffect(() => {
     if (!shouldRotate || rotationEntries.length <= 1) {
       setActiveIndex(0);
-      fadeOpacity.stopAnimation();
-      fadeOpacity.setValue(1);
-      return;
+      return undefined;
     }
 
     let timeoutId;
@@ -200,41 +193,14 @@ const RuntimeInfoFooter = ({
 
     const scheduleTransition = () => {
       timeoutId = setTimeout(() => {
-        Animated.timing(fadeOpacity, {
-          toValue: 0,
-          duration: FADE_DURATION_MS,
-          useNativeDriver: USE_NATIVE_DRIVER,
-        }).start(({finished}) => {
-          if (cancelled) {
-            return;
-          }
-
-          if (!finished) {
-            fadeOpacity.setValue(1);
-            scheduleTransition();
-            return;
-          }
-
-          setActiveIndex(current => (current + 1) % rotationEntries.length);
-
-          Animated.timing(fadeOpacity, {
-            toValue: 1,
-            duration: FADE_DURATION_MS,
-            useNativeDriver: USE_NATIVE_DRIVER,
-          }).start(({finished: fadeInFinished}) => {
-            if (cancelled) {
-              return;
-            }
-            if (!fadeInFinished) {
-              fadeOpacity.setValue(1);
-            }
-            scheduleTransition();
-          });
-        });
+        if (cancelled) {
+          return;
+        }
+        setActiveIndex(current => (current + 1) % rotationEntries.length);
+        scheduleTransition();
       }, ROTATION_INTERVAL_MS);
     };
 
-    fadeOpacity.setValue(1);
     scheduleTransition();
 
     return () => {
@@ -242,9 +208,8 @@ const RuntimeInfoFooter = ({
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
-      fadeOpacity.stopAnimation();
     };
-  }, [fadeOpacity, rotationEntries.length, shouldRotate]);
+  }, [rotationEntries.length, shouldRotate]);
 
   if (rotationEntries.length === 0 && !showDebugInfo) {
     return null;
@@ -299,9 +264,7 @@ const RuntimeInfoFooter = ({
                 : displayedText
             }
             color={textColor}
-            opacity={
-              Platform.OS === 'web' || showDebugInfo ? 1 : fadeOpacity
-            }
+            opacity={1}
             style={styles.primaryText}
             testID="runtime-footer-primary-text"
           />
