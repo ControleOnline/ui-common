@@ -21,16 +21,64 @@ const parseObjectValue = value => {
   return typeof value === 'object' ? value : {};
 };
 
+const unwrapConfigScalar = value => {
+  if (value === null || value === undefined) {
+    return value;
+  }
+
+  let current = value;
+  for (let i = 0; i < 3; i += 1) {
+    if (typeof current === 'string') {
+      const trimmed = current.trim();
+      if (
+        (trimmed.startsWith('"') && trimmed.endsWith('"')) ||
+        (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+        (trimmed.startsWith('[') && trimmed.endsWith(']'))
+      ) {
+        const parsed = parseJsonStringValue(trimmed);
+        if (parsed !== trimmed) {
+          current = parsed;
+          continue;
+        }
+      }
+      return current;
+    }
+
+    if (current && typeof current === 'object' && !Array.isArray(current)) {
+      if (current.configValue !== undefined) {
+        current = current.configValue;
+        continue;
+      }
+      if (current.value !== undefined) {
+        current = current.value;
+        continue;
+      }
+      if (current.config_value !== undefined) {
+        current = current.config_value;
+        continue;
+      }
+    }
+
+    break;
+  }
+
+  return current;
+};
+
 const normalizeRuntimeFooterText = value => {
   if (value === null || value === undefined) {
     return '';
   }
-  const parsedValue =
-    typeof value === 'string' ? parseJsonStringValue(value) : value;
-  if (parsedValue && typeof parsedValue === 'object') {
+
+  const scalar = unwrapConfigScalar(value);
+  if (scalar === null || scalar === undefined) {
     return '';
   }
-  return safeTrim(String(parsedValue).replace(/\r\n?/g, '\n'))
+  if (typeof scalar === 'object') {
+    return '';
+  }
+
+  return safeTrim(String(scalar).replace(/\r\n?/g, '\n'))
     .split('\n')
     .map(line => safeTrim(line).replace(/\s+/g, ' '))
     .filter(Boolean)
@@ -38,7 +86,10 @@ const normalizeRuntimeFooterText = value => {
 };
 
 const resolveConfigValue = configs => {
-  if (configs == null) return undefined;
+  if (configs == null) {
+    return undefined;
+  }
+
   if (Array.isArray(configs)) {
     const hit = configs.find(
       e =>
@@ -47,13 +98,17 @@ const resolveConfigValue = configs => {
     );
     return hit?.value ?? hit?.configValue ?? hit?.config_value;
   }
-  return parseObjectValue(configs)?.[DEVICE_RUNTIME_FOOTER_TEXT_CONFIG_KEY];
+
+  const parsed = parseObjectValue(configs);
+  return parsed?.[DEVICE_RUNTIME_FOOTER_TEXT_CONFIG_KEY];
 };
 
 const getRuntimeFooterText = (company, extraConfigs) => {
   for (const configs of [company?.configs, extraConfigs]) {
     const normalized = normalizeRuntimeFooterText(resolveConfigValue(configs));
-    if (normalized) return normalized;
+    if (normalized) {
+      return normalized;
+    }
   }
   return '';
 };
