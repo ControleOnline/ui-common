@@ -1,7 +1,6 @@
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, {useEffect, useMemo, useState} from 'react';
 import {
   ActivityIndicator,
-  Animated,
   Text,
   View,
   useWindowDimensions,
@@ -24,7 +23,6 @@ import styles from './RuntimeInfoFooter.styles';
 import RuntimeFooterMarqueeText from './RuntimeFooterMarqueeText';
 
 const ROTATION_INTERVAL_MS = 4000;
-const FADE_DURATION_MS = 260;
 const COMPACT_BREAKPOINT = 720;
 const MAX_INLINE_TEXT_LENGTH = 84;
 
@@ -38,7 +36,6 @@ const RuntimeInfoFooter = ({
   const {width} = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const [activeIndex, setActiveIndex] = useState(0);
-  const fadeOpacity = useRef(new Animated.Value(1)).current;
   const allStores = useStores(state => state);
   const deviceConfigStore = useStore('device_config');
   const runtimeDebugStore = useStore('runtime_debug');
@@ -64,10 +61,27 @@ const RuntimeInfoFooter = ({
       }),
     [appVersion, device, deviceConfigItem, footerDebugInfo.primaryText],
   );
-  const companyFooterText = useMemo(
-    () => getRuntimeFooterText(defaultCompany),
-    [defaultCompany?.configs],
-  );
+  const peopleStore = useStore('people');
+  const configsStore = useStore('configs');
+  const currentCompany = peopleStore?.getters?.currentCompany || {};
+  const storeDefaultCompany = peopleStore?.getters?.defaultCompany || {};
+  const companyConfigs = configsStore?.getters?.items;
+  const companyFooterText = useMemo(() => {
+    const candidates = [
+      getRuntimeFooterText(currentCompany),
+      getRuntimeFooterText(storeDefaultCompany),
+      getRuntimeFooterText(defaultCompany),
+      getRuntimeFooterText(null, companyConfigs),
+      getRuntimeFooterText(null, deviceConfigItem?.configs),
+    ];
+    return candidates.find(Boolean) || '';
+  }, [
+    companyConfigs,
+    currentCompany?.configs,
+    defaultCompany?.configs,
+    deviceConfigItem?.configs,
+    storeDefaultCompany?.configs,
+  ]);
   const footerTextLines = useMemo(
     () => getRuntimeFooterTextLines(companyFooterText),
     [companyFooterText],
@@ -171,9 +185,7 @@ const RuntimeInfoFooter = ({
   useEffect(() => {
     if (!shouldRotate || rotationEntries.length <= 1) {
       setActiveIndex(0);
-      fadeOpacity.stopAnimation();
-      fadeOpacity.setValue(1);
-      return;
+      return undefined;
     }
 
     let timeoutId;
@@ -181,31 +193,14 @@ const RuntimeInfoFooter = ({
 
     const scheduleTransition = () => {
       timeoutId = setTimeout(() => {
-        Animated.timing(fadeOpacity, {
-          toValue: 0,
-          duration: FADE_DURATION_MS,
-          useNativeDriver: true,
-        }).start(({finished}) => {
-          if (!finished || cancelled) {
-            return;
-          }
-
-          setActiveIndex(current => (current + 1) % rotationEntries.length);
-
-          Animated.timing(fadeOpacity, {
-            toValue: 1,
-            duration: FADE_DURATION_MS,
-            useNativeDriver: true,
-          }).start(({finished: fadeInFinished}) => {
-            if (fadeInFinished && !cancelled) {
-              scheduleTransition();
-            }
-          });
-        });
+        if (cancelled) {
+          return;
+        }
+        setActiveIndex(current => (current + 1) % rotationEntries.length);
+        scheduleTransition();
       }, ROTATION_INTERVAL_MS);
     };
 
-    fadeOpacity.setValue(1);
     scheduleTransition();
 
     return () => {
@@ -213,21 +208,26 @@ const RuntimeInfoFooter = ({
       if (timeoutId) {
         clearTimeout(timeoutId);
       }
-      fadeOpacity.stopAnimation();
     };
-  }, [fadeOpacity, rotationEntries.length, shouldRotate]);
+  }, [rotationEntries.length, shouldRotate]);
 
   if (rotationEntries.length === 0 && !showDebugInfo) {
     return null;
   }
 
-  const displayedText = shouldRotate
-    ? rotationEntries[activeIndex]
-    : inlineText;
+  const displayedText = (
+    shouldRotate
+      ? rotationEntries[activeIndex]
+      : inlineText
+  ) || primaryText || device?.id || '';
   const backgroundColor = colors?.footerBackground;
   const borderColor = colors?.footerBorder;
-  const textColor = colors?.footerText;
-  const loadingColor = colors?.footerLink;
+  const textColor =
+    colors?.footerText ||
+    colors?.textSecondary ||
+    colors?.text ||
+    '#0f172a';
+  const loadingColor = colors?.footerLink || colors?.primary || textColor;
   const shellProps = useModernWebChromeProps ? {} : {pointerEvents: 'none'};
   const shellStyle = useModernWebChromeProps
     ? [styles.shell, {pointerEvents: 'none'}]
@@ -264,7 +264,7 @@ const RuntimeInfoFooter = ({
                 : displayedText
             }
             color={textColor}
-            opacity={showDebugInfo ? 1 : fadeOpacity}
+            opacity={1}
             style={styles.primaryText}
             testID="runtime-footer-primary-text"
           />

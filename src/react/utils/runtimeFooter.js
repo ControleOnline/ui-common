@@ -1,12 +1,20 @@
 import { getDeviceTypeLabel } from '@controleonline/ui-common/src/react/utils/printerDevices';
+const {
+  DEVICE_RUNTIME_FOOTER_TEXT_CONFIG_KEY,
+  getRuntimeFooterRotationEntries,
+  getRuntimeFooterText,
+  getRuntimeFooterTextLines,
+  normalizeRuntimeFooterText,
+  parseJsonStringValue,
+  parseObjectValue,
+  safeTrim,
+} = require('./runtimeFooterText');
 
-const DEVICE_RUNTIME_FOOTER_TEXT_CONFIG_KEY = 'device-runtime-footer-text';
+
 const RUNTIME_FOOTER_HIDDEN_ROUTES = new Set(['PaylistPage']);
 
 const shouldShowRuntimeFooter = currentRouteName =>
   !RUNTIME_FOOTER_HIDDEN_ROUTES.has(String(currentRouteName || '').trim());
-
-const safeTrim = value => String(value || '').trim();
 
 const POS_OPERATION_MODE_TRANSLATION_KEYS = {
   counter: 'counterService',
@@ -70,68 +78,8 @@ const buildRuntimeFooterDisplayName = ({
   return parts.join(' • ');
 };
 
-const parseJsonStringValue = value => {
-  try {
-    return JSON.parse(value);
-  } catch {
-    return value;
-  }
-};
-
-const parseObjectValue = value => {
-  if (!value) {
-    return {};
-  }
-
-  if (typeof value === 'string') {
-    const parsed = parseJsonStringValue(value);
-    return parsed && typeof parsed === 'object' ? parsed : {};
-  }
-
-  return typeof value === 'object' ? value : {};
-};
-
 const parseDeviceMetadata = metadata => parseObjectValue(metadata);
 const parseDeviceConfigs = configs => parseObjectValue(configs);
-
-const normalizeRuntimeFooterText = value => {
-  if (value === null || value === undefined) {
-    return '';
-  }
-
-  const parsedValue =
-    typeof value === 'string' ? parseJsonStringValue(value) : value;
-
-  if (parsedValue && typeof parsedValue === 'object') {
-    return '';
-  }
-
-  return safeTrim(String(parsedValue).replace(/\r\n?/g, '\n'))
-    .split('\n')
-    .map(line => safeTrim(line).replace(/\s+/g, ' '))
-    .filter(Boolean)
-    .join('\n');
-};
-
-const getRuntimeFooterText = company =>
-  normalizeRuntimeFooterText(
-    company?.configs?.[DEVICE_RUNTIME_FOOTER_TEXT_CONFIG_KEY],
-  );
-
-const getRuntimeFooterTextLines = value => {
-  const normalizedText =
-    typeof value === 'string'
-      ? normalizeRuntimeFooterText(value)
-      : getRuntimeFooterText(value);
-
-  return normalizedText ? normalizedText.split('\n').filter(Boolean) : [];
-};
-
-const getRuntimeFooterRotationEntries = ({companyFooterText, primaryText}) =>
-  [...getRuntimeFooterTextLines(companyFooterText), safeTrim(primaryText)].filter(
-    Boolean,
-  );
-
 const isWebRuntimeDevice = device => {
   const metadata = parseDeviceMetadata(device?.metadata);
   const runtime = safeTrim(metadata?.runtime).toLowerCase();
