@@ -45,7 +45,7 @@ const CenterState = ({ icon, iconColor, title, text, backgroundColor, spinnerCol
   </SafeAreaView>
 );
 
-export default function IntegrationConfigPage({ route, embedded = false }) {
+export default function IntegrationConfigPage({ route, embedded = false, fiscalTab = '', onlyFiscalTab = false }) {
   const peopleStore = useStore('people');
   const themeStore = useStore('theme');
   const configsStore = useStore('configs');
@@ -63,7 +63,8 @@ export default function IntegrationConfigPage({ route, embedded = false }) {
   const providerConfig = useMemo(() => getIntegrationConfig(providerKey), [providerKey]);
   const configFields = useMemo(() => getConfigFields(providerConfig), [providerConfig]);
   const fiscalTabs = providerConfig?.tabs || [];
-  const [activeFiscalTab, setActiveFiscalTab] = useState(() => fiscalTabs[0]?.key || 'general');
+  const requestedFiscalTab = fiscalTab || route?.params?.fiscalTab || '';
+  const [activeFiscalTab, setActiveFiscalTab] = useState(() => requestedFiscalTab || fiscalTabs[0]?.key || 'general');
   const activeTabDef = useMemo(
     () => fiscalTabs.find(tab => tab.key === activeFiscalTab) || fiscalTabs[0] || null,
     [activeFiscalTab, fiscalTabs],
@@ -73,8 +74,12 @@ export default function IntegrationConfigPage({ route, embedded = false }) {
     [activeTabDef, configFields],
   );
   useEffect(() => {
+    if (requestedFiscalTab && fiscalTabs.some(tab => tab.key === requestedFiscalTab)) {
+      if (activeFiscalTab !== requestedFiscalTab) setActiveFiscalTab(requestedFiscalTab);
+      return;
+    }
     if (fiscalTabs.length && !fiscalTabs.some(tab => tab.key === activeFiscalTab)) setActiveFiscalTab(fiscalTabs[0].key);
-  }, [activeFiscalTab, fiscalTabs]);
+  }, [activeFiscalTab, fiscalTabs, requestedFiscalTab]);
 
   const returnPath = useMemo(() => {
     const routePath = normalizeTextValue(route?.params?.return_path || route?.params?.returnPath || '');
@@ -300,7 +305,7 @@ export default function IntegrationConfigPage({ route, embedded = false }) {
             </View></View>
           ) : (
             <View style={styles.fieldList}>
-              {fiscalTabs.length ? <View style={styles.subTabRow}>{fiscalTabs.map(tab => {
+              {fiscalTabs.length && !onlyFiscalTab ? <View style={styles.subTabRow}>{fiscalTabs.map(tab => {
                 const selected = tab.key === (activeTabDef?.key || activeFiscalTab);
                 return <TouchableOpacity key={tab.key} style={[styles.subTabButton, selected && styles.subTabButtonActive]}
                   activeOpacity={0.85} onPress={() => setActiveFiscalTab(tab.key)}>
