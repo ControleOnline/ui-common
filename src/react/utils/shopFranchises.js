@@ -189,6 +189,7 @@ const fetchFranchiseLinksPage = async ({
     return [];
   }
 
+  // Align with FranchiseLinksTab (ui-customers): numeric company/people id + enable.
   const params = {
     page: Math.max(1, Number(page) || 1),
     itemsPerPage: normalizeItemsPerPage(itemsPerPage),
@@ -358,6 +359,7 @@ export const fetchAllShopFranchiseDirectory = async ({
     itemsPerPage,
   });
 
+  // Enrich each franchise with addresses when people_link embed is empty.
   const enriched = await Promise.all(
     companies.map(async company => {
       const existing = Array.isArray(company?.shopAddresses)
