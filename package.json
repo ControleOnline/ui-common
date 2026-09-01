@@ -10,7 +10,7 @@
     "test:receita-federal": "node --test src/tests/react/pages/receitaFederalIntegrationContract.test.mjs",
     "test:imports-status": "mkdir -p node_modules/@controleonline && ln -sfn ../.. node_modules/@controleonline/ui-common && node --test src/tests/react/utils/importStatus.test.js",
     "test:runtime-language": "node --test src/tests/react/utils/runtimeLanguage.test.js",
-    "test:runtime-footer": "node --test src/tests/react/utils/runtimeFooter.test.js",
+    "test:runtime-footer": "node --test src/tests/react/utils/runtimeFooter.test.js src/tests/react/utils/runtimeFooterText.test.js",
     "test:invoice-presentation": "node --test src/tests/react/utils/invoicePresentation.test.mjs",
     "test:system-error-message": "mkdir -p node_modules/@controleonline && ln -sfn ../.. node_modules/@controleonline/ui-common && node --test src/tests/react/utils/systemErrorMessage.test.js",
     "test:coverage": "c8 --reporter=clover --report-dir coverage npm test",
