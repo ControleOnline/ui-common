@@ -144,7 +144,6 @@ export const INTEGRATION_CONFIGS = {
     description:
       'Configuracoes fiscais por tipo de documento (NF-e, cupom, NFS-e, CT-e, pre-notas).',
     saveLabel: 'Salvar configuracoes fiscais',
-    // requiredKeys only enforce "Gerais" minima; tipos sao opcionais conforme operacao da empresa
     requiredKeys: [
       'receita-federal-tax-regime',
       'receita-federal-certificate-file',
@@ -319,6 +318,11 @@ export const INTEGRATION_CONFIGS = {
             label: 'Ultimo CT-e / proximo numero',
             placeholder: 'Ex.: 10',
           },
+          {
+            key: 'receita-federal-cte-rntrc',
+            label: 'RNTRC',
+            placeholder: 'Registro da transportadora na ANTT',
+          },
         ],
       },
       {
@@ -349,7 +353,6 @@ export const INTEGRATION_CONFIGS = {
         ],
       },
     ],
-    // fields flat list derived at runtime from tabs when present
     fields: [],
   },
 };
