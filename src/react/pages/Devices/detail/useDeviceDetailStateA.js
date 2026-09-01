@@ -485,5 +485,7 @@ export default function useDeviceDetailStateA() {
     runtimeDeviceId,
     runtimeDeviceType,
     currentCompany,
+    displayStore,
+    printerStore,
   };
 }

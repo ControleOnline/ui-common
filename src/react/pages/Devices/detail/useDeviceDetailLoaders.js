@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native';
 import { useStore } from '@store';
 import { useMessage } from '@controleonline/ui-common/src/react/components/MessageService';
 import { resolveThemePalette } from '@controleonline/../../src/styles/branding';
@@ -50,7 +50,126 @@ export default function useDeviceDetailLoaders(deps) {
     setSavingDisplayPrintingConfig, hasLoadedCurrentConfig, setHasLoadedCurrentConfig, hasLoadedCompanyConfigs, setHasLoadedCompanyConfigs, hasLoadedMovementData, setHasLoadedMovementData, hasLoadedCurrentConfigRef, hasLoadedCompanyConfigsRef, hasLoadedMovementDataRef, hasInitializedPdvTabRef, alias,
     setAlias, editingAlias, setEditingAlias, aliasInput, setAliasInput, savingAlias, setSavingAlias, removingDevice, setRemovingDevice, aliasInputRef, skipAliasSyncFromStoreRef, isOpen,
     hasLocalPaymentGateway, paymentDeviceOptions, displayOptions, printerOptions, selectedPosOperationModeOption, pickerMode, packageVersion, appVersion, runtimeDeviceId, runtimeDeviceType, isEditingRuntimeDevice, resolveDeviceContext,
+    currentCompany, displayStore, printerStore,
   } = deps;
+  const applyCurrentDeviceConfig = useCallback((scopedItems, context = {}) => {
+    const currentDeviceString = String(
+      context.deviceString || deviceString || '',
+    ).trim();
+    const currentDeviceType = String(
+      context.deviceType || deviceType || '',
+    )
+      .trim()
+      .toUpperCase();
+    const currentDeviceConfigId = normalizeEntityId(
+      context.deviceId || deviceId,
+    );
+    const dc = (scopedItems || []).find(d => {
+      const currentConfigType = String(d?.type || d?.device?.type || '')
+        .trim()
+        .toUpperCase();
+      const nextDeviceId = normalizeEntityId(
+        d?.device?.id ||
+          d?.device?.['@id'] ||
+          d?.deviceId ||
+          d?.device?.deviceId,
+      );
+
+      if (currentDeviceConfigId && nextDeviceId === currentDeviceConfigId) {
+        return true;
+      }
+
+      return (
+        d?.device?.device === currentDeviceString &&
+        currentConfigType === currentDeviceType
+      );
+    });
+
+    if (dc) {
+      const nextConfigs = parseConfigsObject(dc.configs);
+      actionsRef.current.deviceConfigActions.setItem({
+        ...dc,
+        configs: nextConfigs,
+      });
+      setConfigs(nextConfigs);
+      setDevicePaymentTarget(
+        normalizeDeviceId(nextConfigs[ORDER_PAYMENT_DEVICE_CONFIG_KEY]),
+      );
+      setPdvGateway(getPaymentGatewayFromConfigs(nextConfigs));
+      setPdvPrinterEnabled(isPdvPrinterEnabled(nextConfigs));
+      setPosOperationMode(resolvePosOperationMode(nextConfigs));
+      setProductShowcaseId(
+        normalizeEntityId(nextConfigs[POS_PRODUCT_SHOWCASE_CONFIG_KEY]),
+      );
+      setAndroidKioskEnabled(isAndroidKioskEnabled(nextConfigs));
+      setAndroidLauncherEnabled(isAndroidLauncherEnabled(nextConfigs));
+      setCounterAutoPrintEnabled(isPosAutoPrintEnabled(nextConfigs));
+      setCounterPrintMode(resolvePosPrintMode(nextConfigs));
+      setCounterCashManagementMode(resolvePosCashManagementMode(nextConfigs));
+      setCheckOrderType(
+        resolvePosCheckOrderTypeForShop(nextConfigs, runtimeCompanyConfigs),
+      );
+      setCheckOrderManagementMode(
+        resolvePosCheckOrderManagementMode(nextConfigs),
+      );
+      setDeviceOrderVisibility(
+        resolveDeviceOrderVisibility(nextConfigs),
+      );
+      setDeviceDeliveryEnabled(
+        isPosDeliveryEnabled(nextConfigs),
+      );
+      setDeviceAlertSoundEnabled(
+        isTruthyValue(nextConfigs[DEVICE_ALERT_SOUND_ENABLED_KEY]),
+      );
+      setDeviceAlertSoundUrl(
+        String(nextConfigs[DEVICE_ALERT_SOUND_URL_KEY] || ''),
+      );
+      setDeviceRuntimeDebugInfoEnabled(
+        isTruthyValue(nextConfigs[DEVICE_RUNTIME_DEBUG_INFO_ENABLED_KEY]),
+      );
+      setLinkedDisplayId(
+        normalizeEntityId(nextConfigs[DISPLAY_DEVICE_LINK_CONFIG_KEY]),
+      );
+      setDisplayPrinterId(
+        normalizeDeviceId(nextConfigs[DISPLAY_DEVICE_PRINTER_CONFIG_KEY]),
+      );
+      setDisplayAllowPrinterChange(
+        canDisplayChangePrinter(nextConfigs),
+      );
+      setDisplayAutoPrintProductEnabled(
+        isTruthyValue(nextConfigs[DISPLAY_AUTO_PRINT_PRODUCT_CONFIG_KEY]),
+      );
+      return;
+    }
+
+    actionsRef.current.deviceConfigActions.setItem({});
+
+    setConfigs({});
+    setDevicePaymentTarget('');
+    setPdvGateway('');
+    setPdvPrinterEnabled(true);
+    setPosOperationMode(resolvePosOperationMode({}));
+    setProductShowcaseId('');
+    setAndroidKioskEnabled(false);
+    setAndroidLauncherEnabled(false);
+    setCounterAutoPrintEnabled(isPosAutoPrintEnabled({}));
+    setCounterPrintMode(resolvePosPrintMode({}));
+    setCounterCashManagementMode(resolvePosCashManagementMode({}));
+    setCheckOrderType(
+      resolvePosCheckOrderTypeForShop({}, runtimeCompanyConfigs),
+    );
+    setCheckOrderManagementMode(resolvePosCheckOrderManagementMode({}));
+    setDeviceOrderVisibility(DEVICE_ORDER_VISIBILITY_DEVICE);
+    setDeviceDeliveryEnabled(isPosDeliveryEnabled({}));
+    setDeviceAlertSoundEnabled(false);
+    setDeviceAlertSoundUrl('');
+    setDeviceRuntimeDebugInfoEnabled(false);
+    setLinkedDisplayId('');
+    setDisplayPrinterId('');
+    setDisplayAllowPrinterChange(false);
+    setDisplayAutoPrintProductEnabled(false);
+  }, [deviceId, deviceString, deviceType, runtimeCompanyConfigs]);
+
   const loadMovementData = useCallback(async () => {
     if (!isPdvDevice) {
       setProducts([]);
@@ -317,6 +436,7 @@ export default function useDeviceDetailLoaders(deps) {
   );
 
   return {
+    applyCurrentDeviceConfig,
     loadMovementData,
     refreshCurrentConfig,
     loadCompanyConfigs,
