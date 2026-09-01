@@ -189,12 +189,21 @@ const fetchFranchiseLinksPage = async ({
     return [];
   }
 
+  // Align with FranchiseLinksTab (ui-customers): numeric company/people id + enable.
   const params = {
     page: Math.max(1, Number(page) || 1),
     itemsPerPage: normalizeItemsPerPage(itemsPerPage),
-    linkType: SHOP_FRANCHISE_LINK_TYPE,
-    [side]: toEntityIri(id, 'people'),
+    linkType: [SHOP_FRANCHISE_LINK_TYPE],
+    enable: true,
   };
+
+  if (side === 'company') {
+    params.company = id;
+  } else if (side === 'people') {
+    params.people = id;
+  } else {
+    params[side] = toEntityIri(id, 'people');
+  }
 
   if (String(search || '').trim()) {
     params.search = String(search).trim();
@@ -344,11 +353,43 @@ export const fetchAllShopFranchiseDirectory = async ({
       );
   }
 
-  return fetchFranchiseCompaniesFromLinks({
+  const companies = await fetchFranchiseCompaniesFromLinks({
     companyId,
     search,
     itemsPerPage,
   });
+
+  // Enrich each franchise with addresses when people_link embed is empty.
+  const enriched = await Promise.all(
+    companies.map(async company => {
+      const existing = Array.isArray(company?.shopAddresses)
+        ? company.shopAddresses
+        : [];
+      if (existing.length > 0) {
+        return normalizeFranchiseDirectoryItem(company);
+      }
+      const peopleId = normalizeShopEntityId(company);
+      if (!peopleId) {
+        return normalizeFranchiseDirectoryItem(company);
+      }
+      try {
+        const addresses = await fetchShopFranchiseAddresses({peopleId});
+        return normalizeFranchiseDirectoryItem({
+          ...company,
+          shopAddresses: Array.isArray(addresses) ? addresses : [],
+        });
+      } catch {
+        return normalizeFranchiseDirectoryItem(company);
+      }
+    }),
+  );
+
+  return enriched.sort((left, right) =>
+    sortByLabel(
+      resolveFranchiseCompanyLabel(left),
+      resolveFranchiseCompanyLabel(right),
+    ),
+  );
 };
 
 export const fetchShopFranchiseAddresses = async ({
