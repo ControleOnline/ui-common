@@ -166,11 +166,6 @@ export const INTEGRATION_CONFIGS = {
             ],
           },
           {
-            key: 'receita-federal-ibge-code',
-            label: 'Codigo IBGE (municipio)',
-            placeholder: 'Ex.: 3550308',
-          },
-          {
             key: 'receita-federal-environment',
             label: 'Ambiente SEFAZ',
             type: 'select',
@@ -214,11 +209,6 @@ export const INTEGRATION_CONFIGS = {
             label: 'Serie NF-e',
             placeholder: 'Ex.: 1',
           },
-          {
-            key: 'receita-federal-nfe-last-number',
-            label: 'Ultima NF-e / proximo numero',
-            placeholder: 'Ex.: 100',
-          },
         ],
       },
       {
@@ -239,11 +229,6 @@ export const INTEGRATION_CONFIGS = {
             key: 'receita-federal-nfce-serie',
             label: 'Serie NFC-e',
             placeholder: 'Ex.: 1',
-          },
-          {
-            key: 'receita-federal-nfce-last-number',
-            label: 'Ultima NFC-e / proximo numero',
-            placeholder: 'Ex.: 100',
           },
           {
             key: 'receita-federal-nfce-csc-id',
@@ -278,11 +263,6 @@ export const INTEGRATION_CONFIGS = {
             placeholder: 'Ex.: 1',
           },
           {
-            key: 'receita-federal-nfse-last-number',
-            label: 'Ultimo RPS / proximo numero',
-            placeholder: 'Ex.: 50',
-          },
-          {
             key: 'receita-federal-nfse-im',
             label: 'Inscricao municipal',
             placeholder: 'IM do prestador',
@@ -312,11 +292,6 @@ export const INTEGRATION_CONFIGS = {
             key: 'receita-federal-cte-serie',
             label: 'Serie CT-e',
             placeholder: 'Ex.: 1',
-          },
-          {
-            key: 'receita-federal-cte-last-number',
-            label: 'Ultimo CT-e / proximo numero',
-            placeholder: 'Ex.: 10',
           },
           {
             key: 'receita-federal-cte-rntrc',
