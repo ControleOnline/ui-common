@@ -188,6 +188,16 @@ export const INTEGRATION_CONFIGS = {
             placeholder: 'Informe a senha do certificado',
             secureTextEntry: true,
           },
+          {
+            key: 'receita-federal-state-registration',
+            label: 'Inscricao estadual',
+            placeholder: 'IE do emitente',
+          },
+          {
+            key: 'receita-federal-ibge-code',
+            label: 'Codigo IBGE do municipio',
+            placeholder: 'Ex.: 3522505',
+          },
         ],
       },
       {
@@ -195,15 +205,6 @@ export const INTEGRATION_CONFIGS = {
         label: 'NF-e (produtos)',
         description: 'Nota Fiscal Eletronica modelo 55 — saida de mercadorias.',
         fields: [
-          {
-            key: 'receita-federal-nfe-enabled',
-            label: 'Habilitar NF-e',
-            type: 'select',
-            options: [
-              { value: '0', label: 'Nao' },
-              { value: '1', label: 'Sim' },
-            ],
-          },
           {
             key: 'receita-federal-nfe-serie',
             label: 'Serie NF-e',
@@ -217,29 +218,9 @@ export const INTEGRATION_CONFIGS = {
         description: 'Cupom fiscal eletronico modelo 65 — consumidor final.',
         fields: [
           {
-            key: 'receita-federal-nfce-enabled',
-            label: 'Habilitar NFC-e / cupom',
-            type: 'select',
-            options: [
-              { value: '0', label: 'Nao' },
-              { value: '1', label: 'Sim' },
-            ],
-          },
-          {
             key: 'receita-federal-nfce-serie',
             label: 'Serie NFC-e',
             placeholder: 'Ex.: 1',
-          },
-          {
-            key: 'receita-federal-nfce-csc-id',
-            label: 'CSC ID (token)',
-            placeholder: 'Identificador do CSC',
-          },
-          {
-            key: 'receita-federal-nfce-csc',
-            label: 'CSC (codigo de seguranca)',
-            placeholder: 'Codigo CSC da SEFAZ',
-            secureTextEntry: true,
           },
         ],
       },
@@ -248,30 +229,7 @@ export const INTEGRATION_CONFIGS = {
         label: 'NFS-e (servicos)',
         description: 'Nota de servicos eletronica — prestacao de servicos.',
         fields: [
-          {
-            key: 'receita-federal-nfse-enabled',
-            label: 'Habilitar NFS-e',
-            type: 'select',
-            options: [
-              { value: '0', label: 'Nao' },
-              { value: '1', label: 'Sim' },
-            ],
-          },
-          {
-            key: 'receita-federal-nfse-serie',
-            label: 'Serie RPS / NFS-e',
-            placeholder: 'Ex.: 1',
-          },
-          {
-            key: 'receita-federal-nfse-im',
-            label: 'Inscricao municipal',
-            placeholder: 'IM do prestador',
-          },
-          {
-            key: 'receita-federal-nfse-cnae',
-            label: 'CNAE principal (servico)',
-            placeholder: 'Ex.: 6201501',
-          },
+          // NFS-e provider-specific fields are not supported by the current backend.
         ],
       },
       {
@@ -279,15 +237,6 @@ export const INTEGRATION_CONFIGS = {
         label: 'CT-e',
         description: 'Conhecimento de Transporte Eletronico.',
         fields: [
-          {
-            key: 'receita-federal-cte-enabled',
-            label: 'Habilitar CT-e',
-            type: 'select',
-            options: [
-              { value: '0', label: 'Nao' },
-              { value: '1', label: 'Sim' },
-            ],
-          },
           {
             key: 'receita-federal-cte-serie',
             label: 'Serie CT-e',
@@ -297,33 +246,6 @@ export const INTEGRATION_CONFIGS = {
             key: 'receita-federal-cte-rntrc',
             label: 'RNTRC',
             placeholder: 'Registro da transportadora na ANTT',
-          },
-        ],
-      },
-      {
-        key: 'prenota',
-        label: 'Pre-notas',
-        description: 'Rascunhos / pre-notas antes da autorizacao SEFAZ.',
-        fields: [
-          {
-            key: 'receita-federal-prenota-enabled',
-            label: 'Habilitar pre-notas',
-            type: 'select',
-            options: [
-              { value: '0', label: 'Nao' },
-              { value: '1', label: 'Sim' },
-            ],
-          },
-          {
-            key: 'receita-federal-prenota-default-type',
-            label: 'Tipo padrao ao gerar pre-nota',
-            type: 'select',
-            options: [
-              { value: 'nfe', label: 'NF-e (produtos)' },
-              { value: 'nfce', label: 'NFC-e / cupom' },
-              { value: 'nfse', label: 'NFS-e (servicos)' },
-              { value: 'cte', label: 'CT-e' },
-            ],
           },
         ],
       },
