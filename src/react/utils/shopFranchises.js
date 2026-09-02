@@ -11,14 +11,62 @@ export const SHOP_FRANCHISE_PAGE_SIZE = 50;
 const normalizeItemsPerPage = value =>
   Math.max(1, Math.min(SHOP_FRANCHISE_PAGE_SIZE, Number(value) || SHOP_FRANCHISE_PAGE_SIZE));
 
-const normalizeFranchiseDirectoryItem = company => ({
-  ...company,
-  shopAddresses: Array.isArray(company?.shopAddresses)
+const parseCoordValue = value => {
+  if (value === null || value === undefined || value === '') {
+    return null;
+  }
+  const n = Number(value);
+  return Number.isFinite(n) ? n : null;
+};
+
+/** Coords may live on the address root or under address.map (API / DefaultAddress). */
+export const resolveFranchiseAddressCoords = address => {
+  if (!address || typeof address !== 'object') {
+    return {latitude: null, longitude: null};
+  }
+  const latitude = parseCoordValue(
+    address.latitude ??
+      address.lat ??
+      address?.map?.latitude ??
+      address?.map?.lat ??
+      address?.geo?.latitude,
+  );
+  const longitude = parseCoordValue(
+    address.longitude ??
+      address.lng ??
+      address.lon ??
+      address?.map?.longitude ??
+      address?.map?.lng ??
+      address?.map?.lon ??
+      address?.geo?.longitude,
+  );
+  return {latitude, longitude};
+};
+
+const normalizeFranchiseAddress = address => {
+  if (!address || typeof address !== 'object') {
+    return address;
+  }
+  const {latitude, longitude} = resolveFranchiseAddressCoords(address);
+  return {
+    ...address,
+    latitude,
+    longitude,
+  };
+};
+
+const normalizeFranchiseDirectoryItem = company => {
+  const rawAddresses = Array.isArray(company?.shopAddresses)
     ? company.shopAddresses
     : Array.isArray(company?.address)
       ? company.address
-      : [],
-});
+      : [];
+
+  return {
+    ...company,
+    shopAddresses: rawAddresses.map(normalizeFranchiseAddress),
+  };
+};
 
 const sortByLabel = (left, right) =>
   String(left || '')
@@ -359,28 +407,26 @@ export const fetchAllShopFranchiseDirectory = async ({
     itemsPerPage,
   });
 
-  // Enrich each franchise with addresses when people_link embed is empty.
+  // Always load addresses from /addresses so lat/long (and map.*) are present.
+  // people_link embeds are often stubs without coordinates.
   const enriched = await Promise.all(
     companies.map(async company => {
-      const existing = Array.isArray(company?.shopAddresses)
-        ? company.shopAddresses
-        : [];
-      if (existing.length > 0) {
-        return normalizeFranchiseDirectoryItem(company);
-      }
       const peopleId = normalizeShopEntityId(company);
       if (!peopleId) {
         return normalizeFranchiseDirectoryItem(company);
       }
       try {
         const addresses = await fetchShopFranchiseAddresses({peopleId});
-        return normalizeFranchiseDirectoryItem({
-          ...company,
-          shopAddresses: Array.isArray(addresses) ? addresses : [],
-        });
+        if (Array.isArray(addresses) && addresses.length > 0) {
+          return normalizeFranchiseDirectoryItem({
+            ...company,
+            shopAddresses: addresses,
+          });
+        }
       } catch {
-        return normalizeFranchiseDirectoryItem(company);
+        // fall through to embedded addresses
       }
+      return normalizeFranchiseDirectoryItem(company);
     }),
   );
 
