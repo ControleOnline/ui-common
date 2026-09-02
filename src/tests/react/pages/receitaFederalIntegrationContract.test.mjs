@@ -12,13 +12,14 @@ test('Receita Federal catalog exposes company fiscal configuration', () => {
   assert.match(catalog, /key: 'receita-federal'/);
   assert.match(catalog, /label: 'Receita Federal'/);
   assert.match(catalog, /receita-federal-tax-regime/);
-  assert.match(catalog, /receita-federal-ibge-code/);
   assert.match(catalog, /receita-federal-certificate-file/);
   assert.match(catalog, /receita-federal-certificate-password/);
   assert.match(catalog, /secureTextEntry: true/);
   assert.match(catalog, /\.pfx,\.p12,application\/x-pkcs12/);
   assert.match(catalog, /key: 'general'/);
   assert.match(catalog, /key: 'cte'/);
+  assert.doesNotMatch(catalog, /key: 'receita-federal-ibge-code'/);
+  assert.doesNotMatch(catalog, /key: 'receita-federal-(nfe|nfce|nfse|cte)-last-number'/);
 });
 
 test('Receita Federal route resolves without relying only on route params', () => {
