@@ -10,16 +10,18 @@ const loaderSource = readFileSync(
   'utf8',
 );
 
-test('device detail loaders receive currentCompany from their dependency object', () => {
+test('device detail loaders receive currentCompany from deps exactly once', () => {
   const dependencies = loaderSource.match(
     /export default function useDeviceDetailLoaders\(deps\)[\s\S]*?const \{([\s\S]*?)\}\s*=\s*deps;/,
   );
 
   assert.ok(dependencies, 'useDeviceDetailLoaders dependency block not found');
-  assert.match(
-    dependencies[1],
-    /(?:^|,)\s*currentCompany\s*(?:,|$)/,
-    'currentCompany must be read from deps before loaders use it',
+  const block = dependencies[1];
+  const hits = block.match(/(?:^|,)\s*currentCompany\s*(?:,|$)/gm) || [];
+  assert.equal(
+    hits.length,
+    1,
+    `currentCompany must appear exactly once in deps destructure, found ${hits.length}`,
   );
   assert.match(loaderSource, /currentCompany\?\.id/);
 });
