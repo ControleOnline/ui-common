@@ -49,7 +49,7 @@ export default function useDeviceDetailLoaders(deps) {
     setDeviceAlertSoundUrl, deviceRuntimeDebugInfoEnabled, setDeviceRuntimeDebugInfoEnabled, linkedDisplayId, setLinkedDisplayId, displayPrinterId, setDisplayPrinterId, displayAllowPrinterChange, setDisplayAllowPrinterChange, displayAutoPrintProductEnabled, setDisplayAutoPrintProductEnabled, savingDisplayPrintingConfig,
     setSavingDisplayPrintingConfig, hasLoadedCurrentConfig, setHasLoadedCurrentConfig, hasLoadedCompanyConfigs, setHasLoadedCompanyConfigs, hasLoadedMovementData, setHasLoadedMovementData, hasLoadedCurrentConfigRef, hasLoadedCompanyConfigsRef, hasLoadedMovementDataRef, hasInitializedPdvTabRef, alias,
     setAlias, editingAlias, setEditingAlias, aliasInput, setAliasInput, savingAlias, setSavingAlias, removingDevice, setRemovingDevice, aliasInputRef, skipAliasSyncFromStoreRef, isOpen,
-    hasLocalPaymentGateway, paymentDeviceOptions, displayOptions, printerOptions, selectedPosOperationModeOption, pickerMode, packageVersion, appVersion, runtimeDeviceId, runtimeDeviceType, isEditingRuntimeDevice, resolveDeviceContext,
+    hasLocalPaymentGateway, paymentDeviceOptions, displayOptions, printerOptions, selectedPosOperationModeOption, pickerMode, packageVersion, appVersion, runtimeDeviceId, runtimeDeviceType, isEditingRuntimeDevice, resolveDeviceContext, currentCompany,
   } = deps;
   const loadMovementData = useCallback(async () => {
     if (!isPdvDevice) {
