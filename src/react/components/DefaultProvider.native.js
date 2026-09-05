@@ -48,7 +48,9 @@ import {
 } from '@controleonline/ui-common/src/react/utils/deviceRuntime';
 import {
   filterWalletPaymentTypesByAllowedIds,
+  getPaymentGateway,
   resolveDevicePaymentTypeIds,
+  selectPosWalletPaymentTypes,
 } from '@controleonline/ui-common/src/react/utils/paymentDevices';
 import {
   normalizeRuntimeMenuResponse,
@@ -518,6 +520,10 @@ export const DefaultProvider = ({
       return;
     }
 
+    if (!isShopClientApp && !mainConfigsDiscovered) {
+      return;
+    }
+
     let isMounted = true;
 
     api
@@ -538,16 +544,13 @@ export const DefaultProvider = ({
             : Array.isArray(response)
               ? response
               : [];
-        const allowedPaymentTypeIds = resolveDevicePaymentTypeIds(
-          paymentConfigSource,
-          walletPaymentTypes,
-        );
-
         paymentTypeActions.setItems(
-          filterWalletPaymentTypesByAllowedIds(
+          selectPosWalletPaymentTypes({
             walletPaymentTypes,
-            allowedPaymentTypeIds,
-          ),
+            deviceConfigs: paymentConfigSource,
+            companyConfigs,
+            gateway: getPaymentGateway(device_config || paymentConfigSource),
+          }),
         );
       })
       .catch(() => {
