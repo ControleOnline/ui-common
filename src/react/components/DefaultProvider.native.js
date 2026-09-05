@@ -47,7 +47,9 @@ import {
   resolveOperationalDeviceType,
 } from '@controleonline/ui-common/src/react/utils/deviceRuntime';
 import {
+  buildWalletIdsForGateway,
   filterWalletPaymentTypesByAllowedIds,
+  getPaymentGateway,
   resolveDevicePaymentTypeIds,
 } from '@controleonline/ui-common/src/react/utils/paymentDevices';
 import {
@@ -509,17 +511,21 @@ export const DefaultProvider = ({
         : currentCompany?.configs
       : device_config?.configs;
 
-    if (!currentCompany?.id || !paymentConfigSource) {
+    if (!currentCompany?.id || !paymentConfigSource || !mainConfigsDiscovered) {
       paymentTypeActions.setItems([]);
       return;
     }
 
     let isMounted = true;
 
+    const gateway = getPaymentGateway(paymentConfigSource);
+    const walletIds = buildWalletIdsForGateway({gateway, companyConfigs});
+
     api
       .fetch('wallet_payment_types', {
         params: {
           people: `/people/${currentCompany.id}`,
+          ...(walletIds.length ? {wallet: walletIds} : {}),
         },
       })
       .then(response => {
@@ -540,10 +546,11 @@ export const DefaultProvider = ({
         );
 
         paymentTypeActions.setItems(
-          filterWalletPaymentTypesByAllowedIds(
-            walletPaymentTypes,
-            allowedPaymentTypeIds,
-          ),
+          allowedPaymentTypeIds.length
+            ? filterWalletPaymentTypesByAllowedIds(walletPaymentTypes, allowedPaymentTypeIds)
+            : walletIds.length
+              ? walletPaymentTypes
+              : [],
         );
       })
       .catch(() => {
@@ -561,6 +568,7 @@ export const DefaultProvider = ({
     currentCompany?.id,
     device_config?.configs,
     isShopClientApp,
+    mainConfigsDiscovered,
     paymentTypeActions,
   ]);
 

@@ -10,11 +10,39 @@ jest.mock('react-native', () => ({
 const {describe, expect, it} = global
 
 const {
+  buildWalletIdsForGateway,
   PAYMENT_TYPE_IDS_CONFIG_KEY,
   filterWalletPaymentTypesByAllowedIds,
   isLocalCieloPrintCapableDeviceConfig,
   resolveDevicePaymentTypeIds,
 } = require('../../../react/utils/paymentDevices')
+
+describe('payment wallet selection', () => {
+  it('resolves the wallet configured for the POS gateway and cash wallet', () => {
+    expect(
+      buildWalletIdsForGateway({
+        gateway: 'cielo',
+        companyConfigs: {
+          'pos-cielo-wallet': '104',
+          'pos-cash-wallet': '7',
+          'pos-infinite-pay-wallet': '205',
+        },
+      }),
+    ).toEqual(['104', '7'])
+  })
+
+  it('does not use another gateway wallet when the POS gateway changes', () => {
+    expect(
+      buildWalletIdsForGateway({
+        gateway: 'infinite-pay',
+        companyConfigs: {
+          'pos-cielo-wallet': '104',
+          'pos-infinite-pay-wallet': '205',
+        },
+      }),
+    ).toEqual(['205'])
+  })
+})
 
 describe('paymentDevices local Cielo print support', () => {
   it('resolves the payment type allowlist from the new config key', () => {
