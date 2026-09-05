@@ -330,7 +330,7 @@ export const api = {
       }
     }
 
-    return session?.token || session?.api_key;
+    return session?.token || session?.api_key || session?.apiKey;
   },
   serialize(obj, prefix = '') {
     const pairs = [];
