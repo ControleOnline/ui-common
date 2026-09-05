@@ -130,6 +130,9 @@ const normalizeFormattedValue = value => {
       value?.value ??
       value?.name ??
       value?.alias ??
+      value?.status ??
+      value?.realStatus ??
+      value?.real_status ??
       value?.icon ??
       value?.fileName ??
       value?.filename ??
@@ -176,9 +179,15 @@ const shouldTranslateColumnValue = ({column, storeName, value}) => {
   return candidates.some(candidate => DEFAULT_TRANSLATABLE_FIELDS.has(candidate));
 };
 
+const STATUS_DISPLAY_PT = {
+  paid: 'Pago',
+};
+
 const translateColumnValue = ({column, storeName, value}) => {
+  const statusFallback = STATUS_DISPLAY_PT[normalizeText(value).toLowerCase()];
+
   if (!shouldTranslateColumnValue({column, storeName, value})) {
-    return value;
+    return statusFallback || value;
   }
 
   const translateFn =
@@ -186,7 +195,16 @@ const translateColumnValue = ({column, storeName, value}) => {
       ? globalThis.t.t.bind(globalThis.t)
       : null;
 
-  return translateFn ? translateFn(storeName, 'span', value) : value;
+  const translated = translateFn ? translateFn(storeName, 'span', value) : value;
+  if (
+    statusFallback &&
+    (!normalizeText(translated) ||
+      normalizeText(translated).toLowerCase() === normalizeText(value).toLowerCase())
+  ) {
+    return statusFallback;
+  }
+
+  return translated;
 };
 
 const translateColumnLabel = ({column, fieldName, storeName, fallbackLabel = ''}) => {
