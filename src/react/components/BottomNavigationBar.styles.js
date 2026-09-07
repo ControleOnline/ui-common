@@ -56,7 +56,7 @@ const createStyles = ({
       justifyContent: 'flex-start',
       minHeight: 64,
       paddingHorizontal: 8,
-      paddingTop: 4,
+      paddingTop: 6,
       paddingBottom: 8,
       borderWidth: 1,
       borderBottomWidth: 0,
@@ -66,7 +66,8 @@ const createStyles = ({
       borderBottomLeftRadius: 0,
       borderBottomRightRadius: 0,
       backgroundColor: dockBackground,
-      overflow: 'hidden',
+      // visible: overflow:hidden was clipping the runtime footer text inside the dock
+      overflow: 'visible',
       ...(Platform.OS === 'android'
         ? {elevation: 10}
         : Platform.OS === 'web' && useModernWebChromeProps
@@ -82,11 +83,13 @@ const createStyles = ({
     },
     footerSlot: {
       width: '100%',
+      minHeight: 24,
       paddingHorizontal: 4,
-      paddingTop: 0,
-      paddingBottom: 2,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: 'rgba(15, 23, 42, 0.08)',
+      paddingTop: 2,
+      paddingBottom: 4,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: 'rgba(15, 23, 42, 0.12)',
+      zIndex: 2,
     },
     itemsRow: {
       flexDirection: 'row',
