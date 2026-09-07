@@ -126,49 +126,49 @@ const BottomNavigationBar = ({
   return (
     <View {...hostProps} style={hostStyle}>
       <View style={styles.stack}>
-        {/* Footer ABOVE the icon dock so the runtime text is visible */}
-        {runtimeFooter ? (
-          <View style={styles.footerSlot} testID="bottom-navigation-footer-slot">
-            <RuntimeInfoFooter {...footerProps} />
-          </View>
-        ) : null}
-
         <View style={styles.dock} testID={testID}>
-          {routeItems.map(item => {
-            const isActive = effectiveActiveRoute === item.route;
-            const isDisabled = disabled || item.disabled;
-            const iconSize = item.iconSize || 18;
-            const {iconColor, textColor} = resolveItemColors({
-              isActive,
-              isDisabled,
-            });
+          {runtimeFooter ? (
+            <View style={styles.footerSlot}>
+              <RuntimeInfoFooter {...footerProps} />
+            </View>
+          ) : null}
+          <View style={styles.itemsRow}>
+            {routeItems.map(item => {
+              const isActive = effectiveActiveRoute === item.route;
+              const isDisabled = disabled || item.disabled;
+              const iconSize = item.iconSize || 18;
+              const {iconColor, textColor} = resolveItemColors({
+                isActive,
+                isDisabled,
+              });
 
-            return (
-              <Pressable
-                key={item.route}
-                accessibilityRole="button"
-                disabled={isDisabled}
-                onPress={() => navigateTo(item)}
-                style={({pressed}) => [
-                  ...resolveItemStateStyles({isActive, isDisabled}),
-                  ...resolvePressedStyles({pressed, isDisabled}),
-                ]}>
-                <View style={styles.iconWrap}>
-                  <Icon color={iconColor} name={item.icon} size={iconSize} />
-                </View>
-                <Text
-                  numberOfLines={1}
-                  style={[
-                    styles.itemLabel,
-                    {
-                      color: textColor,
-                    },
+              return (
+                <Pressable
+                  key={item.route}
+                  accessibilityRole="button"
+                  disabled={isDisabled}
+                  onPress={() => navigateTo(item)}
+                  style={({pressed}) => [
+                    ...resolveItemStateStyles({isActive, isDisabled}),
+                    ...resolvePressedStyles({pressed, isDisabled}),
                   ]}>
-                  {item.label}
-                </Text>
-              </Pressable>
-            );
-          })}
+                  <View style={styles.iconWrap}>
+                    <Icon color={iconColor} name={item.icon} size={iconSize} />
+                  </View>
+                  <Text
+                    numberOfLines={1}
+                    style={[
+                      styles.itemLabel,
+                      {
+                        color: textColor,
+                      },
+                    ]}>
+                    {item.label}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
         </View>
       </View>
     </View>
