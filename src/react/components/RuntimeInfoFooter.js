@@ -26,6 +26,39 @@ import RuntimeFooterMarqueeText from './RuntimeFooterMarqueeText';
 const ROTATION_INTERVAL_MS = 4000;
 const COMPACT_BREAKPOINT = 720;
 const MAX_INLINE_TEXT_LENGTH = 84;
+const FALLBACK_TEXT_COLOR = '#0f172a';
+
+const normalizeColor = value =>
+  String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '');
+
+/** Prefer theme colors, but never render text the same as the footer background. */
+const resolveVisibleFooterTextColor = colors => {
+  const candidates = [
+    colors?.footerText,
+    colors?.textSecondary,
+    colors?.text,
+    FALLBACK_TEXT_COLOR,
+  ];
+  const background = normalizeColor(
+    colors?.footerBackground || colors?.navigationBackground || '',
+  );
+
+  for (const candidate of candidates) {
+    const normalized = normalizeColor(candidate);
+    if (!normalized) {
+      continue;
+    }
+    if (background && normalized === background) {
+      continue;
+    }
+    return candidate;
+  }
+
+  return FALLBACK_TEXT_COLOR;
+};
 
 const RuntimeInfoFooter = ({
   appVersion,
@@ -226,11 +259,7 @@ const RuntimeInfoFooter = ({
   ) || primaryText || device?.id || '';
   const backgroundColor = colors?.footerBackground;
   const borderColor = colors?.footerBorder;
-  const textColor =
-    colors?.footerText ||
-    colors?.textSecondary ||
-    colors?.text ||
-    '#0f172a';
+  const textColor = resolveVisibleFooterTextColor(colors);
   const loadingColor = colors?.footerLink || colors?.primary || textColor;
   const shellProps = useModernWebChromeProps ? {} : {pointerEvents: 'none'};
   const shellStyle = useModernWebChromeProps
