@@ -127,9 +127,8 @@ const BottomNavigationBar = ({
     <View {...hostProps} style={hostStyle}>
       <View style={styles.stack}>
         <View style={styles.dock} testID={testID}>
-          {/* Footer ABOVE icons — text was in DOM but sat under the icon row / bottom edge. */}
           {runtimeFooter ? (
-            <View style={styles.footerSlot} testID="bottom-navigation-footer-slot">
+            <View style={styles.footerSlot}>
               <RuntimeInfoFooter {...footerProps} />
             </View>
           ) : null}
