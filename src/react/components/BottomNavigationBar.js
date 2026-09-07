@@ -126,6 +126,13 @@ const BottomNavigationBar = ({
   return (
     <View {...hostProps} style={hostStyle}>
       <View style={styles.stack}>
+        {/* Footer ABOVE the icon dock so the runtime text is visible */}
+        {runtimeFooter ? (
+          <View style={styles.footerSlot} testID="bottom-navigation-footer-slot">
+            <RuntimeInfoFooter {...footerProps} />
+          </View>
+        ) : null}
+
         <View style={styles.dock} testID={testID}>
           {routeItems.map(item => {
             const isActive = effectiveActiveRoute === item.route;
@@ -163,10 +170,6 @@ const BottomNavigationBar = ({
             );
           })}
         </View>
-
-        {runtimeFooter && (
-          <RuntimeInfoFooter {...footerProps} />
-        )}
       </View>
     </View>
   );
