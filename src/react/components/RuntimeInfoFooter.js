@@ -1,7 +1,6 @@
 import React, {useEffect, useMemo, useState} from 'react';
 import {
   ActivityIndicator,
-  Platform,
   Text,
   View,
   useWindowDimensions,
@@ -214,10 +213,7 @@ const RuntimeInfoFooter = ({
       ),
     [allStores],
   );
-  const bottomInset =
-    Platform.OS === 'web'
-      ? 0
-      : Math.max(Number(insets.bottom) || 0, 16);
+  const bottomInset = Math.max(Number(insets.bottom) || 0, 16);
 
   useEffect(() => {
     if (!shouldRotate || rotationEntries.length <= 1) {
