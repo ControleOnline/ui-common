@@ -304,8 +304,14 @@ test.describe('device-detail copy config (browser smoke #629)', () => {
 
   test('copy from source device posts destination identity only', async ({
     page,
-  }) => {
+  }, testInfo) => {
     const api = await mockCopyApi(page);
+    const shot = async (name) => {
+      await page.screenshot({
+        path: testInfo.outputPath(name),
+        fullPage: true,
+      });
+    };
 
     await page.goto('/devices-index?store=device_config');
     await page.getByTestId('device-config-487').click();
@@ -313,6 +319,7 @@ test.describe('device-detail copy config (browser smoke #629)', () => {
     await expect(page.getByTestId('device-alias-text')).toHaveText(DEST_ALIAS, {
       timeout: 15000,
     });
+    await shot('01-device-detail-header-copy-btn.png');
 
     await page.getByTestId('device-detail-copy-config-btn').click();
     await expect(page.getByTestId('copy-device-config-modal')).toBeVisible({
@@ -321,6 +328,7 @@ test.describe('device-detail copy config (browser smoke #629)', () => {
     await expect(page.getByTestId('copy-device-config-hint')).toContainText(
       DEST_ALIAS,
     );
+    await shot('02-copy-modal-picker.png');
 
     await expect(
       page.getByTestId(`copy-device-config-option-${SRC_DEVICE_STRING}`),
@@ -342,6 +350,7 @@ test.describe('device-detail copy config (browser smoke #629)', () => {
     await expect(page.getByTestId('copy-device-config-preview')).toContainText(
       'pos-gateway',
     );
+    await shot('03-copy-modal-preview-keys.png');
 
     await page.getByTestId('copy-device-config-confirm').click();
 
@@ -361,5 +370,6 @@ test.describe('device-detail copy config (browser smoke #629)', () => {
 
     await expect(page).toHaveURL(/device-detail/);
     await expect(page.getByTestId('device-alias-text')).toHaveText(DEST_ALIAS);
+    await shot('04-device-detail-after-copy.png');
   });
 });

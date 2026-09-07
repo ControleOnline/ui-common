@@ -82,12 +82,9 @@ const createStyles = ({
     },
     footerSlot: {
       width: '100%',
-      minHeight: 22,
       paddingHorizontal: 4,
-      paddingTop: 4,
+      paddingTop: 2,
       paddingBottom: 2,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: 'rgba(15, 23, 42, 0.10)',
     },
     itemsRow: {
       flexDirection: 'row',

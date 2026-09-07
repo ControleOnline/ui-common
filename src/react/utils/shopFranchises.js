@@ -241,7 +241,7 @@ const fetchFranchiseLinksPage = async ({
   const params = {
     page: Math.max(1, Number(page) || 1),
     itemsPerPage: normalizeItemsPerPage(itemsPerPage),
-    linkType: [String(SHOP_FRANCHISE_LINK_TYPE)], // must be array — API rejects string
+    linkType: [SHOP_FRANCHISE_LINK_TYPE],
     enable: true,
   };
 
@@ -278,13 +278,8 @@ const fetchFranchiseCompaniesFromLinks = async ({
   const pageSize = normalizeItemsPerPage(itemsPerPage);
   const byId = new Map();
 
-  // Primary path matches FranchiseLinksTab: company=<id>&linkType[]=franchisee&enable=true
-  // Fallback dual-side only if company-side returns empty (inverted associations).
-  const sidesToTry = ['company', 'people'];
-
-  for (const side of sidesToTry) {
+  for (const side of ['company', 'people']) {
     let page = 1;
-    let gotAny = false;
     while (true) {
       const links = await fetchFranchiseLinksPage({
         companyId: viewerId,
@@ -294,9 +289,6 @@ const fetchFranchiseCompaniesFromLinks = async ({
         search,
       });
       const pageLinks = Array.isArray(links) ? links : [];
-      if (pageLinks.length > 0) {
-        gotAny = true;
-      }
 
       pageLinks.forEach(link => {
         const franchise = extractFranchiseCompanyFromLink(link, viewerId);
@@ -318,11 +310,6 @@ const fetchFranchiseCompaniesFromLinks = async ({
         break;
       }
       page += 1;
-    }
-
-    // If company-side already returned franchises, skip people-side (avoids 400 noise / extra load)
-    if (side === 'company' && gotAny) {
-      break;
     }
   }
 
