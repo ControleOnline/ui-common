@@ -127,7 +127,13 @@ const BottomNavigationBar = ({
     <View {...hostProps} style={hostStyle}>
       <View style={styles.stack}>
         <View style={styles.dock} testID={testID}>
-          {routeItems.map(item => {
+          {runtimeFooter ? (
+            <View style={styles.footerSlot} testID="bottom-navigation-footer-slot">
+              <RuntimeInfoFooter {...footerProps} />
+            </View>
+          ) : null}
+          <View style={styles.itemsRow}>
+            {routeItems.map(item => {
             const isActive = effectiveActiveRoute === item.route;
             const isDisabled = disabled || item.disabled;
             const iconSize = item.iconSize || 18;
@@ -161,12 +167,9 @@ const BottomNavigationBar = ({
                 </Text>
               </Pressable>
             );
-          })}
+            })}
+          </View>
         </View>
-
-        {runtimeFooter && (
-          <RuntimeInfoFooter {...footerProps} />
-        )}
       </View>
     </View>
   );
