@@ -128,7 +128,7 @@ const BottomNavigationBar = ({
       <View style={styles.stack}>
         <View style={styles.dock} testID={testID}>
           {runtimeFooter ? (
-            <View style={styles.footerSlot}>
+            <View style={styles.footerSlot} testID="bottom-navigation-footer-slot">
               <RuntimeInfoFooter {...footerProps} />
             </View>
           ) : null}
