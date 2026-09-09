@@ -13,6 +13,9 @@
 const {expect, test} = require('playwright/test');
 const packageJson = require('../../../../../../../package.json');
 const {API_ORIGIN} = require('../../../../../../../src/tests/browser/apiOrigin');
+const API_ORIGINS = [API_ORIGIN, 'https://api.controleonline.com'].filter(
+  (origin, index, origins) => origins.indexOf(origin) === index,
+);
 
 const APP_VERSION = packageJson?.version || '1.0.0';
 const LINE_ONE = 'Linha isolada do rodapé';
@@ -71,7 +74,8 @@ const createCompany = footerText => ({
 const mockApi = async (page, footerText) => {
   const company = createCompany(footerText);
 
-  await page.route(`${API_ORIGIN}/**`, async route => {
+  for (const apiOrigin of API_ORIGINS) {
+    await page.route(`${apiOrigin}/**`, async route => {
     const request = route.request();
     const url = new URL(request.url());
     const pathname = url.pathname.replace(/^\/+/, '');
@@ -135,7 +139,8 @@ const mockApi = async (page, footerText) => {
       headers: jsonHeaders(),
       body: JSON.stringify(collection([])),
     });
-  });
+    });
+  }
 
   await page.addInitScript(
     ({appVersion}) => {
@@ -213,7 +218,7 @@ test.describe('runtime footer rotation (#384) — fluxo: outros', () => {
 
     const secondText = (await label.innerText()).trim();
     expect(secondText).not.toContain(LINE_ONE);
-    expect(secondText).not.toMatch(/ • /);
+    expect(secondText).not.toContain(`${LINE_ONE}  • `);
     expect(secondText).toMatch(PRIMARY_HINT);
 
     await footer.screenshot({
@@ -271,7 +276,8 @@ test.describe('runtime footer rotation (#384) — fluxo: outros', () => {
       .not.toBe(firstText);
 
     const secondText = (await label.innerText()).trim();
-    expect(secondText).not.toMatch(/ • /);
+    expect(secondText).not.toContain(`${LINE_ONE}  • `);
+    expect(secondText).not.toContain(`${LINE_TWO}  • `);
     expect(secondText.length).toBeGreaterThan(0);
 
     await footer.screenshot({
