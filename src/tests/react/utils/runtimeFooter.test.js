@@ -474,7 +474,7 @@ test('resolves configured footer text from company and device config shapes', ()
   assert.equal(
     getRuntimeFooterText(
       {configs: {}},
-      { 'device-runtime-footer-text': '  line one  \n line two ' },
+      {'device-runtime-footer-text': '  line one  \n line two '},
     ),
     'line one\nline two',
   )
