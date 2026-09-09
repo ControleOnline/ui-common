@@ -1,14 +1,17 @@
-/**
- * Unit coverage for DeviceDetail applyCurrentDeviceConfig (app-community#706).
- */
-const { describe, test } = require('node:test');
-const assert = require('node:assert/strict');
+const { spawnSync } = require('child_process');
+const path = require('path');
+const assert = require('assert');
+
+const loaderPath = path.resolve(
+  __dirname,
+  '../../../react/pages/Devices/detail/useDeviceDetailLoaders.js',
+);
 
 const normalizeEntityId = value => {
   if (value == null || value === '') return '';
   const raw = String(value);
   const parts = raw.split('/');
-  return parts[parts.length - 1];
+  return parts[parts.length - 1] || raw;
 };
 
 const findCurrentDeviceConfig = (scopedItems, context = {}) => {
@@ -38,6 +41,13 @@ const findCurrentDeviceConfig = (scopedItems, context = {}) => {
 };
 
 describe('applyCurrentDeviceConfig contract (task-706)', () => {
+  test('production loader parses without duplicate bindings', () => {
+    const result = spawnSync(process.execPath, ['--check', loaderPath], {
+      encoding: 'utf8',
+    });
+    assert.equal(result.status, 0, result.stderr || result.stdout);
+  });
+
   test('selects config by device id even when type/string differ', () => {
     const items = [
       { type: 'DISPLAY', device: { id: '1', device: 'aaa' } },
