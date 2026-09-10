@@ -1,9 +1,12 @@
 import React from 'react';
-import { Text, View, FlatList, TextInput } from 'react-native';
+import { Text, View, FlatList, TextInput, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import Formatter from '@controleonline/ui-common/src/utils/formatter';
 import styles from '../../DeviceDetailPage.styles';
 import { hex } from './deviceDetailConstants';
+import { paymentIcon } from './deviceDetailHelpers';
+import { withOpacity } from '@controleonline/../../src/styles/branding';
+import { inlineStyle_1301_61 } from '../../DeviceDetailPage.styles';
 
 /**
  * PDV movement tab sections.
@@ -12,7 +15,8 @@ import { hex } from './deviceDetailConstants';
 export default function DeviceDetailMovementSections(ctx) {
   const {
     showPdvMovementTab, inflowData, productTotal, wallets, filteredProducts, search, setSearch,
-    renderProduct, loadingMovementData,
+    renderProduct, loadingMovementData, inflowTotal, products, isOpen,
+    actionLoading, handleToggle, loadingConfigData, brandColors,
   } = ctx;
 
   return (

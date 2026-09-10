@@ -1,29 +1,8 @@
 import React from 'react';
-import { Text, View, Switch, TextInput, TouchableOpacity, Platform } from 'react-native';
+import { Text, View, TextInput, TouchableOpacity } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/Feather';
 import styles from '../../DeviceDetailPage.styles';
-import {
-  POS_OPERATION_MODE_OPTIONS,
-  POS_OPERATION_MODE_COUNTER,
-  POS_PRINT_MODE_ORDER,
-  POS_PRINT_MODE_FORM,
-  POS_CHECK_ORDER_TYPE_NONE,
-  POS_CHECK_ORDER_TYPE_TAB,
-  POS_CHECK_ORDER_TYPE_TABLE,
-  POS_CHECK_ORDER_TYPE_STAMP,
-  POS_CHECK_ORDER_MANAGEMENT_MODE_MANAGE,
-  POS_CHECK_ORDER_MANAGEMENT_MODE_EXISTING_ONLY,
-  POS_CASH_MANAGEMENT_MODE_CASH_REGISTER,
-  POS_CASH_MANAGEMENT_MODE_DAILY,
-  POS_OPERATION_MODE_CONFIG_KEY,
-  DEVICE_ORDER_VISIBILITY_COMPANY,
-  DEVICE_ORDER_VISIBILITY_DEVICE,
-  resolvePosOperationMode,
-} from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
-import { normalizeEntityId } from '@controleonline/ui-common/src/react/utils/paymentDevices';
-import { getProductShowcaseLabel } from './deviceDetailHelpers';
-import { tt } from './deviceDetailConstants';
 
 /**
  * Extracted from DeviceDetailScreen for modularization (≤500 lines).
@@ -32,6 +11,8 @@ import { tt } from './deviceDetailConstants';
 export default function DeviceDetailAlertsCommandsSection(ctx) {
   const {
     themeColors, brandColors, palette,
+    shouldShowDeviceBehavior, shouldShowRemotePayment, shouldShowRemoteCommands,
+    deviceRuntimeDebugInfoEnabled, setDeviceRuntimeDebugInfoEnabled,
     renderHelpButton, renderOptionButtons, renderSwitchRow, renderProduct,
     posOperationMode, setPosOperationMode, savePosOperationMode, savingPosOperationMode,
     productShowcaseId, setProductShowcaseId, saveProductShowcaseConfig,
@@ -66,6 +47,7 @@ export default function DeviceDetailAlertsCommandsSection(ctx) {
 
   return (
     <>
+      {shouldShowDeviceBehavior && (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>
           <Icon name="volume-2" size={13} /> {'  '}Aviso Sonoro
