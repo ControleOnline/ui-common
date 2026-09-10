@@ -401,3 +401,108 @@ export const buildWalletIdsForGateway = ({
 
   return walletIds;
 };
+
+const resolveWalletDisplayName = walletPaymentType =>
+  String(
+    walletPaymentType?.wallet?.wallet ||
+      walletPaymentType?.wallet?.name ||
+      walletPaymentType?.walletName ||
+      '',
+  )
+    .trim()
+    .toLowerCase();
+
+export const isCashWalletPaymentType = walletPaymentType => {
+  const name = resolveWalletDisplayName(walletPaymentType);
+  return (
+    name.includes('dinheiro') ||
+    name.includes('cash') ||
+    name.includes('money') ||
+    name === 'especie' ||
+    name.includes('espécie')
+  );
+};
+
+export const walletPaymentTypeMatchesGateway = (walletPaymentType, gateway) => {
+  const normalizedGateway = normalizePaymentGateway(gateway);
+  if (!normalizedGateway) {
+    return false;
+  }
+
+  const name = resolveWalletDisplayName(walletPaymentType);
+  if (!name) {
+    return false;
+  }
+
+  if (normalizedGateway === PAYMENT_GATEWAY_CIELO) {
+    return name.includes('cielo');
+  }
+  if (normalizedGateway === PAYMENT_GATEWAY_INFINITE_PAY) {
+    return name.includes('infinite');
+  }
+  if (normalizedGateway === PAYMENT_GATEWAY_GETNET) {
+    return name.includes('getnet');
+  }
+
+  return name.includes(normalizedGateway);
+};
+
+export const filterWalletPaymentTypesByWalletIds = (
+  walletPaymentTypes,
+  walletIds,
+) => {
+  const allowedWalletIds = new Set(
+    (Array.isArray(walletIds) ? walletIds : [])
+      .map(normalizeEntityId)
+      .filter(Boolean),
+  );
+
+  if (!allowedWalletIds.size) {
+    return [];
+  }
+
+  return (Array.isArray(walletPaymentTypes) ? walletPaymentTypes : []).filter(
+    walletPaymentType =>
+      allowedWalletIds.has(resolveWalletPaymentTypeWalletId(walletPaymentType)),
+  );
+};
+
+export const selectPosWalletPaymentTypes = ({
+  walletPaymentTypes,
+  deviceConfigs,
+  companyConfigs,
+  gateway,
+} = {}) => {
+  const items = Array.isArray(walletPaymentTypes) ? walletPaymentTypes : [];
+  const normalizedGateway =
+    normalizePaymentGateway(gateway) ||
+    getPaymentGatewayFromConfigs(deviceConfigs);
+
+  const configuredWalletIds = buildWalletIdsForGateway({
+    gateway: normalizedGateway,
+    companyConfigs,
+    includeCashWallet: true,
+  }).map(normalizeEntityId).filter(Boolean);
+
+  let selected = items;
+
+  if (configuredWalletIds.length) {
+    selected = filterWalletPaymentTypesByWalletIds(items, configuredWalletIds);
+  } else if (normalizedGateway) {
+    selected = items.filter(
+      walletPaymentType =>
+        walletPaymentTypeMatchesGateway(walletPaymentType, normalizedGateway) ||
+        isCashWalletPaymentType(walletPaymentType),
+    );
+  }
+
+  const allowedPaymentTypeIds = resolveDevicePaymentTypeIds(deviceConfigs);
+  if (allowedPaymentTypeIds.length) {
+    selected = filterWalletPaymentTypesByAllowedIds(
+      selected,
+      allowedPaymentTypeIds,
+    );
+  }
+
+  return selected;
+};

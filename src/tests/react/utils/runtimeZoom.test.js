@@ -30,9 +30,29 @@ test('builds compensated container dimensions for native scaled content', () => 
   assert.deepEqual(
     buildRuntimeZoomStyle(70),
     {
+      alignSelf: 'flex-start',
       height: '142.85714285714286%',
       transform: [{scale: 0.7}],
+      transformOrigin: 'top left',
       width: '142.85714285714286%',
     },
   )
+})
+
+test('uses viewport pixels on native so scale origin stays top-left without distortion', () => {
+  assert.deepEqual(
+    buildRuntimeZoomStyle(70, {viewport: {width: 360, height: 800}}),
+    {
+      alignSelf: 'flex-start',
+      height: 800 / 0.7,
+      transform: [{scale: 0.7}],
+      transformOrigin: 'top left',
+      width: 360 / 0.7,
+    },
+  )
+})
+
+test('does not apply style when zoom is 100 percent', () => {
+  assert.equal(buildRuntimeZoomStyle(100), null)
+  assert.equal(buildRuntimeZoomStyle(100, {isWeb: true}), null)
 })
