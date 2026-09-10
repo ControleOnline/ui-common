@@ -13,6 +13,7 @@
 const {expect, test} = require('playwright/test');
 const packageJson = require('../../../../../../../package.json');
 const {API_ORIGIN} = require('../../../../../../../src/tests/browser/apiOrigin');
+const {writeManifest} = require('../../../../../../../modules/controleonline/ui-tests/src/tests/helpers/smokeEvidence');
 const API_ORIGINS = [API_ORIGIN, 'https://api.controleonline.com'].filter(
   (origin, index, origins) => origins.indexOf(origin) === index,
 );
@@ -189,6 +190,38 @@ async function openFooter(page, footerText) {
   return {footer, label: label.first()};
 }
 
+async function openAuthenticatedFooter(page, testInfo) {
+  const sessionJson = String(process.env.PLAYWRIGHT_SESSION_JSON || '').trim();
+  if (!sessionJson) {
+    test.skip(true, 'PLAYWRIGHT_SESSION_JSON is required for the live staging journey.');
+  }
+
+  const consoleErrors = [];
+  const requestFailures = [];
+  page.on('console', message => {
+    if (message.type() === 'error') {
+      consoleErrors.push(message.text());
+    }
+  });
+  page.on('requestfailed', request => {
+    requestFailures.push(`${request.method()} ${request.url()}: ${request.failure()?.errorText || 'failed'}`);
+  });
+
+  await page.addInitScript(({session}) => {
+    localStorage.setItem('session', session);
+    localStorage.setItem('config', JSON.stringify({language: 'pt-br'}));
+    localStorage.setItem('app-type', 'MANAGER');
+  }, {session: sessionJson});
+
+  await page.goto('/devices-index?store=device_config');
+  const footer = page.getByTestId('runtime-info-footer');
+  const label = page.getByTestId('runtime-footer-primary-text').first();
+  await expect(footer).toBeVisible({timeout: 30000});
+  await expect(label).toBeVisible({timeout: 30000});
+
+  return {footer, label, consoleErrors, requestFailures, evidenceDir: testInfo.outputDir};
+}
+
 test.describe('runtime footer rotation (#384) — fluxo: outros', () => {
   test('1 line: isolated line then device/version without concat', async (
     {page},
@@ -286,6 +319,78 @@ test.describe('runtime footer rotation (#384) — fluxo: outros', () => {
     await page.screenshot({
       path: testInfo.outputPath('05-two-lines-next-full.png'),
       fullPage: true,
+    });
+  });
+
+  test('authenticated staging journey: captures the real runtime footer cycle', async ({
+    page,
+  }, testInfo) => {
+    testInfo.annotations.push({
+      type: 'fluxo',
+      description: 'outros',
+    });
+
+    const {footer, label, consoleErrors, requestFailures, evidenceDir} =
+      await openAuthenticatedFooter(page, testInfo);
+    const observedTexts = [];
+
+    const captureAuthenticatedStep = async stepName => {
+      const text = (await label.innerText()).trim();
+      expect(text).not.toBe('');
+      expect(text).not.toMatch(/ • /);
+      observedTexts.push(text);
+      await footer.screenshot({path: testInfo.outputPath(`${stepName}.png`)});
+      await page.screenshot({
+        path: testInfo.outputPath(`${stepName}-full.png`),
+        fullPage: true,
+      });
+    };
+
+    await page.waitForTimeout(800);
+    await captureAuthenticatedStep('01-authenticated-footer-initial');
+    await expect
+      .poll(async () => (await label.innerText()).trim(), {
+        timeout: 7000,
+        intervals: [400, 800, 1200],
+      })
+      .not.toBe(observedTexts[0]);
+    await captureAuthenticatedStep('02-authenticated-footer-after-rotation');
+
+    for (const stepName of [
+      '03-authenticated-footer-next',
+      '04-authenticated-footer-next',
+      '05-authenticated-footer-next',
+    ]) {
+      await page.waitForTimeout(4200);
+      await captureAuthenticatedStep(stepName);
+    }
+
+    expect(new Set(observedTexts).size).toBeGreaterThan(1);
+    expect(consoleErrors).toEqual([]);
+    expect(requestFailures).toEqual([]);
+    writeManifest(evidenceDir, {
+      flowchartIds: [],
+      fluxo: 'outros',
+      steps: [
+        '01-authenticated-footer-initial',
+        '02-authenticated-footer-after-rotation',
+        '03-authenticated-footer-next',
+        '04-authenticated-footer-next',
+        '05-authenticated-footer-next',
+      ],
+      prints: [
+        '01-authenticated-footer-initial',
+        '02-authenticated-footer-after-rotation',
+        '03-authenticated-footer-next',
+        '04-authenticated-footer-next',
+        '05-authenticated-footer-next',
+      ],
+      missingPrints: [],
+      authenticated: true,
+      rotationIntervalMs: 4000,
+      observedTexts,
+      consoleErrors,
+      requestFailures,
     });
   });
 });
