@@ -1,44 +1,16 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigation, useRoute } from '@react-navigation/native';
-import { useStore } from '@store';
-import { useMessage } from '@controleonline/ui-common/src/react/components/MessageService';
-import { resolveThemePalette } from '@controleonline/../../src/styles/branding';
-import { colors } from '@controleonline/../../src/styles/colors';
-import packageJson from '@package';
-import {
-  canDisplayChangePrinter, DEVICE_ANDROID_KIOSK_ENABLED_CONFIG_KEY, DEVICE_ANDROID_LAUNCHER_ENABLED_CONFIG_KEY,
-  DISPLAY_AUTO_PRINT_PRODUCT_CONFIG_KEY, DISPLAY_ALLOW_PRINTER_CHANGE_CONFIG_KEY, DEVICE_ALERT_SOUND_ENABLED_KEY,
-  DEVICE_ALERT_SOUND_URL_KEY, DEVICE_ORDER_VISIBILITY_COMPANY, DEVICE_ORDER_VISIBILITY_DEVICE, DEVICE_ORDER_VISIBILITY_KEY,
-  DEVICE_RUNTIME_DEBUG_INFO_ENABLED_KEY, isPosAutoPrintEnabled, isPosCashRegisterOpen, isTruthyValue, parseConfigsObject,
-  POS_AUTO_PRINT_ENABLED_CONFIG_KEY, POS_CASH_MANAGEMENT_MODE_CASH_REGISTER, POS_CASH_MANAGEMENT_MODE_CONFIG_KEY,
-  POS_CASH_MANAGEMENT_MODE_DAILY, POS_CHECK_ORDER_MANAGEMENT_MODE_CONFIG_KEY, POS_CHECK_ORDER_MANAGEMENT_MODE_EXISTING_ONLY,
-  POS_CHECK_ORDER_MANAGEMENT_MODE_MANAGE, POS_CHECK_ORDER_TYPE_CONFIG_KEY, POS_CHECK_ORDER_TYPE_NONE, POS_CHECK_ORDER_TYPE_TAB,
-  POS_CHECK_ORDER_TYPE_TABLE, POS_CHECK_ORDER_TYPE_STAMP, POS_DELIVERY_ENABLED_CONFIG_KEY, POS_OPERATION_MODE_COUNTER,
-  POS_OPERATION_MODE_CONFIG_KEY, POS_OPERATION_MODE_OPTIONS, POS_PRODUCT_SHOWCASE_CONFIG_KEY, POS_PRINT_MODE_FORM,
-  POS_PRINT_MODE_ORDER, getPosOperationModeOption, isAndroidKioskEnabled, isAndroidLauncherEnabled, isPosDeliveryEnabled,
-  resolvePosCheckOrderManagementMode, resolvePosCheckOrderType, resolvePosCheckOrderTypeForShop, resolveDeviceOrderVisibility,
-  resolvePosCashManagementMode, resolvePosOperationMode, resolvePosPrintMode,
-} from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
-import {
-  filterDeviceConfigsByCompany, getCompanyPaymentDeviceOptions, getPaymentGatewayFromConfigs, getPaymentGatewayLabel,
-  isPaymentCapableDeviceConfig, isPdvPrinterEnabled, normalizeDeviceId, normalizeEntityId, PAYMENT_TYPE_IDS_CONFIG_KEY,
-  PAYMENT_GATEWAY_CIELO, PDV_PRINTER_ENABLED_CONFIG_KEY, ORDER_PAYMENT_DEVICE_CONFIG_KEY, POS_GATEWAY_CONFIG_KEY,
-} from '@controleonline/ui-common/src/react/utils/paymentDevices';
-import { normalizeBooleanConfig, SHOP_LOYALTY_COUPONS_ENABLED_CONFIG_KEY } from '@controleonline/ui-common/src/react/utils/shopConfig';
-import { getPrinterOptionValue, getDeviceTypeLabel, getPrinterLabel, getPrinterOptions } from '@controleonline/ui-common/src/react/utils/printerDevices';
-import { hex, DISPLAY_DEVICE_TYPE, PDV_DEVICE_TYPE, DISPLAY_DEVICE_LINK_CONFIG_KEY, DISPLAY_DEVICE_PRINTER_CONFIG_KEY,
-  PDV_TAB_OPERATION, PDV_TAB_ORDERS, PDV_TAB_DEVICE, PDV_TAB_PAYMENT_TYPES, PDV_TAB_MOVEMENT, PDV_DETAIL_TABS, tt,
-} from './deviceDetailConstants';
-import { paymentIcon, formatApiError, getDisplayLabel, getProductShowcaseLabel, getIsOpen, confirm } from './deviceDetailHelpers';
-import { api } from '@controleonline/ui-common/src/api';
-import { buildDeviceAliasStoreUpdates } from '@controleonline/ui-common/src/react/utils/deviceAliasSync';
-import { createDeviceDetailRenderers } from './DeviceDetailRenderers';
-import { Alert, Platform } from 'react-native';
+import { useCallback, useEffect, useRef } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 
+import { canDisplayChangePrinter, DISPLAY_AUTO_PRINT_PRODUCT_CONFIG_KEY, DEVICE_ALERT_SOUND_ENABLED_KEY, DEVICE_ALERT_SOUND_URL_KEY, DEVICE_ORDER_VISIBILITY_DEVICE, DEVICE_RUNTIME_DEBUG_INFO_ENABLED_KEY, isPosAutoPrintEnabled, isTruthyValue, parseConfigsObject, POS_PRODUCT_SHOWCASE_CONFIG_KEY, isAndroidKioskEnabled, isAndroidLauncherEnabled, isPosDeliveryEnabled, resolvePosCheckOrderManagementMode, resolvePosCheckOrderTypeForShop, resolveDeviceOrderVisibility, resolvePosCashManagementMode, resolvePosOperationMode, resolvePosPrintMode } from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
+import { filterDeviceConfigsByCompany, getPaymentGatewayFromConfigs, isPdvPrinterEnabled, normalizeDeviceId, normalizeEntityId, ORDER_PAYMENT_DEVICE_CONFIG_KEY } from '@controleonline/ui-common/src/react/utils/paymentDevices';
+
+import { DISPLAY_DEVICE_LINK_CONFIG_KEY, DISPLAY_DEVICE_PRINTER_CONFIG_KEY, PDV_TAB_OPERATION, PDV_TAB_ORDERS, PDV_TAB_MOVEMENT } from './deviceDetailConstants';
+
+import { api } from '@controleonline/ui-common/src/api';
 
 export default function useDeviceDetailLoaders(deps) {
   const {
-    navigation, deviceId, deviceConfigStore, messageApi, websocketActions, runtimeCompanyConfigs, showSystemError, loyaltyCouponsEnabled, currentDevice, currentDeviceConfig, deviceString, deviceType,
+    navigation, deviceId, deviceConfigStore, messageApi, websocketActions, runtimeCompanyConfigs, showSystemError, loyaltyCouponsEnabled, currentCompany, currentDevice, currentDeviceConfig, deviceString, deviceType,
     normalizedInitialConfigs, initialAlias, isDisplayDevice, isPdvDevice, actionsRef, stampAutoDisableSignatureRef, brandColors, products, setProducts, productShowcases, setProductShowcases, companyDeviceConfigs,
     setCompanyDeviceConfigs, inflowData, setInflowData, configs, setConfigs, loadingConfigData, setLoadingConfigData, loadingCompanyDeviceConfigs, setLoadingCompanyDeviceConfigs, loadingMovementData, setLoadingMovementData, actionLoading,
     setActionLoading, activePdvTab, setActivePdvTab, savingPaymentTarget, setSavingPaymentTarget, savingPdvSettings, setSavingPdvSettings, savingPaymentTypes, setSavingPaymentTypes, savingPosOperationMode, setSavingPosOperationMode, savingProductShowcase,
@@ -50,7 +22,126 @@ export default function useDeviceDetailLoaders(deps) {
     setSavingDisplayPrintingConfig, hasLoadedCurrentConfig, setHasLoadedCurrentConfig, hasLoadedCompanyConfigs, setHasLoadedCompanyConfigs, hasLoadedMovementData, setHasLoadedMovementData, hasLoadedCurrentConfigRef, hasLoadedCompanyConfigsRef, hasLoadedMovementDataRef, hasInitializedPdvTabRef, alias,
     setAlias, editingAlias, setEditingAlias, aliasInput, setAliasInput, savingAlias, setSavingAlias, removingDevice, setRemovingDevice, aliasInputRef, skipAliasSyncFromStoreRef, isOpen,
     hasLocalPaymentGateway, paymentDeviceOptions, displayOptions, printerOptions, selectedPosOperationModeOption, pickerMode, packageVersion, appVersion, runtimeDeviceId, runtimeDeviceType, isEditingRuntimeDevice, resolveDeviceContext,
+    displayStore, printerStore,
   } = deps;
+  const applyCurrentDeviceConfig = useCallback((scopedItems, context = {}) => {
+    const currentDeviceString = String(
+      context.deviceString || deviceString || '',
+    ).trim();
+    const currentDeviceType = String(
+      context.deviceType || deviceType || '',
+    )
+      .trim()
+      .toUpperCase();
+    const currentDeviceConfigId = normalizeEntityId(
+      context.deviceId || deviceId,
+    );
+    const dc = (scopedItems || []).find(d => {
+      const currentConfigType = String(d?.type || d?.device?.type || '')
+        .trim()
+        .toUpperCase();
+      const nextDeviceId = normalizeEntityId(
+        d?.device?.id ||
+          d?.device?.['@id'] ||
+          d?.deviceId ||
+          d?.device?.deviceId,
+      );
+
+      if (currentDeviceConfigId && nextDeviceId === currentDeviceConfigId) {
+        return true;
+      }
+
+      return (
+        d?.device?.device === currentDeviceString &&
+        currentConfigType === currentDeviceType
+      );
+    });
+
+    if (dc) {
+      const nextConfigs = parseConfigsObject(dc.configs);
+      actionsRef.current.deviceConfigActions.setItem({
+        ...dc,
+        configs: nextConfigs,
+      });
+      setConfigs(nextConfigs);
+      setDevicePaymentTarget(
+        normalizeDeviceId(nextConfigs[ORDER_PAYMENT_DEVICE_CONFIG_KEY]),
+      );
+      setPdvGateway(getPaymentGatewayFromConfigs(nextConfigs));
+      setPdvPrinterEnabled(isPdvPrinterEnabled(nextConfigs));
+      setPosOperationMode(resolvePosOperationMode(nextConfigs));
+      setProductShowcaseId(
+        normalizeEntityId(nextConfigs[POS_PRODUCT_SHOWCASE_CONFIG_KEY]),
+      );
+      setAndroidKioskEnabled(isAndroidKioskEnabled(nextConfigs));
+      setAndroidLauncherEnabled(isAndroidLauncherEnabled(nextConfigs));
+      setCounterAutoPrintEnabled(isPosAutoPrintEnabled(nextConfigs));
+      setCounterPrintMode(resolvePosPrintMode(nextConfigs));
+      setCounterCashManagementMode(resolvePosCashManagementMode(nextConfigs));
+      setCheckOrderType(
+        resolvePosCheckOrderTypeForShop(nextConfigs, runtimeCompanyConfigs),
+      );
+      setCheckOrderManagementMode(
+        resolvePosCheckOrderManagementMode(nextConfigs),
+      );
+      setDeviceOrderVisibility(
+        resolveDeviceOrderVisibility(nextConfigs),
+      );
+      setDeviceDeliveryEnabled(
+        isPosDeliveryEnabled(nextConfigs),
+      );
+      setDeviceAlertSoundEnabled(
+        isTruthyValue(nextConfigs[DEVICE_ALERT_SOUND_ENABLED_KEY]),
+      );
+      setDeviceAlertSoundUrl(
+        String(nextConfigs[DEVICE_ALERT_SOUND_URL_KEY] || ''),
+      );
+      setDeviceRuntimeDebugInfoEnabled(
+        isTruthyValue(nextConfigs[DEVICE_RUNTIME_DEBUG_INFO_ENABLED_KEY]),
+      );
+      setLinkedDisplayId(
+        normalizeEntityId(nextConfigs[DISPLAY_DEVICE_LINK_CONFIG_KEY]),
+      );
+      setDisplayPrinterId(
+        normalizeDeviceId(nextConfigs[DISPLAY_DEVICE_PRINTER_CONFIG_KEY]),
+      );
+      setDisplayAllowPrinterChange(
+        canDisplayChangePrinter(nextConfigs),
+      );
+      setDisplayAutoPrintProductEnabled(
+        isTruthyValue(nextConfigs[DISPLAY_AUTO_PRINT_PRODUCT_CONFIG_KEY]),
+      );
+      return;
+    }
+
+    actionsRef.current.deviceConfigActions.setItem({});
+
+    setConfigs({});
+    setDevicePaymentTarget('');
+    setPdvGateway('');
+    setPdvPrinterEnabled(true);
+    setPosOperationMode(resolvePosOperationMode({}));
+    setProductShowcaseId('');
+    setAndroidKioskEnabled(false);
+    setAndroidLauncherEnabled(false);
+    setCounterAutoPrintEnabled(isPosAutoPrintEnabled({}));
+    setCounterPrintMode(resolvePosPrintMode({}));
+    setCounterCashManagementMode(resolvePosCashManagementMode({}));
+    setCheckOrderType(
+      resolvePosCheckOrderTypeForShop({}, runtimeCompanyConfigs),
+    );
+    setCheckOrderManagementMode(resolvePosCheckOrderManagementMode({}));
+    setDeviceOrderVisibility(DEVICE_ORDER_VISIBILITY_DEVICE);
+    setDeviceDeliveryEnabled(isPosDeliveryEnabled({}));
+    setDeviceAlertSoundEnabled(false);
+    setDeviceAlertSoundUrl('');
+    setDeviceRuntimeDebugInfoEnabled(false);
+    setLinkedDisplayId('');
+    setDisplayPrinterId('');
+    setDisplayAllowPrinterChange(false);
+    setDisplayAutoPrintProductEnabled(false);
+  }, [deviceId, deviceString, deviceType, runtimeCompanyConfigs]);
+
   const loadMovementData = useCallback(async () => {
     if (!isPdvDevice) {
       setProducts([]);
@@ -317,6 +408,7 @@ export default function useDeviceDetailLoaders(deps) {
   );
 
   return {
+    applyCurrentDeviceConfig,
     loadMovementData,
     refreshCurrentConfig,
     loadCompanyConfigs,
