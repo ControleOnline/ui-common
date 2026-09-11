@@ -21,7 +21,7 @@ const API_ORIGINS = [API_ORIGIN, 'https://api.controleonline.com'].filter(
 const APP_VERSION = packageJson?.version || '1.0.0';
 const LINE_ONE = 'Linha isolada do rodapé';
 const LINE_TWO = 'Segunda linha do rodapé';
-const PRIMARY_HINT = /Browser Manager|web-manager|1\./i;
+const PRIMARY_HINT = /Browser Manager|web-manager|web\s*•\s*ADMIN|1\./i;
 
 const CORS_HEADERS = {
   'access-control-allow-origin': '*',
@@ -210,7 +210,8 @@ async function openAuthenticatedFooter(page, testInfo) {
   await page.addInitScript(({session}) => {
     localStorage.setItem('session', session);
     localStorage.setItem('config', JSON.stringify({language: 'pt-br'}));
-    localStorage.setItem('app-type', 'MANAGER');
+    // Staging publishes the authenticated web bundle as ADMIN.
+    localStorage.setItem('app-type', 'ADMIN');
   }, {session: sessionJson});
 
   await page.goto('/devices-index?store=device_config');
