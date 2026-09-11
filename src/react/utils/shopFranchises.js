@@ -241,8 +241,9 @@ const fetchFranchiseLinksPage = async ({
   const params = {
     page: Math.max(1, Number(page) || 1),
     itemsPerPage: normalizeItemsPerPage(itemsPerPage),
-    linkType: [String(SHOP_FRANCHISE_LINK_TYPE)], // must be array — API rejects string
-    enable: true,
+    // linkType must be array — API rejects string
+    // Do NOT filter enable=true: many franchisee rows omit/null enable and would vanish (staging company=1 had 4 franchisees, 0 with enable=true).
+    linkType: [String(SHOP_FRANCHISE_LINK_TYPE)],
   };
 
   if (side === 'company') {
