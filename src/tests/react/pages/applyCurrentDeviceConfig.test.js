@@ -1,6 +1,10 @@
-const { spawnSync } = require('child_process');
-const path = require('path');
-const assert = require('assert');
+/**
+ * Unit coverage for DeviceDetail applyCurrentDeviceConfig (app-community#706).
+ */
+const { describe, test } = require('node:test');
+const assert = require('node:assert/strict');
+const path = require('node:path');
+const { spawnSync } = require('node:child_process');
 
 const loaderPath = path.resolve(
   __dirname,
@@ -11,7 +15,7 @@ const normalizeEntityId = value => {
   if (value == null || value === '') return '';
   const raw = String(value);
   const parts = raw.split('/');
-  return parts[parts.length - 1] || raw;
+  return parts[parts.length - 1];
 };
 
 const findCurrentDeviceConfig = (scopedItems, context = {}) => {
@@ -45,6 +49,7 @@ describe('applyCurrentDeviceConfig contract (task-706)', () => {
     const result = spawnSync(process.execPath, ['--check', loaderPath], {
       encoding: 'utf8',
     });
+
     assert.equal(result.status, 0, result.stderr || result.stdout);
   });
 
