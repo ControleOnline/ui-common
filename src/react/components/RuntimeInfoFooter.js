@@ -282,8 +282,13 @@ const RuntimeInfoFooter = ({
       ? rotationEntries[activeIndex]
       : inlineText
   ) || primaryText || device?.id || '';
-  const backgroundColor = colors?.footerBackground;
-  const borderColor = colors?.footerBorder;
+  // Match bottom-nav chrome: never leave transparent strip (text was "there" but invisible)
+  const backgroundColor =
+    colors?.footerBackground ||
+    colors?.navigationBackground ||
+    colors?.cardBackground ||
+    '#ffffff';
+  const borderColor = colors?.footerBorder || colors?.navigationBorder || '#e2e8f0';
   const textColor =
     colors?.footerText ||
     colors?.textSecondary ||

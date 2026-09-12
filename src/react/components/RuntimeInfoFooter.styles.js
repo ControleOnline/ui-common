@@ -9,10 +9,11 @@ const styles = StyleSheet.create({
     width: '100%',
     alignSelf: 'stretch',
     minHeight: 28,
-    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopWidth: 0,
     justifyContent: 'center',
     paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingTop: 4,
+    paddingBottom: 6,
   },
   containerExpanded: {
     paddingVertical: 8,
