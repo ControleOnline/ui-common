@@ -5,15 +5,25 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '../../../..');
-const loadersPath = join(root, 'src/react/pages/Devices/detail/useDeviceDetailLoaders.js');
+const detailDir = join(root, 'src/react/pages/Devices/detail');
 
-test('useDeviceDetailLoaders destructures currentCompany from deps', () => {
-  const source = readFileSync(loadersPath, 'utf8');
-  const start = source.indexOf('export default function useDeviceDetailLoaders');
-  assert.ok(start >= 0, 'function export found');
+function destructureBlock(source, fnName) {
+  const start = source.indexOf(`export default function ${fnName}`);
+  assert.ok(start >= 0, `${fnName} export found`);
   const destructureStart = source.indexOf('const {', start);
   const destructureEnd = source.indexOf('} = deps;', destructureStart);
-  assert.ok(destructureStart >= 0 && destructureEnd > destructureStart, 'destructure block found');
-  const block = source.slice(destructureStart, destructureEnd);
-  assert.match(block, /\bcurrentCompany\b/, 'currentCompany must be destructured from deps');
-});
+  assert.ok(destructureStart >= 0 && destructureEnd > destructureStart, `${fnName} destructure block`);
+  return source.slice(destructureStart, destructureEnd);
+}
+
+for (const fn of [
+  'useDeviceDetailLoaders',
+  'useDeviceDetailActions',
+  'useDeviceDetailSaves',
+]) {
+  test(`${fn} destructures currentCompany from deps`, () => {
+    const source = readFileSync(join(detailDir, `${fn}.js`), 'utf8');
+    const block = destructureBlock(source, fn);
+    assert.match(block, /\bcurrentCompany\b/, `${fn} must destructure currentCompany`);
+  });
+}
