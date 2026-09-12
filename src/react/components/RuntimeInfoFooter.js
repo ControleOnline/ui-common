@@ -13,11 +13,13 @@ import {
   parseConfigsObject,
 } from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
 import {
+  DEVICE_RUNTIME_FOOTER_TEXT_CONFIG_KEY,
   getRuntimeFooterDebugInfo,
   getRuntimeFooterPrimaryText,
   getRuntimeFooterRotationEntries,
   getRuntimeFooterText,
   getRuntimeFooterTextLines,
+  normalizeRuntimeFooterText,
 } from '@controleonline/ui-common/src/react/utils/runtimeFooter';
 import styles from './RuntimeInfoFooter.styles';
 import RuntimeFooterMarqueeText from './RuntimeFooterMarqueeText';
@@ -65,22 +67,82 @@ const RuntimeInfoFooter = ({
   const configsStore = useStore('configs');
   const currentCompany = peopleStore?.getters?.currentCompany || {};
   const storeDefaultCompany = peopleStore?.getters?.defaultCompany || {};
+  const companies = peopleStore?.getters?.companies || [];
   const companyConfigs = configsStore?.getters?.items;
   const companyFooterText = useMemo(() => {
+    const readDirect = company =>
+      normalizeRuntimeFooterText(
+        company?.configs?.[DEVICE_RUNTIME_FOOTER_TEXT_CONFIG_KEY],
+      );
+
+    const deepConfigsStore = items => {
+      if (!items) {
+        return '';
+      }
+      const direct = getRuntimeFooterText(null, items);
+      if (direct) {
+        return direct;
+      }
+      if (typeof items !== 'object' || Array.isArray(items)) {
+        return '';
+      }
+      // configs store sometimes nests by company id / people IRI
+      for (const value of Object.values(items)) {
+        if (!value) {
+          continue;
+        }
+        const fromMap = getRuntimeFooterText(null, value);
+        if (fromMap) {
+          return fromMap;
+        }
+        const fromCompany = getRuntimeFooterText(
+          value?.configs ? value : {configs: value},
+        );
+        if (fromCompany) {
+          return fromCompany;
+        }
+        const nested = readDirect(value);
+        if (nested) {
+          return nested;
+        }
+      }
+      return '';
+    };
+
+    const mainId = String(
+      storeDefaultCompany?.id ||
+        storeDefaultCompany?.['@id'] ||
+        defaultCompany?.id ||
+        defaultCompany?.['@id'] ||
+        '',
+    ).replace(/\D+/g, '');
+
+    const mainFromList = (Array.isArray(companies) ? companies : []).find(
+      company =>
+        String(company?.id || company?.['@id'] || '')
+          .replace(/\D+/g, '') === mainId,
+    );
+
     const candidates = [
-      getRuntimeFooterText(currentCompany),
+      readDirect(storeDefaultCompany),
+      readDirect(defaultCompany),
+      readDirect(currentCompany),
+      readDirect(mainFromList),
       getRuntimeFooterText(storeDefaultCompany),
       getRuntimeFooterText(defaultCompany),
-      getRuntimeFooterText(null, companyConfigs),
+      getRuntimeFooterText(currentCompany),
+      getRuntimeFooterText(mainFromList),
+      deepConfigsStore(companyConfigs),
       getRuntimeFooterText(null, deviceConfigItem?.configs),
     ];
     return candidates.find(Boolean) || '';
   }, [
+    companies,
     companyConfigs,
-    currentCompany?.configs,
-    defaultCompany?.configs,
+    currentCompany,
+    defaultCompany,
     deviceConfigItem?.configs,
-    storeDefaultCompany?.configs,
+    storeDefaultCompany,
   ]);
   const footerTextLines = useMemo(
     () => getRuntimeFooterTextLines(companyFooterText),
