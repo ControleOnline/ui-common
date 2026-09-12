@@ -88,6 +88,8 @@ const RuntimeFooterMarqueeText = ({
       flex: undefined,
       flexShrink: 0,
       flexGrow: 0,
+      // RN web: avoid 0x0 box when parent flex collapses
+      minHeight: 14,
     },
     shouldMarquee ? {textAlign: 'left'} : {textAlign: 'center'},
   ];
@@ -96,7 +98,14 @@ const RuntimeFooterMarqueeText = ({
     View,
     {
       testID,
-      style: {flex: 1, overflow: 'hidden', justifyContent: 'center'},
+      style: {
+        flex: 1,
+        minWidth: 0,
+        minHeight: 14,
+        overflow: 'hidden',
+        justifyContent: 'center',
+        alignSelf: 'stretch',
+      },
       onLayout: handleContainerLayout,
     },
     React.createElement(
