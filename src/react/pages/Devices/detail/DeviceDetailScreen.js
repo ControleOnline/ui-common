@@ -335,48 +335,28 @@ const DeviceDetailScreen = () => {
     renderOptionButtons,
   } = { ...state, ...loaders, ...actions, ...saves };
 
-  const palette = brandColors;
-  const orderVisibility = deviceOrderVisibility;
-  const setOrderVisibility = setDeviceOrderVisibility;
-  const deliveryEnabled = deviceDeliveryEnabled;
-  const setDeliveryEnabled = setDeviceDeliveryEnabled;
-  const cashManagementMode = counterCashManagementMode;
-  const setCashManagementMode = setCounterCashManagementMode;
-  const runtimeDebugInfoEnabled = deviceRuntimeDebugInfoEnabled;
-  const setRuntimeDebugInfoEnabled = setDeviceRuntimeDebugInfoEnabled;
-  const displayAutoPrintProduct = displayAutoPrintProductEnabled;
-  const setDisplayAutoPrintProduct = setDisplayAutoPrintProductEnabled;
-  const savingDeliverySettings = savingDeviceDeliverySettings;
-  const savingDisplayPrinting = savingDisplayPrintingConfig;
+  // Full composition context for sections (ADMIN/MANAGER/SHOP/DELIVERY/INFINITEPAY share DeviceDetail).
+  // Spread hooks first, then aliases expected by extracted sections.
   const detailCtx = {
-    themeColors, brandColors, palette,
-    renderHelpButton, renderOptionButtons, renderSwitchRow, renderProduct,
-    posOperationMode, setPosOperationMode, savePosOperationMode, savingPosOperationMode,
-    productShowcaseId, setProductShowcaseId, saveProductShowcaseConfig,
-    productShowcases, loadingProductShowcases, savingProductShowcase, pickerMode,
-    counterAutoPrintEnabled, setCounterAutoPrintEnabled,
-    counterPrintMode, setCounterPrintMode,
-    checkOrderType, setCheckOrderType,
-    checkOrderManagementMode, setCheckOrderManagementMode,
-    cashManagementMode, setCashManagementMode,
-    androidKioskEnabled, setAndroidKioskEnabled,
-    androidLauncherEnabled, setAndroidLauncherEnabled,
-    saveLauncherMode, savingLauncherMode,
-    orderVisibility, setOrderVisibility, saveDeviceOrderVisibility, savingOrderVisibility,
-    shouldShowOrderVisibility,
-    deliveryEnabled, setDeliveryEnabled, saveDeviceDeliverySettings, savingDeliverySettings,
-    deviceAlertSoundEnabled, setDeviceAlertSoundEnabled, deviceAlertSoundUrl, setDeviceAlertSoundUrl,
-    saveDeviceAlertSoundConfig, savingAlertSound,
-    runtimeDebugInfoEnabled, setRuntimeDebugInfoEnabled, saveDeviceRuntimeDebugInfo, savingRuntimeDebugInfo,
-    devicePaymentTarget, setDevicePaymentTarget, saveDevicePaymentTarget, savingPaymentTarget,
-    paymentDeviceOptions, displayOptions, printerOptions,
-    pdvGateway, setPdvGateway, pdvPrinterEnabled, setPdvPrinterEnabled, savePdvSettings, savingPdvSettings,
-    hasLocalPaymentGateway, loyaltyCouponsEnabled,
-    sendCatalogRefreshCommand, sendingCatalogRefresh,
-    showPdvMovementTab, showPdvPaymentTypesTab, showPdvOperationTab,
-    inflowData, productTotal, wallets, filteredProducts, search, setSearch,
-    loadingMovementData, deviceId, savePaymentTypeConfigs, savingPaymentTypes,
-    configs, currentCompany,
+    ...state,
+    ...loaders,
+    ...actions,
+    ...saves,
+    themeColors,
+    brandColors,
+    palette: brandColors,
+    orderVisibility: deviceOrderVisibility,
+    setOrderVisibility: setDeviceOrderVisibility,
+    deliveryEnabled: deviceDeliveryEnabled,
+    setDeliveryEnabled: setDeviceDeliveryEnabled,
+    cashManagementMode: counterCashManagementMode,
+    setCashManagementMode: setCounterCashManagementMode,
+    runtimeDebugInfoEnabled: deviceRuntimeDebugInfoEnabled,
+    setRuntimeDebugInfoEnabled: setDeviceRuntimeDebugInfoEnabled,
+    displayAutoPrintProduct: displayAutoPrintProductEnabled,
+    setDisplayAutoPrintProduct: setDisplayAutoPrintProductEnabled,
+    savingDeliverySettings: savingDeviceDeliverySettings,
+    savingDisplayPrinting: savingDisplayPrintingConfig,
   };
 
   const {
