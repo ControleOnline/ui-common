@@ -11,6 +11,9 @@ const HOLD_MS = 1200;
 /**
  * Single-line footer text. When content overflows the available width,
  * scrolls horizontally in a continuous loop. Short text stays static.
+ *
+ * RN Web: Text + numberOfLines inside a flex row often collapses to width 0
+ * (text in DOM, box 0px — invisible). Force intrinsic width on web.
  */
 const RuntimeFooterMarqueeText = ({
   text,
@@ -78,8 +81,22 @@ const RuntimeFooterMarqueeText = ({
 
   const handleTextLayout = event => {
     const nextWidth = Math.round(event?.nativeEvent?.layout?.width || 0);
-    setContentWidth(prev => (prev === nextWidth ? prev : nextWidth));
+    if (nextWidth > 0) {
+      setContentWidth(prev => (prev === nextWidth ? prev : nextWidth));
+    }
   };
+
+  // RN Web collapses Text width to 0 inside flex rows unless intrinsic sizing is forced.
+  const webTextFix =
+    Platform.OS === 'web'
+      ? {
+          display: 'inline-block',
+          width: 'auto',
+          maxWidth: 'none',
+          whiteSpace: 'nowrap',
+          flexBasis: 'auto',
+        }
+      : null;
 
   const textStyle = [
     style,
@@ -88,9 +105,9 @@ const RuntimeFooterMarqueeText = ({
       flex: undefined,
       flexShrink: 0,
       flexGrow: 0,
-      // RN web: avoid 0x0 box when parent flex collapses
       minHeight: 14,
     },
+    webTextFix,
     shouldMarquee ? {textAlign: 'left'} : {textAlign: 'center'},
   ];
 
@@ -114,9 +131,11 @@ const RuntimeFooterMarqueeText = ({
         style: {
           flexDirection: 'row',
           alignItems: 'center',
+          justifyContent: shouldMarquee ? 'flex-start' : 'center',
           opacity: resolvedOpacity,
           transform: [{translateX}],
           alignSelf: shouldMarquee ? 'flex-start' : 'stretch',
+          width: shouldMarquee ? undefined : '100%',
         },
       },
       React.createElement(
