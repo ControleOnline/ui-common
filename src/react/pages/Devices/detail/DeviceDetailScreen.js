@@ -329,9 +329,25 @@ const DeviceDetailScreen = () => {
     shouldShowDeviceBehavior,
     shouldShowRemoteCommands,
     currentCompany,
+    renderProduct,
+    renderHelpButton,
+    renderSwitchRow,
+    renderOptionButtons,
   } = { ...state, ...loaders, ...actions, ...saves };
 
   const palette = brandColors;
+  const orderVisibility = deviceOrderVisibility;
+  const setOrderVisibility = setDeviceOrderVisibility;
+  const deliveryEnabled = deviceDeliveryEnabled;
+  const setDeliveryEnabled = setDeviceDeliveryEnabled;
+  const cashManagementMode = counterCashManagementMode;
+  const setCashManagementMode = setCounterCashManagementMode;
+  const runtimeDebugInfoEnabled = deviceRuntimeDebugInfoEnabled;
+  const setRuntimeDebugInfoEnabled = setDeviceRuntimeDebugInfoEnabled;
+  const displayAutoPrintProduct = displayAutoPrintProductEnabled;
+  const setDisplayAutoPrintProduct = setDisplayAutoPrintProductEnabled;
+  const savingDeliverySettings = savingDeviceDeliverySettings;
+  const savingDisplayPrinting = savingDisplayPrintingConfig;
   const detailCtx = {
     themeColors, brandColors, palette,
     renderHelpButton, renderOptionButtons, renderSwitchRow, renderProduct,

@@ -425,5 +425,9 @@ export default function useDeviceDetailSaves(deps) {
     shouldShowRemotePayment,
     shouldShowDeviceBehavior,
     shouldShowRemoteCommands,
+    renderProduct,
+    renderHelpButton,
+    renderSwitchRow,
+    renderOptionButtons,
   };
 }
