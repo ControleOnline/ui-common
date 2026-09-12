@@ -39,7 +39,7 @@ import { Alert, Platform } from 'react-native';
 export default function useDeviceDetailSaves(deps) {
   const {
     navigation, deviceId, deviceConfigStore, messageApi, websocketActions, runtimeCompanyConfigs, showSystemError, loyaltyCouponsEnabled, currentCompany, currentDevice, currentDeviceConfig, deviceString, deviceType,
-    normalizedInitialConfigs, initialAlias, isDisplayDevice, isPdvDevice, actionsRef, stampAutoDisableSignatureRef, brandColors, products, setProducts, productShowcases, setProductShowcases, companyDeviceConfigs,
+    normalizedInitialConfigs, initialAlias, isDisplayDevice, isPdvDevice, actionsRef, stampAutoDisableSignatureRef, themeColors, brandColors, products, setProducts, productShowcases, setProductShowcases, companyDeviceConfigs,
     setCompanyDeviceConfigs, inflowData, setInflowData, configs, setConfigs, loadingConfigData, setLoadingConfigData, loadingCompanyDeviceConfigs, setLoadingCompanyDeviceConfigs, loadingMovementData, setLoadingMovementData, actionLoading,
     setActionLoading, activePdvTab, setActivePdvTab, savingPaymentTarget, setSavingPaymentTarget, savingPdvSettings, setSavingPdvSettings, savingPaymentTypes, setSavingPaymentTypes, savingPosOperationMode, setSavingPosOperationMode, savingProductShowcase,
     setSavingProductShowcase, savingLauncherMode, setSavingLauncherMode, savingAlertSound, setSavingAlertSound, savingOrderVisibility, setSavingOrderVisibility, savingDeviceDeliverySettings, setSavingDeviceDeliverySettings, savingRuntimeDebugInfo, setSavingRuntimeDebugInfo, sendingCatalogRefresh,

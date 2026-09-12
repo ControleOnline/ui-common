@@ -487,5 +487,6 @@ export default function useDeviceDetailStateA() {
     currentCompany,
     displayStore,
     printerStore,
+    themeColors,
   };
 }

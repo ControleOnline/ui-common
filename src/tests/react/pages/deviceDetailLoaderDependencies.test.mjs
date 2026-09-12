@@ -45,9 +45,20 @@ test('useDeviceDetailLoaders imports useFocusEffect and takes displayStore/print
   assert.match(block, /\bprinterStore\b/);
 });
 
-test('useDeviceDetailStateA exports displayStore and printerStore', () => {
+test('useDeviceDetailStateA exports displayStore, printerStore and themeColors', () => {
   const source = sourceOf('useDeviceDetailStateA.js');
   const ret = source.slice(source.lastIndexOf('return {'));
   assert.match(ret, /\bdisplayStore\b/);
   assert.match(ret, /\bprinterStore\b/);
+  assert.match(ret, /\bthemeColors\b/);
+});
+
+test('useDeviceDetailSaves destructures themeColors', () => {
+  const block = destructureBlock(sourceOf('useDeviceDetailSaves.js'), 'useDeviceDetailSaves');
+  assert.match(block, /\bthemeColors\b/);
+});
+
+test('DeviceDetailScreen defines palette from brandColors', () => {
+  const source = sourceOf('DeviceDetailScreen.js');
+  assert.match(source, /const palette = brandColors/);
 });

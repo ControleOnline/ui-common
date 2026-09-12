@@ -163,6 +163,7 @@ const DeviceDetailScreen = () => {
     actionsRef,
     stampAutoDisableSignatureRef,
     brandColors,
+    themeColors,
     products,
     setProducts,
     productShowcases,
@@ -330,6 +331,7 @@ const DeviceDetailScreen = () => {
     currentCompany,
   } = { ...state, ...loaders, ...actions, ...saves };
 
+  const palette = brandColors;
   const detailCtx = {
     themeColors, brandColors, palette,
     renderHelpButton, renderOptionButtons, renderSwitchRow, renderProduct,
