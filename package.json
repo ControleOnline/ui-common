@@ -21,7 +21,9 @@
     "test:device-detail-dependencies": "node --test src/tests/react/pages/deviceDetailLoaderDependencies.test.mjs"
   },
   "devDependencies": {
-    "c8": "^10.1.3"
+    "c8": "^10.1.3",
+    "react": "^19.1.0",
+    "react-test-renderer": "^19.1.0"
   },
   "repository": {
     "type": "git",
