@@ -52,12 +52,12 @@ describe('shopFranchises', () => {
       {
         id: 21,
         alias: 'Centro',
-        shopAddresses: [{id: 501, nickname: 'Loja Centro'}],
+        shopAddresses: [{id: 501, nickname: 'Loja Centro', latitude: null, longitude: null}],
       },
     ]);
   });
 
-  it('loads franchises from people_links on both company and people sides', async () => {
+  it('uses an authorized company-side link without duplicate fallback requests', async () => {
     api.fetch
       .mockResolvedValueOnce({
         member: [
@@ -79,18 +79,11 @@ describe('shopFranchises', () => {
 
     const directory = await fetchShopFranchiseDirectory({companyId: 10});
 
+    expect(api.fetch).toHaveBeenCalledTimes(1);
     expect(api.fetch).toHaveBeenCalledWith('people_links', {
       params: {
-        company: '/people/10',
-        linkType: 'franchisee',
-        itemsPerPage: 50,
-        page: 1,
-      },
-    });
-    expect(api.fetch).toHaveBeenCalledWith('people_links', {
-      params: {
-        people: '/people/10',
-        linkType: 'franchisee',
+        company: '10',
+        linkType: ['franchisee'],
         itemsPerPage: 50,
         page: 1,
       },
@@ -98,8 +91,34 @@ describe('shopFranchises', () => {
     expect(directory[0].id).toBe(22);
     expect(directory[0].alias).toBe('Norte');
     expect(directory[0].shopAddresses).toEqual([
-      {id: 601, nickname: 'Loja Norte'},
+      {id: 601, nickname: 'Loja Norte', latitude: null, longitude: null},
     ]);
+  });
+
+  it('rejects unrelated or non-franchise links before loading addresses', async () => {
+    api.fetch.mockResolvedValueOnce({
+      member: [
+        {
+          id: 1,
+          linkType: 'franchisee',
+          company: {id: 999},
+          people: {id: 22, alias: 'Other tenant'},
+        },
+        {
+          id: 2,
+          linkType: 'supplier',
+          company: {id: 10},
+          people: {id: 23, alias: 'Wrong relation'},
+        },
+      ],
+    });
+    api.fetch.mockResolvedValueOnce({member: []});
+
+    const directory = await fetchAllShopFranchiseDirectory({companyId: 10});
+
+    expect(directory).toEqual([]);
+    expect(api.fetch).toHaveBeenCalledTimes(2);
+    expect(api.fetch).not.toHaveBeenCalledWith('addresses', expect.anything());
   });
 
     it('loads every page when building the full franchise directory', async () => {
