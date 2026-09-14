@@ -87,10 +87,10 @@ const RuntimeFooterMarqueeText = ({
         whiteSpace: 'nowrap',
         flexBasis: 'auto',
       }
-    : null;
+    : {};
 
   const textStyle = [
-    style,
+    style || {},
     {
       color,
       flexShrink: 0,
