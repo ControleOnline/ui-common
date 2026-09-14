@@ -210,6 +210,10 @@ export const resolveFranchiseCompanyLabel = company =>
  */
 export const extractFranchiseCompanyFromLink = (link, viewerCompanyId) => {
   const viewerId = normalizeShopEntityId(viewerCompanyId);
+  if (!viewerId || link?.linkType !== SHOP_FRANCHISE_LINK_TYPE) {
+    return null;
+  }
+
   const companySide = link?.company;
   const peopleSide = link?.people;
   const companyId = normalizeShopEntityId(companySide);
@@ -221,8 +225,11 @@ export const extractFranchiseCompanyFromLink = (link, viewerCompanyId) => {
   if (viewerId && peopleId === viewerId) {
     return companySide;
   }
-  // Fallback: franchisee is typically the `people` side of linkType=franchisee.
-  return peopleSide || companySide || null;
+
+  // Never trust an API response that does not prove the current company is
+  // one side of the link. This prevents a broad/ignored people_links filter
+  // from leaking another tenant's franchise or its addresses.
+  return null;
 };
 
 const fetchFranchiseLinksPage = async ({
@@ -279,13 +286,15 @@ const fetchFranchiseCompaniesFromLinks = async ({
   const pageSize = normalizeItemsPerPage(itemsPerPage);
   const byId = new Map();
 
-  // Primary path matches FranchiseLinksTab: company=<id>&linkType[]=franchisee&enable=true
-  // Fallback dual-side only if company-side returns empty (inverted associations).
+  // Primary path matches FranchiseLinksTab: company=<id>&linkType[]=franchisee
+  // Fallback dual-side only if no authorized company-side link is returned
+  // (inverted associations). The API response is filtered again below because
+  // authorization cannot depend on a query parameter being honored remotely.
   const sidesToTry = ['company', 'people'];
 
   for (const side of sidesToTry) {
     let page = 1;
-    let gotAny = false;
+    let gotAuthorizedAny = false;
     while (true) {
       const links = await fetchFranchiseLinksPage({
         companyId: viewerId,
@@ -295,16 +304,13 @@ const fetchFranchiseCompaniesFromLinks = async ({
         search,
       });
       const pageLinks = Array.isArray(links) ? links : [];
-      if (pageLinks.length > 0) {
-        gotAny = true;
-      }
-
       pageLinks.forEach(link => {
         const franchise = extractFranchiseCompanyFromLink(link, viewerId);
         const franchiseId = normalizeShopEntityId(franchise);
         if (!franchiseId || franchiseId === viewerId) {
           return;
         }
+        gotAuthorizedAny = true;
         if (!byId.has(franchiseId)) {
           byId.set(
             franchiseId,
@@ -321,8 +327,9 @@ const fetchFranchiseCompaniesFromLinks = async ({
       page += 1;
     }
 
-    // If company-side already returned franchises, skip people-side (avoids 400 noise / extra load)
-    if (side === 'company' && gotAny) {
+    // If company-side returned an authorized franchise, skip people-side
+    // (avoids duplicate requests while preserving the inverted-link fallback).
+    if (side === 'company' && gotAuthorizedAny) {
       break;
     }
   }
