@@ -1,7 +1,8 @@
 const React = require('react');
 const {useEffect, useRef, useState} = React;
-const {Animated, Platform, Text, View} = require('react-native');
+const {Animated, Platform = {OS: 'native'}, Text, View} = require('react-native');
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
+const IS_WEB = Platform.OS === 'web';
 
 const GAP_PX = 32;
 const MS_PER_PX = 28;
@@ -11,9 +12,9 @@ const HOLD_MS = 1200;
 /**
  * Single-line footer text. When content overflows the available width,
  * scrolls horizontally in a continuous loop. Short text stays static.
- *
- * RN Web: Text + numberOfLines inside a flex row often collapses to width 0
- * (text in DOM, box 0px — invisible). Force intrinsic width on web.
+ * On web, avoids Animated opacity/transform issues that hid the label.
+ * RN Web also needs intrinsic sizing because Text can collapse to width 0
+ * inside a flex row.
  */
 const RuntimeFooterMarqueeText = ({
   text,
@@ -28,10 +29,7 @@ const RuntimeFooterMarqueeText = ({
   const animationRef = useRef(null);
 
   const shouldMarquee =
-    containerWidth > 0 && contentWidth > containerWidth + 2;
-  // Never bind Animated.Value to opacity — RN Web leaves the label invisible
-  // mid-transition (observed opacity ~0.12 with text present in DOM).
-  const resolvedOpacity = 1;
+    !IS_WEB && containerWidth > 0 && contentWidth > containerWidth + 2;
 
   useEffect(() => {
     if (animationRef.current) {
@@ -47,7 +45,6 @@ const RuntimeFooterMarqueeText = ({
 
     const distance = contentWidth + GAP_PX;
     const duration = Math.max(Math.round(distance * MS_PER_PX), MIN_DURATION_MS);
-
     const loop = Animated.loop(
       Animated.sequence([
         Animated.delay(HOLD_MS),
@@ -63,10 +60,8 @@ const RuntimeFooterMarqueeText = ({
         }),
       ]),
     );
-
     animationRef.current = loop;
     loop.start();
-
     return () => {
       loop.stop();
       animationRef.current = null;
@@ -76,27 +71,23 @@ const RuntimeFooterMarqueeText = ({
 
   const handleContainerLayout = event => {
     const nextWidth = Math.round(event?.nativeEvent?.layout?.width || 0);
-    setContainerWidth(prev => (prev === nextWidth ? prev : nextWidth));
+    setContainerWidth(current => (current === nextWidth ? current : nextWidth));
   };
 
   const handleTextLayout = event => {
     const nextWidth = Math.round(event?.nativeEvent?.layout?.width || 0);
-    if (nextWidth > 0) {
-      setContentWidth(prev => (prev === nextWidth ? prev : nextWidth));
-    }
+    setContentWidth(current => (current === nextWidth ? current : nextWidth));
   };
 
-  // RN Web collapses Text width to 0 inside flex rows unless intrinsic sizing is forced.
-  const webTextFix =
-    Platform.OS === 'web'
-      ? {
-          display: 'inline-block',
-          width: 'auto',
-          maxWidth: 'none',
-          whiteSpace: 'nowrap',
-          flexBasis: 'auto',
-        }
-      : null;
+  const webTextFix = IS_WEB
+    ? {
+        display: 'inline-block',
+        width: 'auto',
+        maxWidth: 'none',
+        whiteSpace: 'nowrap',
+        flexBasis: 'auto',
+      }
+    : null;
 
   const textStyle = [
     style,
@@ -111,18 +102,39 @@ const RuntimeFooterMarqueeText = ({
     shouldMarquee ? {textAlign: 'left'} : {textAlign: 'center'},
   ];
 
+  const content = React.createElement(
+    Text,
+    {
+      numberOfLines: 1,
+      ellipsizeMode: IS_WEB ? 'tail' : 'clip',
+      onLayout: handleTextLayout,
+      style: textStyle,
+    },
+    text,
+  );
+
+  if (IS_WEB) {
+    return React.createElement(
+      View,
+      {
+        testID,
+        style: {
+          flex: 1,
+          overflow: 'hidden',
+          justifyContent: 'center',
+          opacity: 1,
+        },
+        onLayout: handleContainerLayout,
+      },
+      content,
+    );
+  }
+
   return React.createElement(
     View,
     {
       testID,
-      style: {
-        flex: 1,
-        minWidth: 0,
-        minHeight: 14,
-        overflow: 'hidden',
-        justifyContent: 'center',
-        alignSelf: 'stretch',
-      },
+      style: {flex: 1, overflow: 'hidden', justifyContent: 'center'},
       onLayout: handleContainerLayout,
     },
     React.createElement(
@@ -131,23 +143,12 @@ const RuntimeFooterMarqueeText = ({
         style: {
           flexDirection: 'row',
           alignItems: 'center',
-          justifyContent: shouldMarquee ? 'flex-start' : 'center',
-          opacity: resolvedOpacity,
+          opacity: 1,
           transform: [{translateX}],
           alignSelf: shouldMarquee ? 'flex-start' : 'stretch',
-          width: shouldMarquee ? undefined : '100%',
         },
       },
-      React.createElement(
-        Text,
-        {
-          numberOfLines: 1,
-          ellipsizeMode: 'clip',
-          onLayout: handleTextLayout,
-          style: textStyle,
-        },
-        text,
-      ),
+      content,
       shouldMarquee
         ? React.createElement(
             Text,

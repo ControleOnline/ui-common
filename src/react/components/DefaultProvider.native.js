@@ -7,7 +7,7 @@ import React, {
   useRef,
   useState,
 } from 'react';
-import {View, AppState, Platform} from 'react-native';
+import {View, AppState, Platform, useWindowDimensions} from 'react-native';
 import DeviceInfo from 'react-native-device-info';
 import Translate from '@controleonline/ui-common/src/utils/translate';
 import {WebsocketListener} from '@controleonline/ui-common/src/react/components/WebsocketListener';
@@ -48,7 +48,9 @@ import {
 } from '@controleonline/ui-common/src/react/utils/deviceRuntime';
 import {
   filterWalletPaymentTypesByAllowedIds,
+  getPaymentGateway,
   resolveDevicePaymentTypeIds,
+  selectPosWalletPaymentTypes,
 } from '@controleonline/ui-common/src/react/utils/paymentDevices';
 import {
   normalizeRuntimeMenuResponse,
@@ -179,9 +181,13 @@ export const DefaultProvider = ({
     appType: app_type,
     deviceInfo: device || {},
   });
+  const {width: windowWidth, height: windowHeight} = useWindowDimensions();
   const runtimeUiScaleStyle = useMemo(
-    () => buildRuntimeZoomStyle(APP_ENV?.ZOOM),
-    [],
+    () =>
+      buildRuntimeZoomStyle(APP_ENV?.ZOOM, {
+        viewport: {width: windowWidth, height: windowHeight},
+      }),
+    [windowHeight, windowWidth],
   );
   const deviceConfigPeopleIri = resolveDeviceConfigPeopleIri({
     appType,
@@ -514,6 +520,10 @@ export const DefaultProvider = ({
       return;
     }
 
+    if (!isShopClientApp && !mainConfigsDiscovered) {
+      return;
+    }
+
     let isMounted = true;
 
     api
@@ -534,16 +544,13 @@ export const DefaultProvider = ({
             : Array.isArray(response)
               ? response
               : [];
-        const allowedPaymentTypeIds = resolveDevicePaymentTypeIds(
-          paymentConfigSource,
-          walletPaymentTypes,
-        );
-
         paymentTypeActions.setItems(
-          filterWalletPaymentTypesByAllowedIds(
+          selectPosWalletPaymentTypes({
             walletPaymentTypes,
-            allowedPaymentTypeIds,
-          ),
+            deviceConfigs: paymentConfigSource,
+            companyConfigs,
+            gateway: getPaymentGateway(device_config || paymentConfigSource),
+          }),
         );
       })
       .catch(() => {

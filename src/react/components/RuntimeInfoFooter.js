@@ -1,6 +1,7 @@
 import React, {useEffect, useMemo, useState} from 'react';
 import {
   ActivityIndicator,
+  Platform,
   Text,
   View,
   useWindowDimensions,
@@ -13,13 +14,11 @@ import {
   parseConfigsObject,
 } from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
 import {
-  DEVICE_RUNTIME_FOOTER_TEXT_CONFIG_KEY,
   getRuntimeFooterDebugInfo,
   getRuntimeFooterPrimaryText,
   getRuntimeFooterRotationEntries,
   getRuntimeFooterText,
   getRuntimeFooterTextLines,
-  normalizeRuntimeFooterText,
 } from '@controleonline/ui-common/src/react/utils/runtimeFooter';
 import styles from './RuntimeInfoFooter.styles';
 import RuntimeFooterMarqueeText from './RuntimeFooterMarqueeText';
@@ -27,6 +26,39 @@ import RuntimeFooterMarqueeText from './RuntimeFooterMarqueeText';
 const ROTATION_INTERVAL_MS = 4000;
 const COMPACT_BREAKPOINT = 720;
 const MAX_INLINE_TEXT_LENGTH = 84;
+const FALLBACK_TEXT_COLOR = '#0f172a';
+
+const normalizeColor = value =>
+  String(value || '')
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '');
+
+/** Prefer theme colors, but never render text the same as the footer background. */
+const resolveVisibleFooterTextColor = colors => {
+  const candidates = [
+    colors?.footerText,
+    colors?.textSecondary,
+    colors?.text,
+    FALLBACK_TEXT_COLOR,
+  ];
+  const background = normalizeColor(
+    colors?.footerBackground || colors?.navigationBackground || '',
+  );
+
+  for (const candidate of candidates) {
+    const normalized = normalizeColor(candidate);
+    if (!normalized) {
+      continue;
+    }
+    if (background && normalized === background) {
+      continue;
+    }
+    return candidate;
+  }
+
+  return FALLBACK_TEXT_COLOR;
+};
 
 const RuntimeInfoFooter = ({
   appVersion,
@@ -67,82 +99,22 @@ const RuntimeInfoFooter = ({
   const configsStore = useStore('configs');
   const currentCompany = peopleStore?.getters?.currentCompany || {};
   const storeDefaultCompany = peopleStore?.getters?.defaultCompany || {};
-  const companies = peopleStore?.getters?.companies || [];
   const companyConfigs = configsStore?.getters?.items;
   const companyFooterText = useMemo(() => {
-    const readDirect = company =>
-      normalizeRuntimeFooterText(
-        company?.configs?.[DEVICE_RUNTIME_FOOTER_TEXT_CONFIG_KEY],
-      );
-
-    const deepConfigsStore = items => {
-      if (!items) {
-        return '';
-      }
-      const direct = getRuntimeFooterText(null, items);
-      if (direct) {
-        return direct;
-      }
-      if (typeof items !== 'object' || Array.isArray(items)) {
-        return '';
-      }
-      // configs store sometimes nests by company id / people IRI
-      for (const value of Object.values(items)) {
-        if (!value) {
-          continue;
-        }
-        const fromMap = getRuntimeFooterText(null, value);
-        if (fromMap) {
-          return fromMap;
-        }
-        const fromCompany = getRuntimeFooterText(
-          value?.configs ? value : {configs: value},
-        );
-        if (fromCompany) {
-          return fromCompany;
-        }
-        const nested = readDirect(value);
-        if (nested) {
-          return nested;
-        }
-      }
-      return '';
-    };
-
-    const mainId = String(
-      storeDefaultCompany?.id ||
-        storeDefaultCompany?.['@id'] ||
-        defaultCompany?.id ||
-        defaultCompany?.['@id'] ||
-        '',
-    ).replace(/\D+/g, '');
-
-    const mainFromList = (Array.isArray(companies) ? companies : []).find(
-      company =>
-        String(company?.id || company?.['@id'] || '')
-          .replace(/\D+/g, '') === mainId,
-    );
-
     const candidates = [
-      readDirect(storeDefaultCompany),
-      readDirect(defaultCompany),
-      readDirect(currentCompany),
-      readDirect(mainFromList),
+      getRuntimeFooterText(currentCompany),
       getRuntimeFooterText(storeDefaultCompany),
       getRuntimeFooterText(defaultCompany),
-      getRuntimeFooterText(currentCompany),
-      getRuntimeFooterText(mainFromList),
-      deepConfigsStore(companyConfigs),
+      getRuntimeFooterText(null, companyConfigs),
       getRuntimeFooterText(null, deviceConfigItem?.configs),
     ];
     return candidates.find(Boolean) || '';
   }, [
-    companies,
     companyConfigs,
-    currentCompany,
-    defaultCompany,
+    currentCompany?.configs,
+    defaultCompany?.configs,
     deviceConfigItem?.configs,
-    storeDefaultCompany,
+    storeDefaultCompany?.configs,
   ]);
   const footerTextLines = useMemo(
     () => getRuntimeFooterTextLines(companyFooterText),
@@ -242,7 +214,10 @@ const RuntimeInfoFooter = ({
       ),
     [allStores],
   );
-  const bottomInset = Math.max(Number(insets.bottom) || 0, 16);
+  const bottomInset =
+    Platform.OS === 'web'
+      ? 0
+      : Math.max(Number(insets.bottom) || 0, 16);
 
   useEffect(() => {
     if (!shouldRotate || rotationEntries.length <= 1) {
@@ -282,18 +257,9 @@ const RuntimeInfoFooter = ({
       ? rotationEntries[activeIndex]
       : inlineText
   ) || primaryText || device?.id || '';
-  // Match bottom-nav chrome: never leave transparent strip (text was "there" but invisible)
-  const backgroundColor =
-    colors?.footerBackground ||
-    colors?.navigationBackground ||
-    colors?.cardBackground ||
-    '#ffffff';
-  const borderColor = colors?.footerBorder || colors?.navigationBorder || '#e2e8f0';
-  const textColor =
-    colors?.footerText ||
-    colors?.textSecondary ||
-    colors?.text ||
-    '#0f172a';
+  const backgroundColor = colors?.footerBackground;
+  const borderColor = colors?.footerBorder;
+  const textColor = resolveVisibleFooterTextColor(colors);
   const loadingColor = colors?.footerLink || colors?.primary || textColor;
   const shellProps = useModernWebChromeProps ? {} : {pointerEvents: 'none'};
   const shellStyle = useModernWebChromeProps

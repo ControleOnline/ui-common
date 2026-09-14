@@ -447,6 +447,40 @@ test('rotates each footer line before the runtime version entry', () => {
   )
 })
 
+test('isolates one footer line before the runtime version entry', () => {
+  const entries = getRuntimeFooterRotationEntries({
+    companyFooterText: 'Linha isolada do rodapé',
+    primaryText: 'Browser Manager 1.10.5',
+  })
+
+  assert.deepEqual(entries, ['Linha isolada do rodapé', 'Browser Manager 1.10.5'])
+  assert.equal(entries.some(entry => entry.includes(' • ')), false)
+})
+
+test('resolves configured footer text from company and device config shapes', () => {
+  assert.equal(
+    getRuntimeFooterText({
+      configs: {'device-runtime-footer-text': 'current company'},
+    }),
+    'current company',
+  )
+  assert.equal(
+    getRuntimeFooterText(
+      {configs: {}},
+      [{configKey: 'device-runtime-footer-text', value: 'device config'}],
+    ),
+    'device config',
+  )
+  assert.equal(
+    getRuntimeFooterText(
+      {configs: {}},
+      {'device-runtime-footer-text': '  line one  \n line two '},
+    ),
+    'line one\nline two',
+  )
+  assert.equal(getRuntimeFooterText({configs: {}}), '')
+})
+
 test('hides runtime device information on the customer paylist only', () => {
   assert.equal(shouldShowRuntimeFooter('PaylistPage'), false)
   assert.equal(shouldShowRuntimeFooter('LoginPage'), true)

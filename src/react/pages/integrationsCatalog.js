@@ -247,6 +247,16 @@ export const INTEGRATION_CONFIGS = {
             label: 'RNTRC',
             placeholder: 'Registro da transportadora na ANTT',
           },
+          {
+            key: 'receita-federal-mdfe-enabled',
+            label: 'Habilitar MDF-e',
+            type: 'switch',
+          },
+          {
+            key: 'receita-federal-mdfe-serie',
+            label: 'Serie MDF-e',
+            placeholder: 'Ex.: 1',
+          },
         ],
       },
     ],
