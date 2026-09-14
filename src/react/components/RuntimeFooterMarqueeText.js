@@ -1,6 +1,10 @@
 const React = require('react');
 const {useEffect, useRef, useState} = React;
-const {Animated, Platform = {OS: 'native'}, Text, View} = require('react-native');
+const RN = require('react-native');
+const Animated = RN.Animated;
+const Text = RN.Text;
+const View = RN.View;
+const Platform = RN.Platform || {OS: 'native'};
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 const IS_WEB = Platform.OS === 'web';
 
@@ -13,8 +17,10 @@ const HOLD_MS = 1200;
  * Single-line footer text. When content overflows the available width,
  * scrolls horizontally in a continuous loop. Short text stays static.
  * On web, avoids Animated opacity/transform issues that hid the label.
- * RN Web also needs intrinsic sizing because Text can collapse to width 0
- * inside a flex row.
+ *
+ * NOTE: avoid default values inside destructuring of react-native imports —
+ * some Metro/Babel pipelines fail with "Property name expected type of string
+ * but got undefined" on that pattern (blocked staging SPA rebuild for #807).
  */
 const RuntimeFooterMarqueeText = ({
   text,
@@ -93,7 +99,6 @@ const RuntimeFooterMarqueeText = ({
     style,
     {
       color,
-      flex: undefined,
       flexShrink: 0,
       flexGrow: 0,
       minHeight: 14,
