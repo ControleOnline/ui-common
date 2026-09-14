@@ -19,7 +19,7 @@ const resolveMessageList = items =>
     .join('\n')
     .trim()
 
-export const resolveSystemErrorMessage = error => {
+const resolveSystemErrorMessage = error => {
   if (error === undefined || error === null) {
     return ''
   }
