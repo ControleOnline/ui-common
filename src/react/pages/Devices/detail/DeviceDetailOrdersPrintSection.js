@@ -21,6 +21,7 @@ import {tt} from './deviceDetailConstants';
 export default function DeviceDetailOrdersPrintSection(ctx) {
   const {
     themeColors,
+    shouldShowOrderVisibility,
     renderHelpButton,
     renderOptionButtons,
     renderSwitchRow,
@@ -53,6 +54,7 @@ export default function DeviceDetailOrdersPrintSection(ctx) {
 
   return (
     <>
+      {shouldShowOrderVisibility && (
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>
           <Icon name="list" size={13} /> {'  '}Pedidos do Device
@@ -119,6 +121,8 @@ export default function DeviceDetailOrdersPrintSection(ctx) {
           })}
         </View>
       </View>
+
+      )}
 
       {isDisplayDevice && (
         <View style={styles.section}>

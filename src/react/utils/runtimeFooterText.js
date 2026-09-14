@@ -100,7 +100,29 @@ const resolveConfigValue = configs => {
   }
 
   const parsed = parseObjectValue(configs);
-  return parsed?.[DEVICE_RUNTIME_FOOTER_TEXT_CONFIG_KEY];
+  if (!parsed || typeof parsed !== 'object') {
+    return undefined;
+  }
+
+  const direct = parsed[DEVICE_RUNTIME_FOOTER_TEXT_CONFIG_KEY];
+  if (direct !== undefined && direct !== null && direct !== '') {
+    return direct;
+  }
+
+  // Some stores nest Config entities under arbitrary keys
+  for (const value of Object.values(parsed)) {
+    if (!value || typeof value !== 'object') {
+      continue;
+    }
+    const key = safeTrim(
+      value.configKey || value.key || value.name || value.config_key,
+    );
+    if (key === DEVICE_RUNTIME_FOOTER_TEXT_CONFIG_KEY) {
+      return value.value ?? value.configValue ?? value.config_value;
+    }
+  }
+
+  return undefined;
 };
 
 const getRuntimeFooterText = (company, extraConfigs) => {
