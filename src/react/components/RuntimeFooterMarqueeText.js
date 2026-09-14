@@ -93,7 +93,6 @@ const RuntimeFooterMarqueeText = ({
     style,
     {
       color,
-      flex: undefined,
       flexShrink: 0,
       flexGrow: 0,
       minHeight: 14,
