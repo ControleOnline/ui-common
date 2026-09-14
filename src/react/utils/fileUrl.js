@@ -138,8 +138,11 @@ const buildTenantDownloadUrl = (url, host) => {
     return absoluteUrl;
   }
 
-  // Do not inject environment hosts into the path (app-community#432).
-  if (isEnvironmentLikeHost(normalizedHost)) {
+  // API serves /{appDomain}/files/{id}/download; bare path 404s on staging (#796).
+  const isFileDownloadPath = /\/files\/[^/?#]+\/download/i.test(absoluteUrl);
+
+  // Do not inject environment hosts into non-download paths (app-community#432).
+  if (isEnvironmentLikeHost(normalizedHost) && !isFileDownloadPath) {
     return absoluteUrl;
   }
 
@@ -304,15 +307,18 @@ export const resolveDefaultFileSource = (
       return null;
     }
 
+    const fileDomain = normalizeText(normalizedFile?.domain);
+    const downloadHost = fileDomain || host;
+
     const uri = isBackendDownload
-      ? buildTenantDownloadUrl(uriBase, host)
+      ? buildTenantDownloadUrl(uriBase, downloadHost)
       : uriBase;
 
     return {
       uri,
       headers:
-        isBackendDownload && host
-          ? {...sourceHeaders, ...headers, 'app-domain': host}
+        isBackendDownload && downloadHost
+          ? {...sourceHeaders, ...headers, 'app-domain': downloadHost}
           : {...sourceHeaders, ...headers},
     };
   }
