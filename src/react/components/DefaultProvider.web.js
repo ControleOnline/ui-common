@@ -475,6 +475,12 @@ export const DefaultProvider = ({
       return;
     }
 
+    // Device registration changes tenant context and is not valid without an
+    // active company or administrative authority for that company.
+    if (!currentCompany?.id || !isTenantAdministrativeAuthority(currentCompany)) {
+      return;
+    }
+
     let cancelled = false;
 
     const syncDeviceRegistration = async () => {
@@ -555,6 +561,7 @@ export const DefaultProvider = ({
     device?.model,
     device?.systemVersion,
     isLogged,
+    currentCompany,
     runtimeDeviceType,
   ]);
 
