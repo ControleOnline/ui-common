@@ -1,11 +1,11 @@
 import {
   appendScreenMetrics,
   hasScreenMetricsChanges,
-} from '@controleonline/ui-common/src/react/utils/screenMetrics';
+} from '@controleonline/ui-common/src/react/utils/screenMetrics.js';
 import {
   normalizeBooleanConfig,
   SHOP_LOYALTY_COUPONS_ENABLED_CONFIG_KEY,
-} from '@controleonline/ui-common/src/react/utils/shopConfig';
+} from '@controleonline/ui-common/src/react/utils/shopConfig.js';
 
 export const CIELO_DEVICES = ['quantum', 'ingenico', 'positivo'];
 export const SUPPORTED_POS_GATEWAYS = ['cielo', 'infinite-pay'];

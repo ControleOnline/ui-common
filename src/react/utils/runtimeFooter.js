@@ -1,4 +1,4 @@
-import { getDeviceTypeLabel } from '@controleonline/ui-common/src/react/utils/printerDevices';
+import { getDeviceTypeLabel } from '@controleonline/ui-common/src/react/utils/printerDevices.js';
 const {
   DEVICE_RUNTIME_FOOTER_TEXT_CONFIG_KEY,
   getRuntimeFooterRotationEntries,
