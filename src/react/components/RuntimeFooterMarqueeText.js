@@ -1,6 +1,8 @@
 const React = require('react');
 const {useEffect, useRef, useState} = React;
-const {Animated, Platform = {OS: 'native'}, Text, View} = require('react-native');
+const ReactNative = require('react-native');
+const {Animated, Text, View} = ReactNative;
+const Platform = ReactNative.Platform || {OS: 'native'};
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 const IS_WEB = Platform.OS === 'web';
 
