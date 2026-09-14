@@ -1,6 +1,10 @@
 const React = require('react');
 const {useEffect, useRef, useState} = React;
-const {Animated, Platform = {OS: 'native'}, Text, View} = require('react-native');
+const RN = require('react-native');
+const Animated = RN.Animated;
+const Text = RN.Text;
+const View = RN.View;
+const Platform = RN.Platform || {OS: 'native'};
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 const IS_WEB = Platform.OS === 'web';
 
@@ -79,27 +83,27 @@ const RuntimeFooterMarqueeText = ({
     setContentWidth(current => (current === nextWidth ? current : nextWidth));
   };
 
-  const webTextFix = IS_WEB
-    ? {
-        display: 'inline-block',
-        width: 'auto',
-        maxWidth: 'none',
-        whiteSpace: 'nowrap',
-        flexBasis: 'auto',
-      }
-    : null;
-
   const textStyle = [
     style,
     {
-      color,
+      color: color,
       flexShrink: 0,
       flexGrow: 0,
       minHeight: 14,
     },
-    webTextFix,
-    shouldMarquee ? {textAlign: 'left'} : {textAlign: 'center'},
   ];
+
+  if (IS_WEB) {
+    textStyle.push({
+      display: 'inline-block',
+      width: 'auto',
+      maxWidth: 'none',
+      whiteSpace: 'nowrap',
+      flexBasis: 'auto',
+    });
+  }
+
+  textStyle.push(shouldMarquee ? {textAlign: 'left'} : {textAlign: 'center'});
 
   const content = React.createElement(
     Text,
@@ -116,7 +120,7 @@ const RuntimeFooterMarqueeText = ({
     return React.createElement(
       View,
       {
-        testID,
+        testID: testID,
         style: {
           flex: 1,
           overflow: 'hidden',
@@ -132,7 +136,7 @@ const RuntimeFooterMarqueeText = ({
   return React.createElement(
     View,
     {
-      testID,
+      testID: testID,
       style: {flex: 1, overflow: 'hidden', justifyContent: 'center'},
       onLayout: handleContainerLayout,
     },
@@ -143,7 +147,7 @@ const RuntimeFooterMarqueeText = ({
           flexDirection: 'row',
           alignItems: 'center',
           opacity: 1,
-          transform: [{translateX}],
+          transform: [{translateX: translateX}],
           alignSelf: shouldMarquee ? 'flex-start' : 'stretch',
         },
       },
@@ -156,7 +160,7 @@ const RuntimeFooterMarqueeText = ({
               ellipsizeMode: 'clip',
               accessible: false,
               importantForAccessibility: 'no',
-              style: [...textStyle, {marginLeft: GAP_PX}],
+              style: textStyle.concat([{marginLeft: GAP_PX}]),
             },
             text,
           )
