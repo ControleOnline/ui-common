@@ -8,6 +8,13 @@ import {normalizeShopEntityId} from '@controleonline/ui-common/src/react/utils/s
 export const SHOP_FRANCHISE_LINK_TYPE = 'franchisee';
 export const SHOP_FRANCHISE_PAGE_SIZE = 50;
 
+/** people.enable must be 1/true for franchise to appear in settings Maps list (#815). */
+export const isPeopleEnabled = people => {
+  const value = people?.enable;
+  return value === true || value === 1 || value === '1';
+};
+
+
 const normalizeItemsPerPage = value =>
   Math.max(1, Math.min(SHOP_FRANCHISE_PAGE_SIZE, Number(value) || SHOP_FRANCHISE_PAGE_SIZE));
 
@@ -422,11 +429,13 @@ export const fetchAllShopFranchiseDirectory = async ({
       );
   }
 
-  const companies = await fetchFranchiseCompaniesFromLinks({
-    companyId,
-    search,
-    itemsPerPage,
-  });
+  const companies = (
+    await fetchFranchiseCompaniesFromLinks({
+      companyId,
+      search,
+      itemsPerPage,
+    })
+  ).filter(isPeopleEnabled);
 
   // Always load addresses from /addresses so lat/long (and map.*) are present.
   // people_link embeds are often stubs without coordinates.
