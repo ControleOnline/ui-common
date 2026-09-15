@@ -2,6 +2,7 @@ const assert = require('node:assert/strict');
 const {test, before, after, describe} = require('node:test');
 const Module = require('module');
 const path = require('path');
+const fs = require('fs');
 const React = require('react');
 
 const originalLoad = Module._load;
@@ -87,6 +88,22 @@ test('RuntimeFooterMarqueeText exports a React component', () => {
   const mod = loadComponent();
   assert.equal(typeof mod, 'function');
   assert.equal(typeof mod.default, 'function');
+});
+
+test('RuntimeFooterMarqueeText keeps the React Native import Metro-safe', () => {
+  const source = fs.readFileSync(
+    path.resolve(
+      __dirname,
+      '../../../react/components/RuntimeFooterMarqueeText.js',
+    ),
+    'utf8',
+  );
+
+  assert.match(source, /const RN = require\('react-native'\);/);
+  assert.doesNotMatch(
+    source,
+    /const \{[^}]*Platform\s*=\s*\{OS:/,
+  );
 });
 
 test('short text stays single-line without duplicate marquee copy', async () => {

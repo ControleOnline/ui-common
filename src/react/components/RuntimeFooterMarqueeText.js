@@ -1,6 +1,12 @@
 const React = require('react');
 const {useEffect, useRef, useState} = React;
-const {Animated, Platform = {OS: 'native'}, Text, View} = require('react-native');
+// Keep the React Native import Metro-safe: destructuring defaults can make
+// Metro's Babel parser fail with "Property name expected type of string".
+const RN = require('react-native');
+const Animated = RN.Animated;
+const Platform = RN.Platform || {OS: 'native'};
+const Text = RN.Text;
+const View = RN.View;
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 const IS_WEB = Platform.OS === 'web';
 
