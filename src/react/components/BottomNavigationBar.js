@@ -164,8 +164,13 @@ const BottomNavigationBar = ({
               );
             })}
           </View>
+          {/* app-community#384: texto do rodapé DEPOIS dos botões (não antes) */}
+          {runtimeFooter ? (
+            <View style={styles.footerSlot} testID="bottom-navigation-footer-slot">
+              <RuntimeInfoFooter {...footerProps} />
+            </View>
+          ) : null}
         </View>
-        {runtimeFooter ? <RuntimeInfoFooter {...footerProps} /> : null}
       </View>
     </View>
   );
