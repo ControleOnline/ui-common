@@ -33,24 +33,14 @@ const hydratePeopleEnableFlags = async companies => {
       if (!peopleId) {
         return company;
       }
-      const existing = company?.enable ?? company?.enabled;
-      if (
-        existing === true ||
-        existing === false ||
-        existing === 0 ||
-        existing === 1 ||
-        existing === '0' ||
-        existing === '1'
-      ) {
-        return company;
-      }
+      // Always read enable from people table — people_links embed can be stale/wrong (#815)
       try {
         const person = await api.fetch(`people/${peopleId}`);
         if (person && typeof person === 'object') {
           return {
             ...company,
-            enable: person.enable ?? person.enabled ?? company.enable,
-            enabled: person.enabled ?? person.enable ?? company.enabled,
+            enable: person.enable ?? person.enabled,
+            enabled: person.enabled ?? person.enable,
           };
         }
       } catch (_) {}
