@@ -10,8 +10,44 @@ export const SHOP_FRANCHISE_PAGE_SIZE = 50;
 
 /** people.enable must be 1/true for franchise to appear in settings Maps list (#815). */
 export const isPeopleEnabled = people => {
-  const value = people?.enable;
-  return value === true || value === 1 || value === '1';
+  if (!people || typeof people !== 'object') {
+    return false;
+  }
+  // API may expose enable or enabled (GeneralTab uses both).
+  const value = people.enable ?? people.enabled;
+  if (value === true || value === 1 || value === '1') {
+    return true;
+  }
+  if (value === false || value === 0 || value === '0') {
+    return false;
+  }
+  return false;
+};
+
+/** Load people.enable from API so people_links embeds without enable are accurate (#815). */
+const hydratePeopleEnableFlags = async companies => {
+  const list = Array.isArray(companies) ? companies : [];
+  const hydrated = await Promise.all(
+    list.map(async company => {
+      const peopleId = normalizeShopEntityId(company);
+      if (!peopleId) {
+        return company;
+      }
+      // Always read enable from people table — people_links embed can be stale/wrong (#815)
+      try {
+        const person = await api.fetch(`people/${peopleId}`);
+        if (person && typeof person === 'object') {
+          return {
+            ...company,
+            enable: person.enable ?? person.enabled,
+            enabled: person.enabled ?? person.enable,
+          };
+        }
+      } catch (_) {}
+      return company;
+    }),
+  );
+  return hydrated;
 };
 
 
