@@ -17,7 +17,7 @@
     "test:bottom-navigation-toolbar": "node --test src/tests/react/utils/bottomNavigationToolbar.test.js",
     "test:copy-device-configs": "node --test src/tests/react/utils/copyDeviceConfigs.test.mjs",
     "test:print-routing": "node --test src/tests/react/utils/printRouting.test.mjs src/tests/react/utils/printSpoolUtils.test.mjs",
-    "test:runtime-footer-marquee": "node --test src/tests/react/components/RuntimeFooterMarqueeText.test.js",
+    "test:runtime-footer-marquee": "node --test src/tests/react/components/RuntimeFooterMarqueeText.test.js src/tests/react/components/RuntimeFooterMarqueeText.build.test.js",
     "test:device-detail-dependencies": "node --test src/tests/react/pages/deviceDetailLoaderDependencies.test.mjs"
   },
   "devDependencies": {
