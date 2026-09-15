@@ -10,6 +10,7 @@ const {
   filterShopFranchiseDirectory,
   fetchAllShopFranchiseDirectory,
   fetchShopFranchiseDirectory,
+  isPeopleEnabled,
 } = require('../../../react/utils/shopFranchises');
 
 const {beforeEach, describe, expect, it} = global;
@@ -17,6 +18,33 @@ const {beforeEach, describe, expect, it} = global;
 describe('shopFranchises', () => {
   beforeEach(() => {
     api.fetch.mockReset();
+  });
+
+  it('accepts only enabled people values used by the API', () => {
+    expect(isPeopleEnabled({enable: true})).toBe(true);
+    expect(isPeopleEnabled({enable: 1})).toBe(true);
+    expect(isPeopleEnabled({enabled: '1'})).toBe(true);
+    expect(isPeopleEnabled({enable: false})).toBe(false);
+    expect(isPeopleEnabled({enable: 0})).toBe(false);
+    expect(isPeopleEnabled({})).toBe(false);
+  });
+
+  it('hydrates people.enable from the people endpoint before filtering', async () => {
+    api.fetch
+      .mockResolvedValueOnce({
+        member: [
+          {id: 1, linkType: 'franchisee', company: {id: 10}, people: {id: 21}},
+          {id: 2, linkType: 'franchisee', company: {id: 10}, people: {id: 22}},
+        ],
+      })
+      .mockResolvedValueOnce({enable: 1})
+      .mockResolvedValueOnce({enable: 0});
+
+    const directory = await fetchAllShopFranchiseDirectory({companyId: 10});
+
+    expect(api.fetch).toHaveBeenCalledWith('people/21');
+    expect(api.fetch).toHaveBeenCalledWith('people/22');
+    expect(directory.map(item => item.id)).toEqual([21]);
   });
 
   it('uses the public shop franchises endpoint and preserves shop addresses', async () => {
