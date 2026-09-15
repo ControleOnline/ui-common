@@ -10,6 +10,7 @@ const {
   filterShopFranchiseDirectory,
   fetchAllShopFranchiseDirectory,
   fetchShopFranchiseDirectory,
+  extractFranchiseCompanyFromLink,
 } = require('../../../react/utils/shopFranchises');
 
 const {beforeEach, describe, expect, it} = global;
@@ -58,6 +59,7 @@ describe('shopFranchises', () => {
   });
 
   it('uses an authorized company-side link without duplicate fallback requests', async () => {
+    api.fetch.mockResolvedValueOnce({id: 10, '@type': 'Company'});
     api.fetch
       .mockResolvedValueOnce({
         member: [
@@ -79,7 +81,8 @@ describe('shopFranchises', () => {
 
     const directory = await fetchShopFranchiseDirectory({companyId: 10});
 
-    expect(api.fetch).toHaveBeenCalledTimes(1);
+    expect(api.fetch).toHaveBeenCalledTimes(2);
+    expect(api.fetch).toHaveBeenNthCalledWith(1, 'people/10');
     expect(api.fetch).toHaveBeenCalledWith('people_links', {
       params: {
         company: '10',
@@ -96,6 +99,7 @@ describe('shopFranchises', () => {
   });
 
   it('rejects unrelated or non-franchise links before loading addresses', async () => {
+    api.fetch.mockResolvedValueOnce({id: 10, '@type': 'Company'});
     api.fetch.mockResolvedValueOnce({
       member: [
         {
@@ -117,11 +121,12 @@ describe('shopFranchises', () => {
     const directory = await fetchAllShopFranchiseDirectory({companyId: 10});
 
     expect(directory).toEqual([]);
-    expect(api.fetch).toHaveBeenCalledTimes(2);
+    expect(api.fetch).toHaveBeenCalledTimes(3);
     expect(api.fetch).not.toHaveBeenCalledWith('addresses', expect.anything());
   });
 
     it('loads every page when building the full franchise directory', async () => {
+    api.fetch.mockResolvedValueOnce({id: 10, '@type': 'Company'});
     // Dual-side people_links: company side page1 (full), page2 empty break;
     // people side empty.
     api.fetch
@@ -170,11 +175,21 @@ describe('shopFranchises', () => {
       itemsPerPage: 2,
     });
 
-    expect(api.fetch.mock.calls[0][0]).toBe('people_links');
+    expect(api.fetch.mock.calls[1][0]).toBe('people_links');
     expect(directory.map(item => item.id).sort()).toEqual([21, 22, 23]);
   });
 
-  it('extracts category ids from address category payload variants', () => {
+  it('rejects a viewer id not confirmed by the authenticated API', async () => {
+    api.fetch.mockResolvedValueOnce({id: 999, '@type': 'User'});
+    await expect(fetchAllShopFranchiseDirectory({companyId: 10})).resolves.toEqual([]);
+    expect(api.fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects a viewer side with a non-company entity type', () => {
+    expect(extractFranchiseCompanyFromLink({linkType: 'franchisee', company: {id: 10, '@type': 'User'}, people: {id: 22, '@type': 'Company'}}, 10)).toBeNull();
+  });
+
+    it('extracts category ids from address category payload variants', () => {
     expect(
       extractAddressCategoryIds({
         categories: [{id: 10}, '/categories/11'],

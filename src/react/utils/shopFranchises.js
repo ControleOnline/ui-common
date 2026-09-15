@@ -8,6 +8,14 @@ import {normalizeShopEntityId} from '@controleonline/ui-common/src/react/utils/s
 export const SHOP_FRANCHISE_LINK_TYPE = 'franchisee';
 export const SHOP_FRANCHISE_PAGE_SIZE = 50;
 
+const COMPANY_ENTITY_TYPES = new Set(['Company', 'Organization', 'People']);
+
+const isCompanyEntity = entity => {
+  const type = entity?.['@type'] || entity?.type;
+  const types = Array.isArray(type) ? type : type ? [type] : [];
+  return types.length === 0 || types.some(value => COMPANY_ENTITY_TYPES.has(value));
+};
+
 const normalizeItemsPerPage = value =>
   Math.max(1, Math.min(SHOP_FRANCHISE_PAGE_SIZE, Number(value) || SHOP_FRANCHISE_PAGE_SIZE));
 
@@ -219,6 +227,13 @@ export const extractFranchiseCompanyFromLink = (link, viewerCompanyId) => {
   const companyId = normalizeShopEntityId(companySide);
   const peopleId = normalizeShopEntityId(peopleSide);
 
+  if (
+    (companyId === viewerId && !isCompanyEntity(companySide)) ||
+    (peopleId === viewerId && !isCompanyEntity(peopleSide))
+  ) {
+    return null;
+  }
+
   if (viewerId && companyId === viewerId) {
     return peopleSide;
   }
@@ -280,6 +295,16 @@ const fetchFranchiseCompaniesFromLinks = async ({
 } = {}) => {
   const viewerId = normalizeShopEntityId(companyId);
   if (!viewerId) {
+    return [];
+  }
+
+  // The authenticated API response is the authority for viewer membership;
+  // link query parameters and embedded rows are untrusted response data.
+  const viewerResponse = await api.fetch(`people/${viewerId}`);
+  if (
+    normalizeShopEntityId(viewerResponse) !== viewerId ||
+    !isCompanyEntity(viewerResponse)
+  ) {
     return [];
   }
 
