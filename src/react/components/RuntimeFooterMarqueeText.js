@@ -1,8 +1,10 @@
 const React = require('react');
 const {useEffect, useRef, useState} = React;
-const {Animated, Platform: NativePlatform, Text, View} = require('react-native');
-// RN Web's Babel transform cannot handle defaults in require destructuring.
-const Platform = NativePlatform || {OS: 'native'};
+const RN = require('react-native');
+const Animated = RN.Animated;
+const Text = RN.Text;
+const View = RN.View;
+const Platform = RN.Platform || {OS: 'native'};
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 const IS_WEB = Platform.OS === 'web';
 
@@ -17,14 +19,18 @@ const HOLD_MS = 1200;
  * On web, avoids Animated opacity/transform issues that hid the label.
  * RN Web also needs intrinsic sizing because Text can collapse to width 0
  * inside a flex row.
+ *
+ * IMPORTANT: do not use destructuring defaults on require('react-native')
+ * — Metro web export fails with "Property name expected type of string
+ * but got undefined" (staging Deploy).
  */
-const RuntimeFooterMarqueeText = ({
-  text,
-  color,
-  style,
-  opacity,
-  testID = 'runtime-footer-marquee-text',
-}) => {
+const RuntimeFooterMarqueeText = props => {
+  const text = props && props.text;
+  const color = props && props.color;
+  const style = props && props.style;
+  const testID =
+    (props && props.testID) || 'runtime-footer-marquee-text';
+
   const [containerWidth, setContainerWidth] = useState(0);
   const [contentWidth, setContentWidth] = useState(0);
   const translateX = useRef(new Animated.Value(0)).current;
@@ -52,7 +58,7 @@ const RuntimeFooterMarqueeText = ({
         Animated.delay(HOLD_MS),
         Animated.timing(translateX, {
           toValue: -distance,
-          duration,
+          duration: duration,
           useNativeDriver: USE_NATIVE_DRIVER,
         }),
         Animated.timing(translateX, {
@@ -72,37 +78,48 @@ const RuntimeFooterMarqueeText = ({
   }, [shouldMarquee, contentWidth, containerWidth, text, translateX]);
 
   const handleContainerLayout = event => {
-    const nextWidth = Math.round(event?.nativeEvent?.layout?.width || 0);
+    const nextWidth = Math.round(
+      (event &&
+        event.nativeEvent &&
+        event.nativeEvent.layout &&
+        event.nativeEvent.layout.width) ||
+        0,
+    );
     setContainerWidth(current => (current === nextWidth ? current : nextWidth));
   };
 
   const handleTextLayout = event => {
-    const nextWidth = Math.round(event?.nativeEvent?.layout?.width || 0);
+    const nextWidth = Math.round(
+      (event &&
+        event.nativeEvent &&
+        event.nativeEvent.layout &&
+        event.nativeEvent.layout.width) ||
+        0,
+    );
     setContentWidth(current => (current === nextWidth ? current : nextWidth));
   };
-
-  const webTextFix = IS_WEB
-    ? {
-        display: 'inline-block',
-        width: 'auto',
-        maxWidth: 'none',
-        whiteSpace: 'nowrap',
-        flexBasis: 'auto',
-      }
-    : null;
 
   const textStyle = [
     style,
     {
-      color,
-      flex: undefined,
+      color: color,
       flexShrink: 0,
       flexGrow: 0,
       minHeight: 14,
     },
-    webTextFix,
-    shouldMarquee ? {textAlign: 'left'} : {textAlign: 'center'},
   ];
+
+  if (IS_WEB) {
+    textStyle.push({
+      display: 'inline-block',
+      width: 'auto',
+      maxWidth: 'none',
+      whiteSpace: 'nowrap',
+      flexBasis: 'auto',
+    });
+  }
+
+  textStyle.push(shouldMarquee ? {textAlign: 'left'} : {textAlign: 'center'});
 
   const content = React.createElement(
     Text,
@@ -119,7 +136,7 @@ const RuntimeFooterMarqueeText = ({
     return React.createElement(
       View,
       {
-        testID,
+        testID: testID,
         style: {
           flex: 1,
           overflow: 'hidden',
@@ -135,7 +152,7 @@ const RuntimeFooterMarqueeText = ({
   return React.createElement(
     View,
     {
-      testID,
+      testID: testID,
       style: {flex: 1, overflow: 'hidden', justifyContent: 'center'},
       onLayout: handleContainerLayout,
     },
@@ -146,7 +163,7 @@ const RuntimeFooterMarqueeText = ({
           flexDirection: 'row',
           alignItems: 'center',
           opacity: 1,
-          transform: [{translateX}],
+          transform: [{translateX: translateX}],
           alignSelf: shouldMarquee ? 'flex-start' : 'stretch',
         },
       },
@@ -159,7 +176,7 @@ const RuntimeFooterMarqueeText = ({
               ellipsizeMode: 'clip',
               accessible: false,
               importantForAccessibility: 'no',
-              style: [...textStyle, {marginLeft: GAP_PX}],
+              style: textStyle.concat([{marginLeft: GAP_PX}]),
             },
             text,
           )

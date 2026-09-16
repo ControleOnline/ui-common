@@ -1,4 +1,3 @@
-import { getDeviceTypeLabel } from '@controleonline/ui-common/src/react/utils/printerDevices';
 const {
   DEVICE_RUNTIME_FOOTER_TEXT_CONFIG_KEY,
   getRuntimeFooterRotationEntries,
@@ -9,6 +8,13 @@ const {
   parseObjectValue,
   safeTrim,
 } = require('./runtimeFooterText');
+
+const getDeviceTypeLabel = type => {
+  const normalizedType = String(type || '').trim().toUpperCase();
+  if (['PRINT', 'PRINTER'].includes(normalizedType)) return 'Impressora';
+  if (normalizedType === 'IP_CAMERA') return 'Camera IP';
+  return normalizedType || 'DEVICE';
+};
 
 
 const RUNTIME_FOOTER_HIDDEN_ROUTES = new Set(['PaylistPage']);
