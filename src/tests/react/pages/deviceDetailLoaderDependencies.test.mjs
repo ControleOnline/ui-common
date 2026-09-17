@@ -24,4 +24,5 @@ test('device detail loaders receive currentCompany from deps exactly once', () =
     `currentCompany must appear exactly once in deps destructure, found ${hits.length}`,
   );
   assert.match(loaderSource, /currentCompany\?\.id/);
+  assert.match(loaderSource, /filterDeviceConfigsByCompany\(items, currentCompany\?\.id\)/);
 });
