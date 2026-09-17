@@ -37,6 +37,7 @@ import {
 } from '@controleonline/../../src/styles/branding';
 import {colors as runtimeColors} from '@controleonline/../../src/styles/colors';
 import {
+  buildDefaultDeviceConfigs,
   buildProviderManagedDeviceConfigs,
   parseConfigsObject,
 } from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
@@ -617,7 +618,14 @@ export const DefaultProvider = ({
       return;
     }
 
-    const {nextConfigs, needsUpdate} = buildProviderManagedDeviceConfigs({
+    const isNewPdvConfig =
+      runtimeDeviceType === 'PDV' &&
+      !device_config?.id &&
+      !device_config?.['@id'];
+    const buildDeviceConfigs = isNewPdvConfig
+      ? buildDefaultDeviceConfigs
+      : buildProviderManagedDeviceConfigs;
+    const {nextConfigs, needsUpdate} = buildDeviceConfigs({
       configs: device_config?.configs,
       appVersion,
       deviceInfo: device,
