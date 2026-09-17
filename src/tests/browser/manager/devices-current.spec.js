@@ -339,5 +339,10 @@ test.describe('current device browser smoke', () => {
         type: 'PDV',
       }),
     );
+    expect(JSON.parse(api.savedPdvRequests[0].configs)).toEqual(
+      expect.objectContaining({
+        'pos-operation-mode': 'counter',
+      }),
+    );
   });
 });
