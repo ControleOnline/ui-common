@@ -37,6 +37,7 @@ import {
   buildProviderManagedDeviceConfigs,
   parseConfigsObject,
 } from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
+import {canAdministerCompany} from '@controleonline/ui-common/src/react/utils/companyAuthority';
 import {
   buildDeviceRegistrationPayload,
   buildLocalRuntimeDevice,

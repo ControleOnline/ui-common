@@ -18,6 +18,9 @@ describe('DefaultProvider company authority guard', () => {
 
       expect(source).not.toContain('isTenantAdministrativeAuthority');
       expect(source).toMatch(
+        /import\s*\{\s*canAdministerCompany\s*\}\s*from\s*['"]@controleonline\/ui-common\/src\/react\/utils\/companyAuthority['"]/,
+      );
+      expect(source).toMatch(
         /canAdministerCompany\(\{\s*company:\s*currentCompany,\s*mainCompany,\s*user\s*\}\)/,
       );
     },
