@@ -3,6 +3,12 @@ import test from 'node:test';
 
 import Formatter from '../../../utils/formatter.js';
 
+test('normalizes optional text values', () => {
+  assert.equal(Formatter.normalizeText('  iFood  '), 'iFood');
+  assert.equal(Formatter.normalizeText(null), '');
+  assert.equal(Formatter.normalizeText(undefined), '');
+});
+
 test('formats API datetimes using the numeric offset returned by the backend', () => {
   assert.equal(
     Formatter.formatDateYmdTodmY('2026-07-22T00:00:00-02:00'),
