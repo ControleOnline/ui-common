@@ -88,7 +88,7 @@ const Checkout = () => {
   const invoiceActions = invoiceStore.actions;
   const peopleStore = useStore('people');
   const peopleGetters = peopleStore.getters;
-  const {currentCompany, defaultCompany} = peopleGetters;
+  const {currentCompany, mainCompany} = peopleGetters;
   const websocketStore = useStore('websocket');
   const websocketActions = websocketStore.actions;
   const {messages, message} = invoiceGetters;
@@ -120,7 +120,7 @@ const Checkout = () => {
 
   const createInvoice = useCallback(async (selectedPayment, total, orderItem) => {
     const paidStatusIri = await resolvePosPaidInvoiceStatusIri(
-      defaultCompany?.configs['pos-paid-status'],
+      mainCompany?.configs['pos-paid-status'],
     );
 
     if (!paidStatusIri) {
@@ -143,7 +143,7 @@ const Checkout = () => {
     return await invoiceActions.save(payload);
   }, [
     currentCompany?.id,
-    defaultCompany?.configs,
+    mainCompany?.configs,
     invoiceActions,
   ]);
 

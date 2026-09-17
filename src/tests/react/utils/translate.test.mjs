@@ -216,10 +216,10 @@ test('falls back past empty current-company values to the main company', () => {
   installLocalStorage();
   const translateStore = createPendingTranslateStore();
   const currentCompany = {id: 2};
-  const defaultCompany = {id: 1};
+  const mainCompany = {id: 1};
   const translate = new Translate(
-    [defaultCompany, currentCompany],
-    defaultCompany,
+    [mainCompany, currentCompany],
+    mainCompany,
     currentCompany,
     ['orders'],
     translateStore,
@@ -235,10 +235,10 @@ test('getResolveCompaniesToCache returns current and main companies', () => {
   installLocalStorage();
   const translateStore = createPendingTranslateStore();
   const currentCompany = {id: 2};
-  const defaultCompany = {id: 1};
+  const mainCompany = {id: 1};
   const translate = new Translate(
-    [defaultCompany, currentCompany],
-    defaultCompany,
+    [mainCompany, currentCompany],
+    mainCompany,
     currentCompany,
     ['orders'],
     translateStore,

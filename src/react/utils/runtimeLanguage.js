@@ -29,14 +29,14 @@ function resolveCompanyLanguageCode(company) {
 
 function resolveConfiguredLanguage({
   currentCompany,
-  defaultCompany,
+  mainCompany,
   currentConfig,
   sessionData,
   fallback = 'pt-br',
 } = {}) {
   return (
     resolveCompanyLanguageCode(currentCompany) ||
-    resolveCompanyLanguageCode(defaultCompany) ||
+    resolveCompanyLanguageCode(mainCompany) ||
     normalizeLanguageCode(currentConfig?.language) ||
     normalizeLanguageCode(sessionData?.language) ||
     fallback
@@ -46,11 +46,11 @@ function resolveConfiguredLanguage({
 function buildTranslationBootstrapKey({
   language,
   currentCompanyId,
-  defaultCompanyId,
+  mainCompanyId,
 } = {}) {
   const normalizedLanguage = normalizeLanguageCode(language)
   const normalizedCurrentCompanyId = String(currentCompanyId || '').trim()
-  const normalizedDefaultCompanyId = String(defaultCompanyId || '').trim()
+  const normalizedMainCompanyId = String(mainCompanyId || '').trim()
 
   if (!normalizedLanguage || !normalizedCurrentCompanyId) {
     return ''
@@ -59,7 +59,7 @@ function buildTranslationBootstrapKey({
   return [
     normalizedLanguage,
     normalizedCurrentCompanyId,
-    normalizedDefaultCompanyId,
+    normalizedMainCompanyId,
   ].join('::')
 }
 

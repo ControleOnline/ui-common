@@ -40,6 +40,7 @@ import {
   buildProviderManagedDeviceConfigs,
   parseConfigsObject,
 } from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
+import {canAdministerCompany} from '@controleonline/ui-common/src/react/utils/companyAuthority';
 import {
   buildDeviceRegistrationPayload,
   buildLocalRuntimeDevice,
@@ -105,21 +106,6 @@ const resolveDeviceConfigPeopleIri = ({appType, currentCompany, user}) => {
 
   return '';
 };
-const isTenantAdministrativeAuthority = company => {
-  const userFlags = company?.user || {};
-  return !!(
-    userFlags.owner_enabled ||
-    userFlags.director_enabled ||
-    userFlags.manager_enabled ||
-    userFlags.admin_enabled ||
-    company?.owner_enabled ||
-    company?.director_enabled ||
-    company?.manager_enabled
-  );
-};
-
-
-
 export const DefaultProvider = ({
   children,
   currentRouteName = '',
@@ -154,7 +140,7 @@ export const DefaultProvider = ({
   const translateActions = translateStore.actions;
   const {items: companyConfigs} = configsGetters;
   const {colors, menus} = getters;
-  const {currentCompany, defaultCompany, companies} = peopleGetters;
+  const {currentCompany, mainCompany, companies} = peopleGetters;
   const {item: device_config} = deviceConfigsGetters;
   const {isLogged, sessionChecked, user} = authGetters;
   const hasCurrentCompany =
@@ -203,7 +189,7 @@ export const DefaultProvider = ({
   );
   const configuredTranslationLanguage = resolveConfiguredLanguage({
     currentCompany,
-    defaultCompany,
+    mainCompany,
     currentConfig: currentTranslationConfig,
     sessionData: currentTranslationSession,
   });
@@ -211,7 +197,7 @@ export const DefaultProvider = ({
     ? buildTranslationBootstrapKey({
         language: configuredTranslationLanguage,
         currentCompanyId: normalizeEntityId(currentCompany?.id),
-        defaultCompanyId: normalizeEntityId(defaultCompany?.id),
+        mainCompanyId: normalizeEntityId(mainCompany?.id),
       })
     : '';
   const requiresTranslateBootstrap = Boolean(
@@ -252,7 +238,7 @@ export const DefaultProvider = ({
         : {
             appVersion,
             colors,
-            defaultCompany,
+            mainCompany,
             device,
           },
       bottomChrome: {
@@ -264,7 +250,7 @@ export const DefaultProvider = ({
       appVersion,
       bottomNavigationCount,
       colors,
-      defaultCompany,
+      mainCompany,
       device,
       isShopClientApp,
       menus,
@@ -381,7 +367,7 @@ export const DefaultProvider = ({
 
   useEffect(() => {
     if (device && device.id) {
-      peopleActions.defaultCompany();
+      peopleActions.mainCompany();
     }
   }, [device?.id]);
 
@@ -630,7 +616,7 @@ export const DefaultProvider = ({
 
     // Non-admin users cannot mutate device context/financial policy (API 403).
     // Skip bootstrap write; keep local runtime configs in memory only.
-    if (!isTenantAdministrativeAuthority(currentCompany)) {
+    if (!canAdministerCompany({company: currentCompany, mainCompany, user})) {
       setDeviceRuntimeConfigSynced(true);
       return;
     }
@@ -656,10 +642,12 @@ export const DefaultProvider = ({
     deviceConfigPeopleIri,
     deviceRuntimeConfigSynced,
     currentCompany,
+    mainCompany,
     deviceConfigsActions,
     device_config?.configs,
     isLogged,
     runtimeDeviceType,
+    user,
   ]);
 
   useEffect(() => {
@@ -723,7 +711,7 @@ export const DefaultProvider = ({
     ) {
       global.t.companies = companies;
       global.t.currentCompany = currentCompany;
-      global.t.defaultCompany = defaultCompany;
+      global.t.mainCompany = mainCompany;
       setActiveTranslateBootstrapKey(expectedTranslateBootstrapKey);
       setTranslateReady(true);
 
@@ -746,7 +734,7 @@ export const DefaultProvider = ({
     translateBootstrapKeyRef.current = expectedTranslateBootstrapKey;
     global.t = new Translate(
       companies,
-      defaultCompany,
+      mainCompany,
       currentCompany,
       Object.keys(stores),
       translateStore,
@@ -759,7 +747,7 @@ export const DefaultProvider = ({
     configuredTranslationLanguage,
     currentCompany,
     currentRouteName,
-    defaultCompany,
+    mainCompany,
     deviceConfigFetched,
     expectedTranslateBootstrapKey,
     hasCurrentCompany,
@@ -845,11 +833,11 @@ export const DefaultProvider = ({
     if (device?.id) {
       fetchColors();
     }
-  }, [actions, currentCompany?.id, defaultCompany?.id, device?.id]);
+  }, [actions, currentCompany?.id, mainCompany?.id, device?.id]);
 
   useEffect(() => {
     const companyThemeColors =
-      currentCompany?.theme?.colors || defaultCompany?.theme?.colors || {};
+      currentCompany?.theme?.colors || mainCompany?.theme?.colors || {};
     const mergedThemeColors = {
       ...(baseThemeColors || {}),
       ...(companyThemeColors || {}),
@@ -886,7 +874,7 @@ export const DefaultProvider = ({
               {!isShopClientApp && bottomNavigationCount === 0 && (
                 <RuntimeInfoFooter
                   appVersion={appVersion}
-                  defaultCompany={defaultCompany}
+                  mainCompany={mainCompany}
                   device={device}
                   colors={colors}
                 />
