@@ -42,6 +42,10 @@ export default class Formatter {
 
   /* ================= UTIL ================= */
 
+  static normalizeText(value) {
+    return String(value || '').trim();
+  }
+
   static onlyNumbers(value) {
     return String(value || '').replace(/\D/g, '');
   }
