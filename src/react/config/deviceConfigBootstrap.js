@@ -1,11 +1,11 @@
 import {
   appendScreenMetrics,
   hasScreenMetricsChanges,
-} from '@controleonline/ui-common/src/react/utils/screenMetrics';
+} from '@controleonline/ui-common/src/react/utils/screenMetrics.js';
 import {
   normalizeBooleanConfig,
   SHOP_LOYALTY_COUPONS_ENABLED_CONFIG_KEY,
-} from '@controleonline/ui-common/src/react/utils/shopConfig';
+} from '@controleonline/ui-common/src/react/utils/shopConfig.js';
 
 export const CIELO_DEVICES = ['quantum', 'ingenico', 'positivo'];
 export const SUPPORTED_POS_GATEWAYS = ['cielo', 'infinite-pay'];
@@ -51,7 +51,7 @@ export const POS_CHECK_ORDER_TYPE_TABLE = 'table';
 export const POS_CHECK_ORDER_TYPE_STAMP = 'stamp';
 export const POS_CHECK_ORDER_MANAGEMENT_MODE_MANAGE = 'manage';
 export const POS_CHECK_ORDER_MANAGEMENT_MODE_EXISTING_ONLY = 'existing-only';
-export const POS_OPERATION_MODE_DEFAULT = POS_OPERATION_MODE_CASHIER;
+export const POS_OPERATION_MODE_DEFAULT = POS_OPERATION_MODE_COUNTER;
 export const POS_PRINT_MODE_ORDER = 'order';
 export const POS_PRINT_MODE_FORM = 'form';
 export const POS_PRINT_MODE_DEFAULT = POS_PRINT_MODE_ORDER;

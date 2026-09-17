@@ -51,9 +51,11 @@ const createStyles = ({
       alignItems: 'stretch',
     },
     dock: {
-      flexDirection: 'column',
-      alignItems: 'stretch',
-      justifyContent: 'flex-start',
+      // Items live directly in dock (or itemsRow). Footer text is a sibling
+      // under stack, not inside dock — keep dock horizontal (MANAGER toolbar).
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
       minHeight: 64,
       paddingHorizontal: 8,
       paddingTop: 6,
@@ -81,21 +83,23 @@ const createStyles = ({
           }),
     },
     footerSlot: {
+      // Strip below the nav buttons (#384): text after buttons, same dock chrome
       width: '100%',
       minHeight: 24,
       paddingHorizontal: 4,
       paddingTop: 2,
-      paddingBottom: 4,
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: 'rgba(15, 23, 42, 0.12)',
-      zIndex: 2,
+      paddingBottom: 2,
+      flexShrink: 0,
+      zIndex: 1,
     },
     itemsRow: {
+      flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
       width: '100%',
       minHeight: 52,
+      flexShrink: 0,
     },
     item: {
       flex: 1,

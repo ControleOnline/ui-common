@@ -1,9 +1,9 @@
-import {parseConfigsObject} from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
+import {parseConfigsObject} from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap.js';
 import {
   filterDeviceConfigsByCompany,
   isPdvPrinterEnabled,
   normalizeDeviceId,
-} from '@controleonline/ui-common/src/react/utils/paymentDevices';
+} from '@controleonline/ui-common/src/react/utils/paymentDevices.js';
 
 export const PRINT_DEVICE_TYPE = 'PRINT';
 export const PRINTER_DEVICE_TYPE = 'PRINTER';

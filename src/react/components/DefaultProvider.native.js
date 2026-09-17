@@ -37,10 +37,10 @@ import {
 } from '@controleonline/../../src/styles/branding';
 import {colors as runtimeColors} from '@controleonline/../../src/styles/colors';
 import {
+  buildDefaultDeviceConfigs,
   buildProviderManagedDeviceConfigs,
   parseConfigsObject,
 } from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
-import {canAdministerCompany} from '@controleonline/ui-common/src/react/utils/companyAuthority';
 import {
   buildDeviceRegistrationPayload,
   buildLocalRuntimeDevice,
@@ -615,7 +615,14 @@ export const DefaultProvider = ({
       return;
     }
 
-    const {nextConfigs, needsUpdate} = buildProviderManagedDeviceConfigs({
+    const isNewPdvConfig =
+      runtimeDeviceType === 'PDV' &&
+      !device_config?.id &&
+      !device_config?.['@id'];
+    const buildDeviceConfigs = isNewPdvConfig
+      ? buildDefaultDeviceConfigs
+      : buildProviderManagedDeviceConfigs;
+    const {nextConfigs, needsUpdate} = buildDeviceConfigs({
       configs: device_config?.configs,
       appVersion,
       deviceInfo: device,
@@ -626,37 +633,28 @@ export const DefaultProvider = ({
       return;
     }
 
-    // Non-admin users cannot mutate device context/financial policy (API 403).
-    // Skip bootstrap write; keep local runtime configs in memory only.
-    if (!canAdministerCompany({company: currentCompany, mainCompany, user})) {
-      setDeviceRuntimeConfigSynced(true);
-      return;
-    }
-
-      deviceConfigsActions
-        .addDeviceConfigs({
-          device: device.id,
-          configs: JSON.stringify(nextConfigs),
-          people: deviceConfigPeopleIri,
-          type: runtimeDeviceType,
-        })
-      .catch(() => {})
-      .finally(() => {
-        setDeviceRuntimeConfigSynced(true);
-      });
+    // app-community#821: never auto-persist device_config from global bootstrap.
+    // Provider-managed fields stay in memory only; API mutations only from
+    // explicit device settings UI (avoids 403 on order-history / PDV|MANAGER).
+    const currentItem = device_config || {};
+    deviceConfigsActions.setItem({
+      ...currentItem,
+      configs: nextConfigs,
+      device: currentItem.device || device.id,
+      people: currentItem.people || deviceConfigPeopleIri,
+      type: currentItem.type || runtimeDeviceType,
+    });
+    setDeviceRuntimeConfigSynced(true);
   }, [
     appVersion,
-    currentCompany?.id,
     device?.id,
     device?.manufacturer,
     device?.isEmulator,
     deviceConfigFetched,
     deviceConfigPeopleIri,
     deviceRuntimeConfigSynced,
-    currentCompany,
-    mainCompany,
     deviceConfigsActions,
-    device_config?.configs,
+    device_config,
     isLogged,
     runtimeDeviceType,
     user,

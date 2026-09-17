@@ -7,6 +7,7 @@ const {
   getRuntimeFooterPrimaryText,
   getRuntimeFooterRotationEntries,
   getRuntimeFooterStoredVersion,
+  getRuntimeFooterText,
   getRuntimeFooterTextLines,
   getRuntimeFooterWebIdentifierCandidates,
   getRuntimeFooterWebHost,

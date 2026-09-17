@@ -6,6 +6,7 @@ jest.mock('../../../react/utils/screenMetrics', () => ({
 }))
 
 const {
+  buildDefaultDeviceConfigs,
   buildProviderManagedDeviceConfigs,
   DEVICE_ANDROID_KIOSK_ENABLED_CONFIG_KEY,
   DEVICE_ANDROID_LAUNCHER_ENABLED_CONFIG_KEY,
@@ -18,6 +19,7 @@ const {
   POS_CASH_MANAGEMENT_MODE_CONFIG_KEY,
   POS_DELIVERY_ENABLED_CONFIG_KEY,
   POS_OPERATION_MODE_CONFIG_KEY,
+  POS_OPERATION_MODE_DEFAULT,
   POS_CHECK_ORDER_TYPE_CONFIG_KEY,
   POS_CHECK_ORDER_TYPE_STAMP,
   isPosSingleItemMode,
@@ -48,6 +50,28 @@ const {
 const {describe, expect, it} = global
 
 describe('deviceConfigBootstrap POS operation helpers', () => {
+  it('builds new device configs with the counter operation mode by default', () => {
+    const {nextConfigs, needsUpdate} = buildDefaultDeviceConfigs({
+      configs: {},
+      appVersion: '1.3.74',
+      deviceInfo: {manufacturer: 'Google', isEmulator: true},
+    })
+
+    expect(POS_OPERATION_MODE_DEFAULT).toBe('counter')
+    expect(nextConfigs[POS_OPERATION_MODE_CONFIG_KEY]).toBe('counter')
+    expect(needsUpdate).toBe(true)
+  })
+
+  it('preserves an explicitly configured operation mode', () => {
+    const {nextConfigs} = buildDefaultDeviceConfigs({
+      configs: {[POS_OPERATION_MODE_CONFIG_KEY]: 'waiter'},
+      appVersion: '1.3.74',
+      deviceInfo: {manufacturer: 'Google', isEmulator: true},
+    })
+
+    expect(nextConfigs[POS_OPERATION_MODE_CONFIG_KEY]).toBe('waiter')
+  })
+
   it('normalizes balcão as counter and treats counter as self service', () => {
     const configs = {
       [POS_OPERATION_MODE_CONFIG_KEY]: 'balcao',
@@ -419,4 +443,3 @@ describe('deviceConfigBootstrap local charge capability', () => {
     ).toBe(false)
   })
 })
-

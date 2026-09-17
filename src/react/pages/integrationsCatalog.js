@@ -193,11 +193,6 @@ export const INTEGRATION_CONFIGS = {
             label: 'Inscricao estadual',
             placeholder: 'IE do emitente',
           },
-          {
-            key: 'receita-federal-ibge-code',
-            label: 'Codigo IBGE do municipio',
-            placeholder: 'Ex.: 3522505',
-          },
         ],
       },
       {
