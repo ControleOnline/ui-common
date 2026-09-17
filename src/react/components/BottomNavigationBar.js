@@ -118,7 +118,7 @@ const BottomNavigationBar = ({
   const footerProps = {
     appVersion: runtimeFooter?.appVersion,
     colors: runtimeFooter?.colors || {},
-    defaultCompany: runtimeFooter?.defaultCompany,
+    mainCompany: runtimeFooter?.mainCompany,
     device: runtimeFooter?.device,
     useModernWebChromeProps,
   };
