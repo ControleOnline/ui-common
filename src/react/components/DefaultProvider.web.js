@@ -463,7 +463,10 @@ export const DefaultProvider = ({
 
     // Device registration changes tenant context and is not valid without an
     // active company or administrative authority for that company.
-    if (!currentCompany?.id || !isTenantAdministrativeAuthority(currentCompany)) {
+    if (
+      !currentCompany?.id ||
+      !canAdministerCompany({company: currentCompany, mainCompany, user})
+    ) {
       return;
     }
 
@@ -548,7 +551,9 @@ export const DefaultProvider = ({
     device?.systemVersion,
     isLogged,
     currentCompany,
+    mainCompany,
     runtimeDeviceType,
+    user,
   ]);
 
   useEffect(() => {
