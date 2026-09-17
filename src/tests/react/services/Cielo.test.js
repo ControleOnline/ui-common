@@ -50,7 +50,7 @@ const runtimeStores = merchantCode => ({
           }),
         },
       },
-      defaultCompany: {id: 99},
+      mainCompany: {id: 99},
     },
   },
   configs: {
@@ -89,7 +89,7 @@ describe('CieloService', () => {
       people: {
         getters: {
           currentCompany: {id: 21, configs: {}},
-          defaultCompany: {id: 99},
+          mainCompany: {id: 99},
         },
       },
       configs: {getters: {items: {}}},

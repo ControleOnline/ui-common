@@ -55,10 +55,10 @@ test('falls back to extra configs when company has no footer text', () => {
     getRuntimeFooterText(
       {configs: {}},
       {
-        'device-runtime-footer-text': 'Linha defaultCompany',
+        'device-runtime-footer-text': 'Linha mainCompany',
       },
     ),
-    'Linha defaultCompany',
+    'Linha mainCompany',
   )
 })
 

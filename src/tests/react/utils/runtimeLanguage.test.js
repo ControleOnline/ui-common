@@ -32,7 +32,7 @@ test('prefers the selected company language over cached config and session value
           code: 'en_US',
         },
       },
-      defaultCompany: {
+      mainCompany: {
         language: {
           code: 'pt_BR',
         },
@@ -51,7 +51,7 @@ test('prefers the selected company language over cached config and session value
 test('falls back through default company, config, session and the hardcoded default', () => {
   assert.equal(
     resolveConfiguredLanguage({
-      defaultCompany: {
+      mainCompany: {
         configs: {
           language: 'de_DE',
         },
@@ -86,7 +86,7 @@ test('builds the translation bootstrap key only from language and company contex
     buildTranslationBootstrapKey({
       language: ' PT_BR ',
       currentCompanyId: 21,
-      defaultCompanyId: 1,
+      mainCompanyId: 1,
     }),
     'pt-br::21::1',
   )
@@ -94,7 +94,7 @@ test('builds the translation bootstrap key only from language and company contex
     buildTranslationBootstrapKey({
       language: 'pt-br',
       currentCompanyId: '',
-      defaultCompanyId: 1,
+      mainCompanyId: 1,
     }),
     '',
   )

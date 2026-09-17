@@ -62,7 +62,7 @@ const resolveVisibleFooterTextColor = colors => {
 
 const RuntimeInfoFooter = ({
   appVersion,
-  defaultCompany,
+  mainCompany,
   device,
   colors,
   useModernWebChromeProps = false,
@@ -98,13 +98,13 @@ const RuntimeInfoFooter = ({
   const peopleStore = useStore('people');
   const configsStore = useStore('configs');
   const currentCompany = peopleStore?.getters?.currentCompany || {};
-  const storeDefaultCompany = peopleStore?.getters?.defaultCompany || {};
+  const storeMainCompany = peopleStore?.getters?.mainCompany || {};
   const companyConfigs = configsStore?.getters?.items;
   const companyFooterText = useMemo(() => {
     const candidates = [
       getRuntimeFooterText(currentCompany),
-      getRuntimeFooterText(storeDefaultCompany),
-      getRuntimeFooterText(defaultCompany),
+      getRuntimeFooterText(storeMainCompany),
+      getRuntimeFooterText(mainCompany),
       getRuntimeFooterText(null, companyConfigs),
       getRuntimeFooterText(null, deviceConfigItem?.configs),
     ];
@@ -112,9 +112,9 @@ const RuntimeInfoFooter = ({
   }, [
     companyConfigs,
     currentCompany?.configs,
-    defaultCompany?.configs,
+    mainCompany?.configs,
     deviceConfigItem?.configs,
-    storeDefaultCompany?.configs,
+    storeMainCompany?.configs,
   ]);
   const footerTextLines = useMemo(
     () => getRuntimeFooterTextLines(companyFooterText),

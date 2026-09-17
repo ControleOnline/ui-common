@@ -91,8 +91,8 @@ export function getStoreBucket(
   return languageBucket[store] || null;
 }
 
-export function collectCompaniesToCache(defaultCompany, currentCompany) {
-  const candidates = [defaultCompany, currentCompany].filter(
+export function collectCompaniesToCache(mainCompany, currentCompany) {
+  const candidates = [mainCompany, currentCompany].filter(
     (company) => company?.id,
   );
 

@@ -38,7 +38,7 @@ export function getPendingStoreBucket(translateStore, companyId, store, language
 
 export function hasPendingTranslate(
   translateStore,
-  defaultCompanyId,
+  mainCompanyId,
   store,
   type,
   key,
@@ -46,17 +46,17 @@ export function hasPendingTranslate(
 ) {
   const storeBucket = getPendingStoreBucket(
     translateStore,
-    defaultCompanyId,
+    mainCompanyId,
     store,
     language,
   );
   return Boolean(storeBucket?.[type]?.[key]);
 }
 
-export function getQueuedTranslateGroups(translateStore, defaultCompanyId, language) {
+export function getQueuedTranslateGroups(translateStore, mainCompanyId, language) {
   const companyBucket = getPendingCompanyBucket(
     translateStore,
-    defaultCompanyId,
+    mainCompanyId,
     language,
   );
   if (!companyBucket) {
@@ -80,13 +80,13 @@ export function getQueuedTranslateGroups(translateStore, defaultCompanyId, langu
 
 export function getQueuedTranslateGroupsForStore(
   translateStore,
-  defaultCompanyId,
+  mainCompanyId,
   store,
   language,
 ) {
   return getQueuedTranslateGroups(
     translateStore,
-    defaultCompanyId,
+    mainCompanyId,
     language,
   ).filter((group) => group.store === store);
 }

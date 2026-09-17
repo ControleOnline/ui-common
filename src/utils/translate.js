@@ -28,7 +28,7 @@ import {
 } from "./translateDiscovery.js";
 
 export default class Translate {
-  constructor(companies, defaultCompany, currentCompany, stores, translateStore) {
+  constructor(companies, mainCompany, currentCompany, stores, translateStore) {
     this.translates = loadStorageObject(TRANSLATES_STORAGE_KEY);
 
     this.language =
@@ -36,7 +36,7 @@ export default class Translate {
         JSON.parse(localStorage.getItem("config") || "{}").language,
       ) || "pt-br";
 
-    this.defaultCompany = defaultCompany;
+    this.mainCompany = mainCompany;
     this.currentCompany = currentCompany;
     this.translateStore = translateStore || {};
     this.translateActions = this.translateStore?.actions || {};
@@ -102,7 +102,7 @@ export default class Translate {
   }
 
   getCompaniesToCache() {
-    return collectCompaniesToCache(this.defaultCompany, this.currentCompany);
+    return collectCompaniesToCache(this.mainCompany, this.currentCompany);
   }
 
   // Always load current + main company so runtime resolution can apply
@@ -125,7 +125,7 @@ export default class Translate {
   hasPendingTranslate(store, type, key) {
     return readHasPendingTranslate(
       this.translateStore,
-      this.defaultCompany?.id,
+      this.mainCompany?.id,
       store,
       type,
       key,
@@ -197,7 +197,7 @@ export default class Translate {
   }
 
   getPersistRequestToken(store, type, key) {
-    return `${this.language}:${this.normalizeId(this.defaultCompany?.id)}:${store}:${type}:${key}`;
+    return `${this.language}:${this.normalizeId(this.mainCompany?.id)}:${store}:${type}:${key}`;
   }
 
   cacheTranslateRecord(record, fallbackCompanyId = null, fallbackLanguage = this.language) {
@@ -225,7 +225,7 @@ export default class Translate {
   }
 
   getMessageFromBuckets(store, type, key) {
-    const companyIds = [this.currentCompany?.id, this.defaultCompany?.id]
+    const companyIds = [this.currentCompany?.id, this.mainCompany?.id]
       .map((value) => this.normalizeId(value))
       .filter(Boolean);
 
@@ -247,14 +247,14 @@ export default class Translate {
   }
 
   persistMissingTranslate(store, type, key, translate) {
-    if (!store || !type || !key || !this.defaultCompany?.id) return;
+    if (!store || !type || !key || !this.mainCompany?.id) return;
 
-    const defaultCompanyId = this.normalizeId(this.defaultCompany?.id);
+    const mainCompanyId = this.normalizeId(this.mainCompany?.id);
     // Queueing is a local pending state used to drive resolve/discovery.
-    // Do NOT require defaultCompany to appear in this.companies: non-superadmin
+    // Do NOT require mainCompany to appear in this.companies: non-superadmin
     // tenants often lack membership on the main company, but still must be able
     // to resolve and cache the main catalog (read path). Backend gates writes.
-    if (!defaultCompanyId) {
+    if (!mainCompanyId) {
       return;
     }
 
@@ -268,7 +268,7 @@ export default class Translate {
 
     this.translateActions.queueMissingTranslate({
       language: this.language,
-      companyId: this.defaultCompany.id,
+      companyId: this.mainCompany.id,
       store,
       type,
       key,
@@ -290,7 +290,7 @@ export default class Translate {
 
     const request = Promise.resolve(
       this.translateActions.save({
-        people: "/people/" + defaultCompanyId,
+        people: "/people/" + mainCompanyId,
         language: this.language,
         store,
         type,
@@ -302,7 +302,7 @@ export default class Translate {
       .then((result) => {
         const changed = this.cacheTranslateRecord(
           result,
-          defaultCompanyId,
+          mainCompanyId,
           this.language,
         );
         this.removePendingTranslate(store, type, key);
@@ -328,7 +328,7 @@ export default class Translate {
 
     this.translateActions.removePendingTranslate({
       language: this.language,
-      companyId: this.defaultCompany?.id,
+      companyId: this.mainCompany?.id,
       store,
       type,
       key,
@@ -338,7 +338,7 @@ export default class Translate {
   getQueuedTranslateGroups() {
     return readQueuedGroups(
       this.translateStore,
-      this.defaultCompany?.id,
+      this.mainCompany?.id,
       this.language,
     );
   }
@@ -346,7 +346,7 @@ export default class Translate {
   getQueuedTranslateGroupsForStore(store) {
     return readQueuedGroupsForStore(
       this.translateStore,
-      this.defaultCompany?.id,
+      this.mainCompany?.id,
       store,
       this.language,
     );
