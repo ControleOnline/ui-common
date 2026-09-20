@@ -51,11 +51,11 @@ const createStyles = ({
       alignItems: 'stretch',
     },
     dock: {
-      // Items live directly in dock (or itemsRow). Footer text is a sibling
-      // under stack, not inside dock — keep dock horizontal (MANAGER toolbar).
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
+      // app-community#828: column — buttons on top, runtime footer below.
+      // row was crushing nav buttons against the footer strip on the sides.
+      flexDirection: 'column',
+      alignItems: 'stretch',
+      justifyContent: 'flex-start',
       minHeight: 64,
       paddingHorizontal: 8,
       paddingTop: 6,
@@ -93,7 +93,6 @@ const createStyles = ({
       zIndex: 1,
     },
     itemsRow: {
-      flex: 1,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
@@ -103,6 +102,7 @@ const createStyles = ({
     },
     item: {
       flex: 1,
+      minWidth: 56,
       minHeight: 44,
       alignItems: 'center',
       justifyContent: 'center',
