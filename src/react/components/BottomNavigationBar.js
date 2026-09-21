@@ -121,6 +121,7 @@ const BottomNavigationBar = ({
     mainCompany: runtimeFooter?.mainCompany,
     device: runtimeFooter?.device,
     useModernWebChromeProps,
+    embedded: true,
   };
 
   return (
