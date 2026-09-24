@@ -418,38 +418,39 @@ export const DefaultProvider = ({
     });
   };
 
+  // Sync web device identity once per signature. Calling setItem on every
+  // effect pass (even when unchanged) re-entered the store after logout→login
+  // and produced React #185 (app-community#827).
+  const lastWebDeviceSyncRef = useRef('');
   useEffect(() => {
-    if (!isLogged && !isShopClientApp && (!device || !device.id)) {
+    if (!isLogged && !isShopClientApp) {
       return;
     }
 
     const nextDevice = buildWebDevice();
     if (!nextDevice) {
-      if (device && device.id) {
-        deviceActions.setItem(device);
-      }
       return;
     }
 
-    const shouldRefreshDevice =
-      !device?.id ||
-      device.id !== nextDevice.id ||
-      device.appVersion !== nextDevice.appVersion ||
-      device.appName !== nextDevice.appName ||
-      device.type !== nextDevice.type ||
-      JSON.stringify(device.metadata || {}) !==
-        JSON.stringify(nextDevice.metadata || {});
+    const signature = JSON.stringify({
+      id: nextDevice.id,
+      appVersion: nextDevice.appVersion,
+      appName: nextDevice.appName,
+      type: nextDevice.type,
+      metadata: nextDevice.metadata || {},
+      externalIp: nextDevice.externalIp || null,
+    });
 
-    if (shouldRefreshDevice) {
-      setDevice(nextDevice);
-      localStorage.setItem('device', JSON.stringify(nextDevice));
-      deviceActions.setItem(nextDevice);
-      localStorage.removeItem('master-device');
+    if (lastWebDeviceSyncRef.current === signature) {
       return;
     }
 
-    deviceActions.setItem(device);
-  }, [device, deviceActions, isLogged, isShopClientApp, packageVersion, user?.id, webRuntimeIp]);
+    lastWebDeviceSyncRef.current = signature;
+    setDevice(nextDevice);
+    localStorage.setItem('device', JSON.stringify(nextDevice));
+    deviceActions.setItem(nextDevice);
+    localStorage.removeItem('master-device');
+  }, [deviceActions, isLogged, isShopClientApp, packageVersion, user?.id, webRuntimeIp]);
 
   useEffect(() => {
     if (isShopClientApp || device?.id) {
