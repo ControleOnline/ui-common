@@ -20,7 +20,6 @@ import {
   getRuntimeFooterText,
   getRuntimeFooterTextLines,
 } from '@controleonline/ui-common/src/react/utils/runtimeFooter';
-import {app_type} from '@appType';
 import styles from './RuntimeInfoFooter.styles';
 import RuntimeFooterMarqueeText from './RuntimeFooterMarqueeText';
 
@@ -67,8 +66,6 @@ const RuntimeInfoFooter = ({
   device,
   colors,
   useModernWebChromeProps = false,
-  /** When true (inside BottomNavigationBar), skip extra safe-area padding — dock already sits on the bottom edge. Cielo/POS (#831). */
-  embedded = false,
 }) => {
   const {width} = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -251,24 +248,15 @@ const RuntimeInfoFooter = ({
     };
   }, [rotationEntries.length, shouldRotate]);
 
-  // app-community#831: never unmount the strip on POS/Cielo when device/config
-  // are still hydrating — always keep a visible fallback (app type + version).
-  const fallbackPrimary =
-    primaryText ||
-    [String(app_type || '').trim().toUpperCase() || 'APP', appVersion || device?.appVersion || device?.id || '--']
-      .filter(Boolean)
-      .join(' / ');
-
-  const effectiveRotationEntries =
-    rotationEntries.length > 0
-      ? rotationEntries
-      : [fallbackPrimary].filter(Boolean);
+  if (rotationEntries.length === 0 && !showDebugInfo) {
+    return null;
+  }
 
   const displayedText = (
-    shouldRotate && effectiveRotationEntries.length > 1
-      ? effectiveRotationEntries[activeIndex % effectiveRotationEntries.length]
+    shouldRotate
+      ? rotationEntries[activeIndex]
       : inlineText
-  ) || fallbackPrimary || device?.id || '--';
+  ) || primaryText || device?.id || '';
   const backgroundColor = colors?.footerBackground;
   const borderColor = colors?.footerBorder;
   const textColor = resolveVisibleFooterTextColor(colors);
@@ -277,11 +265,6 @@ const RuntimeInfoFooter = ({
   const shellStyle = useModernWebChromeProps
     ? [styles.shell, {pointerEvents: 'none'}]
     : styles.shell;
-  // Nested under BottomNavigationBar the dock is already at bottom:0; extra
-  // safe-area padding double-counts and can push/crop the strip on Cielo.
-  const resolvedBottomPadding = embedded
-    ? 2
-    : bottomInset;
 
   return (
     <View {...shellProps} style={shellStyle}>
@@ -293,7 +276,7 @@ const RuntimeInfoFooter = ({
           {
             backgroundColor,
             borderTopColor: borderColor,
-            paddingBottom: resolvedBottomPadding,
+            paddingBottom: bottomInset,
           },
         ]}>
         <View style={styles.primaryRow}>
