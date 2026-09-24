@@ -378,9 +378,7 @@ const getRuntimeFooterDebugInfo = ({device, appVersion, deviceConfig}) => {
     operationModeLabel,
     runtimeDetail,
   });
-  // Always keep at least version or a placeholder so RuntimeInfoFooter does not
-  // unmount on native POS/Cielo while device configs hydrate (app-community#831).
-  const primaryText = [displayName, versionLabel || safeTrim(appVersion) || '--']
+  const primaryText = [displayName, versionLabel]
     .filter(Boolean)
     .join(' / ');
 
