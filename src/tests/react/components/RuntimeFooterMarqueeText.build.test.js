@@ -2,14 +2,20 @@ const assert = require('node:assert/strict');
 const {test} = require('node:test');
 const fs = require('node:fs');
 const path = require('node:path');
-const babel = require('@babel/core');
+
+let babel;
+try {
+  babel = require('@babel/core');
+} catch {
+  babel = null;
+}
 
 // Run with the host app's Expo dependencies, just like the production build.
 const filename = path.resolve(__dirname, '../../../react/components/RuntimeFooterMarqueeText.js');
 const source = fs.readFileSync(filename, 'utf8');
 
 for (const platform of ['web', 'android', 'ios']) {
-  test(`runtime footer compiles with the production Expo preset (${platform})`, () => {
+  test(`runtime footer compiles with the production Expo preset (${platform})`, {skip: !babel}, () => {
     const result = babel.transformSync(source, {
       filename,
       babelrc: false,
