@@ -113,18 +113,27 @@ test('short text stays single-line without duplicate marquee copy', async () => 
   });
 
   const textNodes = tree.root.findAllByType('Text');
-  assert.equal(textNodes.length, 1);
-  assert.equal(textNodes[0].props.numberOfLines, 1);
-  assert.equal(textNodes[0].props.children, 'v1.2.3 • PDV');
+  // native short path: 1 measure probe (opacity 0) + 1 visible label
+  assert.equal(textNodes.length, 2);
+  const visible = textNodes.find(n => n.props.style && !JSON.stringify(n.props.style).includes('"opacity":0'))
+    || textNodes[textNodes.length - 1];
+  assert.equal(visible.props.numberOfLines, 1);
+  assert.equal(visible.props.children, 'v1.2.3 • PDV');
 
+  const probe = textNodes.find(n => {
+    const style = n.props.style;
+    const flat = Array.isArray(style) ? style : [style];
+    return flat.some(s => s && s.opacity === 0 && s.position === 'absolute');
+  });
+  assert.ok(probe, 'measure probe present');
   renderer.act(() => {
-    textNodes[0].props.onLayout({
+    probe.props.onLayout({
       nativeEvent: {layout: {width: 80, height: 12}},
     });
   });
 
-  // Still short: content 80 < container 400 → no duplicate
-  assert.equal(tree.root.findAllByType('Text').length, 1);
+  // Still short: content 80 < container 400 → no marquee duplicate
+  assert.equal(tree.root.findAllByType('Text').length, 2);
   assert.equal(lastLoopConfig, null);
 });
 
@@ -154,18 +163,30 @@ test('long text enables marquee duplicate and starts loop animation', async () =
     root.props.onLayout({nativeEvent: {layout: {width: 120, height: 12}}});
   });
 
-  const firstText = tree.root.findAllByType('Text')[0];
+  const probe = tree.root.findAllByType('Text').find(n => {
+    const style = n.props.style;
+    const flat = Array.isArray(style) ? style : [style];
+    return flat.some(s => s && s.opacity === 0 && s.position === 'absolute');
+  });
+  assert.ok(probe, 'measure probe present');
   renderer.act(() => {
-    firstText.props.onLayout({
+    probe.props.onLayout({
       nativeEvent: {layout: {width: 480, height: 12}},
     });
   });
 
   const texts = tree.root.findAllByType('Text');
-  assert.equal(texts.length, 2, 'duplicate copy for seamless loop');
-  assert.equal(texts[0].props.children, longText);
-  assert.equal(texts[1].props.children, longText);
-  assert.equal(texts[0].props.numberOfLines, 1);
+  // measure probe + 2 marquee copies
+  assert.equal(texts.length, 3, 'probe + duplicate copy for seamless loop');
+  const visibleCopies = texts.filter(n => {
+    const style = n.props.style;
+    const flat = Array.isArray(style) ? style : [style];
+    return !flat.some(s => s && s.opacity === 0 && s.position === 'absolute');
+  });
+  assert.equal(visibleCopies.length, 2);
+  assert.equal(visibleCopies[0].props.children, longText);
+  assert.equal(visibleCopies[1].props.children, longText);
+  assert.equal(visibleCopies[0].props.numberOfLines, 1);
   assert.ok(lastLoopConfig, 'Animated.loop should start when overflowing');
   assert.ok(animationStarts >= 1);
 });

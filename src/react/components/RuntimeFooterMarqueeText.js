@@ -7,6 +7,7 @@ const View = RN.View;
 const Platform = RN.Platform || {OS: 'native'};
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 const IS_WEB = Platform.OS === 'web';
+const IS_ANDROID = Platform.OS === 'android';
 
 const GAP_PX = 32;
 const MS_PER_PX = 28;
@@ -19,6 +20,11 @@ const HOLD_MS = 1200;
  * On web, avoids Animated opacity/transform issues that hid the label.
  * RN Web also needs intrinsic sizing because Text can collapse to width 0
  * inside a flex row.
+ *
+ * On native (especially Android POS): when text fits, render a plain Text
+ * without Animated transform — Animated + overflow:hidden has been observed
+ * to paint only the status dot while the label stays invisible
+ * (app-community#930).
  *
  * IMPORTANT: do not use destructuring defaults on require('react-native')
  * — Metro web export fails with "Property name expected type of string
@@ -106,6 +112,7 @@ const RuntimeFooterMarqueeText = props => {
       flexShrink: 0,
       flexGrow: 0,
       minHeight: 14,
+      opacity: 1,
     },
   ];
 
@@ -121,16 +128,34 @@ const RuntimeFooterMarqueeText = props => {
 
   textStyle.push(shouldMarquee ? {textAlign: 'left'} : {textAlign: 'center'});
 
-  const content = React.createElement(
-    Text,
-    {
-      numberOfLines: 1,
-      ellipsizeMode: IS_WEB ? 'tail' : 'clip',
-      onLayout: handleTextLayout,
-      style: textStyle,
-    },
-    text,
-  );
+  const androidTextProps = IS_ANDROID
+    ? {
+        includeFontPadding: false,
+        textBreakStrategy: 'simple',
+      }
+    : {};
+
+  // Measure-only probe on native so overflow detection does not depend on
+  // Animated children reporting layout (Android POS #930).
+  const measureProbe =
+    !IS_WEB
+      ? React.createElement(Text, {
+          numberOfLines: 1,
+          ellipsizeMode: 'clip',
+          onLayout: handleTextLayout,
+          accessible: false,
+          importantForAccessibility: 'no',
+          style: textStyle.concat([
+            {
+              position: 'absolute',
+              opacity: 0,
+              left: 0,
+              top: 0,
+            },
+          ]),
+          ...androidTextProps,
+        }, text)
+      : null;
 
   if (IS_WEB) {
     return React.createElement(
@@ -145,7 +170,54 @@ const RuntimeFooterMarqueeText = props => {
         },
         onLayout: handleContainerLayout,
       },
-      content,
+      React.createElement(
+        Text,
+        {
+          numberOfLines: 1,
+          ellipsizeMode: 'tail',
+          onLayout: handleTextLayout,
+          style: textStyle,
+        },
+        text,
+      ),
+    );
+  }
+
+  // Native short text: plain Text — no Animated transform (Android POS #930).
+  if (!shouldMarquee) {
+    return React.createElement(
+      View,
+      {
+        testID: testID,
+        style: {
+          flex: 1,
+          minWidth: 0,
+          overflow: 'hidden',
+          justifyContent: 'center',
+          opacity: 1,
+        },
+        onLayout: handleContainerLayout,
+      },
+      measureProbe,
+      React.createElement(
+        Text,
+        {
+          numberOfLines: 1,
+          ellipsizeMode: 'tail',
+          style: textStyle.concat([
+            {
+              flex: 1,
+              flexShrink: 1,
+              flexGrow: 1,
+              minWidth: 0,
+              width: '100%',
+              textAlign: 'center',
+            },
+          ]),
+          ...androidTextProps,
+        },
+        text,
+      ),
     );
   }
 
@@ -153,9 +225,16 @@ const RuntimeFooterMarqueeText = props => {
     View,
     {
       testID: testID,
-      style: {flex: 1, overflow: 'hidden', justifyContent: 'center'},
+      style: {
+        flex: 1,
+        minWidth: 0,
+        overflow: 'hidden',
+        justifyContent: 'center',
+        opacity: 1,
+      },
       onLayout: handleContainerLayout,
     },
+    measureProbe,
     React.createElement(
       Animated.View,
       {
@@ -164,23 +243,31 @@ const RuntimeFooterMarqueeText = props => {
           alignItems: 'center',
           opacity: 1,
           transform: [{translateX: translateX}],
-          alignSelf: shouldMarquee ? 'flex-start' : 'stretch',
+          alignSelf: 'flex-start',
         },
       },
-      content,
-      shouldMarquee
-        ? React.createElement(
-            Text,
-            {
-              numberOfLines: 1,
-              ellipsizeMode: 'clip',
-              accessible: false,
-              importantForAccessibility: 'no',
-              style: textStyle.concat([{marginLeft: GAP_PX}]),
-            },
-            text,
-          )
-        : null,
+      React.createElement(
+        Text,
+        {
+          numberOfLines: 1,
+          ellipsizeMode: 'clip',
+          style: textStyle,
+          ...androidTextProps,
+        },
+        text,
+      ),
+      React.createElement(
+        Text,
+        {
+          numberOfLines: 1,
+          ellipsizeMode: 'clip',
+          accessible: false,
+          importantForAccessibility: 'no',
+          style: textStyle.concat([{marginLeft: GAP_PX}]),
+          ...androidTextProps,
+        },
+        text,
+      ),
     ),
   );
 };
