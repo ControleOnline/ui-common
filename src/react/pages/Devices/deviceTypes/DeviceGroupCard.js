@@ -194,18 +194,32 @@ export default function DeviceGroupCard({
                 </Text>
 
                 <View style={styles.deviceConfigRow}>
-                  {deviceConfigs.map(deviceConfig => {
+                  {deviceConfigs.map((deviceConfig, configIndex) => {
                     const configType = getDeviceConfigType(deviceConfig);
                     const configAccent = getDeviceTypeAccent(configType);
                     const isSessionConfig =
                       isCurrentDevice &&
                       runtimeDeviceType &&
                       configType === runtimeDeviceType;
+                    const configKey =
+                      deviceConfig?.id != null
+                        ? String(deviceConfig.id)
+                        : `orphan-${configIndex}-${String(
+                            deviceConfig?.device?.device ||
+                              deviceConfig?.device?.id ||
+                              configIndex,
+                          )}`;
+                    const isOrphan = Boolean(deviceConfig?._orphanDevice) || deviceConfig?.id == null;
 
                     return (
                       <TouchableOpacity
-                        key={String(deviceConfig.id)}
-                        testID={`device-config-${deviceConfig.id}`}
+                        key={configKey}
+                        testID={
+                          deviceConfig?.id != null
+                            ? `device-config-${deviceConfig.id}`
+                            : `device-orphan-${configKey}`
+                        }
+                        disabled={isOrphan}
                         dataSet={{
                           sessionConfig: isSessionConfig ? 'true' : 'false',
                         }}
@@ -222,7 +236,12 @@ export default function DeviceGroupCard({
                           },
                           isSessionConfig && styles.deviceConfigChipActive,
                         ]}
-                        onPress={() => goToDetail(deviceConfig)}>
+                        onPress={() => {
+                          if (isOrphan) {
+                            return;
+                          }
+                          goToDetail(deviceConfig);
+                        }}>
                         <View
                           style={[
                             styles.dot,
