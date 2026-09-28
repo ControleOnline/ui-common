@@ -192,3 +192,83 @@ export const findDeviceConfigByType = (deviceGroup, type) => {
       normalizeDeviceType(deviceConfig?.type) === normalizedType,
   );
 };
+
+export const resolveDeviceListType = device => {
+  const directType = normalizeDeviceType(device?.type);
+  if (directType && directType !== 'ANDROID' && directType !== 'IOS') {
+    return directType;
+  }
+
+  const metadata =
+    device?.metadata && typeof device.metadata === 'object'
+      ? device.metadata
+      : {};
+  const appType = normalizeDeviceType(metadata?.appType || metadata?.app_type);
+  if (appType === 'POS') {
+    return PDV_DEVICE_TYPE;
+  }
+  if (appType === 'PPC' || appType === 'DISPLAY' || appType === 'TOTEM') {
+    return 'DISPLAY';
+  }
+  if (appType === 'PRINT' || appType === 'PRINTER') {
+    return 'PRINT';
+  }
+
+  // Platform-only labels (ANDROID/IOS) are not operational device_config types.
+  if (directType === 'ANDROID' || directType === 'IOS') {
+    return PDV_DEVICE_TYPE;
+  }
+
+  return directType || 'DEVICE';
+};
+
+/**
+ * Devices without a persisted device_config (common on Android POS after #821
+ * stopped auto-creating configs) would otherwise be invisible on devices-index.
+ * Promote them to synthetic config rows so Manager can still list them.
+ */
+export const mergeOrphanDevicesIntoConfigs = (
+  deviceConfigs = [],
+  devices = [],
+  {companyId = '', queryTypes = []} = {},
+) => {
+  const configs = Array.isArray(deviceConfigs) ? [...deviceConfigs] : [];
+  const covered = new Set(
+    configs
+      .map(config => normalizeDeviceId(config?.device?.device || config?.device?.id))
+      .filter(Boolean),
+  );
+  const normalizedQueryTypes = (Array.isArray(queryTypes) ? queryTypes : [])
+    .map(normalizeDeviceType)
+    .filter(Boolean);
+  const peopleIri = companyId ? `/people/${companyId}` : '';
+
+  (Array.isArray(devices) ? devices : []).forEach(device => {
+    const identifier = normalizeDeviceId(device?.device || device?.id);
+    if (!identifier || covered.has(identifier)) {
+      return;
+    }
+
+    const resolvedType = resolveDeviceListType(device);
+    if (
+      normalizedQueryTypes.length > 0 &&
+      !normalizedQueryTypes.includes(resolvedType)
+    ) {
+      return;
+    }
+
+    covered.add(identifier);
+    configs.push({
+      id: null,
+      '@id': null,
+      device,
+      type: resolvedType,
+      configs: {},
+      people: device?.people || peopleIri,
+      _orphanDevice: true,
+    });
+  });
+
+  return configs;
+};
+

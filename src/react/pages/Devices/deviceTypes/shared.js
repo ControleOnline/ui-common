@@ -33,6 +33,7 @@ import {
   groupDeviceConfigs,
   hasCurrentPdvConfig,
   isCurrentDeviceGroup,
+  mergeOrphanDevicesIntoConfigs,
   prioritizeCurrentDeviceGroups,
   readStoredRuntimeDevice,
 } from '../currentDevice';
@@ -246,6 +247,24 @@ export const createDeviceTypeTab = ({
             }
           }
 
+          // app-community#931: Android (and other) devices may exist without a
+          // persisted device_config after bootstrap stopped auto-creating them.
+          // Merge orphan company devices so they still appear on devices-index.
+          try {
+            const companyDevices = await deviceStore.actions.getItems({
+              people: `/people/${companyId}`,
+              itemsPerPage: API_PAGE_SIZE,
+              page: 1,
+            });
+            loadedItems = mergeOrphanDevicesIntoConfigs(
+              loadedItems,
+              companyDevices,
+              {companyId, queryTypes},
+            );
+          } catch {
+            // Listing orphans is best-effort; configs already loaded stay visible.
+          }
+
           setDeviceConfigs(loadedItems);
           setError('');
         } catch (fetchError) {
@@ -264,6 +283,7 @@ export const createDeviceTypeTab = ({
         companyId,
         deviceConfigStore.actions,
         deviceConfigStore.getters,
+        deviceStore.actions,
         pageSize,
         queryTypes,
       ],

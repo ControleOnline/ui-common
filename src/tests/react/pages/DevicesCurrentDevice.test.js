@@ -30,9 +30,11 @@ const {
   hasCurrentPdvConfig,
   isCurrentDeviceConfig,
   isCurrentDeviceGroup,
+  mergeOrphanDevicesIntoConfigs,
   prioritizeCurrentDeviceGroups,
   prioritizeCurrentDeviceConfigs,
   readStoredRuntimeDevice,
+  resolveDeviceListType,
 } = require('../../../react/pages/Devices/currentDevice');
 
 const currentManager = {
@@ -194,5 +196,44 @@ describe('current device profiles', () => {
       },
       deviceConfigs: [],
     });
+  });
+});
+
+describe('orphan Android devices on devices-index (#931)', () => {
+  it('maps ANDROID platform type to PDV', () => {
+    expect(resolveDeviceListType({type: 'ANDROID'})).toBe('PDV');
+    expect(
+      resolveDeviceListType({type: '', metadata: {appType: 'POS'}}),
+    ).toBe('PDV');
+  });
+
+  it('merges company devices without device_config so Android appears in the list', () => {
+    const merged = mergeOrphanDevicesIntoConfigs(
+      [
+        {
+          id: 10,
+          type: 'PDV',
+          device: {id: 1, device: 'web-abc', alias: 'Web'},
+        },
+      ],
+      [
+        {id: 1, device: 'web-abc', alias: 'Web', type: 'PDV'},
+        {
+          id: 2,
+          device: 'android-unique-99',
+          alias: 'Tablet Loja',
+          type: 'ANDROID',
+        },
+      ],
+      {companyId: '55', queryTypes: []},
+    );
+
+    expect(merged).toHaveLength(2);
+    const orphan = merged.find(
+      item => item.device?.device === 'android-unique-99',
+    );
+    expect(orphan).toBeTruthy();
+    expect(orphan.type).toBe('PDV');
+    expect(orphan._orphanDevice).toBe(true);
   });
 });
