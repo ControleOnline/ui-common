@@ -277,10 +277,10 @@ const RuntimeInfoFooter = ({
   const shellStyle = useModernWebChromeProps
     ? [styles.shell, {pointerEvents: 'none'}]
     : styles.shell;
-  // Nested under BottomNavigationBar the dock is already at bottom:0; extra
-  // safe-area padding double-counts and can push/crop the strip on Cielo.
+  // Nested under BottomNavigationBar the dock owns safe-area padding (#936).
+  // Keep embedded strip flush (no extra bottom gap under the device line).
   const resolvedBottomPadding = embedded
-    ? 2
+    ? 0
     : bottomInset;
 
   return (
