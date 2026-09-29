@@ -126,15 +126,18 @@ const BottomNavigationBar = ({
     embedded: true,
   };
 
-  // app-community#936: apply system bottom inset once on the dock.
-  // Extra fixed padding under the runtime footer looked like empty strip on Android.
-  const dockPaddingBottom =
-    Platform.OS === 'web'
-      ? 8
-      : Math.max(Number(insets?.bottom) || 0, 2);
+  // app-community#936: lift the whole dock above the system inset (native).
+  // Padding the dock with insets.bottom painted empty chrome under the device
+  // line; offsetting host.bottom keeps the strip flush and leaves the gesture
+  // area transparent outside the dock.
+  const hostBottomOffset =
+    Platform.OS === 'web' ? 0 : Math.max(Number(insets?.bottom) || 0, 0);
+  const dockPaddingBottom = Platform.OS === 'web' ? 8 : 4;
 
   return (
-    <View {...hostProps} style={hostStyle}>
+    <View
+      {...hostProps}
+      style={[hostStyle, hostBottomOffset ? {bottom: hostBottomOffset} : null]}>
       <View style={styles.stack}>
         <View
           style={[styles.dock, {paddingBottom: dockPaddingBottom}]}
