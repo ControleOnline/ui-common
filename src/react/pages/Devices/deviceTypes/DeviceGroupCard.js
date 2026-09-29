@@ -142,14 +142,24 @@ export default function DeviceGroupCard({
           );
         }
 
+        const openPrimary = () => {
+          if (primaryConfig) {
+            goToDetail(primaryConfig);
+          }
+        };
+
         return (
-          <View
+          <TouchableOpacity
             testID={`device-group-${deviceGroup.key}`}
+            accessibilityRole="button"
             accessibilityLabel={
               isCurrentDevice
                 ? `${alias}, ${tt('device_label', 'currentDevice') || 'Este dispositivo'}`
                 : alias
             }
+            activeOpacity={0.92}
+            disabled={!primaryConfig}
+            onPress={openPrimary}
             style={[
               styles.deviceCard,
               isCurrentDevice && styles.deviceCardCurrent,
@@ -219,14 +229,14 @@ export default function DeviceGroupCard({
                             ? `device-config-${deviceConfig.id}`
                             : `device-orphan-${configKey}`
                         }
-                        disabled={isOrphan}
                         dataSet={{
                           sessionConfig: isSessionConfig ? 'true' : 'false',
+                          orphanDevice: isOrphan ? 'true' : 'false',
                         }}
                         accessibilityRole="button"
                         accessibilityLabel={`${getDeviceItemTypeLabel(configType)}${
                           isSessionConfig ? ', Em uso nesta sessao' : ''
-                        }`}
+                        }${isOrphan ? ', sem config persistida' : ''}`}
                         activeOpacity={0.82}
                         style={[
                           styles.deviceConfigChip,
@@ -236,12 +246,7 @@ export default function DeviceGroupCard({
                           },
                           isSessionConfig && styles.deviceConfigChipActive,
                         ]}
-                        onPress={() => {
-                          if (isOrphan) {
-                            return;
-                          }
-                          goToDetail(deviceConfig);
-                        }}>
+                        onPress={() => goToDetail(deviceConfig)}>
                         <View
                           style={[
                             styles.dot,
@@ -314,7 +319,7 @@ export default function DeviceGroupCard({
                 ) : null}
               </View>
             </View>
-          </View>
+          </TouchableOpacity>
         );
       
 }
