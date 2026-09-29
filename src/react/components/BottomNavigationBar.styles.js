@@ -59,7 +59,8 @@ const createStyles = ({
       minHeight: 64,
       paddingHorizontal: 8,
       paddingTop: 6,
-      paddingBottom: 8,
+      // paddingBottom applied at runtime (safe-area) — app-community#936
+      paddingBottom: 0,
       borderWidth: 1,
       borderBottomWidth: 0,
       borderColor: dockBorder,
@@ -84,11 +85,12 @@ const createStyles = ({
     },
     footerSlot: {
       // Strip below the nav buttons (#384): text after buttons, same dock chrome
+      // #936: no extra bottom padding — dock already owns safe-area inset
       width: '100%',
-      minHeight: 24,
+      minHeight: 20,
       paddingHorizontal: 4,
       paddingTop: 2,
-      paddingBottom: 2,
+      paddingBottom: 0,
       flexShrink: 0,
       zIndex: 1,
     },

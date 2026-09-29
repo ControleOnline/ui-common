@@ -1,5 +1,6 @@
 import React, {useLayoutEffect, useMemo} from 'react';
-import {Pressable, Text, View} from 'react-native';
+import {Platform, Pressable, Text, View} from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/Feather';
 import {useTheme} from './DefaultProvider';
 import RuntimeInfoFooter from './RuntimeInfoFooter';
@@ -16,6 +17,7 @@ const BottomNavigationBar = ({
   useModernWebChromeProps = false,
 }) => {
   const theme = useTheme?.() || {};
+  const insets = useSafeAreaInsets();
   const runtimeFooter = theme?.runtimeFooter || null;
   const registerBottomNavigation =
     theme?.bottomChrome?.registerBottomNavigation || null;
@@ -124,10 +126,19 @@ const BottomNavigationBar = ({
     embedded: true,
   };
 
+  // app-community#936: apply system bottom inset once on the dock.
+  // Extra fixed padding under the runtime footer looked like empty strip on Android.
+  const dockPaddingBottom =
+    Platform.OS === 'web'
+      ? 8
+      : Math.max(Number(insets?.bottom) || 0, 2);
+
   return (
     <View {...hostProps} style={hostStyle}>
       <View style={styles.stack}>
-        <View style={styles.dock} testID={testID}>
+        <View
+          style={[styles.dock, {paddingBottom: dockPaddingBottom}]}
+          testID={testID}>
           <View style={styles.itemsRow}>
             {routeItems.map(item => {
               const isActive = effectiveActiveRoute === item.route;

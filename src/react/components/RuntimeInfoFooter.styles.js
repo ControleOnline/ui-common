@@ -13,7 +13,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 12,
     paddingTop: 4,
-    paddingBottom: 6,
+    // Default; RuntimeInfoFooter overrides with resolvedBottomPadding (#936)
+    paddingBottom: 0,
   },
   containerExpanded: {
     paddingVertical: 8,
