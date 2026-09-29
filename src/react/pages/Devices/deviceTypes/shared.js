@@ -299,10 +299,22 @@ export const createDeviceTypeTab = ({
 
     const goToDetail = useCallback(
       deviceConfig => {
+        if (!deviceConfig) {
+          return;
+        }
+
         const deviceType = getDeviceConfigType(deviceConfig);
         const nextDevice = deviceConfig?.device || {};
-        const nextDeviceId = normalizeEntityId(nextDevice?.id || nextDevice?.['@id']);
+        // Prefer entity id; fall back to device string so orphan cards still open (#937)
+        const nextDeviceId =
+          normalizeEntityId(nextDevice?.id || nextDevice?.['@id']) ||
+          normalizeDeviceId(nextDevice?.device || nextDevice?.id) ||
+          normalizeDeviceId(deviceConfig?.device);
         const nextConfigs = parseConfigsObject(deviceConfig?.configs);
+
+        if (!nextDeviceId) {
+          return;
+        }
 
         deviceStore.actions.setItem(nextDevice);
         deviceConfigStore.actions.setItem({
