@@ -10,6 +10,7 @@ import styles from '../../DeviceDetailPage.styles';
 import DeviceDetailHeader from './DeviceDetailHeader';
 import CopyDeviceConfigModal from '@controleonline/ui-common/src/react/components/CopyDeviceConfigModal';
 import useDeviceDetailCopyConfig from './useDeviceDetailCopyConfig';
+import DeviceChargePermissionSection from './DeviceChargePermissionSection';
 import DeviceDetailPdvConfigSection from './DeviceDetailPdvConfigSection';
 import DeviceDetailOrdersPrintSection from './DeviceDetailOrdersPrintSection';
 import DeviceDetailAlertsCommandsSection from './DeviceDetailAlertsCommandsSection';
@@ -150,7 +151,10 @@ const DeviceDetailScreen = () => {
         <DeviceDetailMovementSections {...detailCtx} />
 
         {showPdvOperationTab && (
-          <DeviceDetailPdvConfigSection {...detailCtx} />
+          <>
+            <DeviceDetailPdvConfigSection {...detailCtx} />
+            <DeviceChargePermissionSection {...detailCtx} />
+          </>
         )}
 
         {(showPdvOrdersTab || shouldShowOrderVisibility || detailCtx.isDisplayDevice) && (
