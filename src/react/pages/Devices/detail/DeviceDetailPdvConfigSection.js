@@ -11,6 +11,7 @@ import {
   POS_CHECK_ORDER_TYPE_NONE,
   POS_CHECK_ORDER_TYPE_TAB,
   POS_CHECK_ORDER_TYPE_TABLE,
+  POS_CHECK_ORDER_TYPE_TABLE_TAB,
   POS_CHECK_ORDER_TYPE_STAMP,
   POS_CHECK_ORDER_MANAGEMENT_MODE_MANAGE,
   POS_CHECK_ORDER_MANAGEMENT_MODE_EXISTING_ONLY,
@@ -165,6 +166,10 @@ export default function DeviceDetailPdvConfigSection(ctx) {
                   value: POS_CHECK_ORDER_TYPE_TABLE,
                 },
                 {
+                  label: 'Mesa + Comanda',
+                  value: POS_CHECK_ORDER_TYPE_TABLE_TAB,
+                },
+                {
                   label: global.t?.t('orders', 'title', 'stamp') || 'Stamp',
                   value: POS_CHECK_ORDER_TYPE_STAMP,
                   disabled: !loyaltyCouponsEnabled,
@@ -188,6 +193,8 @@ export default function DeviceDetailPdvConfigSection(ctx) {
                     ? POS_CHECK_ORDER_TYPE_TAB
                     : value === POS_CHECK_ORDER_TYPE_TABLE
                       ? POS_CHECK_ORDER_TYPE_TABLE
+                      : value === POS_CHECK_ORDER_TYPE_TABLE_TAB
+                        ? POS_CHECK_ORDER_TYPE_TABLE_TAB
                       : value === POS_CHECK_ORDER_TYPE_STAMP
                         ? loyaltyCouponsEnabled
                           ? POS_CHECK_ORDER_TYPE_STAMP
