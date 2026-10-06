@@ -141,9 +141,23 @@ const installSession = async (page, {companyId = 3} = {}) => {
           active: 1,
           mycompany: companyId,
           roles: ['ROLE_ADMIN'],
+          name: 'Test User',
+          realname: 'Test User',
+          username: 'tester',
         }),
       );
       set('config', JSON.stringify({language: 'pt-br'}));
+      // Resolve menu labels locally; the mock API does not provide translations.
+      const labels = {
+        home: 'Início', opportunities: 'Oportunidades',
+        customers: 'Clientes', profile: 'Perfil',
+      };
+      const companyMessages = {
+        menu: {menu: labels}, configs: {toolbar: labels},
+      };
+      set('translates', JSON.stringify({
+        'pt-br': {companies: {3: companyMessages, 9: companyMessages}},
+      }));
       set('app-type', 'MANAGER');
       set(
         'device',

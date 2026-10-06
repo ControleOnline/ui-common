@@ -1,3 +1,4 @@
+const {installManagerSession} = require('./managerSession.fixture');
 /**
  * Smoke browser: Manager /device-detail alias save updates header without refresh.
  * fluxo: manager-devices
@@ -86,6 +87,7 @@ const MODULES_MAX_500 = [
 ];
 
 const mockDevicesApi = async (page) => {
+  await installManagerSession(page);
   const company = {
     id: 3,
     name: 'Teste',
