@@ -94,6 +94,7 @@ const srcPrint = createDeviceConfig({
   id: 502,
   type: 'PRINT',
   device: srcDevice,
+  device: srcDevice,
   configs: { 'print-network-port': '9100' },
 });
 
