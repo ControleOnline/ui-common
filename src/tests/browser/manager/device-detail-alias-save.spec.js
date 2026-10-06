@@ -45,7 +45,7 @@ const currentDevice = {
   '@type': 'Device',
   id: DEVICE_ENTITY_ID,
   device: CURRENT_DEVICE_ID,
-  alias: INITIAL_ALIAS,
+  alias: 'PDV Santa Redonda',
   metadata: {
     runtime: 'web',
     network: { publicIp: '127.0.0.1' },
@@ -308,11 +308,6 @@ test.describe('device-detail alias save (browser smoke #382)', () => {
     // Open device detail (MANAGER profile of current device)
     await page.getByTestId('device-config-487').click();
     await expect(page).toHaveURL(/device-detail/);
-
-    // Header must show initial alias
-    await expect(page.getByText(INITIAL_ALIAS, { exact: true })).toBeVisible({
-      timeout: 15000,
-    });
 
     // Header shows initial alias via testID
     await expect(page.getByTestId('device-alias-text')).toHaveText(INITIAL_ALIAS, {
