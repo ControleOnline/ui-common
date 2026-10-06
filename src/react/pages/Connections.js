@@ -213,7 +213,7 @@ export default function Connections() {
           searchPlaceholder={
             tt('connections_label', 'search') || 'Buscar conexao, telefone ou status'
           }
-          searchKey="search
+          searchKey="search"
           totalItemsLabel="connections"
           visibleColumnsPreferenceKey="connections"
           accentColor={brandColors.primary}
