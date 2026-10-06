@@ -1,3 +1,4 @@
+const {installManagerSession} = require('./managerSession.fixture');
 /**
  * Smoke browser: Manager /device-detail copy configs from another device.
  * fluxo: manager-devices
@@ -110,6 +111,7 @@ const otherTenant = createDeviceConfig({
 });
 
 const mockCopyApi = async (page) => {
+  await installManagerSession(page);
   const company = {
     id: 3,
     name: 'Teste',
@@ -327,6 +329,10 @@ test.describe('device-detail copy config (browser smoke #629)', () => {
     });
     await expect(page.getByTestId('copy-device-config-hint')).toContainText(
       DEST_ALIAS,
+    );
+    // The translated prefix cannot supply a fixture alias: target identity is dynamic.
+    await expect(page.getByTestId('copy-device-config-hint')).not.toContainText(
+      SRC_ALIAS,
     );
     await shot('02-copy-modal-picker.png');
 

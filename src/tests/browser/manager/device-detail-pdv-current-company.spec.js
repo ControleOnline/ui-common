@@ -1,3 +1,4 @@
+const {installManagerSession} = require('./managerSession.fixture');
 /**
  * Smoke browser: DeviceConfig PDV detail opens without currentCompany ReferenceError.
  * fluxo: device-configuracao
@@ -91,6 +92,7 @@ const createDeviceConfig = ({id, type, device = currentDevice}) => ({
 });
 
 const mockDevicesApi = async page => {
+  await installManagerSession(page);
   const company = {
     id: 3,
     name: 'Teste',
