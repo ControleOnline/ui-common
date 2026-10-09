@@ -1,3 +1,6 @@
+import {useNativeTranslationRefresh, useNativeTranslationReset, useNativeAppLifecycle, useNativeNativeVersion, useNativeNativeDeviceIdentity, useNativeMainCompany, useNativeDeviceConfigReset, useNativeDeviceRegistration, useNativePrinters, useNativePaymentTypes, useNativeDeviceConfigFetch} from './DefaultProvider.native.lifecycle';
+import {useNativeDeviceConfigSync, useNativeMainConfigReset, useNativeMainConfigDiscovery, useNativeMainConfigSeed, useNativeTranslationBootstrap, useNativeBootstrapReady, useNativeCompanies, useNativeMenus, useNativeThemeFetch, useNativeThemePalette} from './DefaultProvider.native.configuration';
+import {resolveDomainThemeColors} from './resolveDomainThemeColors';
 import React, {
   createContext,
   useCallback,
@@ -268,43 +271,11 @@ export const DefaultProvider = ({
     </>
   );
 
-  useEffect(() => {
-    global.refreshTranslationsUI = () => {
-      setTranslateVersion(version => version + 1);
-    };
+  useNativeTranslationRefresh({setTranslateVersion});
 
-    return () => {
-      if (global.refreshTranslationsUI) {
-        delete global.refreshTranslationsUI;
-      }
-    };
-  }, []);
+  useNativeTranslationReset({isLogged, isPublicRouteActive, setTranslateReady, setActiveTranslateBootstrapKey, translateBootstrapKeyRef, translateActions});
 
-  useEffect(() => {
-    if (isLogged && !isPublicRouteActive) {
-      return;
-    }
-
-    setTranslateReady(true);
-    setActiveTranslateBootstrapKey('');
-    translateBootstrapKeyRef.current = '';
-    translateActions.setMessages({});
-    translateActions.setPendingMessages?.({});
-
-    if (global.t) {
-      delete global.t;
-    }
-  }, [isLogged, isPublicRouteActive, translateActions]);
-
-  useEffect(() => {
-    const subscription = AppState.addEventListener('change', nextState => {
-      setAppState(nextState || 'active');
-    });
-
-    return () => {
-      subscription?.remove?.();
-    };
-  }, []);
+  useNativeAppLifecycle({AppState, setAppState});
 
   const fetchDeviceId = async () => {
     const uniqueId = await DeviceInfo.getUniqueId();
@@ -345,524 +316,43 @@ export const DefaultProvider = ({
       }, 300);
     }
   };
-  useEffect(() => {
-    const checkVersion = async () => {
-      const appVersion = await DeviceInfo.getVersion();
-      if (
-        device &&
-        ((device.appVersion && device.appVersion != appVersion) || !device.appName)
-      ) {
-        fetchDeviceId();
-      }
-    };
-    checkVersion();
-  }, [device]);
+  useNativeNativeVersion({DeviceInfo, device, fetchDeviceId});
 
-  useEffect(() => {
-    if (!device || !device.id) {
-      fetchDeviceId();
-    } else {
-      deviceActions.setItem(device);
-    }
-  }, [device]);
+  useNativeNativeDeviceIdentity({device, fetchDeviceId, deviceActions});
 
-  useEffect(() => {
-    if (device && device.id) {
-      peopleActions.mainCompany();
-    }
-  }, [device?.id]);
+  useNativeMainCompany({device, peopleActions});
 
-  useEffect(() => {
-    if (
-      !deviceConfigPeopleIri ||
-      lastDeviceConfigPeopleIriRef.current === deviceConfigPeopleIri
-    ) {
-      return;
-    }
+  useNativeDeviceConfigReset({deviceConfigPeopleIri, lastDeviceConfigPeopleIriRef, setDeviceConfigFetched, setDeviceRuntimeConfigSynced, deviceConfigsActions});
 
-    lastDeviceConfigPeopleIriRef.current = deviceConfigPeopleIri;
-    setDeviceConfigFetched(false);
-    setDeviceRuntimeConfigSynced(false);
-    deviceConfigsActions.setItem({});
-  }, [deviceConfigPeopleIri, deviceConfigsActions]);
+  useNativeDeviceRegistration({sessionChecked, isLogged, deviceConfigPeopleIri, device, deviceConfigFetched, currentCompany, canAdministerCompany, mainCompany, user, deviceActions, runtimeDeviceType, buildDeviceRegistrationPayload, app_type, hasDeviceRecordChanges, setDevice});
 
-  useEffect(() => {
-    if (!sessionChecked || !isLogged || !deviceConfigPeopleIri || !device?.id || deviceConfigFetched) {
-      return;
-    }
+  useNativePrinters({isShopClientApp, sessionChecked, isLogged, currentCompany, printerActions});
 
-    // Device registration changes tenant context and is not valid without an
-    // active company or administrative authority for that company.
-    if (
-      !currentCompany?.id ||
-      !canAdministerCompany({company: currentCompany, mainCompany, user})
-    ) {
-      return;
-    }
+  useNativePaymentTypes({isShopClientApp, companyConfigs, currentCompany, device_config, paymentTypeActions, mainConfigsDiscovered, api, selectPosWalletPaymentTypes, getPaymentGateway});
 
-    let cancelled = false;
+  useNativeDeviceConfigFetch({device, isLogged, currentCompany, setDeviceConfigFetched, setDeviceRuntimeConfigSynced, deviceConfigsActions, runtimeDeviceType, parseConfigsObject});
 
-    const syncDeviceRegistration = async () => {
-      const items = await deviceActions.getItems({
-        device: device.id,
-        people: deviceConfigPeopleIri,
-        type: runtimeDeviceType,
-      });
+  useNativeDeviceConfigSync({deviceConfigFetched, isLogged, deviceConfigPeopleIri, device, deviceRuntimeConfigSynced, runtimeDeviceType, device_config, buildDefaultDeviceConfigs, buildProviderManagedDeviceConfigs, appVersion, setDeviceRuntimeConfigSynced, deviceConfigsActions, user});
 
-      if (cancelled) {
-        return;
-      }
+  useNativeMainConfigReset({isLogged, currentCompany, device, setMainConfigsDiscovered});
 
-      const existingDevice =
-        Array.isArray(items) && items.length > 0 ? items[0] : null;
-      const nextDevice = buildDeviceRegistrationPayload({
-        deviceInfo: device,
-        appType: app_type,
-        existingDevice,
-      });
+  useNativeMainConfigDiscovery({isLogged, currentCompany, device, mainConfigsDiscovered, configActions, setMainConfigsDiscovered});
 
-      if (!hasDeviceRecordChanges({existingDevice, nextDevice})) {
-        const nextLocalDevice = {
-          ...device,
-          entityId: existingDevice?.id || device?.entityId || null,
-          entityIri:
-            existingDevice?.['@id'] ||
-            device?.entityIri ||
-            (existingDevice?.id ? `/devices/${existingDevice.id}` : null),
-          alias: existingDevice?.alias || nextDevice.alias,
-          type: device?.type || runtimeDeviceType,
-          metadata: {
-            ...(existingDevice?.metadata || {}),
-            ...(nextDevice.metadata || {}),
-          },
-        };
+  useNativeMainConfigSeed({isLogged, currentCompany, mainConfigsDiscovered, configActions});
 
-        if (JSON.stringify(nextLocalDevice) !== JSON.stringify(device)) {
-          setDevice(nextLocalDevice);
-          localStorage.setItem('device', JSON.stringify(nextLocalDevice));
-          deviceActions.setItem(nextLocalDevice);
-        }
-        return;
-      }
-
-      const savedDevice = await deviceActions.save(nextDevice);
-      if (cancelled || !savedDevice) {
-        return;
-      }
-
-      const nextLocalDevice = {
-        ...device,
-        entityId: savedDevice?.id || device?.entityId || null,
-        entityIri:
-          savedDevice?.['@id'] ||
-          device?.entityIri ||
-          (savedDevice?.id ? `/devices/${savedDevice.id}` : null),
-        alias: savedDevice.alias || nextDevice.alias,
-        type: device?.type || runtimeDeviceType,
-        metadata: {
-          ...(savedDevice?.metadata || {}),
-          ...(nextDevice.metadata || {}),
-        },
-      };
-
-      if (JSON.stringify(nextLocalDevice) !== JSON.stringify(device)) {
-        setDevice(nextLocalDevice);
-        localStorage.setItem('device', JSON.stringify(nextLocalDevice));
-        deviceActions.setItem(nextLocalDevice);
-      }
-    };
-
-    syncDeviceRegistration().catch(() => {});
-
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    device?.appVersion,
-    device?.batteryLevel,
-    device?.buildNumber,
-    device?.deviceType,
-    device?.id,
-    device?.metadata,
-    device?.manufacturer,
-    device?.model,
-    device?.systemVersion,
-    deviceConfigFetched,
-    deviceConfigPeopleIri,
-    isLogged,
-    currentCompany,
-    mainCompany,
-    sessionChecked,
-    runtimeDeviceType,
-    user,
-  ]);
-
-  useEffect(() => {
-    if (isShopClientApp || !sessionChecked || !isLogged || !currentCompany?.id) {
-      return;
-    }
-
-    printerActions
-      .ensureCompanyPrintersLoaded({people: currentCompany.id})
-      .catch(() => {});
-  }, [currentCompany?.id, isLogged, isShopClientApp, printerActions, sessionChecked]);
-
-  useEffect(() => {
-    const paymentConfigSource = isShopClientApp
-      ? Object.keys(companyConfigs || {}).length > 0
-        ? companyConfigs
-        : currentCompany?.configs
-      : device_config?.configs;
-
-    if (!currentCompany?.id || !paymentConfigSource) {
-      paymentTypeActions.setItems([]);
-      return;
-    }
-
-    if (!isShopClientApp && !mainConfigsDiscovered) {
-      return;
-    }
-
-    let isMounted = true;
-
-    api
-      .fetch('wallet_payment_types', {
-        params: {
-          people: `/people/${currentCompany.id}`,
-        },
-      })
-      .then(response => {
-        if (!isMounted) {
-          return;
-        }
-
-        const walletPaymentTypes = Array.isArray(response?.member)
-          ? response.member
-          : Array.isArray(response?.['hydra:member'])
-            ? response['hydra:member']
-            : Array.isArray(response)
-              ? response
-              : [];
-        paymentTypeActions.setItems(
-          selectPosWalletPaymentTypes({
-            walletPaymentTypes,
-            deviceConfigs: paymentConfigSource,
-            companyConfigs,
-            gateway: getPaymentGateway(device_config || paymentConfigSource),
-          }),
-        );
-      })
-      .catch(() => {
-        if (isMounted) {
-          paymentTypeActions.setItems([]);
-        }
-      });
-
-    return () => {
-      isMounted = false;
-    };
-  }, [
-    companyConfigs,
-    currentCompany?.configs,
-    currentCompany?.id,
-    device_config?.configs,
-    isShopClientApp,
-    paymentTypeActions,
-  ]);
-
-  useEffect(() => {
-    if (
-      device &&
-      device.id &&
-      isLogged &&
-      currentCompany &&
-      Object.entries(currentCompany).length > 0
-    ) {
-      setDeviceConfigFetched(false);
-      setDeviceRuntimeConfigSynced(false);
-      deviceConfigsActions
-        .getItems({
-          'device.device': device.id,
-          people: '/people/' + currentCompany.id,
-          type: runtimeDeviceType,
-        })
-        .then(data => {
-          if (Array.isArray(data) && data.length > 0) {
-            const nextItem = {
-              ...data[0],
-              configs: parseConfigsObject(data[0]?.configs),
-            };
-            deviceConfigsActions.setItem(nextItem);
-            return;
-          }
-
-          deviceConfigsActions.setItem({});
-        })
-        .catch(() => {})
-        .finally(() => {
-          setDeviceConfigFetched(true);
-        });
-    }
-  }, [currentCompany?.id, isLogged, device?.id, runtimeDeviceType]);
-
-  useEffect(() => {
-    if (
-      !deviceConfigFetched ||
-      !isLogged ||
-      !deviceConfigPeopleIri ||
-      !device?.id ||
-      deviceRuntimeConfigSynced
-    ) {
-      return;
-    }
-
-    const isNewPdvConfig =
-      runtimeDeviceType === 'PDV' &&
-      !device_config?.id &&
-      !device_config?.['@id'];
-    const buildDeviceConfigs = isNewPdvConfig
-      ? buildDefaultDeviceConfigs
-      : buildProviderManagedDeviceConfigs;
-    const {nextConfigs, needsUpdate} = buildDeviceConfigs({
-      configs: device_config?.configs,
-      appVersion,
-      deviceInfo: device,
-    });
-
-    if (!needsUpdate) {
-      setDeviceRuntimeConfigSynced(true);
-      return;
-    }
-
-    // app-community#821: never auto-persist device_config from global bootstrap.
-    // Provider-managed fields stay in memory only; API mutations only from
-    // explicit device settings UI (avoids 403 on order-history / PDV|MANAGER).
-    const currentItem = device_config || {};
-    deviceConfigsActions.setItem({
-      ...currentItem,
-      configs: nextConfigs,
-      device: currentItem.device || device.id,
-      people: currentItem.people || deviceConfigPeopleIri,
-      type: currentItem.type || runtimeDeviceType,
-    });
-    setDeviceRuntimeConfigSynced(true);
-  }, [
-    appVersion,
-    device?.id,
-    device?.manufacturer,
-    device?.isEmulator,
-    deviceConfigFetched,
-    deviceConfigPeopleIri,
-    deviceRuntimeConfigSynced,
-    deviceConfigsActions,
-    device_config,
-    isLogged,
-    runtimeDeviceType,
-    user,
-  ]);
-
-  useEffect(() => {
-    if (!isLogged || !currentCompany?.id || !device?.id) {
-      return;
-    }
-
-    setMainConfigsDiscovered(false);
-  }, [isLogged, currentCompany?.id, device?.id]);
-
-  useEffect(() => {
-    if (
-      !isLogged ||
-      !currentCompany?.id ||
-      !device?.id ||
-      mainConfigsDiscovered
-    ) {
-      return;
-    }
-
-    configActions
-      .discoveryMainConfigs({
-        people: '/people/' + currentCompany.id,
-      })
-      .catch(() => {})
-      .finally(() => {
-        setMainConfigsDiscovered(true);
-      });
-  }, [configActions, currentCompany?.id, device?.id, isLogged, mainConfigsDiscovered]);
-
-  useEffect(() => {
-    if (
-      isLogged &&
-      currentCompany &&
-      Object.entries(currentCompany).length > 0 &&
-      !mainConfigsDiscovered
-    ) {
-      configActions.setItems(currentCompany.configs);
-    }
-  }, [currentCompany, isLogged, mainConfigsDiscovered]);
-
-  useEffect(() => {
-    if (!currentRouteName || isPublicRouteActive) {
-      return;
-    }
-
-    if (
-      !isLogged ||
-      !hasCurrentCompany ||
-      !deviceConfigFetched ||
-      !expectedTranslateBootstrapKey
-    ) {
-      return;
-    }
-
-    const currentConfig = JSON.parse(localStorage.getItem('config') || '{}');
-
-    if (
-      translateBootstrapKeyRef.current === expectedTranslateBootstrapKey &&
-      global.t
-    ) {
-      global.t.companies = companies;
-      global.t.currentCompany = currentCompany;
-      global.t.mainCompany = mainCompany;
-      setActiveTranslateBootstrapKey(expectedTranslateBootstrapKey);
-      setTranslateReady(true);
-
-      return;
-    }
-
-    setTranslateReady(false);
-
-    if (currentConfig.language !== configuredTranslationLanguage) {
-      const nextConfig = {
-        ...currentConfig,
-        language: configuredTranslationLanguage,
-      };
-      localStorage.setItem(
-        'config',
-        JSON.stringify(nextConfig),
-      );
-    }
-
-    translateBootstrapKeyRef.current = expectedTranslateBootstrapKey;
-    global.t = new Translate(
-      companies,
-      mainCompany,
-      currentCompany,
-      Object.keys(stores),
-      translateStore,
-    );
-    setActiveTranslateBootstrapKey(expectedTranslateBootstrapKey);
-    setTranslateReady(true);
-    global.refreshTranslationsUI?.();
-  }, [
-    companies,
-    configuredTranslationLanguage,
-    currentCompany,
-    currentRouteName,
-    mainCompany,
-    deviceConfigFetched,
-    expectedTranslateBootstrapKey,
-    hasCurrentCompany,
-    isLogged,
-    isPublicRouteActive,
-    translateStore,
-  ]);
+  useNativeTranslationBootstrap({currentRouteName, isPublicRouteActive, isLogged, hasCurrentCompany, deviceConfigFetched, expectedTranslateBootstrapKey, translateBootstrapKeyRef, companies, currentCompany, mainCompany, setActiveTranslateBootstrapKey, setTranslateReady, configuredTranslationLanguage, Translate, stores, translateStore});
 
 
-  useEffect(() => {
-    if (
-      !isLogged ||
-      !hasCurrentCompany ||
-      (currentRouteName && isTranslateBootstrapReady)
-    ) {
-      onBootstrapReady?.();
-    }
-  }, [
-    currentRouteName,
-    hasCurrentCompany,
-    isLogged,
-    isTranslateBootstrapReady,
-    onBootstrapReady,
-  ]);
+  useNativeBootstrapReady({isLogged, hasCurrentCompany, currentRouteName, isTranslateBootstrapReady, onBootstrapReady});
 
 
-  useEffect(() => {
-    if (
-      device &&
-      device.id &&
-      isLogged
-    ) {
-      peopleActions.myCompanies();
-    }
-  }, [isLogged, device?.id]);
+  useNativeCompanies({device, isLogged, peopleActions});
 
-  useEffect(() => {
-    if (!isLogged || !currentCompany?.id) {
-      actions.setMenus([]);
-      return undefined;
-    }
+  useNativeMenus({isLogged, currentCompany, actions, api, appType, normalizeRuntimeMenuResponse});
 
-    let cancelled = false;
+  useNativeThemeFetch({api, parseThemeCss, setBaseThemeColors, actions, device, currentCompany, mainCompany});
 
-    api
-      .fetch('menus-people', {
-        params: {
-          myCompany: currentCompany.id,
-          appType,
-          menuType: 'home',
-        },
-      })
-      .then(result => {
-        if (!cancelled) {
-          actions.setMenus(normalizeRuntimeMenuResponse(result, {appType}));
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          actions.setMenus(normalizeRuntimeMenuResponse(null, {appType}));
-        }
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [actions, appType, currentCompany?.id, isLogged]);
-
-  useEffect(() => {
-    const fetchColors = async () => {
-      try {
-        const cssText = await api.fetch('themes-colors.css', {
-          responseType: 'text',
-        });
-        const parsedColors = parseThemeCss(cssText);
-        setBaseThemeColors(parsedColors);
-        actions.setColors(parsedColors);
-      } catch {
-        setBaseThemeColors({});
-      }
-    };
-
-    if (device?.id) {
-      fetchColors();
-    }
-  }, [actions, currentCompany?.id, mainCompany?.id, device?.id]);
-
-  useEffect(() => {
-    const companyThemeColors =
-      currentCompany?.theme?.colors || mainCompany?.theme?.colors || {};
-    const mergedThemeColors = {
-      ...(baseThemeColors || {}),
-      ...(companyThemeColors || {}),
-    };
-
-    const palette = resolveThemePalette(mergedThemeColors, runtimeColors);
-    applyPaletteToRuntimeColors(palette, runtimeColors);
-    applyThemeCssVariables({
-      themeColors: mergedThemeColors,
-      palette,
-    });
-
-    actions.setColors(mergedThemeColors);
-  }, [actions, baseThemeColors, currentCompany?.id, currentCompany?.theme?.colors]);
+  useNativeThemePalette({resolveDomainThemeColors, baseThemeColors, mainCompany, resolveThemePalette, runtimeColors, applyPaletteToRuntimeColors, applyThemeCssVariables, actions, currentCompany});
 
   if (requiresTranslateBootstrap && !isTranslateBootstrapReady) {
     return <View style={providerStyles.loadingContainer} />;
