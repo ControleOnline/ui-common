@@ -1,6 +1,6 @@
 import {normalizeEntityId} from '@controleonline/ui-common/src/react/utils/paymentDevices';
 import {isPosCashRegisterOpen} from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
-import {Alert, Platform} from 'react-native';
+import {confirmAction} from '../../../utils/confirmAction';
 import {PAYMENT_ICONS} from './deviceDetailConstants';
 
 export const paymentIcon = label => {
@@ -44,16 +44,7 @@ export const getProductShowcaseLabel = showcase => {
 
 export const getIsOpen = configs => isPosCashRegisterOpen(configs);
 
-export const confirm = (msg, cb) => {
-  if (Platform.OS === 'web' && typeof window !== 'undefined' && window.confirm) {
-    if (window.confirm(msg)) cb();
-  } else {
-    Alert.alert('Confirmação', msg, [
-      {text: 'Cancelar', style: 'cancel'},
-      {text: 'Confirmar', onPress: cb},
-    ]);
-  }
-};
+export const confirm = confirmAction;
 
 export const getDeviceSwitchProps = ({disabled = false, palette, value = false}) => {
   const offTrackColor = disabled ? palette.switchDisabledTrack : palette.switchOffTrack;
