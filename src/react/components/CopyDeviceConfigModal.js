@@ -100,10 +100,13 @@ export default function CopyDeviceConfigModal({
           </View>
 
           <Text style={styles.message} testID="copy-device-config-hint">
-            {tt('device_action', 'copyConfigHint') ||
-              `Escolha o device origem. As configurações serão aplicadas em "${
-                destinationAlias || destinationDeviceString || 'destino'
-              }" (identidade do destino não muda).`}
+            {`${
+              tt('device_action', 'copyConfigHint') ||
+              'Escolha o device origem. As configurações serão aplicadas em'
+            } "${destinationAlias || destinationDeviceString || 'destino'}" (${
+              tt('device_action', 'copyConfigIdentityHint') ||
+              'identidade do destino não muda'
+            }).`}
           </Text>
 
           {loading ? (
