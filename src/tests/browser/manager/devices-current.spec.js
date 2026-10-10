@@ -286,8 +286,10 @@ test.describe('current device browser smoke', () => {
     await expect(page.getByTestId('device-config-488')).toBeVisible();
     await expect(page.getByTestId('device-config-410')).toBeVisible();
     await expect(page.getByTestId('device-config-488')).toContainText(
-      'PDV · Infinite Pay',
+      'Infinite Pay',
     );
+    await expect(page.getByTestId('device-config-488')).toHaveRole('button');
+    await expect(page.getByTestId('device-config-488')).toHaveAccessibleName(/^PDV/);
     await expect(
       page.getByTestId('configure-current-device-pdv'),
     ).toHaveCount(0);

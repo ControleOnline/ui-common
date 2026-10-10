@@ -209,13 +209,11 @@ export default function Connections() {
           showColumnFiltersButton
           onRowPress={openWhatsAppChannel}
           renderCard={renderConnectionCard}
-          searchProps={{
-            compact: true,
-            placeholder:
-              tt('connections_label', 'search') || 'Buscar conexao, telefone ou status',
-            searchKey: 'search',
-            storeName: 'connections',
-          }}
+          showSearch
+          searchPlaceholder={
+            tt('connections_label', 'search') || 'Buscar conexao, telefone ou status'
+          }
+          searchKey="search"
           totalItemsLabel="connections"
           visibleColumnsPreferenceKey="connections"
           accentColor={brandColors.primary}

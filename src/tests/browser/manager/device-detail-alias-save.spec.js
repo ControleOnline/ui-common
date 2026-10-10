@@ -1,3 +1,4 @@
+const {installManagerSession} = require('./managerSession.fixture');
 /**
  * Smoke browser: Manager /device-detail alias save updates header without refresh.
  * fluxo: manager-devices
@@ -16,7 +17,7 @@ const { API_ORIGIN } = require('../../../../../../../src/tests/browser/apiOrigin
 const APP_VERSION = packageJson?.version || '1.0.0';
 const CURRENT_DEVICE_ID = 'web-7';
 const DEVICE_ENTITY_ID = 396;
-const INITIAL_ALIAS = 'Caixa atual';
+const INITIAL_ALIAS = 'Caixa Santa Redonda';
 const NEXT_ALIAS = 'Caixa Renomeado #382';
 
 const CORS_HEADERS = {
@@ -86,6 +87,7 @@ const MODULES_MAX_500 = [
 ];
 
 const mockDevicesApi = async (page) => {
+  await installManagerSession(page);
   const company = {
     id: 3,
     name: 'Teste',

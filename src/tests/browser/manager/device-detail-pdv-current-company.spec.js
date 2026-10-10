@@ -1,3 +1,4 @@
+const {installManagerSession} = require('./managerSession.fixture');
 /**
  * Smoke browser: DeviceConfig PDV detail opens without currentCompany ReferenceError.
  * fluxo: device-configuracao
@@ -91,6 +92,7 @@ const createDeviceConfig = ({id, type, device = currentDevice}) => ({
 });
 
 const mockDevicesApi = async page => {
+  await installManagerSession(page);
   const company = {
     id: 3,
     name: 'Teste',
@@ -248,7 +250,7 @@ test.describe('device-detail PDV currentCompany (#704)', () => {
 
     await page.getByTestId(`device-config-${PDV_CONFIG_ID}`).click();
     await expect(page).toHaveURL(/device-detail/, {timeout: 15000});
-    await expect(page.getByText('Configuração do PDV')).toBeVisible({
+    await expect(page.getByText('Detalhes do Device', {exact: true})).toBeVisible({
       timeout: 15000,
     });
     await writeEvidence(
