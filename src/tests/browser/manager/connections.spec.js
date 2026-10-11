@@ -64,6 +64,13 @@ const mockConnectionsApi = async page => {
       return route.fulfill({status: 204, headers: CORS_HEADERS, body: ''});
     }
 
+    if (pathname === 'people/companies/my') {
+      return route.fulfill({
+        status: 200, headers: jsonHeaders(),
+        body: JSON.stringify(collection([company])),
+      });
+    }
+
     if (pathname === 'companies' || pathname.startsWith('people/')) {
       return route.fulfill({
         status: 200,
@@ -103,9 +110,20 @@ const mockConnectionsApi = async page => {
           active: 1,
           mycompany: 3,
           roles: ['ROLE_ADMIN'],
+          name: 'Test User',
+          realname: 'Test User',
+          username: 'tester',
         }),
       );
       set('config', JSON.stringify({language: 'pt-br'}));
+      set('translates', JSON.stringify({
+        'pt-br': {companies: {3: {configs: {
+          connections_title: {connections: 'Conexões'},
+          connections_label: {
+            whatsApp: 'WhatsApp', search: 'Buscar conexao, telefone ou status',
+          },
+        }}}},
+      }));
       set('app-type', 'ERP');
       set(
         'device',

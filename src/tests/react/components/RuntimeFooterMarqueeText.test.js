@@ -169,3 +169,25 @@ test('long text enables marquee duplicate and starts loop animation', async () =
   assert.ok(lastLoopConfig, 'Animated.loop should start when overflowing');
   assert.ok(animationStarts >= 1);
 });
+
+test('native text keeps intrinsic width even when style carries flex: 1 (android #77)', () => {
+  const RuntimeFooterMarqueeText = loadComponent();
+  const renderer = require('react-test-renderer');
+
+  let tree;
+  renderer.act(() => {
+    tree = renderer.create(
+      React.createElement(RuntimeFooterMarqueeText, {
+        text: 'Samsung • DEVICE / v1.10.55',
+        color: '#111',
+        style: {flex: 1, minWidth: 0, fontSize: 11},
+      }),
+    );
+  });
+
+  const text = tree.root.findAllByType('Text')[0];
+  const flat = Object.assign({}, ...[].concat(text.props.style));
+  assert.equal(flat.flexBasis, 'auto');
+  assert.equal(flat.flexGrow, 0);
+  assert.equal(flat.flexShrink, 0);
+});

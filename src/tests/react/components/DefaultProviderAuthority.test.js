@@ -11,11 +11,14 @@ describe('DefaultProvider company authority guard', () => {
   it.each(providerFiles)(
     'uses the shared authority helper in %s',
     providerFile => {
-      const source = fs.readFileSync(
+      const providerSource = fs.readFileSync(
         path.resolve(__dirname, '../../../react/components', providerFile),
         'utf8',
       );
 
+      const root = path.resolve(__dirname, '../../../react/components');
+      const platform = providerFile.includes('.web.') ? 'web' : 'native';
+      const source = providerSource + ['lifecycle', 'configuration'].map(group => fs.readFileSync(path.join(root, `DefaultProvider.${platform}.${group}.js`), 'utf8')).join('\n');
       expect(source).not.toContain('isTenantAdministrativeAuthority');
       expect(source).toMatch(
         /import\s*\{\s*canAdministerCompany\s*\}\s*from\s*['"]@controleonline\/ui-common\/src\/react\/utils\/companyAuthority['"]/,
