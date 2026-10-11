@@ -169,12 +169,26 @@ export const DefaultProvider = ({
     deviceInfo: device || {},
   });
   const {width: windowWidth, height: windowHeight} = useWindowDimensions();
+  // app-community#1051: size the scaled content from the area it really
+  // occupies (shell minus runtime footer), not from the full window.
+  const [contentSize, setContentSize] = useState(null);
+  const handleContentLayout = useCallback(({nativeEvent}) => {
+    const {width, height} = nativeEvent?.layout || {};
+    setContentSize(current =>
+      current?.width === width && current?.height === height
+        ? current
+        : {width, height},
+    );
+  }, []);
   const runtimeUiScaleStyle = useMemo(
     () =>
       buildRuntimeZoomStyle(APP_ENV?.ZOOM, {
-        viewport: {width: windowWidth, height: windowHeight},
+        viewport: {
+          width: contentSize?.width || windowWidth,
+          height: contentSize?.height || windowHeight,
+        },
       }),
-    [windowHeight, windowWidth],
+    [contentSize, windowHeight, windowWidth],
   );
   const deviceConfigPeopleIri = resolveDeviceConfigPeopleIri({
     appType,
@@ -881,7 +895,15 @@ export const DefaultProvider = ({
                   backgroundColor: colors?.background || runtimeColors.background,
                 },
               ]}>
-              <View style={[providerStyles.content, runtimeUiScaleStyle]}>{children}</View>
+              <View
+                style={providerStyles.content}
+                onLayout={runtimeUiScaleStyle ? handleContentLayout : undefined}>
+                {runtimeUiScaleStyle ? (
+                  <View style={runtimeUiScaleStyle}>{children}</View>
+                ) : (
+                  children
+                )}
+              </View>
               {!isShopClientApp && bottomNavigationCount === 0 && (
                 <RuntimeInfoFooter
                   appVersion={appVersion}
