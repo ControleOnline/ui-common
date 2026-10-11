@@ -37,10 +37,16 @@ export const buildRuntimeZoomStyle = (
   }
 
   const inverseScale = 1 / scale;
+  // app-community#1051: the container also carries `flex: 1` (flexBasis 0),
+  // which overrides the compensated height. Disable flex sizing so the
+  // compensated size survives and the scaled content fills the viewport.
   const nativeBase = {
     transform: [{scale}],
     transformOrigin: 'top left',
     alignSelf: 'flex-start',
+    flexGrow: 0,
+    flexShrink: 0,
+    flexBasis: 'auto',
   };
 
   const viewportWidth = Number(viewport?.width);
