@@ -31,6 +31,9 @@ test('builds compensated container dimensions for native scaled content', () => 
     buildRuntimeZoomStyle(70),
     {
       alignSelf: 'flex-start',
+      flexBasis: 'auto',
+      flexGrow: 0,
+      flexShrink: 0,
       height: '142.85714285714286%',
       transform: [{scale: 0.7}],
       transformOrigin: 'top left',
@@ -44,6 +47,9 @@ test('uses viewport pixels on native so scale origin stays top-left without dist
     buildRuntimeZoomStyle(70, {viewport: {width: 360, height: 800}}),
     {
       alignSelf: 'flex-start',
+      flexBasis: 'auto',
+      flexGrow: 0,
+      flexShrink: 0,
       height: 800 / 0.7,
       transform: [{scale: 0.7}],
       transformOrigin: 'top left',
