@@ -1,3 +1,4 @@
+const {installManagerSession} = require('./managerSession.fixture');
 const {expect, test} = require('playwright/test');
 const packageJson = require('../../../../../../../package.json');
 const {API_ORIGIN} = require('../../../../../../../src/tests/browser/apiOrigin');
@@ -76,6 +77,7 @@ const createDeviceConfig = ({id, type, device = currentDevice, alias}) => ({
  * (or omit type for All). Multi-type filters expand to sequential single-type GETs.
  */
 const mockDevicesTypeFilterApi = async page => {
+  await installManagerSession(page);
   const company = {
     id: 3,
     name: 'Teste',

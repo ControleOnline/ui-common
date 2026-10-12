@@ -105,6 +105,13 @@ const RuntimeFooterMarqueeText = props => {
       color: color,
       flexShrink: 0,
       flexGrow: 0,
+      // primaryText carries `flex: 1` (flexBasis 0 on native), which collapsed
+      // the Text to width 0 inside the row on Android. Force intrinsic sizing.
+      // Yoga gives `flex` precedence over flexGrow/flexBasis, so the inherited
+      // `flex: 1` must be overridden explicitly or the Text stays at width 0.
+      flex: 0,
+      flexBasis: 'auto',
+      minWidth: 0,
       minHeight: 14,
     },
   ];
@@ -164,6 +171,7 @@ const RuntimeFooterMarqueeText = props => {
           alignItems: 'center',
           opacity: 1,
           transform: [{translateX: translateX}],
+          justifyContent: shouldMarquee ? 'flex-start' : 'center',
           alignSelf: shouldMarquee ? 'flex-start' : 'stretch',
         },
       },
