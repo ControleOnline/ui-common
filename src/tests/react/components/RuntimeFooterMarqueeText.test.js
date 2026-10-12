@@ -187,6 +187,8 @@ test('native text keeps intrinsic width even when style carries flex: 1 (android
 
   const text = tree.root.findAllByType('Text')[0];
   const flat = Object.assign({}, ...[].concat(text.props.style));
+  // Yoga gives `flex` precedence: it must not stay at the inherited 1 (width 0 on Android).
+  assert.equal(flat.flex, 0);
   assert.equal(flat.flexBasis, 'auto');
   assert.equal(flat.flexGrow, 0);
   assert.equal(flat.flexShrink, 0);
