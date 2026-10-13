@@ -1,4 +1,6 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+lines 378
+ok True
+eCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -285,12 +287,7 @@ export default function IntegrationConfigPage({ route, embedded = false, fiscalT
     }
 
     try {
-      await persistConfigs({
-        configs,
-        people: providerIri,
-        module: 4,
-        visibility: configVisibility,
-      });
+      await persistConfigs({ configs, people: providerIri, module: 4, visibility: configVisibility });
       showSuccess(`${activeTabDef?.label || providerConfig.label} salvo com sucesso.`);
       await loadPageData({ showLoading: false });
     } catch (error) { showError(error?.message || 'Nao foi possivel salvar a integracao.'); }
