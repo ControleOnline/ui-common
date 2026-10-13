@@ -156,6 +156,7 @@ const useDisplayUri = uri => {
 
 const UserAvatar = ({
   imageUrl,
+  imageHeaders,
   email,
   name,
   size = 40,
@@ -215,7 +216,8 @@ const UserAvatar = ({
     <View style={containerStyle}>
       {displayUri ? (
         <Image
-          source={{uri: displayUri}}
+          source={imageHeaders && Platform.OS !== 'web' && displayUri === imageUrl
+            ? {uri: displayUri, headers: imageHeaders} : {uri: displayUri}}
           style={styles.image}
           onError={() => setSourceIndex(index => index + 1)}
         />
