@@ -22,6 +22,7 @@ import {
 } from '@controleonline/ui-common/src/react/utils/runtimeFooter';
 import styles from './RuntimeInfoFooter.styles';
 import RuntimeFooterMarqueeText from './RuntimeFooterMarqueeText';
+import resolveHomeFooterSpacing from './RuntimeInfoFooter.home.spacing';
 
 const ROTATION_INTERVAL_MS = 4000;
 const COMPACT_BREAKPOINT = 720;
@@ -66,6 +67,7 @@ const RuntimeInfoFooter = ({
   device,
   colors,
   useModernWebChromeProps = false,
+  appearance = 'legacy',
 }) => {
   const {width} = useWindowDimensions();
   const insets = useSafeAreaInsets();
@@ -258,6 +260,7 @@ const RuntimeInfoFooter = ({
       : inlineText
   ) || primaryText || device?.id || '';
   const backgroundColor = colors?.footerBackground;
+  const homeSpacing = resolveHomeFooterSpacing(appearance, Platform.OS, insets.bottom);
   const borderColor = colors?.footerBorder;
   const textColor = resolveVisibleFooterTextColor(colors);
   const loadingColor = colors?.footerLink || colors?.primary || textColor;
@@ -267,7 +270,9 @@ const RuntimeInfoFooter = ({
     : styles.shell;
 
   return (
-    <View {...shellProps} style={shellStyle}>
+    <View {...shellProps} style={[shellStyle, homeSpacing && {
+      paddingBottom: homeSpacing.safeAreaBottom, backgroundColor,
+    }]}>
       <View
         testID="runtime-info-footer"
         style={[
@@ -276,7 +281,8 @@ const RuntimeInfoFooter = ({
           {
             backgroundColor,
             borderTopColor: borderColor,
-            paddingBottom: bottomInset,
+            paddingBottom: homeSpacing ? homeSpacing.contentPadding : bottomInset,
+            ...(homeSpacing && !showDebugInfo ? {paddingTop: homeSpacing.contentPadding} : {}),
           },
         ]}>
         <View style={styles.primaryRow}>
