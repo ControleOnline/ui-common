@@ -1,4 +1,6 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+lines 378
+ok True
+eCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Platform, RefreshControl, ScrollView, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
@@ -14,6 +16,7 @@ import { fetchPeopleConfigs } from './fetchPeopleConfigs';
 import IntegrationConfigFields from './IntegrationConfigFields';
 import {
   ROUTE_PROVIDER_MAP,
+  expandBundledConfig,
   extractAuthorizationUrl,
   formatApiError,
   formatUberOAuthError,
@@ -112,6 +115,8 @@ export default function IntegrationConfigPage({ route, embedded = false, fiscalT
   const allFieldKeysSig = useMemo(() => allFieldKeys.join('|'), [allFieldKeys]);
   // Pure config providers (e.g. receita-federal) do not use marketplace/integrations.
   const needsMarketplaceIntegration = Boolean(providerConfig?.oauthConnect);
+  const bundleKey = normalizeTextValue(providerConfig?.bundleKey);
+  const configVisibility = normalizeTextValue(providerConfig?.visibility) || 'public';
 
   useEffect(() => {
     setConfigValues({});
@@ -135,14 +140,28 @@ export default function IntegrationConfigPage({ route, embedded = false, fiscalT
     }
     if (showLoading) setLoading(true);
     try {
-      const keys = allFieldKeys.length
-        ? allFieldKeys
-        : visibleFields.map(field => field.key).filter(Boolean);
-
-      if (keys.length) {
-        const configItems = await fetchPeopleConfigs({ peopleIri: providerIri, configKeys: keys });
+      if (bundleKey) {
+        const configItems = await fetchPeopleConfigs({
+          peopleIri: providerIri,
+          configKeys: [bundleKey],
+        });
+        const bundled = configItems.find(
+          item => String(item?.configKey || '').trim() === bundleKey,
+        );
         const mergeFields = allConfigFields.length ? allConfigFields : visibleFields;
-        setConfigValues(current => mergeTabValues(mergeFields, configItems, current));
+        setConfigValues(current =>
+          expandBundledConfig(mergeFields, bundled?.configValue, current),
+        );
+      } else {
+        const keys = allFieldKeys.length
+          ? allFieldKeys
+          : visibleFields.map(field => field.key).filter(Boolean);
+
+        if (keys.length) {
+          const configItems = await fetchPeopleConfigs({ peopleIri: providerIri, configKeys: keys });
+          const mergeFields = allConfigFields.length ? allConfigFields : visibleFields;
+          setConfigValues(current => mergeTabValues(mergeFields, configItems, current));
+        }
       }
 
       if (needsMarketplaceIntegration) {
@@ -170,6 +189,7 @@ export default function IntegrationConfigPage({ route, embedded = false, fiscalT
     allConfigFields,
     allFieldKeys,
     allFieldKeysSig,
+    bundleKey,
     needsMarketplaceIntegration,
     providerConfig,
     providerIri,
@@ -246,16 +266,44 @@ export default function IntegrationConfigPage({ route, embedded = false, fiscalT
       showError('Nao foi possivel identificar a integracao selecionada.');
       return;
     }
-    const configs = visibleFields.map(field => ({
-      configKey: field.key,
-      configValue: toConfigRequestValue(normalizeTextValue(configValues[field.key])),
-    }));
+
+    let configs;
+    if (bundleKey) {
+      const payloadObject = {};
+      (visibleFields || []).forEach(field => {
+        payloadObject[field.key] = normalizeTextValue(configValues[field.key]);
+      });
+      configs = [
+        {
+          configKey: bundleKey,
+          configValue: toConfigRequestValue(payloadObject),
+        },
+      ];
+    } else {
+      configs = visibleFields.map(field => ({
+        configKey: field.key,
+        configValue: toConfigRequestValue(normalizeTextValue(configValues[field.key])),
+      }));
+    }
+
     try {
-      await persistConfigs({ configs, people: providerIri, module: 4, visibility: 'public' });
+      await persistConfigs({ configs, people: providerIri, module: 4, visibility: configVisibility });
       showSuccess(`${activeTabDef?.label || providerConfig.label} salvo com sucesso.`);
       await loadPageData({ showLoading: false });
     } catch (error) { showError(error?.message || 'Nao foi possivel salvar a integracao.'); }
-  }, [activeTabDef, configValues, loadPageData, persistConfigs, providerConfig, providerIri, showError, showSuccess, visibleFields]);
+  }, [
+    activeTabDef,
+    bundleKey,
+    configValues,
+    configVisibility,
+    loadPageData,
+    persistConfigs,
+    providerConfig,
+    providerIri,
+    showError,
+    showSuccess,
+    visibleFields,
+  ]);
 
   if (!providerConfig) return <CenterState icon="alert-triangle" iconColor="#e67e22" title="Integracao indisponivel" text="A tela solicitada nao possui configuracao cadastrada." />;
   if (!providerId) return <CenterState icon="building" iconColor="#94A3B8" title="Empresa nao identificada" text="Abra a ficha da empresa para gravar as configuracoes fiscais nela." />;
