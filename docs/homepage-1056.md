@@ -12,3 +12,5 @@ Keep the navigation tree mounted while translations initialize. Hide the shell a
 Regression evidence: app-community homepage bootstrapNavigation.test.js reproduced maximum update depth before the fix, then passed after it. 44 tests across 9 homepage suites passed. Runtime Dev reproduced the unfixed bug; new runtime verification is required after consuming ui-common 1.2.96.
 
 Release 1.2.96 uses the task-only c91510d source plus version metadata. The integration merge into dev preserves independent team work, but those changes are excluded from this homepage package. Publication uses the existing tag-triggered trusted publishing workflow.
+
+Release 1.2.97 completes the web bootstrap gate with visibility:hidden and aria-hidden: pending descendants cannot receive keyboard focus while navigation stays mounted. Native behavior remains unchanged.

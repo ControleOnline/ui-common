@@ -401,8 +401,7 @@ export const DefaultProvider = ({
       <ThemeContext.Provider value={themeContextValue}>
         <View
           pointerEvents={translationPending ? 'none' : 'auto'}
-          accessibilityElementsHidden={translationPending}
-          importantForAccessibility={translationPending ? 'no-hide-descendants' : 'auto'}
+          aria-hidden={translationPending}
           style={[
             providerStyles.shell,
             // Keep navigation mounted while translations load. Unmounting it
