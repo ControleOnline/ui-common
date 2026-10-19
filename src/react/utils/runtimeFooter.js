@@ -128,6 +128,26 @@ const formatRuntimeFooterVersion = version => {
   return normalizedVersion ? `v${normalizedVersion}` : '';
 };
 
+const IPV4_PATTERN = /^(\d{1,3}\.){3}\d{1,3}$/;
+
+// IPv4 is shown in full; other ':'-separated ids (IPv6/MAC-like) are shortened
+// to an ellipsis plus the last two blocks, e.g. "…46f4:eb0b".
+const formatRuntimeFooterIdentifier = value => {
+  const identifier = safeTrim(value);
+
+  if (!identifier || IPV4_PATTERN.test(identifier) || !identifier.includes(':')) {
+    return identifier;
+  }
+
+  const blocks = identifier.split(':').filter(Boolean);
+
+  if (blocks.length <= 2) {
+    return identifier;
+  }
+
+  return `…${blocks.slice(-2).join(':')}`;
+};
+
 const getRuntimeFooterWebHost = () => {
   const hostname = safeTrim(globalThis?.location?.hostname);
 
@@ -364,9 +384,9 @@ const getRuntimeFooterDebugInfo = ({device, appVersion, deviceConfig}) => {
   const nativeIdentifier = nativeIdentifierCandidates[0]?.value || '';
   const runtimeDetail = operationModeLabel
     ? operationModeLabel
-    : isWebRuntime
-      ? webIdentifier
-      : nativeIdentifier;
+    : formatRuntimeFooterIdentifier(
+      isWebRuntime ? webIdentifier : nativeIdentifier,
+    );
   const runtimeDetailSource = operationModeLabel
     ? 'device_config.configs.pos-operation-mode'
     : isWebRuntime
@@ -444,6 +464,7 @@ module.exports = {
   getRuntimeFooterStoredVersion,
   getRuntimeFooterTextLines,
   getRuntimeFooterVersionCandidates,
+  formatRuntimeFooterIdentifier,
   getRuntimeFooterWebIdentifierCandidates,
   getRuntimeFooterText,
   getRuntimeFooterWebHost,
