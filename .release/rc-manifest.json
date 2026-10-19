@@ -1,10 +1,10 @@
 {
-  "version": "1.2.93",
+  "version": "1.2.98",
   "rc": 1,
-  "branch": "rc/1.2.93-rc.1",
-  "baseMaster": "b4db94eb1ccd3bf878dc96e3d32c0249aad07402",
-  "tasks": [77],
-  "repositories": { "ControleOnline/ui-common": "4dfdb2d7ccb160f265115bdad3125d6ecd26bdfd" },
-  "compositionNotes": ["Verified on Android emulator: Text width was still 0 with flexBasis auto because Yoga prioritises flex over flexGrow/flexBasis. flex:0 fixes it."],
+  "branch": "rc/1.2.98-rc.1",
+  "baseMaster": "aa5ad406d201d23bb88023bc4b7a7d4f9b11fd0a",
+  "tasks": [88],
+  "repositories": { "ControleOnline/ui-common": "2f13867340f0804df159f4c948954493ee7f642e" },
+  "compositionNotes": ["Task 88: rodapé mostra …últimos 2 blocos quando o identificador não é IPv4."],
   "frozen": true
 }
