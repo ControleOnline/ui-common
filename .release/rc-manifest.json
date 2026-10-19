@@ -1,10 +1,10 @@
 {
   "version": "1.2.98",
-  "rc": 1,
-  "branch": "rc/1.2.98-rc.1",
+  "rc": 2,
+  "branch": "rc/1.2.98-rc.2",
   "baseMaster": "aa5ad406d201d23bb88023bc4b7a7d4f9b11fd0a",
   "tasks": [88],
-  "repositories": { "ControleOnline/ui-common": "2f13867340f0804df159f4c948954493ee7f642e" },
-  "compositionNotes": ["Task 88: rodapé mostra …últimos 2 blocos quando o identificador não é IPv4."],
+  "repositories": { "ControleOnline/ui-common": "0c96fc6ebac3af856cfba103fa0694171f590ce1" },
+  "compositionNotes": ["Task 88: rodapé mostra …últimos 2 blocos quando o identificador não é IPv4. rc.2 inclui bump de versão 1.2.98 para publicação npm; supersedes rc.1."],
   "frozen": true
 }
