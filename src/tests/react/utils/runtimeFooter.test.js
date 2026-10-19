@@ -2,6 +2,7 @@ const assert = require('node:assert/strict')
 const {after, before, test} = require('node:test')
 
 const {
+  formatRuntimeFooterIdentifier,
   getRuntimeFooterDebugInfo,
   getRuntimeFooterNativeIdentifierCandidates,
   getRuntimeFooterPrimaryText,
@@ -486,4 +487,29 @@ test('hides runtime device information on the customer paylist only', () => {
   assert.equal(shouldShowRuntimeFooter('PaylistPage'), false)
   assert.equal(shouldShowRuntimeFooter('LoginPage'), true)
   assert.equal(shouldShowRuntimeFooter('WalletsPage'), true)
+})
+
+test('formats runtime identifier: IPv4 full, non-IPv4 shortened to last two blocks', () => {
+  assert.equal(formatRuntimeFooterIdentifier('179.110.95.138'), '179.110.95.138')
+  assert.equal(
+    formatRuntimeFooterIdentifier('2804:18:1119:f433:54b4:a587:46f4:eb0b'),
+    '…46f4:eb0b',
+  )
+  assert.equal(formatRuntimeFooterIdentifier('aa:bb:cc:dd:ee:ff'), '…ee:ff')
+  assert.equal(formatRuntimeFooterIdentifier('::1'), '::1')
+  assert.equal(formatRuntimeFooterIdentifier('abc'), 'abc')
+  assert.equal(formatRuntimeFooterIdentifier(''), '')
+  assert.equal(formatRuntimeFooterIdentifier(null), '')
+})
+
+test('primary text shortens IPv6 public ip', () => {
+  const text = getRuntimeFooterPrimaryText({
+    device: {
+      type: 'PDV',
+      systemName: 'web',
+      metadata: {network: {publicIp: '2804:18:1119:f433:54b4:a587:46f4:eb0b'}},
+    },
+    appVersion: '1.10.68',
+  })
+  assert.ok(text.includes('(…46f4:eb0b)'), text)
 })
