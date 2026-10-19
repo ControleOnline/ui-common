@@ -1,10 +1,13 @@
 import React, {useLayoutEffect, useMemo} from 'react';
 import {Pressable, Text, View} from 'react-native';
-import Icon from 'react-native-vector-icons/Feather';
+import LegacyIcon from 'react-native-vector-icons/Feather';
+import HomeIcon from '@controleonline/../../src/components/HomeIcon';
 import {useTheme} from './DefaultProvider';
 import RuntimeInfoFooter from './RuntimeInfoFooter';
 import {resolveMenuRouteParams} from '../utils/menuNavigation';
 import createStyles from './BottomNavigationBar.styles';
+import softenStyles from './BottomNavigationBar.soft.styles';
+import {resolveHomepagePalette} from '@controleonline/../../src/styles/homepagePalette';
 
 const BottomNavigationBar = ({
   navigation,
@@ -14,7 +17,10 @@ const BottomNavigationBar = ({
   colors = {},
   testID = 'bottom-navigation',
   useModernWebChromeProps = false,
+  appearance = 'legacy',
 }) => {
+  const Icon = appearance === 'soft' ? HomeIcon : LegacyIcon;
+  colors = appearance === 'soft' ? resolveHomepagePalette(colors) : colors;
   const theme = useTheme?.() || {};
   const runtimeFooter = theme?.runtimeFooter || null;
   const registerBottomNavigation =
@@ -31,14 +37,14 @@ const BottomNavigationBar = ({
 
   const styles = useMemo(
     () =>
-      createStyles({
+      softenStyles(createStyles({
         activeBackground,
         dockBackground,
         dockBorder,
         dockShadow,
         activeBorder,
         useModernWebChromeProps,
-      }),
+      }), colors, appearance),
     [
       activeBackground,
       activeBorder,
@@ -46,6 +52,7 @@ const BottomNavigationBar = ({
       dockBorder,
       dockShadow,
       useModernWebChromeProps,
+      appearance,
     ],
   );
 
@@ -116,8 +123,11 @@ const BottomNavigationBar = ({
     ? [styles.host, styles.hostPointerEventsBoxNone]
     : styles.host;
   const footerProps = {
+    appearance,
     appVersion: runtimeFooter?.appVersion,
-    colors: runtimeFooter?.colors || {},
+    colors: appearance === 'soft'
+      ? {...runtimeFooter?.colors, footerBackground: colors.footerBackground, footerText: colors.footerText}
+      : runtimeFooter?.colors || {},
     mainCompany: runtimeFooter?.mainCompany,
     device: runtimeFooter?.device,
     useModernWebChromeProps,

@@ -12,6 +12,9 @@ const styles = StyleSheet.create({
   shell: {
     flex: 1,
   },
+  translationPending: {
+    opacity: 0,
+  },
   content: {
     flex: 1,
     minHeight: 0,

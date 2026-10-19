@@ -19,6 +19,7 @@ const {
 } = require('@controleonline/ui-common/src/react/utils/bottomNavigationToolbar');
 
 const RuntimeBottomNavigationBar = ({
+  appearance = 'legacy',
   activeRouteName: activeRouteNameProp,
   colors: colorsOverride,
   disabled: disabledOverride,
@@ -159,6 +160,7 @@ const RuntimeBottomNavigationBar = ({
 
   return (
     <BottomNavigationBar
+      appearance={appearance}
       activeRouteName={effectiveActiveRoute}
       colors={colors}
       disabled={isDisabled}
