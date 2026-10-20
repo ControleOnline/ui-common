@@ -1,6 +1,6 @@
 import {Platform} from 'react-native';
 
-// Only the homepage opts into this chrome; preserve all default navigation styles.
+// Shared compact chrome on every route; explicit legacy consumers can opt out.
 export default (styles, colors, appearance) => appearance !== 'soft' ? styles : {
   ...styles,
   dock: [styles.dock, {
@@ -16,9 +16,10 @@ export default (styles, colors, appearance) => appearance !== 'soft' ? styles : 
     shadowOpacity: 0,
     ...(Platform.OS === 'web' ? {boxShadow: 'none'} : {}),
   }],
-  itemsRow: [styles.itemsRow, {minHeight: 64, paddingHorizontal: 12, paddingVertical: 5}],
-  item: [styles.item, {minHeight: 54, borderRadius: 12}],
-  itemLabel: [styles.itemLabel, {fontSize: 11, fontWeight: '400'}],
+  itemsRow: [styles.itemsRow, {minHeight: 56, paddingHorizontal: 8, paddingVertical: 4}],
+  item: [styles.item, {minHeight: 46, paddingVertical: 3, borderRadius: 10}],
+  iconWrap: [styles.iconWrap, {width: 22, height: 22, marginBottom: 2}],
+  itemLabel: [styles.itemLabel, {fontSize: 11, lineHeight: 14, fontWeight: '400'}],
   footerSlot: [styles.footerSlot, {
     borderTopWidth: 1,
     borderColor: colors.navigationBorder,

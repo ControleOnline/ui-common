@@ -13,6 +13,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   translationPending: {
+    visibility: 'hidden',
     opacity: 0,
   },
   content: {

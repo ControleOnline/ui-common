@@ -1,5 +1,6 @@
 import React, {useEffect} from 'react';
 import {useStore} from '@store';
+import {invalidateProductCatalogCache} from '../utils/productCatalogCacheRevision';
 
 const ProductCatalogCacheService = () => {
   const categoriesStore = useStore('categories');
@@ -32,10 +33,17 @@ const ProductCatalogCacheService = () => {
       return;
     }
 
+    invalidateProductCatalogCache();
+    for (const context of ['products', 'supplies']) {
+      localStorage.removeItem(`categories:${context}`);
+      localStorage.removeItem(`categories-company:${context}`);
+    }
     localStorage.setItem('categories', JSON.stringify([]));
     localStorage.removeItem('categories-company');
     categoryActions.setItems([]);
     productActions.setItems([]);
+    categoryActions.setReload?.(true);
+    productActions.setReload?.(true);
     categoryActions.setMessage(null);
   }, [categoryActions, message, productActions]);
 
