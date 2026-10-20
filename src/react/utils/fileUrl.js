@@ -1,4 +1,5 @@
 import {env as APP_ENV} from '@env';
+import {filterApiHeaders} from '../../utils/trustedApiUrl';
 import {buildAssetUrl} from '@controleonline/../../src/styles/branding';
 import {
   resolveAppDomain,
@@ -227,7 +228,7 @@ export const extractFileId = file => {
   return null;
 };
 
-export const resolveDefaultFileSource = (
+const resolveFileSource = (
   file,
   {company = null, appDomain = '', headers = {}} = {},
 ) => {
@@ -327,6 +328,11 @@ export const resolveDefaultFileSource = (
   }
 
   return null;
+};
+
+export const resolveDefaultFileSource = (file, options = {}) => {
+  const source = resolveFileSource(file, options);
+  return source ? {...source, headers: filterApiHeaders(source.uri, source.headers, APP_ENV?.API_ENTRYPOINT)} : null;
 };
 
 export const resolveDefaultFileUrl = (file, options = {}) =>
