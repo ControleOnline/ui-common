@@ -1,10 +1,10 @@
 {
-  "version": "1.2.98",
-  "rc": 2,
-  "branch": "rc/1.2.98-rc.2",
-  "baseMaster": "aa5ad406d201d23bb88023bc4b7a7d4f9b11fd0a",
+  "version": "1.2.99",
+  "rc": 1,
+  "branch": "rc/1.2.99-rc.1",
+  "baseMaster": "ed2898e5d8181de6236aca398c804373f00372fc",
   "tasks": [88],
-  "repositories": { "ControleOnline/ui-common": "0c96fc6ebac3af856cfba103fa0694171f590ce1" },
-  "compositionNotes": ["Task 88: rodapé mostra …últimos 2 blocos quando o identificador não é IPv4. rc.2 inclui bump de versão 1.2.98 para publicação npm; supersedes rc.1."],
+  "repositories": { "ControleOnline/ui-common": "95119fe9cb5f5709fb6ff51e77d874dc164aa0fd" },
+  "compositionNotes": ["Task 88 sobre v1.2.97 (preserva hotfix homepage #1056). Corrige 1.2.98 que foi montado sobre master sem o hotfix."],
   "frozen": true
 }
