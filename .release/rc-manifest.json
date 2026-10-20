@@ -1,10 +1,10 @@
 {
-  "version": "1.2.99",
+  "version": "1.2.100",
   "rc": 1,
-  "branch": "rc/1.2.99-rc.1",
+  "branch": "rc/1.2.100-rc.1",
   "baseMaster": "ed2898e5d8181de6236aca398c804373f00372fc",
   "tasks": [88],
-  "repositories": { "ControleOnline/ui-common": "95119fe9cb5f5709fb6ff51e77d874dc164aa0fd" },
-  "compositionNotes": ["Task 88 sobre v1.2.97 (preserva hotfix homepage #1056). Corrige 1.2.98 que foi montado sobre master sem o hotfix."],
+  "repositories": { "ControleOnline/ui-common": "d16549c49add55c2b54ff690d1f8a9e8c9ea1e82" },
+  "compositionNotes": ["Refeito do zero a partir do master: task 88 (já no master via 1.2.98) + hotfix homepage 1056 (v1.2.97). Supersedes 1.2.98/1.2.99-rc.1."],
   "frozen": true
 }
