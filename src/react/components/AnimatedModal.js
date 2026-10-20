@@ -38,6 +38,8 @@ export default function AnimatedModal({
   onRequestClose,
   children,
   style,
+  overlayColor,
+  contentStyle,
 }) {
   const [showing, setShowing] = useState(visible);
   const [keyboardHeight, setKeyboardHeight] = useState(0);
@@ -125,6 +127,8 @@ export default function AnimatedModal({
   const overlayStyle = [
     styles.overlay,
     style,
+  overlayColor,
+  contentStyle,
     Platform.OS === 'android' ? {paddingBottom: keyboardHeight} : null,
   ];
 
@@ -152,11 +156,12 @@ export default function AnimatedModal({
             style={[
               StyleSheet.absoluteFillObject,
               styles.overlayBg,
+              overlayColor ? {backgroundColor: overlayColor} : null,
               {opacity: overlayOpacity},
             ]}
           />
           <Animated.View
-            style={[styles.content, {transform: [{translateY: slideY}]}]}>
+            style={[styles.content, contentStyle, {transform: [{translateY: slideY}]}]}>
             {normalizedChildren}
           </Animated.View>
           <Toasts
