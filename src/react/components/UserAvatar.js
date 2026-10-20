@@ -1,4 +1,5 @@
 import {readStoredSessionToken} from '../../utils/storedSessionToken';
+import {isTrustedApiUrl, filterApiHeaders} from '../../utils/trustedApiUrl';
 import React, {useEffect, useMemo, useState} from 'react';
 import {Image, Platform, StyleSheet, Text, View} from 'react-native';
 import {env as APP_ENV} from '@env';
@@ -78,7 +79,8 @@ const useDisplayUri = uri => {
       const token = readStoredSessionToken();
 
       // Authenticated backend download on web
-      if (isBackendDownloadUrl(next) && Platform.OS === 'web' && token) {
+      if (isBackendDownloadUrl(next) && isTrustedApiUrl(next, APP_ENV?.API_ENTRYPOINT)
+          && Platform.OS === 'web' && token) {
         try {
           const headers = {
             Accept: '*/*',
@@ -91,7 +93,7 @@ const useDisplayUri = uri => {
             headers['App-Domain'] = host;
           }
 
-          const response = await fetch(next, {method: 'GET', headers});
+          const response = await fetch(next, {method: 'GET', headers, redirect: 'error'});
           if (!response.ok) {
             if (!cancelled) {
               setDisplayUri('');
@@ -206,7 +208,7 @@ const UserAvatar = ({
       {displayUri ? (
         <Image
           source={imageHeaders && Platform.OS !== 'web' && displayUri === imageUrl
-            ? {uri: displayUri, headers: imageHeaders} : {uri: displayUri}}
+            ? {uri: displayUri, headers: filterApiHeaders(displayUri, imageHeaders, APP_ENV?.API_ENTRYPOINT)} : {uri: displayUri}}
           style={styles.image}
           onError={() => setSourceIndex(index => index + 1)}
         />

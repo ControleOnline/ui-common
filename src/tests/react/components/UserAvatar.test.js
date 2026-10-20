@@ -12,6 +12,8 @@ jest.mock('react-native', () => ({
   View: props => React.createElement('View', props, props.children),
 }));
 
+jest.mock('@env', () => ({env: {API_ENTRYPOINT: 'https://api.controleonline.com', DOMAIN: 'manager.controleonline.com'}}));
+
 const UserAvatar = require('../../../react/components/UserAvatar').default;
 
 const {describe, expect, it} = global;
@@ -52,5 +54,33 @@ describe('UserAvatar', () => {
 
     expect(image.props.source.uri).toContain('gravatar.com/avatar/');
     expect(image.props.source.uri).toContain('d=404');
+  });
+});
+
+
+describe('avatar credential boundary', () => {
+  it('does not authenticate an external download-shaped image on web', async () => {
+    const {Platform} = require('react-native');
+    const previousStorage = global.localStorage;
+    const previousFetch = global.fetch;
+    Platform.OS = 'web';
+    global.localStorage = {getItem: () => JSON.stringify({token: 'session-secret'})};
+    global.fetch = jest.fn();
+    let tree;
+    try {
+      await renderer.act(async () => { tree = renderer.create(React.createElement(UserAvatar, {imageUrl: 'https://images.example.test/files/1/download', useGravatar: false})); });
+      expect(global.fetch).not.toHaveBeenCalled();
+      expect(tree.root.findByType('Image').props.source.uri).toBe('https://images.example.test/files/1/download');
+    } finally {
+      if (tree) await renderer.act(async () => tree.unmount());
+      Platform.OS = 'ios'; global.localStorage = previousStorage; global.fetch = previousFetch;
+    }
+  });
+  it('removes session headers from external native avatars', async () => {
+    let tree;
+    try {
+      await renderer.act(async () => { tree = renderer.create(React.createElement(UserAvatar, {imageUrl: 'https://images.example.test/avatar.png', imageHeaders: {'API-TOKEN': 'session-secret', Accept: 'image/*'}, useGravatar: false})); });
+      expect(tree.root.findByType('Image').props.source.headers).toEqual({Accept: 'image/*'});
+    } finally { if (tree) await renderer.act(async () => tree.unmount()); }
   });
 });
