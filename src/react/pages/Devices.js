@@ -23,7 +23,7 @@ import { createStyles } from './Devices.styles';
 
 const tt = (type, key) => global.t?.t('configs', type, key);
 
-const Devices = () => {
+const Devices = ({themePalette = null} = {}) => {
   const navigation = useNavigation();
   const peopleStore = useStore('people');
   const themeStore = useStore('theme');
@@ -35,11 +35,11 @@ const Devices = () => {
 
   const brandColors = useMemo(
     () =>
-      resolveThemePalette(
+      themePalette || resolveThemePalette(
         {...themeColors, ...(currentCompany?.theme?.colors || {})},
         colors,
       ),
-    [themeColors, currentCompany?.id],
+    [themePalette, themeColors, currentCompany?.id],
   );
   const styles = useMemo(() => createStyles(brandColors), [brandColors]);
   const accentPalette = useMemo(
@@ -173,6 +173,7 @@ const Devices = () => {
 
       {ActiveTabComponent ? (
         <ActiveTabComponent
+          themePalette={themePalette}
           key={`${activeFilter}-${currentCompany?.id || 'company'}`}
         />
       ) : null}

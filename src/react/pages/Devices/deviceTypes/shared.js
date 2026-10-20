@@ -36,7 +36,7 @@ import {
   prioritizeCurrentDeviceGroups,
   readStoredRuntimeDevice,
 } from '../currentDevice';
-import styles from '../../Devices.styles';
+import legacyStyles, {createStyles} from '../../Devices.styles';
 import DeviceGroupCard from './DeviceGroupCard';
 import {useDeviceNetworkConnectivity} from './useDeviceNetworkConnectivity';
 import {
@@ -89,7 +89,7 @@ export const createDeviceTypeTab = ({
   clientFilter = null,
   offerCurrentPdvSetup = false,
 }) => {
-  const DeviceTypeTab = () => {
+  const DeviceTypeTab = ({themePalette = null} = {}) => {
     const navigation = useNavigation();
     const peopleStore = useStore('people');
     const deviceStore = useStore('device');
@@ -101,12 +101,14 @@ export const createDeviceTypeTab = ({
 
     const brandColors = useMemo(
       () =>
-        resolveThemePalette(
+        themePalette || resolveThemePalette(
           {...themeColors, ...(currentCompany?.theme?.colors || {})},
           colors,
         ),
-      [themeColors, currentCompany?.id],
+      [themePalette, themeColors, currentCompany?.id],
     );
+
+    const styles = useMemo(() => themePalette ? createStyles(brandColors) : legacyStyles, [themePalette, brandColors]);
 
     const [deviceConfigs, setDeviceConfigs] = useState([]);
     const [loading, setLoading] = useState(false);
@@ -372,6 +374,7 @@ export const createDeviceTypeTab = ({
         <DeviceGroupCard
           {...cardProps}
           brandColors={brandColors}
+          themedStyles={themePalette ? styles : null}
           creatingPdv={creatingPdv}
           goToDetail={goToDetail}
           handleCreateCurrentPdv={handleCreateCurrentPdv}
@@ -384,6 +387,8 @@ export const createDeviceTypeTab = ({
       ),
       [
         brandColors,
+        styles,
+        themePalette,
         creatingPdv,
         goToDetail,
         handleCreateCurrentPdv,

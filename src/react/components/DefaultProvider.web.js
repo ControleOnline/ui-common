@@ -395,15 +395,18 @@ export const DefaultProvider = ({
 
   useWebThemePalette({resolveDomainThemeColors, baseThemeColors, mainCompany, resolveThemePalette, runtimeColors, applyPaletteToRuntimeColors, applyThemeCssVariables, actions, currentCompany, isShopClientApp});
 
-  if (requiresTranslateBootstrap && !isTranslateBootstrapReady) {
-    return <View style={providerStyles.loadingContainer} />;
-  }
+  const translationPending = requiresTranslateBootstrap && !isTranslateBootstrapReady;
 
   return (
       <ThemeContext.Provider value={themeContextValue}>
         <View
+          pointerEvents={translationPending ? 'none' : 'auto'}
+          aria-hidden={translationPending}
           style={[
             providerStyles.shell,
+            // Keep navigation mounted while translations load. Unmounting it
+            // resets the login route and repeatedly registers the bottom bar.
+            translationPending && providerStyles.translationPending,
             {
               backgroundColor: colors?.background || runtimeColors.background,
             },

@@ -1,3 +1,4 @@
+import {readStoredSessionToken} from '../../utils/storedSessionToken';
 import React, {useEffect, useMemo, useState} from 'react';
 import {Image, Platform, StyleSheet, Text, View} from 'react-native';
 import {env as APP_ENV} from '@env';
@@ -14,18 +15,6 @@ const isBackendDownloadUrl = uri =>
 /** Session cache: gravatar URL → true (ok) | false (missing). Avoids repeat probes. */
 const gravatarProbeCache = new Map();
 
-const readSessionToken = () => {
-  if (typeof localStorage === 'undefined' || !localStorage?.getItem) {
-    return '';
-  }
-
-  try {
-    const session = JSON.parse(localStorage.getItem('session') || '{}');
-    return normalizeUrl(session?.api_key || session?.token);
-  } catch {
-    return '';
-  }
-};
 
 /**
  * Probe Gravatar (d=404) via fetch BEFORE exposing URL to <Image>.
@@ -86,7 +75,7 @@ const useDisplayUri = uri => {
         return;
       }
 
-      const token = readSessionToken();
+      const token = readStoredSessionToken();
 
       // Authenticated backend download on web
       if (isBackendDownloadUrl(next) && Platform.OS === 'web' && token) {
@@ -156,6 +145,7 @@ const useDisplayUri = uri => {
 
 const UserAvatar = ({
   imageUrl,
+  imageHeaders,
   email,
   name,
   size = 40,
@@ -215,7 +205,8 @@ const UserAvatar = ({
     <View style={containerStyle}>
       {displayUri ? (
         <Image
-          source={{uri: displayUri}}
+          source={imageHeaders && Platform.OS !== 'web' && displayUri === imageUrl
+            ? {uri: displayUri, headers: imageHeaders} : {uri: displayUri}}
           style={styles.image}
           onError={() => setSourceIndex(index => index + 1)}
         />
