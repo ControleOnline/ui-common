@@ -114,4 +114,63 @@ describe('file authentication origin boundary', () => {
     const source = resolveDefaultFileSource(1, {headers: {'API-TOKEN': 'session-secret'}});
     expect(source.headers['API-TOKEN']).toBe('session-secret');
   });
+
+  it('ignores file.domain when it is the API host and uses tenant app-domain (app-community#1160)', () => {
+    const company = {domain: 'loja.jaguncos.com.br'};
+
+    const source = resolveDefaultFileSource(
+      {
+        id: 8408,
+        domain: 'api.controleonline.com',
+        url: '/api.controleonline.com/files/8408/download',
+      },
+      {
+        company,
+        headers: {Authorization: 'Bearer token'},
+      },
+    );
+
+    expect(source.uri).toBe(
+      'https://api.controleonline.com/loja.jaguncos.com.br/files/8408/download',
+    );
+    expect(source.uri).not.toMatch(/api\.controleonline\.com\/files/);
+    expect(source.headers['app-domain']).toBe('loja.jaguncos.com.br');
+  });
+
+  it('ignores API host as company domain and falls back to explicit appDomain', () => {
+    const source = resolveDefaultFileSource(
+      {
+        id: 8408,
+        domain: 'api.controleonline.com',
+      },
+      {
+        company: {domain: 'api.controleonline.com'},
+        appDomain: 'erp.jaguncos.com.br',
+        headers: {},
+      },
+    );
+
+    expect(source.uri).toBe(
+      'https://api.controleonline.com/erp.jaguncos.com.br/files/8408/download',
+    );
+    expect(source.headers['app-domain']).toBe('erp.jaguncos.com.br');
+  });
+
+  it('still prefers a real tenant file.domain over company when not API host', () => {
+    const source = resolveDefaultFileSource(
+      {
+        id: 12,
+        domain: 'cardapio.jaguncos.com.br',
+        url: '/files/12/download',
+      },
+      {
+        company: {domain: 'erp.jaguncos.com.br'},
+      },
+    );
+
+    expect(source.uri).toBe(
+      'https://api.controleonline.com/cardapio.jaguncos.com.br/files/12/download',
+    );
+    expect(source.headers['app-domain']).toBe('cardapio.jaguncos.com.br');
+  });
 });
