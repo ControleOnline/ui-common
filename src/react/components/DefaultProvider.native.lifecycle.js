@@ -294,6 +294,7 @@ export function useNativeDeviceConfigFetch({device, isLogged, currentCompany, se
       currentCompany &&
       Object.entries(currentCompany).length > 0
     ) {
+      let active = true;
       setDeviceConfigFetched(false);
       setDeviceRuntimeConfigSynced(false);
       deviceConfigsActions
@@ -303,6 +304,7 @@ export function useNativeDeviceConfigFetch({device, isLogged, currentCompany, se
           type: runtimeDeviceType,
         })
         .then(data => {
+          if (!active) return;
           if (Array.isArray(data) && data.length > 0) {
             const nextItem = {
               ...data[0],
@@ -316,8 +318,9 @@ export function useNativeDeviceConfigFetch({device, isLogged, currentCompany, se
         })
         .catch(() => {})
         .finally(() => {
-          setDeviceConfigFetched(true);
+          if (active) setDeviceConfigFetched(true);
         });
+      return () => { active = false; };
     }
   }, [currentCompany?.id, isLogged, device?.id, runtimeDeviceType]);
 }

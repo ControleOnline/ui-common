@@ -3,6 +3,7 @@ import {useNavigationState} from '@react-navigation/native';
 import {useStore} from '@store';
 import {api} from '@controleonline/ui-common/src/api';
 import {app_type} from '@appType';
+import {useTheme} from './DefaultProvider';
 import BottomNavigationBar from '@controleonline/ui-common/src/react/components/BottomNavigationBar';
 import {
   getBottomNavigationPreset,
@@ -33,6 +34,8 @@ const RuntimeBottomNavigationBar = ({
   testID = 'bottom-navigation',
   useModernWebChromeProps = false,
 }) => {
+  const {runtimeMenus: providerMenus} = useTheme?.() || {};
+  const managedMenus = providerMenus?.managed === true;
   const state = useNavigationState(current => current);
   const activeRouteName =
     activeRouteNameProp || state?.routes?.[state.index]?.name || 'HomePage';
@@ -48,10 +51,15 @@ const RuntimeBottomNavigationBar = ({
   const routeAliases = routeAliasesProp || preset?.routeAliases || {};
   const appType = normalizeAppType(app_type);
   const menuScope = JSON.stringify([appType, currentCompany?.id, menuType, presetKey]);
-  const runtimeMenus = menuState.scope === menuScope ? menuState.menus : [];
+  const runtimeMenus = managedMenus
+    ? (providerMenus.ready ? resolveToolbarRuntimeMenus({
+        apiMenus: providerMenus.modules, preset, presetKey, menuType, translate: global.t?.t,
+      }) : [])
+    : menuState.scope === menuScope ? menuState.menus : [];
 
   // Always consult menus-people for role-aware toolbar; preset is fallback only.
   useEffect(() => {
+    if (managedMenus) return undefined;
     const setRuntimeMenus = menus => setMenuState({scope: menuScope, menus});
     if (!currentCompany?.id || !menuType) {
       setRuntimeMenus(
@@ -109,7 +117,7 @@ const RuntimeBottomNavigationBar = ({
     return () => {
       cancelled = true;
     };
-  }, [appType, currentCompany?.id, menuType, preset, presetKey, menuScope]);
+  }, [appType, currentCompany?.id, menuType, preset, presetKey, menuScope, managedMenus]);
 
   const colors = useMemo(() => {
     if (colorsOverride) {

@@ -8,6 +8,7 @@ export function useWebDeviceConfigFetch({device, isLogged, deviceConfigPeopleIri
       return;
     }
 
+    let active = true;
     setDeviceConfigFetched(false);
     setDeviceRuntimeConfigSynced(false);
     deviceConfigsActions.setItem({});
@@ -19,6 +20,7 @@ export function useWebDeviceConfigFetch({device, isLogged, deviceConfigPeopleIri
         type: runtimeDeviceType,
       })
       .then(data => {
+        if (!active) return;
         const selectedConfig = selectRuntimeDeviceConfig({
           items: data,
           deviceId: device.id,
@@ -39,8 +41,9 @@ export function useWebDeviceConfigFetch({device, isLogged, deviceConfigPeopleIri
       })
       .catch(() => {})
       .finally(() => {
-        setDeviceConfigFetched(true);
+        if (active) setDeviceConfigFetched(true);
       });
+    return () => { active = false; };
   }, [
     device?.id,
     deviceConfigPeopleIri,
@@ -250,38 +253,44 @@ export function useWebCompanies({device, isLogged, peopleActions}) {
   }, [isLogged, device?.id]);
 }
 
-export function useWebMenus({isLogged, currentCompany, actions, api, appType, normalizeRuntimeMenuResponse}) {
+export function useWebMenus({isLogged, currentCompany, actions, api, appType, normalizeRuntimeMenuResponse, menuContextKey, setMenuLoad, includeToolbar = false}) {
   useEffect(() => {
     if (!isLogged || !currentCompany?.id) {
       actions.setMenus([]);
+      setMenuLoad?.({key: menuContextKey, status: 'idle'});
       return undefined;
     }
 
     let cancelled = false;
+    setMenuLoad?.({key: menuContextKey, status: 'loading'});
 
-    api
-      .fetch('menus-people', {
-        params: {
-          myCompany: currentCompany.id,
-          appType,
-          menuType: 'home',
-        },
-      })
-      .then(result => {
-        if (!cancelled) {
-          actions.setMenus(normalizeRuntimeMenuResponse(result, {appType}));
-        }
-      })
-      .catch(() => {
-        if (!cancelled) {
-          actions.setMenus(normalizeRuntimeMenuResponse(null, {appType}));
-        }
-      });
+    const fetchMenus = menuType => api.fetch('menus-people', {
+      params: {myCompany: currentCompany.id, appType, menuType},
+    });
+    const request = includeToolbar
+      ? Promise.all([fetchMenus('home'), fetchMenus('toolbar')])
+      : fetchMenus('home').then(result => [result]);
+    request.then(results => {
+      if (cancelled) return;
+      if (results.some(result => result?.response?.success === false)) {
+        actions.setMenus([]);
+        setMenuLoad?.({key: menuContextKey, status: 'error'});
+        return;
+      }
+      actions.setMenus(results.flatMap(result => normalizeRuntimeMenuResponse(result, {
+        appType, ...(includeToolbar ? {allowFallback: false} : {}),
+      }) || []));
+      setMenuLoad?.({key: menuContextKey, status: 'ready'});
+    }).catch(() => {
+      if (cancelled) return;
+      actions.setMenus(includeToolbar ? [] : normalizeRuntimeMenuResponse(null, {appType}));
+      setMenuLoad?.({key: menuContextKey, status: 'error'});
+    });
 
     return () => {
       cancelled = true;
     };
-  }, [actions, appType, currentCompany?.id, isLogged]);
+  }, [actions, appType, currentCompany?.id, isLogged, menuContextKey, setMenuLoad, includeToolbar]);
 }
 
 export function useWebThemeFetch({api, parseThemeCss, setBaseThemeColors, actions, currentCompany, mainCompany, device}) {
