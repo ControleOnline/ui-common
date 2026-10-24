@@ -16,4 +16,14 @@ const filterApiHeaders = (uri, headers = {}, apiEntryPoint) => {
     !/^(api[-_]?(token|key)|authorization|proxy-authorization|cookie|app-domain|device)$/i.test(key)));
 };
 
-module.exports = {isTrustedApiUrl, filterApiHeaders};
+// Normalize only file downloads on the configured API authority; trust checks still
+// validate the final origin/path before attaching session headers.
+const resolveApiFileProtocol = (uri, apiEntryPoint) => {
+  const image = String(uri || '');
+  const imageOrigin = image.match(/^https?:\/\/([^/]+)/i);
+  const apiOrigin = String(apiEntryPoint || '').match(/^https?:\/\/([^/]+)/i);
+  if (!imageOrigin || !apiOrigin || imageOrigin[1] !== apiOrigin[1]
+      || !/\/files\/[^/?#]+\/download(?:[?#]|$)/i.test(image)) return image;
+  return apiOrigin[0] + image.slice(imageOrigin[0].length);
+};
+module.exports = {isTrustedApiUrl, filterApiHeaders, resolveApiFileProtocol};
