@@ -24,7 +24,7 @@ import {
   parseConfigsObject,
   tt,
 } from './deviceListHelpers';
-import styles from '../../Devices.styles';
+import legacyStyles from '../../Devices.styles';
 
 /**
  * Normalize DefaultTable card `item` into a device group shape.
@@ -65,6 +65,7 @@ const normalizeDeviceGroup = item => {
 export default function DeviceGroupCard({
   item,
   brandColors,
+  themedStyles = null,
   creatingPdv,
   goToDetail,
   handleCreateCurrentPdv,
@@ -74,6 +75,7 @@ export default function DeviceGroupCard({
   runtimeDeviceType,
   showCurrentPdvSetup,
 }) {
+        const styles = themedStyles || legacyStyles;
         const deviceGroup = normalizeDeviceGroup(item);
         if (!deviceGroup) {
           return null;
@@ -116,7 +118,7 @@ export default function DeviceGroupCard({
             deviceGroup.device?.id ||
             deviceGroup.key,
         );
-        const accent = getDeviceTypeAccent(normalizedType);
+        const accent = brandColors.deviceAccent || getDeviceTypeAccent(normalizedType);
         const metaChips = [];
 
         if (isPdv && primaryConfig) {
@@ -196,7 +198,7 @@ export default function DeviceGroupCard({
                 <View style={styles.deviceConfigRow}>
                   {deviceConfigs.map(deviceConfig => {
                     const configType = getDeviceConfigType(deviceConfig);
-                    const configAccent = getDeviceTypeAccent(configType);
+                    const configAccent = brandColors.deviceAccent || getDeviceTypeAccent(configType);
                     const isSessionConfig =
                       isCurrentDevice &&
                       runtimeDeviceType &&
@@ -297,5 +299,5 @@ export default function DeviceGroupCard({
             </View>
           </View>
         );
-      
+
 }

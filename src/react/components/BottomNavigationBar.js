@@ -1,10 +1,13 @@
 import React, {useLayoutEffect, useMemo} from 'react';
 import {Pressable, Text, View} from 'react-native';
-import Icon from 'react-native-vector-icons/Feather';
+import LegacyIcon from 'react-native-vector-icons/Feather';
+import HomeIcon from '@controleonline/../../src/components/HomeIcon';
 import {useTheme} from './DefaultProvider';
 import RuntimeInfoFooter from './RuntimeInfoFooter';
 import {resolveMenuRouteParams} from '../utils/menuNavigation';
 import createStyles from './BottomNavigationBar.styles';
+import softenStyles from './BottomNavigationBar.soft.styles';
+import {resolveHomepagePalette} from '@controleonline/../../src/styles/homepagePalette';
 
 const BottomNavigationBar = ({
   navigation,
@@ -14,7 +17,11 @@ const BottomNavigationBar = ({
   colors = {},
   testID = 'bottom-navigation',
   useModernWebChromeProps = false,
+  appearance = 'soft',
+  placement = 'overlay',
 }) => {
+  const Icon = appearance === 'soft' ? HomeIcon : LegacyIcon;
+  colors = appearance === 'soft' ? resolveHomepagePalette(colors) : colors;
   const theme = useTheme?.() || {};
   const runtimeFooter = theme?.runtimeFooter || null;
   const registerBottomNavigation =
@@ -31,14 +38,14 @@ const BottomNavigationBar = ({
 
   const styles = useMemo(
     () =>
-      createStyles({
+      softenStyles(createStyles({
         activeBackground,
         dockBackground,
         dockBorder,
         dockShadow,
         activeBorder,
         useModernWebChromeProps,
-      }),
+      }), colors, appearance),
     [
       activeBackground,
       activeBorder,
@@ -46,6 +53,7 @@ const BottomNavigationBar = ({
       dockBorder,
       dockShadow,
       useModernWebChromeProps,
+      appearance,
     ],
   );
 
@@ -97,9 +105,7 @@ const BottomNavigationBar = ({
 
   const routeItems = Array.isArray(items) ? items : [];
   const knownRoute = routeItems.some(item => item?.route === activeRouteName);
-  const effectiveActiveRoute = knownRoute
-    ? activeRouteName
-    : routeItems[0]?.route || '';
+  const effectiveActiveRoute = knownRoute ? activeRouteName : '';
 
   const navigateTo = item => {
     try {
@@ -116,15 +122,18 @@ const BottomNavigationBar = ({
     ? [styles.host, styles.hostPointerEventsBoxNone]
     : styles.host;
   const footerProps = {
+    appearance,
     appVersion: runtimeFooter?.appVersion,
-    colors: runtimeFooter?.colors || {},
+    colors: appearance === 'soft'
+      ? {...runtimeFooter?.colors, footerBackground: colors.footerBackground, footerText: colors.footerText}
+      : runtimeFooter?.colors || {},
     mainCompany: runtimeFooter?.mainCompany,
     device: runtimeFooter?.device,
     useModernWebChromeProps,
   };
 
   return (
-    <View {...hostProps} style={hostStyle}>
+    <View {...hostProps} style={[hostStyle, placement === 'inline' ? {position: 'relative', flexShrink: 0, zIndex: 0} : null]}>
       <View style={styles.stack}>
         <View style={styles.dock} testID={testID}>
           <View style={styles.itemsRow}>
@@ -141,6 +150,8 @@ const BottomNavigationBar = ({
                 <Pressable
                   key={item.route}
                   accessibilityRole="button"
+                  accessibilityLabel={item.label}
+                  accessibilityState={{selected: isActive, disabled: Boolean(isDisabled)}}
                   disabled={isDisabled}
                   onPress={() => navigateTo(item)}
                   style={({pressed}) => [

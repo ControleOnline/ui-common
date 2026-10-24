@@ -19,6 +19,8 @@ const {
 } = require('@controleonline/ui-common/src/react/utils/bottomNavigationToolbar');
 
 const RuntimeBottomNavigationBar = ({
+  appearance = 'soft',
+  placement = 'overlay',
   activeRouteName: activeRouteNameProp,
   colors: colorsOverride,
   disabled: disabledOverride,
@@ -41,13 +43,16 @@ const RuntimeBottomNavigationBar = ({
   const peopleGetters = peopleStore?.getters || {};
   const currentCompany = peopleGetters.currentCompany || {};
   const themeColors = themeGetters.colors || {};
-  const [runtimeMenus, setRuntimeMenus] = useState([]);
+  const [menuState, setMenuState] = useState({scope: '', menus: []});
   const preset = presetKey ? getBottomNavigationPreset(presetKey) : null;
   const routeAliases = routeAliasesProp || preset?.routeAliases || {};
   const appType = normalizeAppType(app_type);
+  const menuScope = JSON.stringify([appType, currentCompany?.id, menuType, presetKey]);
+  const runtimeMenus = menuState.scope === menuScope ? menuState.menus : [];
 
   // Always consult menus-people for role-aware toolbar; preset is fallback only.
   useEffect(() => {
+    const setRuntimeMenus = menus => setMenuState({scope: menuScope, menus});
     if (!currentCompany?.id || !menuType) {
       setRuntimeMenus(
         resolveToolbarRuntimeMenus({
@@ -104,7 +109,7 @@ const RuntimeBottomNavigationBar = ({
     return () => {
       cancelled = true;
     };
-  }, [appType, currentCompany?.id, menuType, preset, presetKey]);
+  }, [appType, currentCompany?.id, menuType, preset, presetKey, menuScope]);
 
   const colors = useMemo(() => {
     if (colorsOverride) {
@@ -150,15 +155,19 @@ const RuntimeBottomNavigationBar = ({
   const knownRoute = navItems.some(item => item.route === resolvedActiveRoute);
   const effectiveActiveRoute = knownRoute
     ? resolvedActiveRoute
-    : navItems[0]?.route || activeRouteName;
+    : activeRouteName;
 
   const isDisabled =
     typeof disabledOverride === 'boolean'
       ? disabledOverride
       : !currentCompany || Object.keys(currentCompany).length === 0;
 
+  if (!navItems.length) return null;
+
   return (
     <BottomNavigationBar
+      appearance={appearance}
+      placement={placement}
       activeRouteName={effectiveActiveRoute}
       colors={colors}
       disabled={isDisabled}

@@ -1,3 +1,4 @@
+import {readStoredSessionToken} from '@controleonline/ui-common/src/utils/storedSessionToken';
 import myFetch from '@controleonline/ui-common/src/api/fetch';
 import axios from 'axios';
 import {env as APP_ENV} from '@env';
@@ -315,22 +316,7 @@ export const api = {
     });
   },
   async getToken() {
-    const sessionString = localStorage.getItem('session');
-    let session = null;
-    if (sessionString) {
-      try {
-        const cleanString =
-          typeof sessionString == 'string' &&
-            sessionString.startsWith('__q_objt|')
-            ? sessionString.substring('__q_objt|'.length)
-            : sessionString;
-        session = JSON.parse(cleanString); // Transforma a string em objeto
-      } catch (e) {
-        console.error('Failed to parse session from localStorage', e);
-      }
-    }
-
-    return session?.token || session?.api_key;
+    return readStoredSessionToken();
   },
   serialize(obj, prefix = '') {
     const pairs = [];
