@@ -89,6 +89,60 @@ const resolveDownloadHost = ({company = null, appDomain = ''} = {}) => {
  * Keep app-domain header only; do not path-inject environment hosts.
  * app-community#432
  */
+const resolveApiEntrypointHost = () => {
+  const entry = normalizeText(APP_ENV?.API_ENTRYPOINT);
+  if (!entry) {
+    return '';
+  }
+
+  try {
+    const withProtocol = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(entry)
+      ? entry
+      : `https://${entry}`;
+    return new URL(withProtocol).host.toLowerCase();
+  } catch (error) {
+    return entry
+      .replace(/^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//, '')
+      .replace(/\/.*$/, '')
+      .toLowerCase();
+  }
+};
+
+/**
+ * API host must never be used as /{host}/files/{id}/download segment.
+ * Backend File.domain often stores the API host (api.controleonline.com);
+ * using it produces broken URLs like:
+ *   https://api.controleonline.com/api.controleonline.com/files/8408/download
+ * Tenant white-labels need:
+ *   https://api.controleonline.com/erp.jaguncos.com.br/files/8408/download
+ * app-community#1160
+ */
+const isApiEntrypointHost = host => {
+  const normalized = normalizeText(host).toLowerCase();
+  if (!normalized) {
+    return false;
+  }
+
+  const apiHost = resolveApiEntrypointHost();
+  if (apiHost && normalized === apiHost) {
+    return true;
+  }
+
+  if (
+    normalized === 'api.controleonline.com' ||
+    normalized === 'api.controleonline.com.br'
+  ) {
+    return true;
+  }
+
+  // Generic api.* hosts are infrastructure, not tenant app-domains.
+  if (/^api\./i.test(normalized)) {
+    return true;
+  }
+
+  return false;
+};
+
 const isEnvironmentLikeHost = host => {
   const normalized = normalizeText(host).toLowerCase();
   if (!normalized) return false;
@@ -120,6 +174,29 @@ const isEnvironmentLikeHost = host => {
   return false;
 };
 
+/**
+ * Prefer File.domain only when it is a real tenant host.
+ * Ignore API entrypoint and environment/platform hosts (app-community#1160).
+ */
+const pickDownloadHost = (fileDomain, fallbackHost) => {
+  const candidate = normalizeText(fileDomain);
+  if (
+    candidate &&
+    !isApiEntrypointHost(candidate) &&
+    !isEnvironmentLikeHost(candidate)
+  ) {
+    return candidate;
+  }
+
+  const fallback = normalizeText(fallbackHost);
+  if (fallback && !isApiEntrypointHost(fallback)) {
+    return fallback;
+  }
+
+  // Last resort: runtime host (web multi-tenant) or configured DOMAIN.
+  return resolveAppDomain(APP_ENV?.DOMAIN) || fallback;
+};
+
 const buildBackendDownloadUrl = (fileId, options = {}) => {
   const normalizedId = String(fileId || '').trim();
   if (!normalizedId) {
@@ -139,13 +216,11 @@ const buildTenantDownloadUrl = (url, host) => {
     return absoluteUrl;
   }
 
-  // File download ops are registered as /{appDomain}/files/{id}/download.
-  // Skipping path inject for environment hosts left SPA on /files/{id}/download
-  // which 404s until/unless a non-prefixed route is deployed (app-community#796).
-  const isFileDownloadPath = /\/files\/[^/?#]+\/download/i.test(absoluteUrl);
-
-  // Do not inject environment hosts into non-download paths (app-community#432).
-  if (isEnvironmentLikeHost(normalizedHost) && !isFileDownloadPath) {
+  // Do not path-inject environment/platform hosts (app-community#432).
+  // Bare /files/{id}/download remains for staging/manager/dev; tenant hosts
+  // (erp.jaguncos.com.br, loja..., etc.) still get /{appDomain}/files/... .
+  // Never path-inject the API entrypoint host (app-community#1160).
+  if (isEnvironmentLikeHost(normalizedHost) || isApiEntrypointHost(normalizedHost)) {
     return absoluteUrl;
   }
 
@@ -310,9 +385,9 @@ const resolveFileSource = (
       return null;
     }
 
-    // Prefer FileService domain (companies/my icon/logo payload) for path inject.
-    const fileDomain = normalizeText(normalizedFile?.domain);
-    const downloadHost = fileDomain || host;
+    // Prefer FileService domain only when it is a tenant host, never the API host.
+    // file.domain often comes as api.controleonline.com (app-community#1160).
+    const downloadHost = pickDownloadHost(normalizedFile?.domain, host);
 
     const uri = isBackendDownload
       ? buildTenantDownloadUrl(uriBase, downloadHost)
