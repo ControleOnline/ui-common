@@ -1,5 +1,5 @@
 import {env as APP_ENV} from '@env';
-import {filterApiHeaders} from '../../utils/trustedApiUrl';
+import {filterApiHeaders, isTrustedApiUrl} from '../../utils/trustedApiUrl';
 import {buildAssetUrl} from '@controleonline/../../src/styles/branding';
 import {
   resolveAppDomain,
@@ -79,16 +79,11 @@ const ensureAbsoluteUrl = url => {
 const resolveDownloadHost = ({company = null, appDomain = ''} = {}) => {
   const fallbackDomain =
     normalizeText(appDomain) || resolveAppDomain(APP_ENV?.DOMAIN);
-  return resolveCompanyDomain(company, fallbackDomain);
+  const companyDomain = resolveCompanyDomain(company, fallbackDomain);
+  // FileService may return the API authority instead of an application domain.
+  return isApiEntrypointHost(companyDomain) ? fallbackDomain : companyDomain;
 };
 
-/**
- * Environment / platform hosts (staging, dev, localhost) are not tenant domains.
- * Injecting them into /{host}/files/{id}/download produces URLs like
- * https://s.controleonline.com/staging.controleonline.com/files/... → 403.
- * Keep app-domain header only; do not path-inject environment hosts.
- * app-community#432
- */
 const resolveApiEntrypointHost = () => {
   const entry = normalizeText(APP_ENV?.API_ENTRYPOINT);
   if (!entry) {
@@ -216,11 +211,10 @@ const buildTenantDownloadUrl = (url, host) => {
     return absoluteUrl;
   }
 
-  // Do not path-inject environment/platform hosts (app-community#432).
-  // Bare /files/{id}/download remains for staging/manager/dev; tenant hosts
-  // (erp.jaguncos.com.br, loja..., etc.) still get /{appDomain}/files/... .
-  // Never path-inject the API entrypoint host (app-community#1160).
-  if (isEnvironmentLikeHost(normalizedHost) || isApiEntrypointHost(normalizedHost)) {
+  // Public file routes require the application domain, including registered
+  // staging/dev/platform domains. Never use the API authority as that domain.
+  if (isApiEntrypointHost(normalizedHost) ||
+      !isTrustedApiUrl(absoluteUrl, APP_ENV?.API_ENTRYPOINT)) {
     return absoluteUrl;
   }
 
@@ -377,8 +371,11 @@ const resolveFileSource = (
       isDownloadLikeUrl(normalizedFile?.uri) ||
       isDownloadLikeUrl(normalizedFile?.url) ||
       isDownloadLikeUrl(normalizedFile?.path);
+    const rawUrl = normalizedFile.url || normalizedFile.path || normalizedFile.uri;
+    // Relative backend paths belong to API_ENTRYPOINT. File.domain selects the
+    // route's tenant segment, not a new server origin.
     const uriBase =
-      directUrl ||
+      (isDownloadLikeUrl(rawUrl) ? rawUrl : directUrl) ||
       (fileId ? buildBackendDownloadUrl(fileId, {company, appDomain}) : '');
 
     if (!uriBase) {
