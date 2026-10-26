@@ -5,6 +5,7 @@ export const ROUTE_PROVIDER_MAP = {
   AsaasIntegrationPage: 'asaas',
   ClickSignIntegrationPage: 'clicksign',
   ReceitaFederalIntegrationPage: 'receita-federal',
+  SemPararIntegrationPage: 'sem-parar',
 };
 
 export const routeNameToPath = routeName =>
@@ -51,6 +52,22 @@ export const mergeTabValues = (fields, source, current = {}) => {
       : normalizeTextValue(next[field.key]);
   });
   return next;
+};
+
+/** Expand a single JSON config (bundleKey) into flat field values. */
+export const expandBundledConfig = (fields, rawValue, current = {}) => {
+  let parsed = rawValue;
+  if (typeof rawValue === 'string') {
+    try {
+      parsed = JSON.parse(rawValue);
+    } catch {
+      parsed = {};
+    }
+  }
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
+    parsed = {};
+  }
+  return mergeTabValues(fields, parsed, current);
 };
 
 export const buildFieldValues = (providerConfig, source) =>

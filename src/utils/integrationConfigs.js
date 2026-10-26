@@ -1,6 +1,7 @@
 export const CIELO_CONFIG_KEY = 'CIELO';
 export const NEW_RELIC_CONFIG_KEY = 'NEW_RELIC';
 export const SPOTIFY_CONFIG_KEY = 'SPOTIFY';
+export const SEM_PARAR_CONFIG_KEY = 'SEM_PARAR';
 
 export const DEFAULT_CIELO_CONFIG = {
   ACCESS_TOKEN: '',
@@ -21,6 +22,21 @@ export const DEFAULT_NEW_RELIC_CONFIG = {
 export const DEFAULT_SPOTIFY_CONFIG = {
   CLIENT_ID: '',
   CLIENT_SECRET: '',
+};
+
+/**
+ * Company-scoped Sem Parar credentials for vale-pedágio emission.
+ * ENABLED: "1" | "0"
+ * ENVIRONMENT: "sandbox" | "production"
+ */
+export const DEFAULT_SEM_PARAR_CONFIG = {
+  ENABLED: '0',
+  CLIENT_ID: '',
+  CLIENT_SECRET: '',
+  USERNAME: '',
+  PASSWORD: '',
+  ENVIRONMENT: 'sandbox',
+  CONVENIADO: '',
 };
 
 const isConfigMap = value =>
@@ -77,4 +93,11 @@ export const resolveSpotifyConfig = configs =>
     configs,
     SPOTIFY_CONFIG_KEY,
     DEFAULT_SPOTIFY_CONFIG,
+  );
+
+export const resolveSemPararConfig = configs =>
+  resolveIntegrationConfig(
+    configs,
+    SEM_PARAR_CONFIG_KEY,
+    DEFAULT_SEM_PARAR_CONFIG,
   );
