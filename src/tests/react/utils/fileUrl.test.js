@@ -14,6 +14,28 @@ const {
 } = require('../../../react/utils/fileUrl');
 
 describe('fileUrl helpers', () => {
+  it.each([
+    'staging.controleonline.com', 'dev.controleonline.com',
+    'admin.controleonline.com', 'manager.controleonline.com',
+    'pos.lave-go.com', 'shop.lave-go.com', 'delivery.controleonline.com',
+    'crm.controleonline.com', 'ppc.controleonline.com', 'service.controleonline.com',
+    'localhost:8081',
+  ])('resolves shared file shapes on the application route for %s', appDomain => {
+    for (const file of [6042, '/files/6042', '/files/6042/download',
+      {id: 6042, domain: 'api.controleonline.com', url: '/api.controleonline.com/files/6042/download'},
+      {file: {id: 6042, url: '/files/6042/download'}}]) {
+      const source = resolveDefaultFileSource(file, {appDomain, headers: {'API-TOKEN': 'session'}});
+      expect(source.uri).toBe(`https://api.controleonline.com/${encodeURIComponent(appDomain)}/files/6042/download`);
+      expect(source.headers).toEqual({'API-TOKEN': 'session', 'app-domain': appDomain});
+    }
+  });
+
+  it('preserves URL parameters and fragments while replacing an infrastructure prefix', () => {
+    expect(resolveFileImageUrl('/api.controleonline.com/files/6042/download?size=48&app-domain=old#image', {
+      appDomain: 'staging.controleonline.com',
+    })).toBe('https://api.controleonline.com/staging.controleonline.com/files/6042/download?size=48#image');
+  });
+
   it('uses path app-domain for backend download urls and keeps headers', () => {
     const company = {
       domain: 'maincompany.controleonline.com',
@@ -108,6 +130,7 @@ describe('file authentication origin boundary', () => {
       expect(source.headers).not.toHaveProperty('Authorization');
       expect(source.headers).not.toHaveProperty('App-Domain');
       expect(source.headers.Accept).toBe('image/*');
+      expect(source.uri).toBe(uri);
     }
   });
   it('preserves authentication on the configured API download', () => {
