@@ -14,6 +14,28 @@ const {
 } = require('../../../react/utils/fileUrl');
 
 describe('fileUrl helpers', () => {
+  it.each([
+    'staging.controleonline.com', 'dev.controleonline.com',
+    'admin.controleonline.com', 'manager.controleonline.com',
+    'pos.lave-go.com', 'shop.lave-go.com', 'delivery.controleonline.com',
+    'crm.controleonline.com', 'ppc.controleonline.com', 'service.controleonline.com',
+    'localhost:8081',
+  ])('resolves shared file shapes on the application route for %s', appDomain => {
+    for (const file of [6042, '/files/6042', '/files/6042/download',
+      {id: 6042, domain: 'api.controleonline.com', url: '/api.controleonline.com/files/6042/download'},
+      {file: {id: 6042, url: '/files/6042/download'}}]) {
+      const source = resolveDefaultFileSource(file, {appDomain, headers: {'API-TOKEN': 'session'}});
+      expect(source.uri).toBe(`https://api.controleonline.com/${encodeURIComponent(appDomain)}/files/6042/download`);
+      expect(source.headers).toEqual({'API-TOKEN': 'session', 'app-domain': appDomain});
+    }
+  });
+
+  it('preserves URL parameters and fragments while replacing an infrastructure prefix', () => {
+    expect(resolveFileImageUrl('/api.controleonline.com/files/6042/download?size=48&app-domain=old#image', {
+      appDomain: 'staging.controleonline.com',
+    })).toBe('https://api.controleonline.com/staging.controleonline.com/files/6042/download?size=48#image');
+  });
+
   it('uses path app-domain for backend download urls and keeps headers', () => {
     const company = {
       domain: 'maincompany.controleonline.com',
@@ -60,7 +82,7 @@ describe('fileUrl helpers', () => {
     });
   });
 
-  it('does not path-inject environment hosts like staging (app-community#432)', () => {
+  it('keeps the explicit environment domain on the registered download route', () => {
     const source = resolveDefaultFileSource(
       {
         id: 8444,
@@ -77,24 +99,101 @@ describe('fileUrl helpers', () => {
     );
 
     expect(source).toEqual({
-      uri: 'https://api.controleonline.com/files/8444/download',
+      uri: 'https://api.controleonline.com/staging.controleonline.com/files/8444/download',
       headers: {
         Authorization: 'Bearer token',
         'app-domain': 'staging.controleonline.com',
       },
     });
-    expect(source.uri).not.toContain('staging.controleonline.com/files');
+    expect(source.uri).toContain('staging.controleonline.com/files');
   });
 
-  it('does not path-inject when fallback DOMAIN is manager platform host', () => {
+  it('uses the configured platform domain on the registered download route', () => {
     // DOMAIN mock is manager.controleonline.com; no company → environment-like
     const source = resolveDefaultFileSource(
       {id: 9, url: '/files/9/download'},
       {headers: {Authorization: 'Bearer t'}},
     );
 
-    expect(source.uri).toBe('https://api.controleonline.com/files/9/download');
+    expect(source.uri).toBe('https://api.controleonline.com/manager.controleonline.com/files/9/download');
     expect(source.headers['app-domain']).toBe('manager.controleonline.com');
-    expect(source.uri).not.toMatch(/manager\.controleonline\.com\/files/);
+    expect(source.uri).toMatch(/manager\.controleonline\.com\/files/);
+  });
+});
+
+
+describe('file authentication origin boundary', () => {
+  it('removes ERP credentials from external images and download-shaped URLs', () => {
+    for (const uri of ['https://images.example.test/image.png', 'https://images.example.test/files/1/download', '//images.example.test/image.png']) {
+      const source = resolveDefaultFileSource(uri, {headers: {'API-TOKEN': 'session-secret', Authorization: 'Bearer session-secret', 'App-Domain': 'tenant.test', Accept: 'image/*'}});
+      expect(source.headers).not.toHaveProperty('API-TOKEN');
+      expect(source.headers).not.toHaveProperty('Authorization');
+      expect(source.headers).not.toHaveProperty('App-Domain');
+      expect(source.headers.Accept).toBe('image/*');
+      expect(source.uri).toBe(uri);
+    }
+  });
+  it('preserves authentication on the configured API download', () => {
+    const source = resolveDefaultFileSource(1, {headers: {'API-TOKEN': 'session-secret'}});
+    expect(source.headers['API-TOKEN']).toBe('session-secret');
+  });
+
+  it('ignores file.domain when it is the API host and uses tenant app-domain (app-community#1160)', () => {
+    const company = {domain: 'loja.jaguncos.com.br'};
+
+    const source = resolveDefaultFileSource(
+      {
+        id: 8408,
+        domain: 'api.controleonline.com',
+        url: '/api.controleonline.com/files/8408/download',
+      },
+      {
+        company,
+        headers: {Authorization: 'Bearer token'},
+      },
+    );
+
+    expect(source.uri).toBe(
+      'https://api.controleonline.com/loja.jaguncos.com.br/files/8408/download',
+    );
+    expect(source.uri).not.toMatch(/api\.controleonline\.com\/files/);
+    expect(source.headers['app-domain']).toBe('loja.jaguncos.com.br');
+  });
+
+  it('ignores API host as company domain and falls back to explicit appDomain', () => {
+    const source = resolveDefaultFileSource(
+      {
+        id: 8408,
+        domain: 'api.controleonline.com',
+      },
+      {
+        company: {domain: 'api.controleonline.com'},
+        appDomain: 'erp.jaguncos.com.br',
+        headers: {},
+      },
+    );
+
+    expect(source.uri).toBe(
+      'https://api.controleonline.com/erp.jaguncos.com.br/files/8408/download',
+    );
+    expect(source.headers['app-domain']).toBe('erp.jaguncos.com.br');
+  });
+
+  it('still prefers a real tenant file.domain over company when not API host', () => {
+    const source = resolveDefaultFileSource(
+      {
+        id: 12,
+        domain: 'cardapio.jaguncos.com.br',
+        url: '/files/12/download',
+      },
+      {
+        company: {domain: 'erp.jaguncos.com.br'},
+      },
+    );
+
+    expect(source.uri).toBe(
+      'https://api.controleonline.com/cardapio.jaguncos.com.br/files/12/download',
+    );
+    expect(source.headers['app-domain']).toBe('cardapio.jaguncos.com.br');
   });
 });

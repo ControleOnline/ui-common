@@ -3,6 +3,7 @@ import {useNavigationState} from '@react-navigation/native';
 import {useStore} from '@store';
 import {api} from '@controleonline/ui-common/src/api';
 import {app_type} from '@appType';
+import {useTheme} from './DefaultProvider';
 import BottomNavigationBar from '@controleonline/ui-common/src/react/components/BottomNavigationBar';
 import {
   getBottomNavigationPreset,
@@ -19,7 +20,8 @@ const {
 } = require('@controleonline/ui-common/src/react/utils/bottomNavigationToolbar');
 
 const RuntimeBottomNavigationBar = ({
-  appearance = 'legacy',
+  appearance = 'soft',
+  placement = 'overlay',
   activeRouteName: activeRouteNameProp,
   colors: colorsOverride,
   disabled: disabledOverride,
@@ -32,6 +34,8 @@ const RuntimeBottomNavigationBar = ({
   testID = 'bottom-navigation',
   useModernWebChromeProps = false,
 }) => {
+  const {runtimeMenus: providerMenus} = useTheme?.() || {};
+  const managedMenus = providerMenus?.managed === true;
   const state = useNavigationState(current => current);
   const activeRouteName =
     activeRouteNameProp || state?.routes?.[state.index]?.name || 'HomePage';
@@ -42,13 +46,21 @@ const RuntimeBottomNavigationBar = ({
   const peopleGetters = peopleStore?.getters || {};
   const currentCompany = peopleGetters.currentCompany || {};
   const themeColors = themeGetters.colors || {};
-  const [runtimeMenus, setRuntimeMenus] = useState([]);
+  const [menuState, setMenuState] = useState({scope: '', menus: []});
   const preset = presetKey ? getBottomNavigationPreset(presetKey) : null;
   const routeAliases = routeAliasesProp || preset?.routeAliases || {};
   const appType = normalizeAppType(app_type);
+  const menuScope = JSON.stringify([appType, currentCompany?.id, menuType, presetKey]);
+  const runtimeMenus = managedMenus
+    ? (providerMenus.ready ? resolveToolbarRuntimeMenus({
+        apiMenus: providerMenus.modules, preset, presetKey, menuType, translate: global.t?.t,
+      }) : [])
+    : menuState.scope === menuScope ? menuState.menus : [];
 
   // Always consult menus-people for role-aware toolbar; preset is fallback only.
   useEffect(() => {
+    if (managedMenus) return undefined;
+    const setRuntimeMenus = menus => setMenuState({scope: menuScope, menus});
     if (!currentCompany?.id || !menuType) {
       setRuntimeMenus(
         resolveToolbarRuntimeMenus({
@@ -105,7 +117,7 @@ const RuntimeBottomNavigationBar = ({
     return () => {
       cancelled = true;
     };
-  }, [appType, currentCompany?.id, menuType, preset, presetKey]);
+  }, [appType, currentCompany?.id, menuType, preset, presetKey, menuScope, managedMenus]);
 
   const colors = useMemo(() => {
     if (colorsOverride) {
@@ -151,16 +163,19 @@ const RuntimeBottomNavigationBar = ({
   const knownRoute = navItems.some(item => item.route === resolvedActiveRoute);
   const effectiveActiveRoute = knownRoute
     ? resolvedActiveRoute
-    : navItems[0]?.route || activeRouteName;
+    : activeRouteName;
 
   const isDisabled =
     typeof disabledOverride === 'boolean'
       ? disabledOverride
       : !currentCompany || Object.keys(currentCompany).length === 0;
 
+  if (!navItems.length) return null;
+
   return (
     <BottomNavigationBar
       appearance={appearance}
+      placement={placement}
       activeRouteName={effectiveActiveRoute}
       colors={colors}
       disabled={isDisabled}

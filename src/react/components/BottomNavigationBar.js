@@ -17,7 +17,8 @@ const BottomNavigationBar = ({
   colors = {},
   testID = 'bottom-navigation',
   useModernWebChromeProps = false,
-  appearance = 'legacy',
+  appearance = 'soft',
+  placement = 'overlay',
 }) => {
   const Icon = appearance === 'soft' ? HomeIcon : LegacyIcon;
   colors = appearance === 'soft' ? resolveHomepagePalette(colors) : colors;
@@ -104,9 +105,7 @@ const BottomNavigationBar = ({
 
   const routeItems = Array.isArray(items) ? items : [];
   const knownRoute = routeItems.some(item => item?.route === activeRouteName);
-  const effectiveActiveRoute = knownRoute
-    ? activeRouteName
-    : routeItems[0]?.route || '';
+  const effectiveActiveRoute = knownRoute ? activeRouteName : '';
 
   const navigateTo = item => {
     try {
@@ -134,7 +133,7 @@ const BottomNavigationBar = ({
   };
 
   return (
-    <View {...hostProps} style={hostStyle}>
+    <View {...hostProps} style={[hostStyle, placement === 'inline' ? {position: 'relative', flexShrink: 0, zIndex: 0} : null]}>
       <View style={styles.stack}>
         <View style={styles.dock} testID={testID}>
           <View style={styles.itemsRow}>
@@ -151,6 +150,8 @@ const BottomNavigationBar = ({
                 <Pressable
                   key={item.route}
                   accessibilityRole="button"
+                  accessibilityLabel={item.label}
+                  accessibilityState={{selected: isActive, disabled: Boolean(isDisabled)}}
                   disabled={isDisabled}
                   onPress={() => navigateTo(item)}
                   style={({pressed}) => [

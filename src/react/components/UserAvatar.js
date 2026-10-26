@@ -1,3 +1,5 @@
+import {readStoredSessionToken} from '../../utils/storedSessionToken';
+import {isTrustedApiUrl, filterApiHeaders, resolveApiFileProtocol} from '../../utils/trustedApiUrl';
 import React, {useEffect, useMemo, useState} from 'react';
 import {Image, Platform, StyleSheet, Text, View} from 'react-native';
 import {env as APP_ENV} from '@env';
@@ -14,18 +16,6 @@ const isBackendDownloadUrl = uri =>
 /** Session cache: gravatar URL → true (ok) | false (missing). Avoids repeat probes. */
 const gravatarProbeCache = new Map();
 
-const readSessionToken = () => {
-  if (typeof localStorage === 'undefined' || !localStorage?.getItem) {
-    return '';
-  }
-
-  try {
-    const session = JSON.parse(localStorage.getItem('session') || '{}');
-    return normalizeUrl(session?.api_key || session?.token);
-  } catch {
-    return '';
-  }
-};
 
 /**
  * Probe Gravatar (d=404) via fetch BEFORE exposing URL to <Image>.
@@ -65,98 +55,90 @@ const probeGravatar = async url => {
  * - Gravatar (d=404) on web: probe first; never set <img src> on expected 404.
  * - Other URLs / native: pass through (native Image onError handles 404).
  */
-const useDisplayUri = uri => {
-  const [displayUri, setDisplayUri] = useState('');
-  const [resolved, setResolved] = useState(false);
+const useDisplayUri = (uri, imageAuthContext) => {
+  const [result, setResult] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
     let objectUrl = '';
-    const next = normalizeUrl(uri);
-
-    setResolved(false);
-    setDisplayUri('');
-
-    const run = async () => {
-      if (!next) {
-        if (!cancelled) {
-          setDisplayUri('');
-          setResolved(true);
-        }
-        return;
-      }
-
-      const token = readSessionToken();
-
-      // Authenticated backend download on web
-      if (isBackendDownloadUrl(next) && Platform.OS === 'web' && token) {
-        try {
-          const headers = {
-            Accept: '*/*',
-            'API-TOKEN': token,
-          };
-          const host =
-            normalizeUrl(APP_ENV?.DOMAIN) ||
-            (typeof location !== 'undefined' ? location.host : '');
-          if (host) {
-            headers['App-Domain'] = host;
-          }
-
-          const response = await fetch(next, {method: 'GET', headers});
-          if (!response.ok) {
-            if (!cancelled) {
-              setDisplayUri('');
-              setResolved(true);
-            }
-            return;
-          }
-
-          const blob = await response.blob();
-          objectUrl = URL.createObjectURL(blob);
-          if (!cancelled) {
-            setDisplayUri(objectUrl);
-            setResolved(true);
-          }
-        } catch {
-          if (!cancelled) {
-            setDisplayUri('');
-            setResolved(true);
-          }
-        }
-        return;
-      }
-
-      // Gravatar d=404: probe on web so <img> never receives a known-missing URL
-      if (isGravatarUrl(next) && Platform.OS === 'web') {
-        const ok = await probeGravatar(next);
-        if (!cancelled) {
-          setDisplayUri(ok ? next : '');
-          setResolved(true);
-        }
-        return;
-      }
-
-      // Default: use as-is (native, or non-special web URLs)
-      if (!cancelled) {
-        setDisplayUri(next);
-        setResolved(true);
-      }
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const next = Platform.OS === 'web'
+      ? resolveApiFileProtocol(normalizeUrl(uri), APP_ENV?.API_ENTRYPOINT)
+      : normalizeUrl(uri);
+    const finish = displayUri => {
+      if (!cancelled) setResult({uri, imageAuthContext, displayUri, resolved: true});
     };
 
+    const run = async () => {
+      if (!next) { finish(''); return; }
+
+      // An explicitly unresolved store session must not reuse an older stored token.
+      const token = imageAuthContext === undefined
+        ? readStoredSessionToken() : normalizeUrl(imageAuthContext);
+      if (isBackendDownloadUrl(next) && isTrustedApiUrl(next, APP_ENV?.API_ENTRYPOINT)
+          && Platform.OS === 'web') {
+        // Never expose a private download directly to an unauthenticated <Image>.
+        if (!token) { finish(''); return; }
+        const headers = {Accept: '*/*', 'API-TOKEN': token};
+        const host = normalizeUrl(APP_ENV?.DOMAIN) ||
+          (globalThis.location?.host || '');
+        if (host) headers['App-Domain'] = host;
+
+        for (let attempt = 0; attempt < 2 && !cancelled; attempt += 1) {
+          let response;
+          try {
+            response = await fetch(next, {
+              method: 'GET', headers, redirect: 'error', signal: controller?.signal,
+            });
+          } catch (error) {
+            if (cancelled || error?.name === 'AbortError') return;
+            if (attempt === 0) continue;
+            finish(''); return;
+          }
+          if (cancelled) return;
+          if (!response.ok) {
+            // One recovery attempt for transient server failures, never auth failures.
+            if (attempt === 0 && response.status >= 500 && response.status < 600) continue;
+            finish(''); return;
+          }
+          try {
+            const blob = await response.blob();
+            if (cancelled) return;
+            objectUrl = URL.createObjectURL(blob);
+            finish(objectUrl);
+          } catch {
+            finish('');
+          }
+          return;
+        }
+        return;
+      }
+
+      if (isGravatarUrl(next) && Platform.OS === 'web') {
+        const ok = await probeGravatar(next);
+        finish(ok ? next : '');
+        return;
+      }
+      finish(next);
+    };
     run();
 
     return () => {
       cancelled = true;
+      controller?.abort();
       if (objectUrl) URL.revokeObjectURL(objectUrl);
     };
-  }, [uri]);
+  }, [uri, imageAuthContext]);
 
-  return {displayUri, resolved};
+  // Do not show a previous session's blob while the next effect is starting.
+  return result && result.uri === uri && result.imageAuthContext === imageAuthContext
+    ? result : {displayUri: '', resolved: false};
 };
 
 const UserAvatar = ({
   imageUrl,
   imageHeaders,
+  imageAuthContext,
   email,
   name,
   size = 40,
@@ -179,10 +161,10 @@ const UserAvatar = ({
 
   useEffect(() => {
     setSourceIndex(0);
-  }, [sources]);
+  }, [sources, imageAuthContext]);
 
   const currentSource = sources[sourceIndex];
-  const {displayUri, resolved} = useDisplayUri(currentSource);
+  const {displayUri, resolved} = useDisplayUri(currentSource, imageAuthContext);
 
   // After probe resolves empty for gravatar/backend → try next source or initials
   useEffect(() => {
@@ -217,7 +199,7 @@ const UserAvatar = ({
       {displayUri ? (
         <Image
           source={imageHeaders && Platform.OS !== 'web' && displayUri === imageUrl
-            ? {uri: displayUri, headers: imageHeaders} : {uri: displayUri}}
+            ? {uri: displayUri, headers: filterApiHeaders(displayUri, imageHeaders, APP_ENV?.API_ENTRYPOINT)} : {uri: displayUri}}
           style={styles.image}
           onError={() => setSourceIndex(index => index + 1)}
         />
