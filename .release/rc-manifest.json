@@ -1,10 +1,26 @@
 {
-  "version": "1.2.98",
-  "rc": 2,
-  "branch": "rc/1.2.98-rc.2",
-  "baseMaster": "aa5ad406d201d23bb88023bc4b7a7d4f9b11fd0a",
-  "tasks": [88],
-  "repositories": { "ControleOnline/ui-common": "0c96fc6ebac3af856cfba103fa0694171f590ce1" },
-  "compositionNotes": ["Task 88: rodapé mostra …últimos 2 blocos quando o identificador não é IPv4. rc.2 inclui bump de versão 1.2.98 para publicação npm; supersedes rc.1."],
-  "frozen": true
+  "version": "1.2.105",
+  "rc": 1,
+  "branch": "rc/1.2.105-rc.1",
+  "baseMaster": "ed2898e5d8181de6236aca398c804373f00372fc",
+  "tasks": [
+    1164
+  ],
+  "taskRepository": "ControleOnline/app-community",
+  "repositories": {
+    "ControleOnline/ui-common": "2f24a26523078fbe3b5df1ca5e4c1121634efacb"
+  },
+  "packages": {
+    "@controleonline/ui-common": {
+      "version": "1.2.105",
+      "source": "1018edc4e9fd05fbf553a3f4bb77584091b9ac3a"
+    }
+  },
+  "frozen": true,
+  "validation": {
+    "focusedTests": 28,
+    "lint": "passed",
+    "security": "accepted on dev",
+    "production": "not authorized"
+  }
 }
