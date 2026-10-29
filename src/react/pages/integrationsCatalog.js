@@ -40,6 +40,16 @@ export const INTEGRATION_LIST = [
     icon: 'shopping-bag',
   },
   {
+    key: 'linkedin',
+    label: 'LinkedIn',
+    route: 'MarketplaceIntegrationPage',
+    routeParams: {
+      providerKey: 'linkedin',
+    },
+    accent: '#0A66C2',
+    icon: 'link',
+  },
+  {
     key: 'uber',
     label: 'Uber',
     route: 'UberIntegrationPage',
@@ -83,6 +93,19 @@ export const INTEGRATION_LIST = [
 ];
 
 export const INTEGRATION_CONFIGS = {
+  linkedin: {
+    key: 'linkedin',
+    label: 'LinkedIn',
+    accent: '#0A66C2',
+    icon: 'link',
+    description:
+      'Conecte a conta LinkedIn da empresa para publicacoes e integracoes sociais.',
+    oauthConnect: true,
+    authorizationEndpoint: '/integrations/linkedin/authorization-page',
+    connectLabel: 'Conectar LinkedIn',
+    requiredKeys: [],
+    fields: [],
+  },
   uber: {
     key: 'uber',
     label: 'Uber',
