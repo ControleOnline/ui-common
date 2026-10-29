@@ -185,7 +185,11 @@ export default function LinkedInIntegrationPage() {
         );
       }
 
-      await Linking.openURL(authorizationUrl);
+      if (Platform.OS === 'web' && typeof window !== 'undefined') {
+        window.location.assign(authorizationUrl);
+      } else {
+        await Linking.openURL(authorizationUrl);
+      }
     } catch (error) {
       showError(formatApiError(error));
     } finally {
