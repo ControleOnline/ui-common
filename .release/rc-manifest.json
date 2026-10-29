@@ -1,10 +1,13 @@
 {
-  "version": "1.2.98",
-  "rc": 2,
-  "branch": "rc/1.2.98-rc.2",
-  "baseMaster": "aa5ad406d201d23bb88023bc4b7a7d4f9b11fd0a",
-  "tasks": [88],
-  "repositories": { "ControleOnline/ui-common": "0c96fc6ebac3af856cfba103fa0694171f590ce1" },
-  "compositionNotes": ["Task 88: rodapé mostra …últimos 2 blocos quando o identificador não é IPv4. rc.2 inclui bump de versão 1.2.98 para publicação npm; supersedes rc.1."],
-  "frozen": true
+  "branch": "rc/1.2.106-rc.1",
+  "version": "1.2.106",
+  "rc": 1,
+  "frozen": true,
+  "baseMaster": "ed2898e5d8181de6236aca398c804373f00372fc",
+  "tasks": [
+    1199
+  ],
+  "repositories": {
+    "ControleOnline/ui-common": "8d8383c2d5cb1e77abdab5911bb75d0cb34cbab2"
+  }
 }
