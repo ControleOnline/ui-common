@@ -40,6 +40,16 @@ export const INTEGRATION_LIST = [
     icon: 'shopping-bag',
   },
   {
+    key: 'linkedin',
+    label: 'LinkedIn',
+    route: 'MarketplaceIntegrationPage',
+    routeParams: {
+      providerKey: 'linkedin',
+    },
+    accent: '#0A66C2',
+    icon: 'link',
+  },
+  {
     key: 'uber',
     label: 'Uber',
     route: 'UberIntegrationPage',
@@ -70,9 +80,32 @@ export const INTEGRATION_LIST = [
     accent: '#166534',
     icon: 'file-text',
   },
+  {
+    key: 'sem-parar',
+    label: 'Sem Parar',
+    route: 'IntegrationConfigPage',
+    routeParams: {
+      providerKey: 'sem-parar',
+    },
+    accent: '#0EA5E9',
+    icon: 'truck',
+  },
 ];
 
 export const INTEGRATION_CONFIGS = {
+  linkedin: {
+    key: 'linkedin',
+    label: 'LinkedIn',
+    accent: '#0A66C2',
+    icon: 'link',
+    description:
+      'Conecte a conta LinkedIn da empresa para publicacoes e integracoes sociais.',
+    oauthConnect: true,
+    authorizationEndpoint: '/integrations/linkedin/authorization-page',
+    connectLabel: 'Conectar LinkedIn',
+    requiredKeys: [],
+    fields: [],
+  },
   uber: {
     key: 'uber',
     label: 'Uber',
@@ -256,6 +289,67 @@ export const INTEGRATION_CONFIGS = {
       },
     ],
     fields: [],
+  },
+
+  'sem-parar': {
+    key: 'sem-parar',
+    label: 'Sem Parar',
+    accent: '#0EA5E9',
+    icon: 'truck',
+    description:
+      'Credenciais da empresa para emissao de vale-pedagio via Sem Parar.',
+    saveLabel: 'Salvar Sem Parar',
+    // Backend (api-platform-integration SemPararConfig) reads a single private JSON key.
+    bundleKey: 'SEM_PARAR',
+    visibility: 'private',
+    requiredKeys: ['ENABLED', 'CLIENT_ID', 'CLIENT_SECRET', 'USERNAME', 'PASSWORD'],
+    fields: [
+      {
+        key: 'ENABLED',
+        label: 'Ativo',
+        type: 'select',
+        options: [
+          {value: '1', label: 'Sim'},
+          {value: '0', label: 'Nao'},
+        ],
+      },
+      {
+        key: 'ENVIRONMENT',
+        label: 'Ambiente',
+        type: 'select',
+        options: [
+          {value: 'sandbox', label: 'Sandbox'},
+          {value: 'production', label: 'Producao'},
+        ],
+      },
+      {
+        key: 'CLIENT_ID',
+        label: 'Client ID',
+        placeholder: 'Client ID Sem Parar',
+      },
+      {
+        key: 'CLIENT_SECRET',
+        label: 'Client secret',
+        placeholder: 'Client secret Sem Parar',
+        secureTextEntry: true,
+      },
+      {
+        key: 'USERNAME',
+        label: 'Usuario',
+        placeholder: 'Usuario da API',
+      },
+      {
+        key: 'PASSWORD',
+        label: 'Senha',
+        placeholder: 'Senha da API',
+        secureTextEntry: true,
+      },
+      {
+        key: 'CONVENIADO',
+        label: 'Conveniado',
+        placeholder: 'Codigo do conveniado (se aplicavel)',
+      },
+    ],
   },
 };
 

@@ -1,4 +1,5 @@
 import {env as APP_ENV} from '@env';
+import {filterApiHeaders, isTrustedApiUrl} from '../../utils/trustedApiUrl';
 import {buildAssetUrl} from '@controleonline/../../src/styles/branding';
 import {
   resolveAppDomain,
@@ -78,16 +79,65 @@ const ensureAbsoluteUrl = url => {
 const resolveDownloadHost = ({company = null, appDomain = ''} = {}) => {
   const fallbackDomain =
     normalizeText(appDomain) || resolveAppDomain(APP_ENV?.DOMAIN);
-  return resolveCompanyDomain(company, fallbackDomain);
+  const companyDomain = resolveCompanyDomain(company, fallbackDomain);
+  // FileService may return the API authority instead of an application domain.
+  return isApiEntrypointHost(companyDomain) ? fallbackDomain : companyDomain;
+};
+
+const resolveApiEntrypointHost = () => {
+  const entry = normalizeText(APP_ENV?.API_ENTRYPOINT);
+  if (!entry) {
+    return '';
+  }
+
+  try {
+    const withProtocol = /^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//.test(entry)
+      ? entry
+      : `https://${entry}`;
+    return new URL(withProtocol).host.toLowerCase();
+  } catch (error) {
+    return entry
+      .replace(/^[a-zA-Z][a-zA-Z\d+\-.]*:\/\//, '')
+      .replace(/\/.*$/, '')
+      .toLowerCase();
+  }
 };
 
 /**
- * Environment / platform hosts (staging, dev, localhost) are not tenant domains.
- * Injecting them into /{host}/files/{id}/download produces URLs like
- * https://s.controleonline.com/staging.controleonline.com/files/... → 403.
- * Keep app-domain header only; do not path-inject environment hosts.
- * app-community#432
+ * API host must never be used as /{host}/files/{id}/download segment.
+ * Backend File.domain often stores the API host (api.controleonline.com);
+ * using it produces broken URLs like:
+ *   https://api.controleonline.com/api.controleonline.com/files/8408/download
+ * Tenant white-labels need:
+ *   https://api.controleonline.com/erp.jaguncos.com.br/files/8408/download
+ * app-community#1160
  */
+const isApiEntrypointHost = host => {
+  const normalized = normalizeText(host).toLowerCase();
+  if (!normalized) {
+    return false;
+  }
+
+  const apiHost = resolveApiEntrypointHost();
+  if (apiHost && normalized === apiHost) {
+    return true;
+  }
+
+  if (
+    normalized === 'api.controleonline.com' ||
+    normalized === 'api.controleonline.com.br'
+  ) {
+    return true;
+  }
+
+  // Generic api.* hosts are infrastructure, not tenant app-domains.
+  if (/^api\./i.test(normalized)) {
+    return true;
+  }
+
+  return false;
+};
+
 const isEnvironmentLikeHost = host => {
   const normalized = normalizeText(host).toLowerCase();
   if (!normalized) return false;
@@ -119,6 +169,29 @@ const isEnvironmentLikeHost = host => {
   return false;
 };
 
+/**
+ * Prefer File.domain only when it is a real tenant host.
+ * Ignore API entrypoint and environment/platform hosts (app-community#1160).
+ */
+const pickDownloadHost = (fileDomain, fallbackHost) => {
+  const candidate = normalizeText(fileDomain);
+  if (
+    candidate &&
+    !isApiEntrypointHost(candidate) &&
+    !isEnvironmentLikeHost(candidate)
+  ) {
+    return candidate;
+  }
+
+  const fallback = normalizeText(fallbackHost);
+  if (fallback && !isApiEntrypointHost(fallback)) {
+    return fallback;
+  }
+
+  // Last resort: runtime host (web multi-tenant) or configured DOMAIN.
+  return resolveAppDomain(APP_ENV?.DOMAIN) || fallback;
+};
+
 const buildBackendDownloadUrl = (fileId, options = {}) => {
   const normalizedId = String(fileId || '').trim();
   if (!normalizedId) {
@@ -138,13 +211,10 @@ const buildTenantDownloadUrl = (url, host) => {
     return absoluteUrl;
   }
 
-  // File download ops are registered as /{appDomain}/files/{id}/download.
-  // Skipping path inject for environment hosts left SPA on /files/{id}/download
-  // which 404s until/unless a non-prefixed route is deployed (app-community#796).
-  const isFileDownloadPath = /\/files\/[^/?#]+\/download/i.test(absoluteUrl);
-
-  // Do not inject environment hosts into non-download paths (app-community#432).
-  if (isEnvironmentLikeHost(normalizedHost) && !isFileDownloadPath) {
+  // Public file routes require the application domain, including registered
+  // staging/dev/platform domains. Never use the API authority as that domain.
+  if (isApiEntrypointHost(normalizedHost) ||
+      !isTrustedApiUrl(absoluteUrl, APP_ENV?.API_ENTRYPOINT)) {
     return absoluteUrl;
   }
 
@@ -227,7 +297,7 @@ export const extractFileId = file => {
   return null;
 };
 
-export const resolveDefaultFileSource = (
+const resolveFileSource = (
   file,
   {company = null, appDomain = '', headers = {}} = {},
 ) => {
@@ -301,17 +371,20 @@ export const resolveDefaultFileSource = (
       isDownloadLikeUrl(normalizedFile?.uri) ||
       isDownloadLikeUrl(normalizedFile?.url) ||
       isDownloadLikeUrl(normalizedFile?.path);
+    const rawUrl = normalizedFile.url || normalizedFile.path || normalizedFile.uri;
+    // Relative backend paths belong to API_ENTRYPOINT. File.domain selects the
+    // route's tenant segment, not a new server origin.
     const uriBase =
-      directUrl ||
+      (isDownloadLikeUrl(rawUrl) ? rawUrl : directUrl) ||
       (fileId ? buildBackendDownloadUrl(fileId, {company, appDomain}) : '');
 
     if (!uriBase) {
       return null;
     }
 
-    // Prefer FileService domain (companies/my icon/logo payload) for path inject.
-    const fileDomain = normalizeText(normalizedFile?.domain);
-    const downloadHost = fileDomain || host;
+    // Prefer FileService domain only when it is a tenant host, never the API host.
+    // file.domain often comes as api.controleonline.com (app-community#1160).
+    const downloadHost = pickDownloadHost(normalizedFile?.domain, host);
 
     const uri = isBackendDownload
       ? buildTenantDownloadUrl(uriBase, downloadHost)
@@ -327,6 +400,11 @@ export const resolveDefaultFileSource = (
   }
 
   return null;
+};
+
+export const resolveDefaultFileSource = (file, options = {}) => {
+  const source = resolveFileSource(file, options);
+  return source ? {...source, headers: filterApiHeaders(source.uri, source.headers, APP_ENV?.API_ENTRYPOINT)} : null;
 };
 
 export const resolveDefaultFileUrl = (file, options = {}) =>
