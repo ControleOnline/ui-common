@@ -5,9 +5,9 @@ import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
 
 import { useStore } from '@store';
-import { colors } from '@controleonline/../../src/styles/colors';
+import { colors } from '@controleonline/ui-layout/src/styles/colors';
 import { createStyles } from './Connections.styles';
-import { resolveThemePalette } from '@controleonline/../../src/styles/branding';
+import { resolveThemePalette } from '@controleonline/ui-layout/src/styles/branding';
 import DefaultTable from '@controleonline/ui-default/src/react/components/table/DefaultTable';
 
 const tt = (type, key) => global.t?.t('configs', type, key);

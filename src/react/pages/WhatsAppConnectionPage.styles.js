@@ -289,29 +289,32 @@ const styles = StyleSheet.create({
   feedbackText: {
     fontSize: 13,
     lineHeight: 18,
-    color: palette.text,
+    color: '#0F172A',
   },
   selectedHint: {
     fontSize: 13,
     fontWeight: '600',
-    color: palette.textSecondary,
+    color: '#64748B',
     marginBottom: 8,
   },
   statusLine: {
     marginTop: 10,
     fontSize: 13,
-    color: palette.textSecondary,
+    color: '#64748B',
   },
   previewName: {
     fontSize: 15,
     fontWeight: '700',
-    color: palette.text,
+    color: '#0F172A',
   },
   previewMeta: {
     marginTop: 4,
     fontSize: 12,
-    color: palette.textSecondary,
+    color: '#64748B',
   },
 });
 
+export const createStyles = (_palette) => styles;
+
 export default styles;
+
