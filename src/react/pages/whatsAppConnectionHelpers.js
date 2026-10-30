@@ -1,5 +1,10 @@
-export const PROVIDER_UNOFFICIAL = 'unofficial';
-export const PROVIDER_OFFICIAL = 'official';
+export const CHANNEL_WHATSAPP = 'whatsapp';
+export const CHANNEL_WHATSAPP_OFFICIAL = 'whatsapp_official';
+
+/** @deprecated use CHANNEL_* */
+export const PROVIDER_UNOFFICIAL = CHANNEL_WHATSAPP;
+/** @deprecated use CHANNEL_* */
+export const PROVIDER_OFFICIAL = CHANNEL_WHATSAPP_OFFICIAL;
 
 export const extractDigits = value => String(value || '').replace(/\D/g, '');
 
@@ -14,17 +19,24 @@ export const formatPhoneLabel = phone => {
   return ddd ? `(${ddd}) ${firstPart}-${lastFour}` : `${firstPart}-${lastFour}`;
 };
 
-export const normalizeConnection = item => ({
-  id: item?.id || item?.['@id'] || `connection-${Math.random()}`,
-  name: item?.name || 'Sem nome',
-  status: item?.status?.status || item?.status || 'Pendente',
-  type: item?.type || 'Nenhum',
-  channel: item?.channel || 'whatsapp',
-  provider: item?.provider === PROVIDER_OFFICIAL ? PROVIDER_OFFICIAL : PROVIDER_UNOFFICIAL,
-  phone: item?.phone || {},
-  phoneLabel: formatPhoneLabel(item?.phone),
-  providerConfig: item?.providerConfig || item?.provider_config || null,
-});
+export const normalizeConnection = item => {
+  const channel =
+    item?.channel === CHANNEL_WHATSAPP_OFFICIAL
+      ? CHANNEL_WHATSAPP_OFFICIAL
+      : CHANNEL_WHATSAPP;
+  return {
+    id: item?.id || item?.['@id'] || `connection-${Math.random()}`,
+    name: item?.name || 'Sem nome',
+    status: item?.status?.status || item?.status || 'Pendente',
+    type: item?.type || 'Nenhum',
+    channel,
+    /** alias used by list UI */
+    provider: channel === CHANNEL_WHATSAPP_OFFICIAL ? CHANNEL_WHATSAPP_OFFICIAL : CHANNEL_WHATSAPP,
+    phone: item?.phone || {},
+    phoneLabel: formatPhoneLabel(item?.phone),
+    channelConfig: item?.channelConfig || item?.channel_config || null,
+  };
+};
 
 export const toArray = response => {
   if (Array.isArray(response)) return response;
@@ -44,7 +56,7 @@ export const formatApiError = error => {
   );
 };
 
-export const buildOfficialProviderConfig = ({
+export const buildOfficialChannelConfig = ({
   accessToken,
   phoneNumberId,
   apiVersion,

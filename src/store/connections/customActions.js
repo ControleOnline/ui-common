@@ -27,19 +27,17 @@ export const createWhatsappConnection = ({ commit, getters }, params = {}) => {
 
 /**
  * Persist an official (Meta Cloud API) WhatsApp connection.
- * Uses the standard connections resource; provider + providerConfig hold credentials.
- * Access token is write-only (not returned on list reads).
+ * Uses connections.channel = whatsapp_official and channelConfig for credentials.
  */
 export const saveOfficialWhatsappConnection = ({ commit, getters }, params = {}) => {
   commit(types.SET_ISLOADING, true);
 
   const body = {
     name: params.name || `WhatsApp Oficial ${params.phoneNumberId || ''}`.trim(),
-    channel: 'whatsapp',
-    provider: 'official',
+    channel: 'whatsapp_official',
     type: params.type || null,
     people: params.people,
-    providerConfig: JSON.stringify({
+    channelConfig: JSON.stringify({
       access_token: params.accessToken,
       phone_number_id: params.phoneNumberId,
       api_version: params.apiVersion || 'v22.0',

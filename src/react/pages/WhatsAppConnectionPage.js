@@ -245,8 +245,8 @@ export default function WhatsAppConnectionPage() {
     setConnectionStatus(item?.status || 'Pendente');
     setLastRequestedPhone(`${nextDdi}${nextDdd}${nextPhone}`);
     setQrValue('');
-    setProviderMode(item?.provider === PROVIDER_OFFICIAL ? PROVIDER_OFFICIAL : PROVIDER_UNOFFICIAL);
-    if (item?.provider === PROVIDER_OFFICIAL) {
+    setProviderMode(item?.channel === PROVIDER_OFFICIAL ? PROVIDER_OFFICIAL : PROVIDER_UNOFFICIAL);
+    if (item?.channel === PROVIDER_OFFICIAL) {
       setPhoneNumberId('');
       setAccessToken('');
     }
@@ -439,12 +439,6 @@ export default function WhatsAppConnectionPage() {
                   <View style={styles.connectionMetaItem}>
                     <Text style={styles.connectionMetaLabel}>Tipo</Text>
                     <Text style={styles.connectionMetaValue}>{item.type}</Text>
-                  </View>
-                  <View style={styles.connectionMetaItem}>
-                    <Text style={styles.connectionMetaLabel}>Provedor</Text>
-                    <Text style={styles.connectionMetaValue}>
-                      {item.provider === PROVIDER_OFFICIAL ? 'Oficial' : 'Nao oficial'}
-                    </Text>
                   </View>
                 </View>
 
