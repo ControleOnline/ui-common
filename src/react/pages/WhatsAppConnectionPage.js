@@ -10,7 +10,6 @@ import Icon from 'react-native-vector-icons/Feather';
 import QRCode from 'react-native-qrcode-svg';
 
 import { useStore } from '@store';
-import { getStore } from '@store';
 import { colors } from '@controleonline/../../src/styles/colors';
 import { createStyles } from './WhatsAppConnectionPage.styles';
 import {
@@ -34,13 +33,7 @@ export default function WhatsAppConnectionPage() {
   const peopleStore = useStore('people');
   const themeStore = useStore('theme');
   const connectionsStore = useStore('connections');
-  const connectionsActions = useMemo(
-    () => ({
-      ...(connectionsStore.actions || {}),
-      ...(getStore('connections')?.customActions || connectionsStore.customActions || {}),
-    }),
-    [connectionsStore],
-  );
+  const connectionsActions = connectionsStore.actions || {};
 
   const { currentCompany } = peopleStore.getters || {};
   const { colors: themeColors } = themeStore.getters || {};
