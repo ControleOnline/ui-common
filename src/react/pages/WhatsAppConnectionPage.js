@@ -10,12 +10,12 @@ import Icon from 'react-native-vector-icons/Feather';
 import QRCode from 'react-native-qrcode-svg';
 
 import { useStore } from '@store';
-import { colors } from '@controleonline/../../src/styles/colors';
+import { colors } from '@controleonline/ui-layout/src/styles/colors';
 import { createStyles } from './WhatsAppConnectionPage.styles';
 import {
   resolveThemePalette,
   withOpacity,
-} from '@controleonline/../../src/styles/branding';
+} from '@controleonline/ui-layout/src/styles/branding';
 import DefaultTable from '@controleonline/ui-default/src/react/components/table/DefaultTable';
 import WhatsAppProviderForm from './WhatsAppProviderForm';
 import {

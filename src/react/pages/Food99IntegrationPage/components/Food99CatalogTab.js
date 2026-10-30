@@ -7,9 +7,9 @@ import {
   View,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
-import { colors } from '@controleonline/../../src/styles/colors';
+import { colors } from '@controleonline/ui-layout/src/styles/colors';
 
-import {withOpacity} from '@controleonline/../../src/styles/branding';
+import {withOpacity} from '@controleonline/ui-layout/src/styles/branding';
 import CompactFilterSelector from '@controleonline/ui-default/src/react/components/filters/CompactFilterSelector';
 
 import {

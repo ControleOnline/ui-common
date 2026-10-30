@@ -5,7 +5,7 @@ import Formatter from '@controleonline/ui-common/src/utils/formatter';
 import styles from '../../DeviceDetailPage.styles';
 import { hex } from './deviceDetailConstants';
 import { paymentIcon } from './deviceDetailHelpers';
-import { withOpacity } from '@controleonline/../../src/styles/branding';
+import { withOpacity } from '@controleonline/ui-layout/src/styles/branding';
 import { inlineStyle_1301_61 } from '../../DeviceDetailPage.styles';
 
 /**

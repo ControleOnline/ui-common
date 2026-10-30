@@ -1,7 +1,7 @@
 import React from 'react';
 import { ScrollView, Text, TouchableOpacity, View } from 'react-native';
 
-import { colors } from '@controleonline/../../src/styles/colors';
+import { colors } from '@controleonline/ui-layout/src/styles/colors';
 
 import createStyles from './styles';
 
