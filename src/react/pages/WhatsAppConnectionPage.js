@@ -10,6 +10,17 @@ import { useStore } from '@store';
 import { colors } from '@controleonline/../../src/styles/colors';
 import styles from './WhatsAppConnectionPage.styles';
 import {
+  PROVIDER_OFFICIAL,
+  PROVIDER_UNOFFICIAL,
+  extractDigits,
+  formatPhoneLabel,
+  normalizeConnection,
+  toArray,
+  formatApiError,
+  buildOfficialProviderConfig,
+} from './whatsAppConnectionHelpers';
+import WhatsAppProviderForm from './WhatsAppProviderForm';
+import {
   resolveThemePalette,
   withOpacity,
 } from '@controleonline/../../src/styles/branding';
@@ -25,42 +36,6 @@ const shadowStyle = Platform.select({
   web: { boxShadow: '0 10px 24px rgba(15,23,42,0.08)' },
 });
 
-const formatApiError = error => {
-  if (!error) return 'Nao foi possivel concluir a operacao.';
-  if (typeof error === 'string') return error;
-  return error?.message || error?.description || error?.errmsg || 'Nao foi possivel concluir a operacao.';
-};
-
-const toArray = response => {
-  if (Array.isArray(response)) return response;
-  if (Array.isArray(response?.member)) return response.member;
-  if (Array.isArray(response?.['hydra:member'])) return response['hydra:member'];
-  return [];
-};
-
-const extractDigits = value => String(value || '').replace(/\D/g, '');
-
-const formatPhoneLabel = phone => {
-  const ddd = String(phone?.ddd || '').trim();
-  const digits = extractDigits(phone?.phone || '');
-  if (!ddd && !digits) return 'Nao informado';
-  if (!digits) return `(${ddd})`;
-  if (digits.length <= 4) return ddd ? `(${ddd}) ${digits}` : digits;
-
-  const lastFour = digits.slice(-4);
-  const firstPart = digits.slice(0, -4);
-  return ddd ? `(${ddd}) ${firstPart}-${lastFour}` : `${firstPart}-${lastFour}`;
-};
-
-const normalizeConnection = item => ({
-  id: item?.id || item?.['@id'] || `connection-${Math.random()}`,
-  name: item?.name || 'Sem nome',
-  status: item?.status?.status || item?.status || 'Pendente',
-  type: item?.type || 'Nenhum',
-  channel: item?.channel || 'whatsapp',
-  phone: item?.phone || {},
-  phoneLabel: formatPhoneLabel(item?.phone),
-});
 
 const sanitizeDdi = value => extractDigits(value).slice(0, 3);
 const sanitizeDdd = value => extractDigits(value).slice(0, 2);
@@ -94,6 +69,10 @@ export default function WhatsAppConnectionPage() {
   const [ddi, setDdi] = useState('55');
   const [ddd, setDdd] = useState('');
   const [phone, setPhone] = useState('');
+  const [providerMode, setProviderMode] = useState(PROVIDER_UNOFFICIAL);
+  const [accessToken, setAccessToken] = useState('');
+  const [phoneNumberId, setPhoneNumberId] = useState('');
+  const [apiVersion, setApiVersion] = useState('v22.0');
   const [qrValue, setQrValue] = useState('');
   const [connectionStatus, setConnectionStatus] = useState('');
   const [lastRequestedPhone, setLastRequestedPhone] = useState('');
@@ -196,6 +175,43 @@ export default function WhatsAppConnectionPage() {
     }, 5000);
   }, [clearPolling, completePhone, requestQrCode, showError, showInfo]);
 
+
+  const saveOfficialConnection = useCallback(async () => {
+    const token = String(accessToken || '').trim();
+    const pnid = String(phoneNumberId || '').trim();
+    if (!token || !pnid) {
+      showError('Informe access token e phone_number_id da Cloud API.');
+      return null;
+    }
+    setSubmitting(true);
+    try {
+      const response = await connectionsActions.saveOfficialWhatsappConnection({
+        accessToken: token,
+        phoneNumberId: pnid,
+        apiVersion: apiVersion || 'v22.0',
+        people: peopleIri,
+        name: `WhatsApp Oficial ${pnid}`,
+      });
+      showSuccess('Conexao oficial salva. Envios usarao a Cloud API diretamente.');
+      setConnectionStatus('CONNECTED');
+      setQrValue('');
+      await loadConnections();
+      return response;
+    } catch (error) {
+      showError(formatApiError(error));
+      return null;
+    } finally {
+      setSubmitting(false);
+    }
+  }, [accessToken, phoneNumberId, apiVersion, connectionsActions, peopleIri, loadConnections, showError, showSuccess]);
+
+  const handlePrimaryAction = useCallback(async () => {
+    if (providerMode === PROVIDER_OFFICIAL) {
+      return saveOfficialConnection();
+    }
+    return handlePrimaryAction();
+  }, [providerMode, saveOfficialConnection, startPolling, completePhone]);
+
   useFocusEffect(
     useCallback(() => {
       setLoading(true);
@@ -229,6 +245,11 @@ export default function WhatsAppConnectionPage() {
     setConnectionStatus(item?.status || 'Pendente');
     setLastRequestedPhone(`${nextDdi}${nextDdd}${nextPhone}`);
     setQrValue('');
+    setProviderMode(item?.provider === PROVIDER_OFFICIAL ? PROVIDER_OFFICIAL : PROVIDER_UNOFFICIAL);
+    if (item?.provider === PROVIDER_OFFICIAL) {
+      setPhoneNumberId('');
+      setAccessToken('');
+    }
   }, []);
 
   if (!providerId) {
@@ -285,7 +306,7 @@ export default function WhatsAppConnectionPage() {
             <View>
               <Text style={styles.cardTitle}>Nova autenticacao</Text>
               <Text style={styles.cardSubtitle}>
-                Informe o numero e solicite um novo QR Code de acesso.
+                Escolha Nao oficial (QR) ou Oficial (Cloud API) e preencha os dados.
               </Text>
             </View>
             <View style={[styles.statusBadge, { backgroundColor: withOpacity('#2563EB', 0.12) }]}>
@@ -329,24 +350,20 @@ export default function WhatsAppConnectionPage() {
             </View>
           </View>
 
-          <TouchableOpacity
-            activeOpacity={0.9}
-            disabled={submitting}
-            onPress={() => startPolling(completePhone)}
-            style={[
-              styles.primaryButton,
-              { backgroundColor: brandColors.primary },
-              submitting && styles.primaryButtonDisabled,
-            ]}>
-            {submitting ? (
-              <ActivityIndicator color="#FFFFFF" />
-            ) : (
-              <>
-                <Icon name="smartphone" size={18} color="#FFFFFF" />
-                <Text style={styles.primaryButtonText}>Solicitar QR Code</Text>
-              </>
-            )}
-          </TouchableOpacity>
+          <WhatsAppProviderForm
+            styles={styles}
+            brandColors={brandColors}
+            providerMode={providerMode}
+            setProviderMode={setProviderMode}
+            accessToken={accessToken}
+            setAccessToken={setAccessToken}
+            phoneNumberId={phoneNumberId}
+            setPhoneNumberId={setPhoneNumberId}
+            apiVersion={apiVersion}
+            setApiVersion={setApiVersion}
+            submitting={submitting}
+            onPrimaryAction={() => handlePrimaryAction()}
+          />
 
           <Text style={styles.helperText}>
             Numero atual: {completePhone || 'Nao informado'}
@@ -422,6 +439,12 @@ export default function WhatsAppConnectionPage() {
                   <View style={styles.connectionMetaItem}>
                     <Text style={styles.connectionMetaLabel}>Tipo</Text>
                     <Text style={styles.connectionMetaValue}>{item.type}</Text>
+                  </View>
+                  <View style={styles.connectionMetaItem}>
+                    <Text style={styles.connectionMetaLabel}>Provedor</Text>
+                    <Text style={styles.connectionMetaValue}>
+                      {item.provider === PROVIDER_OFFICIAL ? 'Oficial' : 'Nao oficial'}
+                    </Text>
                   </View>
                 </View>
 
