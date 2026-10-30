@@ -1,5 +1,5 @@
 import React, { useCallback, useMemo } from 'react';
-import { Platform, Text, TouchableOpacity, View } from 'react-native';
+import { Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/Feather';
@@ -7,25 +7,10 @@ import Icon from 'react-native-vector-icons/Feather';
 import { useStore } from '@store';
 import { colors } from '@controleonline/../../src/styles/colors';
 import { createStyles } from './Connections.styles';
-import {
-  resolveThemePalette,
-  withOpacity,
-} from '@controleonline/../../src/styles/branding';
+import { resolveThemePalette } from '@controleonline/../../src/styles/branding';
 import DefaultTable from '@controleonline/ui-default/src/react/components/table/DefaultTable';
 
 const tt = (type, key) => global.t?.t('configs', type, key);
-
-const resolveShadowStyle = textColor =>
-  Platform.select({
-    ios: {
-      shadowColor: textColor,
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.08,
-      shadowRadius: 16,
-    },
-    android: { elevation: 3 },
-    web: { boxShadow: `0 10px 24px ${withOpacity(textColor, 0.08)}` },
-  });
 
 const formatPhoneLabel = phone => {
   if (!phone) return tt('connections_label', 'notProvided') || 'Nao informado';
@@ -41,9 +26,15 @@ const formatPhoneLabel = phone => {
 };
 
 const formatStatusLabel = status => {
-  if (!status) return tt('connections_status', 'unknown') || '—';
+  if (!status) return '—';
   if (typeof status === 'string') return status;
   return status?.status || status?.name || '—';
+};
+
+const formatChannelLabel = channel => {
+  if (channel === 'whatsapp_official') return 'WhatsApp Oficial';
+  if (channel === 'whatsapp') return 'WhatsApp';
+  return channel || '—';
 };
 
 export default function Connections() {
@@ -54,8 +45,6 @@ export default function Connections() {
 
   const { currentCompany } = peopleStore.getters || {};
   const { colors: themeColors } = themeStore.getters || {};
-  const items = connectionsStore.getters?.items;
-  const totalItems = connectionsStore.getters?.totalItems;
 
   const brandColors = useMemo(
     () =>
@@ -63,13 +52,10 @@ export default function Connections() {
         { ...themeColors, ...(currentCompany?.theme?.colors || {}) },
         colors,
       ),
-    [themeColors, currentCompany?.id],
+    [themeColors, currentCompany],
   );
+
   const styles = useMemo(() => createStyles(brandColors), [brandColors]);
-  const shadowStyle = useMemo(
-    () => resolveShadowStyle(brandColors.text),
-    [brandColors.text],
-  );
 
   const providerId = currentCompany?.id;
   const peopleIri = useMemo(
@@ -81,11 +67,6 @@ export default function Connections() {
     () => (peopleIri ? { people: peopleIri } : {}),
     [peopleIri],
   );
-
-  const connectionCount = useMemo(() => {
-    if (typeof totalItems === 'number' && totalItems > 0) return totalItems;
-    return Array.isArray(items) ? items.length : 0;
-  }, [items, totalItems]);
 
   useFocusEffect(
     useCallback(() => {
@@ -109,7 +90,9 @@ export default function Connections() {
             {item.name || tt('connections_label', 'unnamed') || 'Sem nome'}
           </Text>
           <Text style={styles.previewPhone}>{formatPhoneLabel(item.phone)}</Text>
-          <Text style={styles.previewStatus}>{formatStatusLabel(item.status)}</Text>
+          <Text style={styles.previewStatus}>
+            {formatChannelLabel(item.channel)} · {formatStatusLabel(item.status)}
+          </Text>
         </View>
       );
     },
@@ -137,72 +120,11 @@ export default function Connections() {
     <SafeAreaView
       style={[styles.container, { backgroundColor: brandColors.background }]}
       edges={['bottom']}>
-      <View style={[styles.heroCard, shadowStyle, { backgroundColor: brandColors.primary }]}>
-        <View style={styles.heroCopy}>
-          <Text style={styles.heroEyebrow}>
-            {tt('connections_eyebrow', 'communication') || 'COMUNICACAO'}
-          </Text>
-          <Text style={styles.heroTitle}>
-            {tt('connections_title', 'connections') || 'Conexoes'}
-          </Text>
-          <Text style={styles.heroText}>
-            {tt('connections_text', 'hero') ||
-              'Gerencie os canais de comunicacao conectados com a sua operacao.'}
-          </Text>
-        </View>
-        <View style={styles.heroBadge}>
-          <Icon name="radio" size={22} color={brandColors.primary} />
-        </View>
-      </View>
-
-      <View style={styles.companyRow}>
-        <View style={styles.companyBadge}>
-          <Text style={styles.companyBadgeText}>
-            {`${connectionCount} ${tt('connections_label', 'connections') || 'conexoes'}`}
-          </Text>
-        </View>
-      </View>
-
-      <TouchableOpacity
-        activeOpacity={0.92}
-        onPress={openWhatsAppChannel}
-        style={[styles.channelCard, shadowStyle]}>
-        <View style={styles.channelTopRow}>
-          <View
-            style={[
-              styles.channelIconWrap,
-              { backgroundColor: withOpacity(brandColors.success, 0.12) },
-            ]}>
-            <Icon name="message-circle" size={20} color={brandColors.success} />
-          </View>
-          <View style={styles.channelStatusPill}>
-            <Text style={styles.channelStatusText}>
-              {connectionCount > 0
-                ? `${connectionCount} ${tt('connections_status', 'configured') || 'configurada(s)'}`
-                : tt('connections_status', 'readyToConfigure') || 'Pronta para configurar'}
-            </Text>
-          </View>
-        </View>
-        <Text style={styles.channelTitle}>
-          {tt('connections_label', 'whatsApp') || 'WhatsApp'}
-        </Text>
-        <Text style={styles.channelDescription}>
-          {tt('connections_text', 'whatsApp') ||
-            'Conecte numeros, acompanhe status e gere o QR Code de autenticacao.'}
-        </Text>
-        <View style={styles.actionRow}>
-          <Text style={styles.actionText}>
-            {tt('connections_button', 'openChannel') || 'Abrir canal'}
-          </Text>
-          <Icon name="arrow-right" size={18} color={brandColors.primary} />
-        </View>
-      </TouchableOpacity>
-
-      <View style={{ flex: 1, marginTop: 12 }}>
+      <View style={{ flex: 1, paddingHorizontal: 12, paddingTop: 8 }}>
         <DefaultTable
           storeName="connections"
           requestParams={requestParams}
-          initialViewMode="cards"
+          initialViewMode="table"
           forceCardsOnCompact
           showToolbar
           showRowActions={false}
@@ -219,7 +141,7 @@ export default function Connections() {
           accentColor={brandColors.primary}
           onAdd={openWhatsAppChannel}
           add
-          addLabel={tt('connections_button', 'openChannel') || 'Abrir canal'}
+          addLabel={tt('connections_button', 'openChannel') || 'Configurar WhatsApp'}
         />
       </View>
     </SafeAreaView>
