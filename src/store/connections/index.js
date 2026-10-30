@@ -89,7 +89,11 @@ export default {
         list: [
           {
             value: "whatsapp",
-            label: "Whatsapp",
+            label: "WhatsApp",
+          },
+          {
+            value: "whatsapp_official",
+            label: "WhatsApp Oficial",
           },
         ],
         format: function (value) {

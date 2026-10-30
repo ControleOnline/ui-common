@@ -19,6 +19,29 @@ export const formatPhoneLabel = phone => {
   return ddd ? `(${ddd}) ${firstPart}-${lastFour}` : `${firstPart}-${lastFour}`;
 };
 
+const resolveStatusIri = status => {
+  if (!status) return null;
+  if (typeof status === 'string') {
+    if (status.startsWith('/') || status.startsWith('http')) return status;
+    return null;
+  }
+  if (typeof status === 'object') {
+    const iri = status['@id'] || status.id;
+    if (iri == null) return null;
+    const asString = String(iri);
+    if (asString.startsWith('/') || asString.startsWith('http')) return asString;
+    return `/statuses/${asString}`;
+  }
+  return null;
+};
+
+const resolveNumericId = item => {
+  const raw = item?.id ?? item?.['@id'];
+  if (raw == null) return null;
+  const digits = String(raw).replace(/\D/g, '');
+  return digits ? Number(digits) : null;
+};
+
 export const normalizeConnection = item => {
   const channel =
     item?.channel === CHANNEL_WHATSAPP_OFFICIAL
@@ -26,15 +49,18 @@ export const normalizeConnection = item => {
       : CHANNEL_WHATSAPP;
   return {
     id: item?.id || item?.['@id'] || `connection-${Math.random()}`,
+    numericId: resolveNumericId(item),
     name: item?.name || 'Sem nome',
-    status: item?.status?.status || item?.status || 'Pendente',
+    status:
+      (typeof item?.status === 'object'
+        ? item?.status?.status || item?.status?.name
+        : item?.status) || 'Pendente',
+    statusIri: resolveStatusIri(item?.status),
     type: item?.type || 'Nenhum',
     channel,
-    /** alias used by list UI */
-    provider: channel === CHANNEL_WHATSAPP_OFFICIAL ? CHANNEL_WHATSAPP_OFFICIAL : CHANNEL_WHATSAPP,
+    provider: channel,
     phone: item?.phone || {},
     phoneLabel: formatPhoneLabel(item?.phone),
-    channelConfig: item?.channelConfig || item?.channel_config || null,
   };
 };
 
@@ -48,10 +74,18 @@ export const toArray = response => {
 export const formatApiError = error => {
   if (!error) return 'Nao foi possivel concluir a operacao.';
   if (typeof error === 'string') return error;
+  const violations = error?.violations || error?.data?.violations;
+  if (Array.isArray(violations) && violations.length) {
+    return violations
+      .map(v => v?.message || v?.propertyPath)
+      .filter(Boolean)
+      .join(' · ');
+  }
   return (
     error?.message ||
     error?.description ||
     error?.errmsg ||
+    error?.hydra?.description ||
     'Nao foi possivel concluir a operacao.'
   );
 };
@@ -68,10 +102,4 @@ export const buildOfficialChannelConfig = ({
   const version = String(apiVersion || '').trim();
   if (version) config.api_version = version;
   return config;
-};
-
-export const maskToken = token => {
-  const value = String(token || '');
-  if (value.length <= 8) return value ? '••••••••' : '';
-  return `${value.slice(0, 4)}…${value.slice(-4)}`;
 };

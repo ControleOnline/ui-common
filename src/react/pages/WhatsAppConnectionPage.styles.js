@@ -279,6 +279,39 @@ const styles = StyleSheet.create({
     color: '#64748B',
     textAlign: 'center',
   },
+
+  feedbackBox: {
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 12,
+  },
+  feedbackText: {
+    fontSize: 13,
+    lineHeight: 18,
+    color: palette.text,
+  },
+  selectedHint: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: palette.textSecondary,
+    marginBottom: 8,
+  },
+  statusLine: {
+    marginTop: 10,
+    fontSize: 13,
+    color: palette.textSecondary,
+  },
+  previewName: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: palette.text,
+  },
+  previewMeta: {
+    marginTop: 4,
+    fontSize: 12,
+    color: palette.textSecondary,
+  },
 });
 
 export default styles;
