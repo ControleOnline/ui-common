@@ -180,8 +180,21 @@ export default function IntegrationsPage({navigation}) {
         return;
       }
 
+      const tab = integration.routeParams?.tab;
+      if (tab && typeof globalThis !== 'undefined' && globalThis.localStorage) {
+        try {
+          globalThis.localStorage.setItem(
+            'controleonline.general-settings.active-tab',
+            String(tab),
+          );
+        } catch {
+          /* ignore storage failures */
+        }
+      }
+
       navigation.navigate(integration.route, {
         providerKey: integration.routeParams?.providerKey || integration.key,
+        tab: tab || undefined,
       });
     },
     [navigation, showInfo],

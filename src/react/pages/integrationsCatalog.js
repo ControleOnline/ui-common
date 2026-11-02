@@ -90,6 +90,18 @@ export const INTEGRATION_LIST = [
     accent: '#0EA5E9',
     icon: 'truck',
   },
+  {
+    key: 'ai-mcp',
+    label: 'IA / MCP',
+    route: 'GeneralSettings',
+    routeParams: {
+      tab: 'ai-providers',
+    },
+    accent: '#7C3AED',
+    icon: 'cpu',
+    description:
+      'Grok, Codex/OpenAI, Gemini e Claude — chaves e prompt inicial por empresa.',
+  },
 ];
 
 export const INTEGRATION_CONFIGS = {
