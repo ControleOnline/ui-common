@@ -91,16 +91,36 @@ export const INTEGRATION_LIST = [
     icon: 'truck',
   },
   {
-    key: 'ai-mcp',
-    label: 'IA / MCP',
-    route: 'GeneralSettings',
-    routeParams: {
-      tab: 'ai-providers',
-    },
-    accent: '#7C3AED',
+    key: 'ai-grok',
+    label: 'Grok (xAI)',
+    route: 'AiProviderConfigPage',
+    routeParams: {providerKey: 'grok'},
+    accent: '#111827',
     icon: 'cpu',
-    description:
-      'Grok, Codex/OpenAI, Gemini e Claude — chaves e prompt inicial por empresa.',
+  },
+  {
+    key: 'ai-openai',
+    label: 'Codex / OpenAI',
+    route: 'AiProviderConfigPage',
+    routeParams: {providerKey: 'openai'},
+    accent: '#10A37F',
+    icon: 'cpu',
+  },
+  {
+    key: 'ai-gemini',
+    label: 'Gemini',
+    route: 'AiProviderConfigPage',
+    routeParams: {providerKey: 'gemini'},
+    accent: '#4285F4',
+    icon: 'cpu',
+  },
+  {
+    key: 'ai-claude',
+    label: 'Claude',
+    route: 'AiProviderConfigPage',
+    routeParams: {providerKey: 'claude'},
+    accent: '#D97706',
+    icon: 'cpu',
   },
 ];
 
