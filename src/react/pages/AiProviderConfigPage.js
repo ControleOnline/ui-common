@@ -36,6 +36,7 @@ const emptyProvider = () => ({
   base_url: '',
   system_prompt: '',
   api_key: '',
+  workspace_id: '',
   has_key: false,
   api_key_masked: null,
 });
@@ -143,6 +144,7 @@ export default function AiProviderConfigPage({route}) {
           base_url: String(r.base_url || ''),
           system_prompt: String(r.system_prompt || ''),
           api_key: '',
+          workspace_id: String(r.workspace_id || ''),
           has_key: !!r.has_key,
           api_key_masked: r.api_key_masked || null,
         };
@@ -184,6 +186,7 @@ export default function AiProviderConfigPage({route}) {
           base_url: String(p.base_url || '').trim(),
           system_prompt: String(p.system_prompt || ''),
           api_key: String(p.api_key || '').trim(),
+          workspace_id: String(p.workspace_id || '').trim(),
         };
       });
       await api.put('/mcp/chat/config', {
@@ -280,6 +283,23 @@ export default function AiProviderConfigPage({route}) {
             autoCapitalize="none"
             editable={!saving}
           />
+
+          {providerKey === 'claude' ? (
+            <>
+              <Text style={styles.label}>Workspace ID (Anthropic)</Text>
+              <TextInput
+                style={styles.input}
+                value={provider.workspace_id}
+                onChangeText={v => updateField('workspace_id', v)}
+                placeholder="UUID do workspace (ex.: 697fe52d-...)"
+                autoCapitalize="none"
+                editable={!saving}
+              />
+              <Text style={styles.helper}>
+                Obrigatorio para API keys service (sk-ant-svc-...). Console Anthropic → Workspace settings.
+              </Text>
+            </>
+          ) : null}
 
           <Text style={styles.label}>Prompt inicial (system)</Text>
           <TextInput
