@@ -414,7 +414,7 @@ export const INTEGRATION_CONFIGS = {
         placeholder: 'Codigo do conveniado (se aplicavel)',
       },
     ],
-  },,
+  },
 
   'google-oauth': {
     key: 'google-oauth',
