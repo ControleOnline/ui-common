@@ -291,12 +291,12 @@ export default function AiProviderConfigPage({route}) {
                 style={styles.input}
                 value={provider.workspace_id}
                 onChangeText={v => updateField('workspace_id', v)}
-                placeholder="UUID do workspace (ex.: 697fe52d-...)"
+                placeholder="wrkspc_01JwQvzr7rXLA5AGx3HKfFUJ"
                 autoCapitalize="none"
                 editable={!saving}
               />
               <Text style={styles.helper}>
-                Obrigatorio para API keys service (sk-ant-svc-...). Console Anthropic → Workspace settings.
+                Formato wrkspc_... (nao e o UUID da organizacao). Console → Settings → Workspaces → coluna ID. Obrigatorio para keys service (sk-ant-svc-...).
               </Text>
             </>
           ) : null}
