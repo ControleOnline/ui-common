@@ -16,11 +16,11 @@ import Icon from 'react-native-vector-icons/Feather';
 import {api} from '@controleonline/ui-common/src/api';
 import useToastMessage from '@controleonline/ui-crm/src/react/hooks/useToastMessage';
 import {useStore} from '@store';
-import {colors} from '@controleonline/../../src/styles/colors';
+import {colors} from '@controleonline/ui-layout/src/styles/colors';
 import {
   resolveThemePalette,
   withOpacity,
-} from '@controleonline/../../src/styles/branding';
+} from '@controleonline/ui-layout/src/styles/branding';
 
 import styles from './IntegrationConfigPage.styles';
 import {

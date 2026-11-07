@@ -27,7 +27,7 @@ import {
   normalizeNotificationTargets,
   useGeneralSettingsConfig,
 } from '@controleonline/ui-crm/src/react/pages/settings/GeneralSettings.shared';
-import {colors} from '@controleonline/../../src/styles/colors';
+import {colors} from '@controleonline/ui-layout/src/styles/colors';
 
 const permissionStatusLabels = {
   granted: 'Permissão do sistema liberada.',

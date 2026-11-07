@@ -1,6 +1,6 @@
 import { Platform, StyleSheet } from 'react-native';
-import { colors } from '@controleonline/../../src/styles/colors';
-import { withOpacity } from '@controleonline/../../src/styles/branding';
+import { colors } from '@controleonline/ui-layout/src/styles/colors';
+import { withOpacity } from '@controleonline/ui-layout/src/styles/branding';
 
 const buildCardShadow = palette =>
   Platform.select({

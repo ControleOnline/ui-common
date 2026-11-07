@@ -1,7 +1,7 @@
 import React from 'react';
 import { ActivityIndicator, Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
-import { withOpacity } from '@controleonline/../../src/styles/branding';
+import { withOpacity } from '@controleonline/ui-layout/src/styles/branding';
 import { PROVIDER_OFFICIAL, PROVIDER_UNOFFICIAL } from './whatsAppConnectionHelpers';
 
 export default function WhatsAppProviderForm({

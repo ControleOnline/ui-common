@@ -1,6 +1,6 @@
 import {env as APP_ENV} from '@env';
 import {filterApiHeaders, isTrustedApiUrl} from '../../utils/trustedApiUrl';
-import {buildAssetUrl} from '@controleonline/../../src/styles/branding';
+import {buildAssetUrl} from '@controleonline/ui-layout/src/styles/branding';
 import {
   resolveAppDomain,
   resolveCompanyDomain,

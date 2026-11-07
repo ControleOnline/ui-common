@@ -10,7 +10,7 @@ import {
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useStore } from '@store';
 import { api } from '@controleonline/ui-common/src/api';
-import { colors } from '@controleonline/../../src/styles/colors';
+import { colors } from '@controleonline/ui-layout/src/styles/colors';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import IconAdd from 'react-native-vector-icons/MaterialIcons';
 import AddImportModal from '../components/AddImportModal';

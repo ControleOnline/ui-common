@@ -12,8 +12,8 @@ import {
 
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useStore } from '@store';
-import { colors } from '@controleonline/../../src/styles/colors';
-import { resolveThemePalette } from '@controleonline/../../src/styles/branding';
+import { colors } from '@controleonline/ui-layout/src/styles/colors';
+import { resolveThemePalette } from '@controleonline/ui-layout/src/styles/branding';
 import styles from './CategoryForm.styles';
 import { inlineStyle_240_75 } from './CategoryForm.styles';
 

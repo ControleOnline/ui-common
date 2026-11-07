@@ -14,8 +14,8 @@ import Icon from 'react-native-vector-icons/Feather';
 import {api} from '@controleonline/ui-common/src/api';
 import useToastMessage from '@controleonline/ui-crm/src/react/hooks/useToastMessage';
 import {useStore} from '@store';
-import {colors} from '@controleonline/../../src/styles/colors';
-import {resolveThemePalette} from '@controleonline/../../src/styles/branding';
+import {colors} from '@controleonline/ui-layout/src/styles/colors';
+import {resolveThemePalette} from '@controleonline/ui-layout/src/styles/branding';
 import {getOrderChannelLogo} from '@assets/ppc/channels';
 
 import IntegrationHero from '../../components/integrations/IntegrationHero';
