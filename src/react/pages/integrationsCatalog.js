@@ -90,6 +90,70 @@ export const INTEGRATION_LIST = [
     accent: '#0EA5E9',
     icon: 'truck',
   },
+  {
+    key: 'ai-grok',
+    label: 'Grok (xAI)',
+    route: 'AiProviderConfigPage',
+    routeParams: {providerKey: 'grok'},
+    accent: '#111827',
+    icon: 'cpu',
+  },
+  {
+    key: 'ai-openai',
+    label: 'Codex / OpenAI',
+    route: 'AiProviderConfigPage',
+    routeParams: {providerKey: 'openai'},
+    accent: '#10A37F',
+    icon: 'cpu',
+  },
+  {
+    key: 'ai-gemini',
+    label: 'Gemini',
+    route: 'AiProviderConfigPage',
+    routeParams: {providerKey: 'gemini'},
+    accent: '#4285F4',
+    icon: 'cpu',
+  },
+  {
+    key: 'ai-claude',
+    label: 'Claude',
+    route: 'AiProviderConfigPage',
+    routeParams: {providerKey: 'claude'},
+    accent: '#D97706',
+    icon: 'cpu',
+  },
+  {
+    key: 'google-oauth',
+    label: 'Google Login',
+    route: 'IntegrationConfigPage',
+    routeParams: {providerKey: 'google-oauth'},
+    accent: '#EA4335',
+    icon: 'log-in',
+  },
+  {
+    key: 'cielo',
+    label: 'Cielo',
+    route: 'IntegrationConfigPage',
+    routeParams: {providerKey: 'cielo'},
+    accent: '#00A4E0',
+    icon: 'credit-card',
+  },
+  {
+    key: 'new-relic',
+    label: 'New Relic',
+    route: 'IntegrationConfigPage',
+    routeParams: {providerKey: 'new-relic'},
+    accent: '#1CE783',
+    icon: 'activity',
+  },
+  {
+    key: 'spotify',
+    label: 'Spotify',
+    route: 'IntegrationConfigPage',
+    routeParams: {providerKey: 'spotify'},
+    accent: '#1DB954',
+    icon: 'music',
+  },
 ];
 
 export const INTEGRATION_CONFIGS = {
@@ -351,6 +415,126 @@ export const INTEGRATION_CONFIGS = {
       },
     ],
   },
+
+  'google-oauth': {
+    key: 'google-oauth',
+    label: 'Google Login',
+    accent: '#EA4335',
+    icon: 'log-in',
+    description:
+      'Client ID OAuth Google da empresa principal. Controla o botao Entrar com Google no login web.',
+    visibility: 'public',
+    requiredKeys: [],
+    fields: [
+      {
+        key: 'OAUTH_GOOGLE_CLIENT_ID',
+        label: 'OAUTH_GOOGLE_CLIENT_ID',
+        placeholder: 'xxxxx.apps.googleusercontent.com',
+      },
+    ],
+  },
+  cielo: {
+    key: 'cielo',
+    label: 'Cielo',
+    accent: '#00A4E0',
+    icon: 'credit-card',
+    description:
+      'Credenciais Cielo vinculadas a empresa principal (pagamento).',
+    bundleKey: 'CIELO',
+    visibility: 'private',
+    requiredKeys: ['ACCESS_TOKEN', 'CLIENT_ID'],
+    fields: [
+      {
+        key: 'ACCESS_TOKEN',
+        label: 'ACCESS_TOKEN',
+        placeholder: 'Token da integracao Cielo',
+        secureTextEntry: true,
+      },
+      {
+        key: 'CLIENT_ID',
+        label: 'CLIENT_ID',
+        placeholder: 'Client ID da Cielo',
+      },
+      {
+        key: 'EMAIL',
+        label: 'EMAIL',
+        placeholder: 'financeiro@empresa.com.br',
+      },
+      {
+        key: 'MERCHANT_CODE',
+        label: 'MERCHANT_CODE',
+        placeholder: 'Codigo do estabelecimento',
+      },
+    ],
+  },
+  'new-relic': {
+    key: 'new-relic',
+    label: 'New Relic',
+    accent: '#1CE783',
+    icon: 'activity',
+    description: 'Observabilidade centralizada na empresa principal.',
+    bundleKey: 'NEW_RELIC',
+    visibility: 'private',
+    requiredKeys: [],
+    fields: [
+      {
+        key: 'LICENSE_KEY',
+        label: 'LICENSE_KEY',
+        placeholder: 'License key',
+        secureTextEntry: true,
+      },
+      {
+        key: 'APPLICATION_ID',
+        label: 'APPLICATION_ID',
+        placeholder: 'Application ID',
+      },
+      {
+        key: 'ACCOUNT_ID',
+        label: 'ACCOUNT_ID',
+        placeholder: 'Account ID',
+      },
+      {
+        key: 'TRUST_KEY',
+        label: 'TRUST_KEY',
+        placeholder: 'Trust key',
+        secureTextEntry: true,
+      },
+      {
+        key: 'BEACON',
+        label: 'BEACON',
+        placeholder: 'bam.nr-data.net',
+      },
+      {
+        key: 'ERROR_BEACON',
+        label: 'ERROR_BEACON',
+        placeholder: 'bam.nr-data.net',
+      },
+    ],
+  },
+  spotify: {
+    key: 'spotify',
+    label: 'Spotify',
+    accent: '#1DB954',
+    icon: 'music',
+    description: 'Credenciais Spotify da empresa principal.',
+    bundleKey: 'SPOTIFY',
+    visibility: 'private',
+    requiredKeys: [],
+    fields: [
+      {
+        key: 'CLIENT_ID',
+        label: 'CLIENT_ID',
+        placeholder: 'Spotify Client ID',
+      },
+      {
+        key: 'CLIENT_SECRET',
+        label: 'CLIENT_SECRET',
+        placeholder: 'Spotify Client Secret',
+        secureTextEntry: true,
+      },
+    ],
+  },
+
 };
 
 export const getIntegrationListItem = key =>

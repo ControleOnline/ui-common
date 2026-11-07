@@ -1,13 +1,13 @@
 {
-  "branch": "rc/1.10.89-rc.1",
-  "version": "1.10.89",
+  "version": "1.2.118",
   "rc": 1,
-  "frozen": true,
-  "baseMaster": "6d1a8d6b6caa1450d8eb30602dac27ba11e7799a",
+  "branch": "rc/1.2.118-rc.1",
+  "baseMaster": "cc9e32a018f490505b2199b8c313a5dd68f268cc",
   "tasks": [
-    1221
+    1339
   ],
+  "frozen": true,
   "repositories": {
-    "ControleOnline/ui-common": "0be070a06a8236254cc20a53366cb0aa503514a8"
+    "ControleOnline/ui-common": "f9a7beb517617a51e368a158bca02b33eed842cb"
   }
 }
