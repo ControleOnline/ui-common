@@ -27,4 +27,19 @@ const buildCashSummaryParams = ({companyId, period, from, to, device}) => {
   return {params};
 };
 
-module.exports = {PERIODS, isValidDate, buildCashSummaryParams};
+/**
+ * Params for navigating from a payment-type row to FinancialHubPage, keeping the
+ * period shown on the Caixa screen. Returns null for rows without payment type.
+ */
+const buildCashDrilldownNavigation = (item, summary) => {
+  const paymentTypeId = Number(item?.paymentTypeId);
+  if (!Number.isInteger(paymentTypeId) || paymentTypeId <= 0) return null;
+  if (!isValidDate(summary?.from) || !isValidDate(summary?.to)) return null;
+
+  const cashFilter = {paymentTypeId, from: summary.from, to: summary.to};
+  if (summary.scope === 'user' && summary.userId) cashFilter.userId = summary.userId;
+
+  return {routeName: 'FinancialHubPage', params: {cashFilter}};
+};
+
+module.exports = {PERIODS, isValidDate, buildCashSummaryParams, buildCashDrilldownNavigation};

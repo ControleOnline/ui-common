@@ -9,11 +9,14 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import {useFocusEffect} from '@react-navigation/native';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import {useStore} from '@store';
 import {api} from '@controleonline/ui-common/src/api';
 import Formatter from '@controleonline/ui-common/src/utils/formatter';
-import {buildCashSummaryParams} from '@controleonline/ui-common/src/react/utils/cashRegisterSummary';
+import {
+  buildCashDrilldownNavigation,
+  buildCashSummaryParams,
+} from '@controleonline/ui-common/src/react/utils/cashRegisterSummary';
 
 const PERIOD_OPTIONS = [
   {key: 'today', label: 'Hoje'},
@@ -34,6 +37,7 @@ const ERROR_MESSAGES = {
  * Refs: ControleOnline/ui-common#128
  */
 export default function CashRegisterSummary() {
+  const navigation = useNavigation();
   const peopleStore = useStore('people');
   const {currentCompany} = peopleStore.getters || {};
   const [period, setPeriod] = useState('today');
@@ -141,15 +145,26 @@ export default function CashRegisterSummary() {
             <Text style={styles.empty}>Nenhuma movimentação no período.</Text>
           )}
 
-          {payments.map(item => (
-            <View key={`${item.paymentTypeId}-${item.paymentType}`} style={styles.row}>
-              <View style={styles.rowInfo}>
-                <Text style={styles.rowTitle}>{item.paymentType}</Text>
-                <Text style={styles.rowSub}>{item.quantity} lançamentos</Text>
-              </View>
-              <Text style={styles.rowValue}>{Formatter.formatMoney(item.balance)}</Text>
-            </View>
-          ))}
+          {payments.map(item => {
+            const target = buildCashDrilldownNavigation(item, data);
+
+            return (
+              <TouchableOpacity
+                key={`${item.paymentTypeId}-${item.paymentType}`}
+                testID={`cash-payment-${item.paymentTypeId}`}
+                style={styles.row}
+                disabled={!target}
+                activeOpacity={0.8}
+                onPress={() => target && navigation.navigate(target.routeName, target.params)}>
+                <View style={styles.rowInfo}>
+                  <Text style={styles.rowTitle}>{item.paymentType}</Text>
+                  <Text style={styles.rowSub}>{item.quantity} lançamentos</Text>
+                </View>
+                <Text style={styles.rowValue}>{Formatter.formatMoney(item.balance)}</Text>
+                {!!target && <Text style={styles.rowChevron}>›</Text>}
+              </TouchableOpacity>
+            );
+          })}
         </>
       )}
     </ScrollView>
@@ -181,4 +196,5 @@ const styles = StyleSheet.create({
   rowTitle: {fontWeight: '700', color: '#0F172A'},
   rowSub: {color: '#64748B', fontSize: 12},
   rowValue: {fontWeight: '700', color: '#0F172A'},
+  rowChevron: {marginLeft: 8, fontSize: 22, color: '#94A3B8'},
 });
