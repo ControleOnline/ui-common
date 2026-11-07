@@ -1,0 +1,30 @@
+const PERIODS = ['today', 'yesterday', 'week', 'month', 'custom'];
+const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+const isValidDate = value => {
+  if (!DATE_PATTERN.test(String(value || ''))) return false;
+  const parsed = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value;
+};
+
+/**
+ * Builds the query string params of GET /cash-register/summary.
+ * Returns {error} when the selected period is incomplete or invalid.
+ */
+const buildCashSummaryParams = ({companyId, period, from, to, device}) => {
+  if (!companyId) return {error: 'company'};
+  if (!PERIODS.includes(period)) return {error: 'period'};
+
+  const params = {provider: companyId, period};
+  if (period === 'custom') {
+    if (!isValidDate(from) || !isValidDate(to) || to < from) {
+      return {error: 'range'};
+    }
+    params.from = from;
+    params.to = to;
+  }
+  if (device) params.device = device;
+  return {params};
+};
+
+module.exports = {PERIODS, isValidDate, buildCashSummaryParams};
