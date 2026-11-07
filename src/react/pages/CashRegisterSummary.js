@@ -16,6 +16,8 @@ import Formatter from '@controleonline/ui-common/src/utils/formatter';
 import {
   buildCashDrilldownNavigation,
   buildCashSummaryParams,
+  resolveDeviceLabel,
+  sumDeviceBalances,
 } from '@controleonline/ui-common/src/react/utils/cashRegisterSummary';
 
 const PERIOD_OPTIONS = [
@@ -80,6 +82,8 @@ export default function CashRegisterSummary() {
   );
 
   const payments = data?.payments || [];
+  const devices = data?.devices || [];
+  const devicesTotal = sumDeviceBalances(devices);
 
   return (
     <ScrollView
@@ -165,6 +169,34 @@ export default function CashRegisterSummary() {
               </TouchableOpacity>
             );
           })}
+
+          <Text style={styles.sectionTitle}>Por dispositivo</Text>
+
+          {devices.length === 0 && !loading && (
+            <Text style={styles.empty}>Nenhuma movimentação por dispositivo no período.</Text>
+          )}
+
+          {devices.map(item => (
+            <View
+              key={`device-${item.deviceId ?? 'none'}`}
+              testID={`cash-device-${item.deviceId ?? 'none'}`}
+              style={styles.row}>
+              <View style={styles.rowInfo}>
+                <Text style={styles.rowTitle}>{resolveDeviceLabel(item)}</Text>
+                <Text style={styles.rowSub}>{item.quantity} lançamentos</Text>
+              </View>
+              <Text style={styles.rowValue}>{Formatter.formatMoney(item.balance)}</Text>
+            </View>
+          ))}
+
+          {devices.length > 0 && (
+            <View style={styles.row}>
+              <View style={styles.rowInfo}>
+                <Text style={styles.rowTitle}>Total por dispositivo</Text>
+              </View>
+              <Text style={styles.rowValue}>{Formatter.formatMoney(devicesTotal)}</Text>
+            </View>
+          )}
         </>
       )}
     </ScrollView>
@@ -190,6 +222,7 @@ const styles = StyleSheet.create({
   totalLabel: {color: '#64748B', fontSize: 12},
   totalValue: {fontSize: 26, fontWeight: '800', color: '#0F766E'},
   totalSub: {color: '#64748B', fontSize: 12, marginTop: 4},
+  sectionTitle: {marginTop: 8, fontSize: 15, fontWeight: '800', color: '#0F172A'},
   empty: {textAlign: 'center', color: '#64748B', marginTop: 16},
   row: {flexDirection: 'row', alignItems: 'center', backgroundColor: '#FFFFFF', borderRadius: 10, padding: 14, borderWidth: 1, borderColor: '#E2E8F0'},
   rowInfo: {flex: 1},

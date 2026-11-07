@@ -42,4 +42,21 @@ const buildCashDrilldownNavigation = (item, summary) => {
   return {routeName: 'FinancialHubPage', params: {cashFilter}};
 };
 
-module.exports = {PERIODS, isValidDate, buildCashSummaryParams, buildCashDrilldownNavigation};
+/** Label of a device row; rows without device are grouped as "Sem dispositivo". */
+const resolveDeviceLabel = item => {
+  if (item?.deviceId === null || item?.deviceId === undefined) return 'Sem dispositivo';
+  return String(item?.label || item?.device || `#${item.deviceId}`);
+};
+
+/** Sum of the device balances, rounded to cents (must equal the payment block total). */
+const sumDeviceBalances = devices =>
+  Math.round((devices || []).reduce((sum, item) => sum + Number(item?.balance || 0), 0) * 100) / 100;
+
+module.exports = {
+  PERIODS,
+  isValidDate,
+  buildCashSummaryParams,
+  buildCashDrilldownNavigation,
+  resolveDeviceLabel,
+  sumDeviceBalances,
+};
