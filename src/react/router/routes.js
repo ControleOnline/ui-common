@@ -1,6 +1,7 @@
 import ImportsPage from '@controleonline/ui-common/src/react/pages/Imports';
 import EntityLogPage from '@controleonline/ui-common/src/react/pages/EntityLogPage';
 import GenericLogPage from '@controleonline/ui-common/src/react/pages/GenericLogPage';
+import CashRegisterSummary from '@controleonline/ui-common/src/react/pages/CashRegisterSummary';
 
 const commonRoutes = [
   {
@@ -22,6 +23,18 @@ const commonRoutes = [
       showCompanyFilter: true,
       companyFilterMode: 'icon',
       title: 'Logs',
+    },
+  },
+  {
+    name: 'CashRegisterSummary',
+    component: CashRegisterSummary,
+    options: {
+      showCompanyFilter: true,
+      companyFilterMode: 'icon',
+      headerShown: true,
+      headerBackVisible: true,
+      showBottomToolBar: true,
+      title: 'Caixa',
     },
   },
   {
