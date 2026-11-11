@@ -38,6 +38,7 @@ const normalizeColor = value =>
 /** Prefer theme colors, but never render text the same as the footer background. */
 const resolveVisibleFooterTextColor = colors => {
   const candidates = [
+    colors?.footerLabelInfo,
     colors?.footerText,
     colors?.textSecondary,
     colors?.text,
