@@ -125,7 +125,7 @@ const BottomNavigationBar = ({
     appearance,
     appVersion: runtimeFooter?.appVersion,
     colors: appearance === 'soft'
-      ? {...runtimeFooter?.colors, footerBackground: colors.footerBackground, footerText: colors.footerText}
+      ? {...runtimeFooter?.colors, footerBackground: colors.footerBackground, footerLabelInfo: colors.footerLabelInfo, footerText: colors.footerText}
       : runtimeFooter?.colors || {},
     mainCompany: runtimeFooter?.mainCompany,
     device: runtimeFooter?.device,
