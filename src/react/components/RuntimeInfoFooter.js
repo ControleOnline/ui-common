@@ -14,6 +14,7 @@ import {
   parseConfigsObject,
 } from '@controleonline/ui-common/src/react/config/deviceConfigBootstrap';
 import {
+  formatRuntimeFooterIdentifier,
   getRuntimeFooterDebugInfo,
   getRuntimeFooterPrimaryText,
   getRuntimeFooterRotationEntries,
@@ -258,7 +259,7 @@ const RuntimeInfoFooter = ({
     shouldRotate
       ? rotationEntries[activeIndex]
       : inlineText
-  ) || primaryText || device?.id || '';
+  ) || primaryText || formatRuntimeFooterIdentifier(device?.id) || '';
   const backgroundColor = colors?.footerBackground;
   const homeSpacing = resolveHomeFooterSpacing(appearance, Platform.OS, insets.bottom);
   const borderColor = colors?.footerBorder;
@@ -299,7 +300,7 @@ const RuntimeInfoFooter = ({
           <RuntimeFooterMarqueeText
             text={
               showDebugInfo
-                ? inlineText || primaryText || device?.id || '--'
+                ? inlineText || primaryText || formatRuntimeFooterIdentifier(device?.id) || '--'
                 : displayedText
             }
             color={textColor}
