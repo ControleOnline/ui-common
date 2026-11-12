@@ -12,16 +12,18 @@ const SystemErrorToast = ({error}) => {
 
   const palette = useMemo(
     () => ({
+      // Theme `negative` is the fallback when the toastDanger* tokens are not defined.
       toastDangerBackground: themeColors.toastDangerBackground,
-      toastDangerBorder: themeColors.toastDangerBorder,
-      toastDangerIcon: themeColors.toastDangerIcon,
-      toastDangerText: themeColors.toastDangerText,
+      toastDangerBorder: themeColors.toastDangerBorder || themeColors.negative,
+      toastDangerIcon: themeColors.toastDangerIcon || themeColors.negative,
+      toastDangerText: themeColors.toastDangerText || themeColors.negative,
     }),
     [
       themeColors.toastDangerBackground,
       themeColors.toastDangerBorder,
       themeColors.toastDangerIcon,
       themeColors.toastDangerText,
+      themeColors.negative,
     ],
   );
 

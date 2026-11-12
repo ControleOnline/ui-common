@@ -1,26 +1,13 @@
 {
-  "version": "1.2.105",
+  "version": "1.2.126",
   "rc": 1,
-  "branch": "rc/1.2.105-rc.1",
-  "baseMaster": "ed2898e5d8181de6236aca398c804373f00372fc",
+  "branch": "rc/1.2.126-rc.1",
+  "baseMaster": "662ffc0f2a40a414b3b7ba2b249e15ca62f2cb93",
   "tasks": [
-    1164
+    138
   ],
-  "taskRepository": "ControleOnline/app-community",
-  "repositories": {
-    "ControleOnline/ui-common": "2f24a26523078fbe3b5df1ca5e4c1121634efacb"
-  },
-  "packages": {
-    "@controleonline/ui-common": {
-      "version": "1.2.105",
-      "source": "1018edc4e9fd05fbf553a3f4bb77584091b9ac3a"
-    }
-  },
   "frozen": true,
-  "validation": {
-    "focusedTests": 28,
-    "lint": "passed",
-    "security": "accepted on dev",
-    "production": "not authorized"
+  "repositories": {
+    "ControleOnline/ui-common": "eef80ebeacbfea966826b7071cc03427eac60f4e"
   }
 }

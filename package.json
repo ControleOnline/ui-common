@@ -1,14 +1,15 @@
 {
   "name": "@controleonline/ui-common",
-  "version": "1.2.105",
+  "version": "1.2.126",
   "author": "ControleOnline",
   "description": "ControleOnline Common Quasar UI Component",
   "license": "MIT",
   "main": "src/react/index.js",
   "scripts": {
-    "test": "npm run test:receita-federal && npm run test:imports-status && npm run test:runtime-language && npm run test:runtime-footer && npm run test:runtime-footer-marquee && npm run test:invoice-presentation && npm run test:system-error-message && npm run test:bottom-navigation-toolbar && npm run test:copy-device-configs && npm run test:print-routing && npm run test:device-detail-dependencies && npm run test:runtime-zoom",
+    "test": "npm run test:receita-federal && npm run test:imports-status && npm run test:runtime-language && npm run test:runtime-footer && npm run test:runtime-footer-marquee && npm run test:invoice-presentation && npm run test:system-error-message && npm run test:bottom-navigation-toolbar && npm run test:copy-device-configs && npm run test:print-routing && npm run test:device-detail-dependencies && npm run test:runtime-zoom && npm run test:cash-register-summary",
     "test:receita-federal": "node --test src/tests/react/pages/receitaFederalIntegrationContract.test.mjs",
     "test:imports-status": "mkdir -p node_modules/@controleonline && rm -rf node_modules/@controleonline/ui-common && ln -s ../.. node_modules/@controleonline/ui-common && node --test src/tests/react/utils/importStatus.test.js",
+    "test:cash-register-summary": "node --test src/tests/react/utils/cashRegisterSummary.test.js",
     "test:runtime-language": "node --test src/tests/react/utils/runtimeLanguage.test.js",
     "test:runtime-footer": "node --test src/tests/react/utils/runtimeFooter.test.js src/tests/react/utils/runtimeFooterText.test.js",
     "test:invoice-presentation": "node --test src/tests/react/utils/invoicePresentation.test.mjs",

@@ -3,17 +3,20 @@ import {useLayoutEffect, useMemo} from 'react';
 import Food99IntegrationPage from '@controleonline/ui-common/src/react/pages/Food99IntegrationPage';
 import IFoodIntegrationPage from '@controleonline/ui-common/src/react/pages/IFoodIntegrationPage';
 import MercadoLivreIntegrationPage from '@controleonline/ui-common/src/react/pages/MercadoLivreIntegrationPage';
+import LinkedInIntegrationPage from '@controleonline/ui-common/src/react/pages/LinkedInIntegrationPage';
 
 const ROUTE_PROVIDER_MAP = {
   Food99IntegrationPage: '99food',
   IFoodIntegrationPage: 'ifood',
   MercadoLivreIntegrationPage: 'mercadolivre',
+  LinkedInIntegrationPage: 'linkedin',
 };
 
 const PROVIDER_LABEL_MAP = {
   '99food': '99Food',
   ifood: 'iFood',
   mercadolivre: 'Mercado Livre',
+  linkedin: 'LinkedIn',
 };
 
 const normalizeProviderKey = value =>
@@ -54,6 +57,10 @@ export default function MarketplaceIntegrationPage(props) {
 
   if (providerKey === 'mercadolivre') {
     return <MercadoLivreIntegrationPage {...props} />;
+  }
+
+  if (providerKey === 'linkedin') {
+    return <LinkedInIntegrationPage {...props} />;
   }
 
   return <Food99IntegrationPage {...props} />;

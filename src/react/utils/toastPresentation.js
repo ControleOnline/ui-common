@@ -1,24 +1,29 @@
+import {getAllStores} from '@store'
+
 const TOAST_STYLE_KEYS = ['pressable', 'view', 'text', 'indicator']
 
 const isPlainObject = value =>
   value && typeof value === 'object' && !Array.isArray(value)
 
-export const TOAST_ERROR_STYLES = {
-  pressable: {
-    backgroundColor: '#FFF7F7',
-    borderColor: '#FECACA',
-    borderWidth: 1,
-  },
-  indicator: {
-    backgroundColor: '#DC2626',
-  },
+// Toast accents come from the theme (`negative` / `warning`), never from fixed RGB (#1484).
+const themeColors = () => {
+  try {
+    return getAllStores()?.theme?.getters?.colors || {}
+  } catch (error) {
+    return {}
+  }
 }
 
-export const TOAST_WARNING_STYLES = {
-  indicator: {
-    backgroundColor: '#e67e22',
-  },
-}
+export const buildErrorToastStyles = (colors = themeColors()) =>
+  colors.negative
+    ? {
+        pressable: {borderColor: colors.negative, borderWidth: 1},
+        indicator: {backgroundColor: colors.negative},
+      }
+    : {}
+
+export const buildWarningToastStyles = (colors = themeColors()) =>
+  colors.warning ? {indicator: {backgroundColor: colors.warning}} : {}
 
 export const mergeToastStyles = (...styleSets) =>
   styleSets.reduce((mergedStyles, currentStyleSet) => {
@@ -42,12 +47,12 @@ export const mergeToastStyles = (...styleSets) =>
 
 export const withErrorToastStyles = (options = {}) => ({
   ...options,
-  styles: mergeToastStyles(TOAST_ERROR_STYLES, options?.styles),
+  styles: mergeToastStyles(buildErrorToastStyles(), options?.styles),
 })
 
 export const withWarningToastStyles = (options = {}) => ({
   ...options,
-  styles: mergeToastStyles(TOAST_WARNING_STYLES, options?.styles),
+  styles: mergeToastStyles(buildWarningToastStyles(), options?.styles),
 })
 
 export default withErrorToastStyles
