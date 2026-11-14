@@ -27,4 +27,36 @@ const buildCashSummaryParams = ({companyId, period, from, to, device}) => {
   return {params};
 };
 
-module.exports = {PERIODS, isValidDate, buildCashSummaryParams};
+/**
+ * Params for navigating from a payment-type row to FinancialHubPage, keeping the
+ * period shown on the Caixa screen. Returns null for rows without payment type.
+ */
+const buildCashDrilldownNavigation = (item, summary) => {
+  const paymentTypeId = Number(item?.paymentTypeId);
+  if (!Number.isInteger(paymentTypeId) || paymentTypeId <= 0) return null;
+  if (!isValidDate(summary?.from) || !isValidDate(summary?.to)) return null;
+
+  const cashFilter = {paymentTypeId, from: summary.from, to: summary.to};
+  if (summary.scope === 'user' && summary.userId) cashFilter.userId = summary.userId;
+
+  return {routeName: 'FinancialHubPage', params: {cashFilter}};
+};
+
+/** Label of a device row; rows without device are grouped as "Sem dispositivo". */
+const resolveDeviceLabel = item => {
+  if (item?.deviceId === null || item?.deviceId === undefined) return 'Sem dispositivo';
+  return String(item?.label || item?.device || `#${item.deviceId}`);
+};
+
+/** Sum of the device balances, rounded to cents (must equal the payment block total). */
+const sumDeviceBalances = devices =>
+  Math.round((devices || []).reduce((sum, item) => sum + Number(item?.balance || 0), 0) * 100) / 100;
+
+module.exports = {
+  PERIODS,
+  isValidDate,
+  buildCashSummaryParams,
+  buildCashDrilldownNavigation,
+  resolveDeviceLabel,
+  sumDeviceBalances,
+};

@@ -1,23 +1,28 @@
 const {describe, expect, it} = global
 
+jest.mock('@store', () => ({
+  getAllStores: () => ({theme: {getters: {colors: {negative: '#C10015', warning: '#F2C037'}}}}),
+}), {virtual: true})
+
 const {
-  TOAST_ERROR_STYLES,
-  TOAST_WARNING_STYLES,
+  buildErrorToastStyles,
+  buildWarningToastStyles,
   mergeToastStyles,
   withErrorToastStyles,
   withWarningToastStyles,
 } = require('../../../react/utils/toastPresentation')
 
 describe('toastPresentation', () => {
-  it('keeps the shared error toast on a light, high-contrast panel', () => {
-    expect(TOAST_ERROR_STYLES.pressable).toMatchObject({
-      backgroundColor: '#FFF7F7',
-      borderColor: '#FECACA',
-      borderWidth: 1,
+  it('derives toast accents from the theme negative/warning variables, no fixed RGB (#1484)', () => {
+    expect(buildErrorToastStyles({negative: '#C10015'})).toEqual({
+      pressable: {borderColor: '#C10015', borderWidth: 1},
+      indicator: {backgroundColor: '#C10015'},
     })
-    expect(TOAST_ERROR_STYLES.indicator).toMatchObject({
-      backgroundColor: '#DC2626',
+    expect(buildWarningToastStyles({warning: '#F2C037'})).toEqual({
+      indicator: {backgroundColor: '#F2C037'},
     })
+    expect(buildErrorToastStyles({})).toEqual({})
+    expect(buildWarningToastStyles({})).toEqual({})
   })
 
   it('merges toast style groups without dropping prior sections', () => {
@@ -46,17 +51,16 @@ describe('toastPresentation', () => {
     })
   })
 
-  it('decorates error and warning toast options with the shared styles', () => {
+  it('decorates error and warning toast options with theme-driven styles', () => {
     expect(withErrorToastStyles({styles: {pressable: {paddingHorizontal: 8}}})).toEqual({
       styles: {
         pressable: {
-          backgroundColor: '#FFF7F7',
-          borderColor: '#FECACA',
+          borderColor: '#C10015',
           borderWidth: 1,
           paddingHorizontal: 8,
         },
         indicator: {
-          backgroundColor: '#DC2626',
+          backgroundColor: '#C10015',
         },
       },
     })
@@ -64,7 +68,7 @@ describe('toastPresentation', () => {
     expect(withWarningToastStyles({styles: {text: {fontWeight: '700'}}})).toEqual({
       styles: {
         indicator: {
-          backgroundColor: TOAST_WARNING_STYLES.indicator.backgroundColor,
+          backgroundColor: '#F2C037',
         },
         text: {
           fontWeight: '700',

@@ -45,10 +45,13 @@ export default StyleSheet.create({
     padding: 16,
   },
   modalPanel: {
+    alignSelf: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 18,
     maxHeight: '80%',
+    maxWidth: '100%',
     overflow: 'hidden',
+    width: 480,
   },
   modalHeader: {
     alignItems: 'center',
