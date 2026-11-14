@@ -217,7 +217,7 @@ test('reads the persisted config-version for non-web runtimes', () => {
         },
       },
     }),
-    'PDV (229252771069b294) / v1.3.7',
+    'PDV (…1069:b294) / v1.3.7',
   )
 })
 
@@ -245,7 +245,7 @@ test('prefers the backend device identifier used by the devices page', () => {
         },
       },
     }),
-    'PDV (229252771069b294) / v1.3.7',
+    'PDV (…1069:b294) / v1.3.7',
   )
 
   const debugInfo = getRuntimeFooterDebugInfo({
@@ -272,8 +272,8 @@ test('prefers the backend device identifier used by the devices page', () => {
   })
 
   assert.equal(debugInfo.versionLabel, 'v1.3.7')
-  assert.equal(debugInfo.displayName, 'PDV (229252771069b294)')
-  assert.equal(debugInfo.runtimeDetail, '229252771069b294')
+  assert.equal(debugInfo.displayName, 'PDV (…1069:b294)')
+  assert.equal(debugInfo.runtimeDetail, '…1069:b294')
   assert.equal(debugInfo.runtimeDetailSource, 'device_config.device.device')
   assert.equal(debugInfo.versionCandidates[0]?.source, 'device_config.device.metadata.app.version')
   assert.equal(debugInfo.rawValues.deviceId, 'd41ac8afb9f178eb')
@@ -384,8 +384,8 @@ test('does not invent a fallback label when the operation mode translation is mi
   })
 
   assert.equal(debugInfo.operationModeLabel, '')
-  assert.equal(debugInfo.displayName, 'PDV (229252771069b294)')
-  assert.equal(debugInfo.primaryText, 'PDV (229252771069b294) / v1.3.7')
+  assert.equal(debugInfo.displayName, 'PDV (…1069:b294)')
+  assert.equal(debugInfo.primaryText, 'PDV (…1069:b294) / v1.3.7')
 })
 
 test('renders totem mode in the runtime footer', () => {
@@ -500,6 +500,14 @@ test('formats runtime identifier: IPv4 full, non-IPv4 shortened to last two bloc
   assert.equal(formatRuntimeFooterIdentifier('abc'), 'abc')
   assert.equal(formatRuntimeFooterIdentifier(''), '')
   assert.equal(formatRuntimeFooterIdentifier(null), '')
+  assert.equal(formatRuntimeFooterIdentifier('a1b2c3d4e5f6a7b8'), '…e5f6:a7b8')
+  assert.equal(
+    formatRuntimeFooterIdentifier('3f2b8c1e-9d4a-4c7b-b1c2-0a9e4f7ab1c2'),
+    '…4f7a:b1c2',
+  )
+  assert.equal(formatRuntimeFooterIdentifier('A1B2C3D4E5F6'), '…C3D4:E5F6')
+  assert.equal(formatRuntimeFooterIdentifier('a1b2c3d4'), 'a1b2c3d4')
+  assert.equal(formatRuntimeFooterIdentifier('admin.lave-go.com'), 'admin.lave-go.com')
 })
 
 test('primary text shortens IPv6 public ip', () => {

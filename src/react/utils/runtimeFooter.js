@@ -130,22 +130,43 @@ const formatRuntimeFooterVersion = version => {
 
 const IPV4_PATTERN = /^(\d{1,3}\.){3}\d{1,3}$/;
 
-// IPv4 is shown in full; other ':'-separated ids (IPv6/MAC-like) are shortened
-// to an ellipsis plus the last two blocks, e.g. "…46f4:eb0b".
+const HEX_IDENTIFIER_PATTERN = /^[0-9a-f]+$/i;
+const HEX_IDENTIFIER_TAIL_LENGTH = 8;
+
+// IPv4 is shown in full. ':'-separated ids (IPv6/MAC-like) are shortened to an
+// ellipsis plus the last two blocks, e.g. "…46f4:eb0b". Plain hex ids (optionally
+// '-' separated, e.g. UUID) are shortened to an ellipsis plus the last 8
+// characters in two ':'-separated blocks of 4, e.g. "…e5f6:a7b8". Anything else
+// (hostnames, short ids) is returned untouched.
 const formatRuntimeFooterIdentifier = value => {
   const identifier = safeTrim(value);
 
-  if (!identifier || IPV4_PATTERN.test(identifier) || !identifier.includes(':')) {
+  if (!identifier || IPV4_PATTERN.test(identifier)) {
     return identifier;
   }
 
-  const blocks = identifier.split(':').filter(Boolean);
+  if (identifier.includes(':')) {
+    const blocks = identifier.split(':').filter(Boolean);
 
-  if (blocks.length <= 2) {
+    if (blocks.length <= 2) {
+      return identifier;
+    }
+
+    return `…${blocks.slice(-2).join(':')}`;
+  }
+
+  const hex = identifier.replace(/-/g, '');
+
+  if (
+    !HEX_IDENTIFIER_PATTERN.test(hex) ||
+    hex.length <= HEX_IDENTIFIER_TAIL_LENGTH
+  ) {
     return identifier;
   }
 
-  return `…${blocks.slice(-2).join(':')}`;
+  const tail = hex.slice(-HEX_IDENTIFIER_TAIL_LENGTH);
+
+  return `…${tail.slice(0, 4)}:${tail.slice(4)}`;
 };
 
 const getRuntimeFooterWebHost = () => {

@@ -71,3 +71,43 @@ export const saveOfficialWhatsappConnection = ({ commit }, params = {}) => {
       commit(types.SET_ISLOADING, false);
     });
 };
+
+/**
+ * Persist an e-mail connection (IMAP read + SMTP reply). Credentials go to channelConfig (write-only).
+ */
+export const saveEmailConnection = ({ commit }, params = {}) => {
+  commit(types.SET_ISLOADING, true);
+  const port = (value, fallback) => Number(String(value || '').replace(/\D/g, '')) || fallback;
+  const body = {
+    name: params.name || `E-mail ${params.from_address || ''}`.trim(),
+    channel: 'email',
+    type: params.type || 'support',
+    people: params.people,
+    channelConfig: JSON.stringify({
+      from_address: params.from_address,
+      from_name: params.from_name || '',
+      username: params.username,
+      password: params.password,
+      imap_host: params.imap_host,
+      imap_port: port(params.imap_port, 993),
+      imap_encryption: 'ssl',
+      smtp_host: params.smtp_host,
+      smtp_port: port(params.smtp_port, 587),
+      smtp_encryption: port(params.smtp_port, 587) === 465 ? 'ssl' : 'tls',
+    }),
+  };
+
+  return api
+    .fetch(params.id ? `/connections/${params.id}` : '/connections', { method: params.id ? 'PUT' : 'POST', body })
+    .then(data => {
+      commit(types.SET_ITEM, data);
+      return data;
+    })
+    .catch(e => {
+      commit(types.SET_ERROR, e.message);
+      throw e;
+    })
+    .finally(() => {
+      commit(types.SET_ISLOADING, false);
+    });
+};
