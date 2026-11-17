@@ -39,7 +39,16 @@ const resolvePersistableDeviceEntityId = deviceInfo =>
   normalizeText(deviceInfo?.entityId || deviceInfo?.apiId || deviceInfo?.['@id'])
     .replace(/\D+/g, '');
 
-const mergeManagerPushTokenMetadata = (metadata, deviceToken) => {
+// Requests push (app-community#1598) target a person: the signed-in person is stored with the token.
+const peopleIdOf = user =>
+  normalizeText(user?.people?.['@id'] || user?.people?.id || user?.people || '').replace(/\D+/g, '');
+
+const extractTaskIdFromResponse = response => {
+  const data = response?.notification?.request?.content?.data || {};
+  return normalizeText(data?.taskId || data?.task_id || '').replace(/\D+/g, '');
+};
+
+const mergeManagerPushTokenMetadata = (metadata, deviceToken, peopleId = '') => {
   const normalizedMetadata = isPlainObject(metadata) ? metadata : {};
   const nextMetadata = {
     ...normalizedMetadata,
@@ -57,6 +66,11 @@ const mergeManagerPushTokenMetadata = (metadata, deviceToken) => {
 
   if (normalizeText(deviceToken)) {
     androidTokens.deviceToken = normalizeText(deviceToken);
+    if (peopleId) {
+      androidTokens.peopleId = Number(peopleId);
+    } else {
+      delete androidTokens.peopleId;
+    }
     managerTokens.android = androidTokens;
     pushTokens.manager = managerTokens;
     nextMetadata.pushTokens = pushTokens;
@@ -64,6 +78,7 @@ const mergeManagerPushTokenMetadata = (metadata, deviceToken) => {
   }
 
   delete androidTokens.deviceToken;
+  delete androidTokens.peopleId;
   if (Object.keys(androidTokens).length > 0) {
     managerTokens.android = androidTokens;
   } else {
@@ -93,7 +108,9 @@ const ManagerPushBridge = ({device, setDevice}) => {
   const deviceActions = deviceStore.actions;
 
   const {isLogged, sessionChecked, user} = authGetters;
-  const isManagerRuntime = isManagerAppType(app_type);
+  // Manager and CRM receive order/request pushes.
+  const isManagerRuntime = isManagerAppType(app_type) || String(app_type || '').toUpperCase() === 'CRM';
+  const peopleId = peopleIdOf(user);
   const pushPreferences = useMemo(
     () => resolveManagerOrderNotificationPreferences(user),
     [user],
@@ -135,11 +152,15 @@ const ManagerPushBridge = ({device, setDevice}) => {
 
       const normalizedToken = normalizeText(deviceToken);
       const currentToken = extractManagerPushToken(currentDevice?.metadata);
+      const currentPeopleId = normalizeText(
+        currentDevice?.metadata?.pushTokens?.manager?.android?.peopleId || '',
+      );
 
       if (
         !persistImmediately &&
         normalizedToken &&
-        currentToken === normalizedToken
+        currentToken === normalizedToken &&
+        currentPeopleId === peopleId
       ) {
         return true;
       }
@@ -155,6 +176,7 @@ const ManagerPushBridge = ({device, setDevice}) => {
       const nextMetadata = mergeManagerPushTokenMetadata(
         currentDevice?.metadata,
         normalizedToken,
+        peopleId,
       );
       const nextDevice = {
         ...currentDevice,
@@ -185,7 +207,7 @@ const ManagerPushBridge = ({device, setDevice}) => {
 
       return true;
     },
-    [deviceActions, persistLocalDevice],
+    [deviceActions, persistLocalDevice, peopleId],
   );
 
   useEffect(() => {
@@ -286,6 +308,11 @@ const ManagerPushBridge = ({device, setDevice}) => {
       if (!notificationResponseListenerRef.current) {
         notificationResponseListenerRef.current =
           Notifications.addNotificationResponseReceivedListener(response => {
+            const taskId = extractTaskIdFromResponse(response);
+            if (taskId) {
+              queueNotificationNavigation('TicketConversation', {taskId});
+              return;
+            }
             const orderId = extractOrderIdFromResponse(response);
             if (!orderId) {
               return;
