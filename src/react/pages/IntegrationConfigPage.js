@@ -284,8 +284,24 @@ export default function IntegrationConfigPage({ route, embedded = false, fiscalT
       }));
     }
 
+    // Secrets (secureTextEntry) are always private: public configs are served without login by
+    // /people/company/default. The API enforces the same rule (api-platform-common#71).
+    const secretKeys = new Set(
+      (visibleFields || []).filter(field => field?.secureTextEntry).map(field => field.key),
+    );
+    const anySecret = secretKeys.size > 0;
+    const secretConfigs = bundleKey
+      ? (anySecret ? configs : [])
+      : configs.filter(item => secretKeys.has(item.configKey));
+    const plainConfigs = configs.filter(item => !secretConfigs.includes(item));
+
     try {
-      await persistConfigs({ configs, people: providerIri, module: 4, visibility: configVisibility });
+      if (secretConfigs.length) {
+        await persistConfigs({ configs: secretConfigs, people: providerIri, module: 4, visibility: 'private' });
+      }
+      if (plainConfigs.length) {
+        await persistConfigs({ configs: plainConfigs, people: providerIri, module: 4, visibility: configVisibility });
+      }
       showSuccess(`${activeTabDef?.label || providerConfig.label} salvo com sucesso.`);
       await loadPageData({ showLoading: false });
     } catch (error) { showError(error?.message || 'Nao foi possivel salvar a integracao.'); }
