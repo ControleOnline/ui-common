@@ -34,6 +34,7 @@ export const createWebsocketSharedRuntime = ({
   leaderStaleMs = 6000,
   reconnectBaseMs = 1500,
   reconnectMaxMs = 12000,
+  connectTimeoutMs = 10000,
   channelName = DEFAULT_CHANNEL_NAME,
 } = {}) => {
   const startedAt = now();
@@ -490,6 +491,20 @@ export const createWebsocketSharedRuntime = ({
     socketGeneration = generation;
     const nextSocket = new WebSocketImpl(socketUrl);
     socket = nextSocket;
+
+    // A socket can stay CONNECTING forever (seen in Chrome after the server closed the previous one):
+    // the leader then never reconnects and the screens only update with F5. Give up and retry.
+    setTimeoutImpl(() => {
+      if (
+        !destroyed &&
+        !manualClose &&
+        isCurrentSocket(nextSocket, generation) &&
+        nextSocket.readyState === WebSocketImpl.CONNECTING
+      ) {
+        stopSocket();
+        scheduleReconnect();
+      }
+    }, connectTimeoutMs);
 
     nextSocket.onopen = () => {
       if (!isCurrentSocket(nextSocket, generation)) {
