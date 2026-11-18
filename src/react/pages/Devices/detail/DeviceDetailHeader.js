@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text, TextInput, TouchableOpacity, View } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
-import { withOpacity } from '@controleonline/../../src/styles/branding';
+import { withOpacity } from '@controleonline/ui-layout/src/styles/branding';
 import styles from '../../DeviceDetailPage.styles';
 
 /**

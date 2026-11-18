@@ -1,7 +1,7 @@
 import React from 'react';
 import { Text, View } from 'react-native';
 
-import { withOpacity } from '@controleonline/../../src/styles/branding';
+import { withOpacity } from '@controleonline/ui-layout/src/styles/branding';
 
 import styles from '../styles';
 

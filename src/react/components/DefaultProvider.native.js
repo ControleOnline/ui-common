@@ -37,8 +37,8 @@ import {
   applyPaletteToRuntimeColors,
   applyThemeCssVariables,
   resolveThemePalette,
-} from '@controleonline/../../src/styles/branding';
-import {colors as runtimeColors} from '@controleonline/../../src/styles/colors';
+} from '@controleonline/ui-layout/src/styles/branding';
+import {colors as runtimeColors} from '@controleonline/ui-layout/src/styles/colors';
 import {
   buildDefaultDeviceConfigs,
   buildProviderManagedDeviceConfigs,
