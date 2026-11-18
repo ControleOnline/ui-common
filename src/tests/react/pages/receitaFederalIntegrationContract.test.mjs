@@ -37,7 +37,9 @@ test('embedded fiscal configuration keeps reads and writes on the company being 
   assert.match(page, /resolveProviderId\(\{ route, currentCompany, embedded \}\)/);
   assert.match(page, /fetchPeopleConfigs/);
   assert.match(page, /visibleFields/);
-  assert.match(page, /persistConfigs\(\{ configs, people: providerIri/);
+  assert.match(page, /persistConfigs\(\{ configs: plainConfigs, people: providerIri/);
+  // Secret fields are always saved private (api-platform-common#71).
+  assert.match(page, /persistConfigs\(\{ configs: secretConfigs, people: providerIri, module: 4, visibility: 'private' \}\)/);
 });
 
 test('fiscal tabs load all keys once; save only the current tab keys', () => {
