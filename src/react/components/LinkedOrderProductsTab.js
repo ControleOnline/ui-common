@@ -161,7 +161,6 @@ const LinkedOrderProductsTab = ({
       client: contract?.client,
       payer: contract?.client,
       app: 'CRM',
-      orderType: 'sale',
     });
 
     setOrder(createdOrder);
