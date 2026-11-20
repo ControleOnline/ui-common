@@ -30,11 +30,15 @@ export async function discoveryStoreTranslate(translate, store, options = {}) {
 
   const requests = translate.getQueuedTranslateGroupsForStore(store);
   if (requests.length > 0) {
-    requests.forEach((request) => {
-      (request.keys || []).forEach((key) => {
-        translate.removePendingTranslate(request.store, request.type, key);
-      });
-    });
+    translate.removePendingTranslates(
+      requests.flatMap((request) =>
+        (request.keys || []).map((key) => ({
+          store: request.store,
+          type: request.type,
+          key,
+        })),
+      ),
+    );
   }
 
   if (translate.hasCachedBootstrapStore(store)) {
@@ -87,10 +91,10 @@ export async function resolveStoreTranslates(translate, store, company, options 
     changed =
       translate.cacheTranslateRecord(item, companyId, translate.language) ||
       changed;
-    if (clearPending) {
-      translate.removePendingTranslate(item.store, item.type, item.key);
-    }
   });
+  if (clearPending) {
+    translate.removePendingTranslates(resolvedItems);
+  }
 
   return changed;
 }
