@@ -15,6 +15,8 @@ import {
   writeMessageToBucket,
 } from "./translateStorage.js";
 import {
+  addPendingTranslates,
+  removePendingTranslates,
   getPendingMessages as readPendingMessages,
   getQueuedTranslateGroups as readQueuedGroups,
   getQueuedTranslateGroupsForStore as readQueuedGroupsForStore,
@@ -46,6 +48,8 @@ export default class Translate {
     this.discoveredStores = new Set();
     this.pendingStoreDiscoveries = new Map();
     this.pendingMissingTranslateSchedules = new Set();
+    this.missingTranslateBatch = new Map();
+    this.missingTranslateBatchPromise = null;
     this.pendingTranslateResolutionPromise = null;
     this.pendingPersistRequests = new Map();
     this.t = this.t.bind(this);
@@ -262,6 +266,35 @@ export default class Translate {
       return;
     }
 
+    // Every commit on the translate store re-creates the whole store object and
+    // re-renders all subscribers (useStore). Committing once per missing key made
+    // the render -> t() -> commit -> render cascade exceed React's nested update
+    // limit ("Maximum update depth exceeded"). Collect the keys missing in the
+    // same tick and write them with a single commit.
+    if (
+      typeof this.translateActions?.setPendingMessages === "function" &&
+      this.translateStore?.getters
+    ) {
+      return this.enqueueMissingTranslateBatch(
+        store,
+        type,
+        key,
+        translate,
+      ).then(() => {
+        if (typeof this.translateActions?.resolveQueuedMessages === "function") {
+          // The batch flush already coalesced the keys; no extra timer needed.
+          return this.scheduleQueuedTranslateResolution({immediate: true});
+        }
+        return this.saveMissingTranslate(
+          store,
+          type,
+          key,
+          translate,
+          mainCompanyId,
+        );
+      });
+    }
+
     if (typeof this.translateActions?.queueMissingTranslate !== "function") {
       return;
     }
@@ -279,6 +312,10 @@ export default class Translate {
       return this.scheduleQueuedTranslateResolution();
     }
 
+    return this.saveMissingTranslate(store, type, key, translate, mainCompanyId);
+  }
+
+  saveMissingTranslate(store, type, key, translate, mainCompanyId) {
     const requestToken = this.getPersistRequestToken(store, type, key);
     if (this.pendingPersistRequests.has(requestToken)) {
       return this.pendingPersistRequests.get(requestToken);
@@ -321,6 +358,64 @@ export default class Translate {
     return request;
   }
 
+  enqueueMissingTranslateBatch(store, type, key, translate) {
+    this.missingTranslateBatch.set(`${store}:${type}:${key}`, {
+      store,
+      type,
+      key,
+      translate,
+    });
+
+    if (!this.missingTranslateBatchPromise) {
+      this.missingTranslateBatchPromise = new Promise((resolve) => {
+        setTimeout(resolve, 0);
+      }).then(() => {
+        const entries = Array.from(this.missingTranslateBatch.values());
+        this.missingTranslateBatch.clear();
+        this.missingTranslateBatchPromise = null;
+
+        const current = this.getPendingMessages();
+        const next = addPendingTranslates(
+          current,
+          this.language,
+          this.mainCompany?.id,
+          entries,
+        );
+
+        if (next !== current) {
+          this.translateActions.setPendingMessages(next);
+        }
+      });
+    }
+
+    return this.missingTranslateBatchPromise;
+  }
+
+  removePendingTranslates(entries) {
+    if (!entries?.length) return;
+
+    if (
+      typeof this.translateActions?.setPendingMessages === "function" &&
+      this.translateStore?.getters
+    ) {
+      const current = this.getPendingMessages();
+      const next = removePendingTranslates(
+        current,
+        this.language,
+        this.mainCompany?.id,
+        entries,
+      );
+      if (next !== current) {
+        this.translateActions.setPendingMessages(next);
+      }
+      return;
+    }
+
+    entries.forEach(({store, type, key}) => {
+      this.removePendingTranslate(store, type, key);
+    });
+  }
+
   removePendingTranslate(store, type, key) {
     if (typeof this.translateActions?.removePendingTranslate !== "function") {
       return;
@@ -352,14 +447,18 @@ export default class Translate {
     );
   }
 
-  scheduleQueuedTranslateResolution() {
+  scheduleQueuedTranslateResolution({immediate = false} = {}) {
     if (this.pendingTranslateResolutionPromise) {
       return this.pendingTranslateResolutionPromise;
     }
 
-    this.pendingTranslateResolutionPromise = new Promise((resolve) => {
-      setTimeout(resolve, 0);
-    })
+    this.pendingTranslateResolutionPromise = (
+      immediate
+        ? Promise.resolve()
+        : new Promise((resolve) => {
+            setTimeout(resolve, 0);
+          })
+    )
       .then(() => this.resolveQueuedTranslations())
       .catch(() => this.translates)
       .finally(() => {
@@ -406,9 +505,9 @@ export default class Translate {
       resolvedItems.forEach((item) => {
         changed =
           this.cacheTranslateRecord(item, companyId, this.language) || changed;
-        this.removePendingTranslate(item.store, item.type, item.key);
         allResolvedItems.push(item);
       });
+      this.removePendingTranslates(resolvedItems);
     }
 
     if (changed) {
