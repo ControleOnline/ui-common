@@ -3,6 +3,7 @@ const {test} = require('node:test')
 
 const {
   getRuntimeFooterRotationEntries,
+  getRuntimeFooterTickerText,
   getRuntimeFooterText,
   getRuntimeFooterTextLines,
 } = require('../../../react/utils/runtimeFooterText')
@@ -85,4 +86,37 @@ test('returns empty string when footer text is absent', () => {
   assert.equal(getRuntimeFooterText({configs: {foo: 'bar'}}), '')
   assert.equal(getRuntimeFooterText(null, []), '')
   assert.deepEqual(getRuntimeFooterTextLines(''), [])
+})
+
+test('ticker text: user text first, then the system text, joined by a bullet', () => {
+  const companyFooterText =
+    'www.controleonline.com \u2022 (11) 5555-5159 (Comercial) \u2022 (11) 3136-0353 (Suporte)'
+  const primaryText = 'web \u2022 MANAGER (179.125.133.217) / v1.10.236'
+
+  assert.equal(
+    getRuntimeFooterTickerText({companyFooterText, primaryText}),
+    `${companyFooterText}  \u2022  ${primaryText}`,
+  )
+})
+
+test('ticker text: multiple user lines keep their order before the system text', () => {
+  assert.equal(
+    getRuntimeFooterTickerText({
+      companyFooterText: 'linha 1\nlinha 2',
+      primaryText: 'web \u2022 PDV / v1',
+    }),
+    'linha 1  \u2022  linha 2  \u2022  web \u2022 PDV / v1',
+  )
+})
+
+test('ticker text: shows only the available text, or nothing', () => {
+  assert.equal(
+    getRuntimeFooterTickerText({companyFooterText: '', primaryText: 'web \u2022 PDV / v1'}),
+    'web \u2022 PDV / v1',
+  )
+  assert.equal(
+    getRuntimeFooterTickerText({companyFooterText: 'Somente usuario', primaryText: ''}),
+    'Somente usuario',
+  )
+  assert.equal(getRuntimeFooterTickerText({companyFooterText: '', primaryText: ''}), '')
 })
