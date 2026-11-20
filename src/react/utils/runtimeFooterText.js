@@ -148,8 +148,19 @@ const getRuntimeFooterRotationEntries = ({companyFooterText, primaryText}) =>
     Boolean,
   );
 
+const RUNTIME_FOOTER_TICKER_SEPARATOR = '  •  ';
+
+// Text of the footer ticker: the text written by the user (company footer)
+// first, then the system text (e.g. "web • MANAGER (ip) / v1.10.x").
+const getRuntimeFooterTickerText = ({companyFooterText, primaryText}) =>
+  getRuntimeFooterRotationEntries({companyFooterText, primaryText}).join(
+    RUNTIME_FOOTER_TICKER_SEPARATOR,
+  );
+
 module.exports = {
   DEVICE_RUNTIME_FOOTER_TEXT_CONFIG_KEY,
+  RUNTIME_FOOTER_TICKER_SEPARATOR,
+  getRuntimeFooterTickerText,
   getRuntimeFooterRotationEntries,
   getRuntimeFooterText,
   getRuntimeFooterTextLines,

@@ -1,6 +1,7 @@
 const {
   DEVICE_RUNTIME_FOOTER_TEXT_CONFIG_KEY,
   getRuntimeFooterRotationEntries,
+  getRuntimeFooterTickerText,
   getRuntimeFooterText,
   getRuntimeFooterTextLines,
   normalizeRuntimeFooterText,
@@ -482,6 +483,7 @@ module.exports = {
   getRuntimeFooterNativeIdentifierCandidates,
   getRuntimeFooterPrimaryText,
   getRuntimeFooterRotationEntries,
+  getRuntimeFooterTickerText,
   getRuntimeFooterStoredVersion,
   getRuntimeFooterTextLines,
   getRuntimeFooterVersionCandidates,

@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useState} from 'react';
+import React, {useMemo} from 'react';
 import {
   ActivityIndicator,
   Platform,
@@ -18,14 +18,13 @@ import {
   getRuntimeFooterDebugInfo,
   getRuntimeFooterPrimaryText,
   getRuntimeFooterRotationEntries,
+  getRuntimeFooterTickerText,
   getRuntimeFooterText,
-  getRuntimeFooterTextLines,
 } from '@controleonline/ui-common/src/react/utils/runtimeFooter';
 import styles from './RuntimeInfoFooter.styles';
 import RuntimeFooterMarqueeText from './RuntimeFooterMarqueeText';
 import resolveHomeFooterSpacing from './RuntimeInfoFooter.home.spacing';
 
-const ROTATION_INTERVAL_MS = 4000;
 const COMPACT_BREAKPOINT = 720;
 const MAX_INLINE_TEXT_LENGTH = 84;
 const FALLBACK_TEXT_COLOR = '#0f172a';
@@ -72,7 +71,6 @@ const RuntimeInfoFooter = ({
 }) => {
   const {width} = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const [activeIndex, setActiveIndex] = useState(0);
   const allStores = useStores(state => state);
   const deviceConfigStore = useStore('device_config');
   const runtimeDebugStore = useStore('runtime_debug');
@@ -119,10 +117,6 @@ const RuntimeInfoFooter = ({
     deviceConfigItem?.configs,
     storeMainCompany?.configs,
   ]);
-  const footerTextLines = useMemo(
-    () => getRuntimeFooterTextLines(companyFooterText),
-    [companyFooterText],
-  );
   const deviceConfigs = useMemo(
     () => parseConfigsObject(deviceConfigItem?.configs),
     [deviceConfigItem?.configs],
@@ -143,14 +137,13 @@ const RuntimeInfoFooter = ({
       }),
     [companyFooterText, primaryText],
   );
+  // Ticker: the text written by the user (company footer) comes first, then the
+  // system text (e.g. "web • MANAGER (ip) / v1.10.x"). Both scroll together,
+  // right to left, in a continuous loop (no more alternating between them).
   const inlineText = useMemo(
-    () => [primaryText, ...footerTextLines].filter(Boolean).join('  •  '),
-    [footerTextLines, primaryText],
+    () => getRuntimeFooterTickerText({companyFooterText, primaryText}),
+    [companyFooterText, primaryText],
   );
-  // Always rotate when there is more than one entry (e.g. 1 footer line + primaryText).
-  // Do not fall back to concatenated inlineText in that case.
-  const shouldRotate =
-    !showDebugInfo && rotationEntries.length > 1;
   const footerEntries = useMemo(
     () =>
       Object.values(runtimeDebugSummary?.entries || {})
@@ -222,44 +215,12 @@ const RuntimeInfoFooter = ({
       ? 0
       : Math.max(Number(insets.bottom) || 0, 16);
 
-  useEffect(() => {
-    if (!shouldRotate || rotationEntries.length <= 1) {
-      setActiveIndex(0);
-      return undefined;
-    }
-
-    let timeoutId;
-    let cancelled = false;
-
-    const scheduleTransition = () => {
-      timeoutId = setTimeout(() => {
-        if (cancelled) {
-          return;
-        }
-        setActiveIndex(current => (current + 1) % rotationEntries.length);
-        scheduleTransition();
-      }, ROTATION_INTERVAL_MS);
-    };
-
-    scheduleTransition();
-
-    return () => {
-      cancelled = true;
-      if (timeoutId) {
-        clearTimeout(timeoutId);
-      }
-    };
-  }, [rotationEntries.length, shouldRotate]);
-
   if (rotationEntries.length === 0 && !showDebugInfo) {
     return null;
   }
 
-  const displayedText = (
-    shouldRotate
-      ? rotationEntries[activeIndex]
-      : inlineText
-  ) || primaryText || formatRuntimeFooterIdentifier(device?.id) || '';
+  const displayedText =
+    inlineText || primaryText || formatRuntimeFooterIdentifier(device?.id) || '';
   const backgroundColor = colors?.footerBackground;
   const homeSpacing = resolveHomeFooterSpacing(appearance, Platform.OS, insets.bottom);
   const borderColor = colors?.footerBorder;
@@ -305,6 +266,7 @@ const RuntimeInfoFooter = ({
             }
             color={textColor}
             opacity={1}
+            continuous
             style={styles.primaryText}
             testID="runtime-footer-primary-text"
           />
