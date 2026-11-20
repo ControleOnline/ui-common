@@ -144,13 +144,14 @@ const RuntimeInfoFooter = ({
     [companyFooterText, primaryText],
   );
   const inlineText = useMemo(
-    () => [primaryText, ...footerTextLines].filter(Boolean).join('  •  '),
+    () => [...footerTextLines, primaryText].filter(Boolean).join('  •  '),
     [footerTextLines, primaryText],
   );
   // Always rotate when there is more than one entry (e.g. 1 footer line + primaryText).
   // Do not fall back to concatenated inlineText in that case.
-  const shouldRotate =
-    !showDebugInfo && rotationEntries.length > 1;
+  // Ticker mode: all entries are shown together in a continuous scrolling
+  // marquee instead of alternating between them.
+  const shouldRotate = false;
   const footerEntries = useMemo(
     () =>
       Object.values(runtimeDebugSummary?.entries || {})
@@ -305,6 +306,7 @@ const RuntimeInfoFooter = ({
             }
             color={textColor}
             opacity={1}
+            continuous
             style={styles.primaryText}
             testID="runtime-footer-primary-text"
           />

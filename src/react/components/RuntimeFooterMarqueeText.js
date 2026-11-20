@@ -4,6 +4,7 @@ const RN = require('react-native');
 const Animated = RN.Animated;
 const Text = RN.Text;
 const View = RN.View;
+const Easing = RN.Easing;
 const Platform = RN.Platform || {OS: 'native'};
 const USE_NATIVE_DRIVER = Platform.OS !== 'web';
 const IS_WEB = Platform.OS === 'web';
@@ -28,6 +29,8 @@ const RuntimeFooterMarqueeText = props => {
   const text = props && props.text;
   const color = props && props.color;
   const style = props && props.style;
+  // continuous: always scroll like a ticker (web + native), no hold, linear speed.
+  const continuous = !!(props && props.continuous);
   const testID =
     (props && props.testID) || 'runtime-footer-marquee-text';
 
@@ -36,8 +39,11 @@ const RuntimeFooterMarqueeText = props => {
   const translateX = useRef(new Animated.Value(0)).current;
   const animationRef = useRef(null);
 
-  const shouldMarquee =
-    !IS_WEB && containerWidth > 0 && contentWidth > containerWidth + 2;
+  const shouldMarquee = continuous
+    ? containerWidth > 0 && contentWidth > 0
+    : !IS_WEB && containerWidth > 0 && contentWidth > containerWidth + 2;
+  const distance = contentWidth + GAP_PX;
+  const durationMs = Math.max(Math.round(distance * MS_PER_PX), MIN_DURATION_MS);
 
   useEffect(() => {
     if (animationRef.current) {
@@ -47,18 +53,19 @@ const RuntimeFooterMarqueeText = props => {
     translateX.stopAnimation();
     translateX.setValue(0);
 
-    if (!shouldMarquee) {
+    // On web the continuous ticker uses a CSS keyframe animation instead.
+    if (!shouldMarquee || (IS_WEB && continuous)) {
       return undefined;
     }
 
-    const distance = contentWidth + GAP_PX;
-    const duration = Math.max(Math.round(distance * MS_PER_PX), MIN_DURATION_MS);
+    const duration = durationMs;
     const loop = Animated.loop(
       Animated.sequence([
-        Animated.delay(HOLD_MS),
+        Animated.delay(continuous ? 0 : HOLD_MS),
         Animated.timing(translateX, {
           toValue: -distance,
           duration: duration,
+          easing: continuous && Easing ? Easing.linear : undefined,
           useNativeDriver: USE_NATIVE_DRIVER,
         }),
         Animated.timing(translateX, {
@@ -138,6 +145,44 @@ const RuntimeFooterMarqueeText = props => {
     },
     text,
   );
+
+  if (IS_WEB && continuous && shouldMarquee) {
+    return React.createElement(
+      View,
+      {
+        testID: testID,
+        style: {flex: 1, overflow: 'hidden', justifyContent: 'center', opacity: 1},
+        onLayout: handleContainerLayout,
+      },
+      React.createElement(
+        View,
+        {
+          style: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            alignSelf: 'flex-start',
+            animationKeyframes: {
+              from: {transform: [{translateX: 0}]},
+              to: {transform: [{translateX: -distance}]},
+            },
+            animationDuration: durationMs + 'ms',
+            animationTimingFunction: 'linear',
+            animationIterationCount: 'infinite',
+          },
+        },
+        content,
+        React.createElement(
+          Text,
+          {
+            numberOfLines: 1,
+            accessible: false,
+            style: textStyle.concat([{marginLeft: GAP_PX}]),
+          },
+          text,
+        ),
+      ),
+    );
+  }
 
   if (IS_WEB) {
     return React.createElement(

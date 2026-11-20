@@ -1,4 +1,4 @@
-import React, { useCallback, useMemo } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { Platform, Text, TouchableOpacity, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useNavigation } from '@react-navigation/native';
@@ -12,6 +12,7 @@ import {
   withOpacity,
 } from '@controleonline/../../src/styles/branding';
 import DefaultTable from '@controleonline/ui-default/src/react/components/table/DefaultTable';
+import EmailConnectionModal from './EmailConnectionModal';
 
 const tt = (type, key) => global.t?.t('configs', type, key);
 
@@ -95,6 +96,8 @@ export default function Connections() {
       connectionsStore.actions.getItems({ people: peopleIri });
     }, [peopleIri]),
   );
+
+  const [emailModalVisible, setEmailModalVisible] = useState(false);
 
   const openWhatsAppChannel = useCallback(() => {
     navigation.navigate('WhatsAppConnectionPage');
@@ -197,6 +200,35 @@ export default function Connections() {
           <Icon name="arrow-right" size={18} color={brandColors.primary} />
         </View>
       </TouchableOpacity>
+
+      <TouchableOpacity
+        activeOpacity={0.92}
+        onPress={() => setEmailModalVisible(true)}
+        style={[styles.channelCard, shadowStyle]}>
+        <View style={styles.channelTopRow}>
+          <View style={[styles.channelIconWrap, { backgroundColor: withOpacity(brandColors.primary, 0.12) }]}>
+            <Icon name="mail" size={20} color={brandColors.primary} />
+          </View>
+        </View>
+        <Text style={styles.channelTitle}>E-mail</Text>
+        <Text style={styles.channelDescription}>
+          Conecte a caixa de atendimento (IMAP/SMTP): e-mails viram conversas e as respostas saem por ela.
+        </Text>
+        <View style={styles.actionRow}>
+          <Text style={styles.actionText}>Conectar e-mail</Text>
+          <Icon name="arrow-right" size={18} color={brandColors.primary} />
+        </View>
+      </TouchableOpacity>
+
+      <EmailConnectionModal
+        visible={emailModalVisible}
+        peopleIri={peopleIri}
+        onClose={() => setEmailModalVisible(false)}
+        onSaved={() => {
+          setEmailModalVisible(false);
+          connectionsStore.actions?.getItems?.({ people: peopleIri });
+        }}
+      />
 
       <View style={{ flex: 1, marginTop: 12 }}>
         <DefaultTable

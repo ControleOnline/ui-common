@@ -73,6 +73,7 @@ export default function WhatsAppConnectionPage() {
   const [accessToken, setAccessToken] = useState('');
   const [phoneNumberId, setPhoneNumberId] = useState('');
   const [apiVersion, setApiVersion] = useState('v22.0');
+  const [connectionType, setConnectionType] = useState('support');
   const [qrValue, setQrValue] = useState('');
   const [connectionStatus, setConnectionStatus] = useState('');
   const [lastRequestedPhone, setLastRequestedPhone] = useState('');
@@ -189,6 +190,7 @@ export default function WhatsAppConnectionPage() {
         accessToken: token,
         phoneNumberId: pnid,
         apiVersion: apiVersion || 'v22.0',
+        type: connectionType,
         people: peopleIri,
         name: `WhatsApp Oficial ${pnid}`,
       });
@@ -203,13 +205,14 @@ export default function WhatsAppConnectionPage() {
     } finally {
       setSubmitting(false);
     }
-  }, [accessToken, phoneNumberId, apiVersion, connectionsActions, peopleIri, loadConnections, showError, showSuccess]);
+  }, [accessToken, phoneNumberId, apiVersion, connectionType, connectionsActions, peopleIri, loadConnections, showError, showSuccess]);
 
   const handlePrimaryAction = useCallback(async () => {
     if (providerMode === PROVIDER_OFFICIAL) {
       return saveOfficialConnection();
     }
-    return handlePrimaryAction();
+    // Was `return handlePrimaryAction()` (infinite recursion): the QR flow never started.
+    return startPolling(completePhone);
   }, [providerMode, saveOfficialConnection, startPolling, completePhone]);
 
   useFocusEffect(
@@ -365,6 +368,32 @@ export default function WhatsAppConnectionPage() {
             onPrimaryAction={() => handlePrimaryAction()}
           />
 
+          <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+            {[['support', 'Suporte'], ['relationship', 'Comercial']].map(([value, label]) => (
+              <TouchableOpacity
+                key={value}
+                onPress={() => setConnectionType(value)}
+                style={{
+                  borderWidth: 1,
+                  borderColor: connectionType === value ? brandColors.primary : '#CBD5E1',
+                  backgroundColor: connectionType === value ? brandColors.primary : 'transparent',
+                  borderRadius: 14,
+                  paddingHorizontal: 12,
+                  paddingVertical: 6,
+                }}>
+                <Text style={{ color: connectionType === value ? '#FFFFFF' : '#334155', fontSize: 12 }}>{label}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+          <Text style={styles.helperText}>
+            Sem IA configurada, as conversas deste numero vao para {connectionType === 'support' ? 'Suporte' : 'o CRM'}.
+            Com IA, ela atende primeiro e encaminha.
+          </Text>
+          {providerMode === PROVIDER_OFFICIAL ? (
+            <Text style={styles.helperText}>
+              Webhook no app Meta: https://api.controleonline.com/webhook/whatsapp-cloud (campo messages).
+            </Text>
+          ) : null}
           <Text style={styles.helperText}>
             Numero atual: {completePhone || 'Nao informado'}
           </Text>
