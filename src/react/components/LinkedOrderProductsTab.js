@@ -82,6 +82,9 @@ const LinkedOrderProductsTab = ({
   );
 
   const canEditProducts = !!canEdit && !!contract?.['@id'] && (!order || isOpenCommercialOrder(order));
+  // The backend only accepts products linked to the contract model category
+  // (ProposalProductCategoryGuard), so the search must use the same filter.
+  const modelCategoryId = normalizeEntityId(contract?.contractModel?.category);
 
   const loadLinkedOrderProducts = useCallback(async () => {
     if (!contract?.['@id']) {
@@ -128,6 +131,7 @@ const LinkedOrderProductsTab = ({
         const results = await searchCompanyProducts({
           companyId: currentCompany.id,
           query: trimmedQuery,
+          categoryId: modelCategoryId,
         });
 
         if (!cancelled) {
@@ -148,7 +152,7 @@ const LinkedOrderProductsTab = ({
       cancelled = true;
       clearTimeout(timeoutId);
     };
-  }, [canEditProducts, currentCompany?.id, searchQuery]);
+  }, [canEditProducts, currentCompany?.id, modelCategoryId, searchQuery]);
 
   const ensureCurrentOrder = useCallback(async () => {
     if (order) {
