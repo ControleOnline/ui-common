@@ -8,6 +8,21 @@ const styles = StyleSheet.create({
     padding: 16,
     paddingBottom: 36,
   },
+  contentEmbedded: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 24,
+  },
+  sectionEmbedded: {
+    backgroundColor: 'transparent',
+  },
+  headerRowEmbedded: {
+    marginBottom: 0,
+    minHeight: 0,
+  },
+  hidden: {
+    display: 'none',
+  },
   section: {
     backgroundColor: '#FFFFFF',
     borderRadius: 14,

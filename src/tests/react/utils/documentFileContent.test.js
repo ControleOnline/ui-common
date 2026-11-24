@@ -13,16 +13,17 @@ test('keeps plain HTML as is', () => {
   assert.deepEqual(resolveDocumentFileContent('  <p>ok</p>'), { kind: 'html', content: '  <p>ok</p>' });
 });
 
-test('treats non-HTML base64 payloads as PDF', () => {
-  const pdf = Buffer.from([0x25, 0x50, 0x44, 0x46, 0x2d, 0xff, 0xfe, 0x00]).toString('base64');
+test('plain-text models are returned decoded as text', () => {
+  const text = 'CONTRATO PADRÃO\nCláusula 1 – <nome_contratante> & mais';
+  assert.deepEqual(resolveDocumentFileContent(toBase64(text)), { kind: 'text', content: text });
+});
+
+test('PDF payloads stay base64 for the viewer', () => {
+  const pdf = Buffer.from('%PDF-1.7\n\xff\xfe binary', 'binary').toString('base64');
   assert.deepEqual(resolveDocumentFileContent(pdf), { kind: 'pdf', content: pdf });
 });
 
-test('empty and plain text contents', () => {
+test('empty contents', () => {
   assert.deepEqual(resolveDocumentFileContent(''), { kind: 'empty', content: '' });
   assert.deepEqual(resolveDocumentFileContent(null), { kind: 'empty', content: '' });
-  assert.deepEqual(resolveDocumentFileContent('Contrato simples, sem HTML.'), {
-    kind: 'text',
-    content: 'Contrato simples, sem HTML.',
-  });
 });
