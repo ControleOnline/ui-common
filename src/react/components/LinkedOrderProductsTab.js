@@ -62,6 +62,8 @@ const LinkedOrderProductsTab = ({
   emptyTitle = 'Nenhum produto adicionado.',
   emptySubtitle = 'Você pode vincular produtos a este documento quando precisar.',
   searchPlaceholder = 'Buscar produto para adicionar...',
+  // Called after products change so the parent can regenerate/reload the document.
+  onProductsChanged,
 }) => {
   const peopleStore = useStore('people');
   const { currentCompany } = peopleStore.getters;
@@ -191,12 +193,13 @@ const LinkedOrderProductsTab = ({
       setSearchQuery('');
       setSearchResults([]);
       await loadLinkedOrderProducts();
+      await onProductsChanged?.();
     } catch (error) {
       showError?.(formatApiError(error));
     } finally {
       setAddingProductId(null);
     }
-  }, [addingProductId, canEditProducts, ensureCurrentOrder, loadLinkedOrderProducts, showError]);
+  }, [addingProductId, canEditProducts, ensureCurrentOrder, loadLinkedOrderProducts, onProductsChanged, showError]);
 
   const handleChangeQuantity = useCallback(async (orderProduct, nextQuantity) => {
     if (updatingOrderProductId) {
@@ -220,12 +223,13 @@ const LinkedOrderProductsTab = ({
       }
 
       await loadLinkedOrderProducts();
+      await onProductsChanged?.();
     } catch (error) {
       showError?.(formatApiError(error));
     } finally {
       setUpdatingOrderProductId(null);
     }
-  }, [loadLinkedOrderProducts, showError, updatingOrderProductId]);
+  }, [loadLinkedOrderProducts, onProductsChanged, showError, updatingOrderProductId]);
 
   const visibleSearchResults = useMemo(() => {
     const existingProductIds = new Set(
