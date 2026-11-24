@@ -64,6 +64,8 @@ const LinkedOrderProductsTab = ({
   searchPlaceholder = 'Buscar produto para adicionar...',
   // Called after products change so the parent can regenerate/reload the document.
   onProductsChanged,
+  // Rendered inside a sheet that already has its own title.
+  embedded = false,
 }) => {
   const peopleStore = useStore('people');
   const { currentCompany } = peopleStore.getters;
@@ -246,11 +248,11 @@ const LinkedOrderProductsTab = ({
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={embedded ? styles.contentEmbedded : styles.content}
       keyboardShouldPersistTaps="handled">
-      <View style={styles.section}>
-        <View style={styles.headerRow}>
-          <View>
+      <View style={embedded ? styles.sectionEmbedded : styles.section}>
+        <View style={[styles.headerRow, embedded && styles.headerRowEmbedded]}>
+          <View style={embedded ? styles.hidden : null}>
             <Text style={styles.title}>Produtos</Text>
             <Text style={styles.subtitle}>
               {orderId

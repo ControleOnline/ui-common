@@ -1,3 +1,5 @@
+import { resolveClientPortfolioParams } from '@controleonline/ui-common/src/react/utils/clientPortfolioParams';
+
 const normalizeText = value => String(value || '').trim();
 
 const normalizeEntityId = value => String(value || '').replace(/\D/g, '');
@@ -24,16 +26,9 @@ export const getPeopleDisplayName = person => {
   return responsibleLabel || companyLabel;
 };
 
+// Sellers only get their own portfolio; see clientPortfolioParams.js.
 export const buildOwnedClientsParams = ({
   currentCompanyId,
-}) => {
-  const ownerId = normalizeEntityId(currentCompanyId);
-  if (!ownerId) {
-    return null;
-  }
-
-  return {
-    'link.company': `/people/${ownerId}`,
-    'link.linkType': 'client',
-  };
-};
+  permissions,
+  sellerPeopleId,
+}) => resolveClientPortfolioParams({ currentCompanyId, permissions, sellerPeopleId });
