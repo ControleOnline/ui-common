@@ -62,6 +62,10 @@ const LinkedOrderProductsTab = ({
   emptyTitle = 'Nenhum produto adicionado.',
   emptySubtitle = 'Você pode vincular produtos a este documento quando precisar.',
   searchPlaceholder = 'Buscar produto para adicionar...',
+  // Called after products change so the parent can regenerate/reload the document.
+  onProductsChanged,
+  // Rendered inside a sheet that already has its own title.
+  embedded = false,
 }) => {
   const peopleStore = useStore('people');
   const { currentCompany } = peopleStore.getters;
@@ -82,6 +86,9 @@ const LinkedOrderProductsTab = ({
   );
 
   const canEditProducts = !!canEdit && !!contract?.['@id'] && (!order || isOpenCommercialOrder(order));
+  // The backend only accepts products linked to the contract model category
+  // (ProposalProductCategoryGuard), so the search must use the same filter.
+  const modelCategoryId = normalizeEntityId(contract?.contractModel?.category);
 
   const loadLinkedOrderProducts = useCallback(async () => {
     if (!contract?.['@id']) {
@@ -128,6 +135,7 @@ const LinkedOrderProductsTab = ({
         const results = await searchCompanyProducts({
           companyId: currentCompany.id,
           query: trimmedQuery,
+          categoryId: modelCategoryId,
         });
 
         if (!cancelled) {
@@ -148,7 +156,7 @@ const LinkedOrderProductsTab = ({
       cancelled = true;
       clearTimeout(timeoutId);
     };
-  }, [canEditProducts, currentCompany?.id, searchQuery]);
+  }, [canEditProducts, currentCompany?.id, modelCategoryId, searchQuery]);
 
   const ensureCurrentOrder = useCallback(async () => {
     if (order) {
@@ -161,7 +169,6 @@ const LinkedOrderProductsTab = ({
       client: contract?.client,
       payer: contract?.client,
       app: 'CRM',
-      orderType: 'sale',
     });
 
     setOrder(createdOrder);
@@ -188,12 +195,13 @@ const LinkedOrderProductsTab = ({
       setSearchQuery('');
       setSearchResults([]);
       await loadLinkedOrderProducts();
+      await onProductsChanged?.();
     } catch (error) {
       showError?.(formatApiError(error));
     } finally {
       setAddingProductId(null);
     }
-  }, [addingProductId, canEditProducts, ensureCurrentOrder, loadLinkedOrderProducts, showError]);
+  }, [addingProductId, canEditProducts, ensureCurrentOrder, loadLinkedOrderProducts, onProductsChanged, showError]);
 
   const handleChangeQuantity = useCallback(async (orderProduct, nextQuantity) => {
     if (updatingOrderProductId) {
@@ -217,12 +225,13 @@ const LinkedOrderProductsTab = ({
       }
 
       await loadLinkedOrderProducts();
+      await onProductsChanged?.();
     } catch (error) {
       showError?.(formatApiError(error));
     } finally {
       setUpdatingOrderProductId(null);
     }
-  }, [loadLinkedOrderProducts, showError, updatingOrderProductId]);
+  }, [loadLinkedOrderProducts, onProductsChanged, showError, updatingOrderProductId]);
 
   const visibleSearchResults = useMemo(() => {
     const existingProductIds = new Set(
@@ -239,11 +248,11 @@ const LinkedOrderProductsTab = ({
   return (
     <ScrollView
       style={styles.container}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={embedded ? styles.contentEmbedded : styles.content}
       keyboardShouldPersistTaps="handled">
-      <View style={styles.section}>
-        <View style={styles.headerRow}>
-          <View>
+      <View style={embedded ? styles.sectionEmbedded : styles.section}>
+        <View style={[styles.headerRow, embedded && styles.headerRowEmbedded]}>
+          <View style={embedded ? styles.hidden : null}>
             <Text style={styles.title}>Produtos</Text>
             <Text style={styles.subtitle}>
               {orderId

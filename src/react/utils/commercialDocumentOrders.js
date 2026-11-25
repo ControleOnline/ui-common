@@ -1,4 +1,8 @@
 import { api } from '@controleonline/ui-common/src/api';
+import {
+  LINKED_ORDER_TYPE,
+  buildLinkedOrderPayload,
+} from '@controleonline/ui-common/src/react/utils/linkedOrderPayload';
 
 const normalizeStatusKey = value => String(value || '').trim().toLowerCase();
 
@@ -158,30 +162,19 @@ export const createLinkedOrder = async ({
   client,
   payer,
   app = 'CRM',
-  orderType = 'sale',
+  orderType = LINKED_ORDER_TYPE,
   fallbackStatusId = null,
 }) => {
   const status = await resolveOpenOrderStatusIri(fallbackStatusId);
-  const payload = {
+  const payload = buildLinkedOrderPayload({
     app,
     orderType,
-    contract: toEntityIri(contractRef, 'contracts'),
-    provider: toEntityIri(provider, 'people'),
-  };
-
-  if (status) {
-    payload.status = status;
-  }
-
-  const clientIri = toEntityIri(client, 'people');
-  if (clientIri) {
-    payload.client = clientIri;
-  }
-
-  const payerIri = toEntityIri(payer || client, 'people');
-  if (payerIri) {
-    payload.payer = payerIri;
-  }
+    contractIri: toEntityIri(contractRef, 'contracts'),
+    providerIri: toEntityIri(provider, 'people'),
+    statusIri: status,
+    clientIri: toEntityIri(client, 'people'),
+    payerIri: toEntityIri(payer, 'people'),
+  });
 
   return api.fetch('orders', {
     method: 'POST',
@@ -195,7 +188,7 @@ export const ensureLinkedOrder = async ({
   client,
   payer,
   app = 'CRM',
-  orderType = 'sale',
+  orderType = LINKED_ORDER_TYPE,
   fallbackStatusId = null,
 }) => {
   const existingOrder = await fetchLinkedOrder(contractRef);

@@ -111,3 +111,38 @@ export const saveEmailConnection = ({ commit }, params = {}) => {
       commit(types.SET_ISLOADING, false);
     });
 };
+
+/**
+ * Meta Embedded Signup: public data to open the Facebook popup (app id + configuration id).
+ */
+export const getWhatsappEmbeddedSignupConfig = () =>
+  api.fetch('/whatsapp/embedded-signup/config', { method: 'GET' });
+
+/**
+ * Meta Embedded Signup: the API exchanges the code for the token, subscribes the webhook
+ * and creates/updates the whatsapp_official connection of the company.
+ */
+export const completeWhatsappEmbeddedSignup = ({ commit }, params = {}) => {
+  commit(types.SET_ISLOADING, true);
+
+  return api
+    .fetch('/whatsapp/embedded-signup', {
+      method: 'POST',
+      body: {
+        people: params.people,
+        code: params.code,
+        waba_id: params.wabaId,
+        phone_number_id: params.phoneNumberId,
+        coexistence: !!params.coexistence,
+        type: params.type || null,
+        connection: params.connection || null,
+      },
+    })
+    .catch(e => {
+      commit(types.SET_ERROR, e.message);
+      throw e;
+    })
+    .finally(() => {
+      commit(types.SET_ISLOADING, false);
+    });
+};
