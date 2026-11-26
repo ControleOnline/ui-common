@@ -20,6 +20,7 @@ import {
   buildOfficialProviderConfig,
 } from './whatsAppConnectionHelpers';
 import WhatsAppProviderForm from './WhatsAppProviderForm';
+import { isEmbeddedSignupSupported, launchEmbeddedSignup } from './whatsAppEmbeddedSignup';
 import {
   resolveThemePalette,
   withOpacity,
@@ -77,6 +78,7 @@ export default function WhatsAppConnectionPage() {
   const [qrValue, setQrValue] = useState('');
   const [connectionStatus, setConnectionStatus] = useState('');
   const [lastRequestedPhone, setLastRequestedPhone] = useState('');
+  const [embeddedSignupConfig, setEmbeddedSignupConfig] = useState(null);
 
   const pollingRef = useRef(null);
   const providerId = currentCompany?.id;
@@ -206,6 +208,53 @@ export default function WhatsAppConnectionPage() {
       setSubmitting(false);
     }
   }, [accessToken, phoneNumberId, apiVersion, connectionType, connectionsActions, peopleIri, loadConnections, showError, showSuccess]);
+
+  // Meta Embedded Signup only runs in the browser (Facebook JS SDK popup).
+  useEffect(() => {
+    if (Platform.OS !== 'web' || !isEmbeddedSignupSupported()) return;
+    let active = true;
+    Promise.resolve(connectionsActions.getWhatsappEmbeddedSignupConfig())
+      .then(config => {
+        if (active && config?.app_id && config?.config_id) setEmbeddedSignupConfig(config);
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, [connectionsActions]);
+
+  const handleEmbeddedSignup = useCallback(async coexistence => {
+    if (!embeddedSignupConfig) return;
+    setSubmitting(true);
+    try {
+      const session = await launchEmbeddedSignup({
+        appId: embeddedSignupConfig.app_id,
+        configId: embeddedSignupConfig.config_id,
+        graphVersion: embeddedSignupConfig.graph_version,
+        coexistence,
+      });
+      const response = await connectionsActions.completeWhatsappEmbeddedSignup({
+        ...session,
+        coexistence,
+        type: connectionType,
+        people: peopleIri,
+      });
+      showSuccess(
+        coexistence
+          ? 'Numero conectado. Ele continua no app do celular e agora tambem recebe pela API.'
+          : 'Numero conectado a API oficial do WhatsApp.',
+      );
+      setConnectionStatus('CONNECTED');
+      setQrValue('');
+      await loadConnections();
+      return response;
+    } catch (error) {
+      showError(formatApiError(error));
+      return null;
+    } finally {
+      setSubmitting(false);
+    }
+  }, [embeddedSignupConfig, connectionsActions, connectionType, peopleIri, loadConnections, showError, showSuccess]);
 
   const handlePrimaryAction = useCallback(async () => {
     if (providerMode === PROVIDER_OFFICIAL) {
@@ -366,6 +415,8 @@ export default function WhatsAppConnectionPage() {
             setApiVersion={setApiVersion}
             submitting={submitting}
             onPrimaryAction={() => handlePrimaryAction()}
+            embeddedSignupAvailable={!!embeddedSignupConfig}
+            onEmbeddedSignup={handleEmbeddedSignup}
           />
 
           <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>

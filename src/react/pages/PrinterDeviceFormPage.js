@@ -15,8 +15,8 @@ import {Picker} from '@react-native-picker/picker';
 import Icon from 'react-native-vector-icons/Feather';
 import {useStore} from '@store';
 import StateStore from '@controleonline/ui-common/src/react/components/StateStore';
-import {resolveThemePalette, withOpacity} from '@controleonline/../../src/styles/branding';
-import {colors} from '@controleonline/../../src/styles/colors';
+import {resolveThemePalette, withOpacity} from '@controleonline/ui-layout/src/styles/branding';
+import {colors} from '@controleonline/ui-layout/src/styles/colors';
 import {getNetworkDeviceProfile} from '@controleonline/ui-common/src/react/utils/networkDeviceProfiles';
 import {
   buildNetworkCameraConfigs,
