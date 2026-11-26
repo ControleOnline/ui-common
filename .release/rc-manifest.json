@@ -1,9 +1,9 @@
 {
-  "version": "1.2.134",
+  "version": "1.2.135",
   "rc": 1,
   "branch": "rc/1.2.134-rc.1",
   "baseMaster": "79a433075b0b62f70eca13f247b3a0696b6315e6",
-  "baseTag": "v1.2.133",
+  "baseTag": "v1.2.134",
   "tasks": [
     96
   ],
@@ -11,5 +11,6 @@
   "frozen": true,
   "repositories": {
     "ControleOnline/ui-common": "e5148f07973b90864eecbb7387c1ada0cf75af5c"
-  }
+  },
+  "note": "1.2.134 foi publicado como hotfix sobre 1.2.131 (s\u00f3 WhatsApp); 1.2.135 = master 1.2.133 + WhatsApp."
 }
