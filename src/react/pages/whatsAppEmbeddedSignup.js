@@ -7,6 +7,16 @@ const SIGNUP_EVENT = 'WA_EMBEDDED_SIGNUP';
 
 let sdkPromise = null;
 
+// Only messages posted by the Facebook popup itself (exact host or a facebook.com subdomain).
+const isFacebookOrigin = origin => {
+  try {
+    const { protocol, hostname } = new URL(origin);
+    return protocol === 'https:' && (hostname === 'facebook.com' || hostname.endsWith('.facebook.com'));
+  } catch (e) {
+    return false;
+  }
+};
+
 export const isEmbeddedSignupSupported = () =>
   typeof window !== 'undefined' && typeof document !== 'undefined';
 
@@ -69,7 +79,7 @@ export const launchEmbeddedSignup = async ({ appId, configId, graphVersion, coex
 
     // Meta posts the selected WABA / number from the popup; the login callback brings the code.
     const onMessage = event => {
-      if (!String(event.origin || '').endsWith('facebook.com')) return;
+      if (!isFacebookOrigin(event.origin)) return;
       let data = event.data;
       try {
         data = typeof data === 'string' ? JSON.parse(data) : data;
